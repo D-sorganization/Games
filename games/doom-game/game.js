@@ -176,7 +176,7 @@ restartButtons.forEach(button => button.addEventListener('click', () => restartG
 document.addEventListener('keydown', (e) => {
     keys[e.key.toLowerCase()] = true;
 
-    if (e.key.toLowerCase() === 'e') {
+    if (e.key.toLowerCase() === 'e' && !gameState.paused) {
         openDoor();
     }
 
@@ -337,7 +337,7 @@ function handleGamepadButtons(pad) {
 
         if (pressed && !wasPressed) {
             if (action === 'reload') reloadWeapon();
-            if (action === 'interact') openDoor();
+            if (action === 'interact' && !gameState.paused) openDoor();
             if (action === 'pause' && gameState.running) togglePause(!gameState.paused);
             if (action === 'previousWeapon') cycleWeapon(-1);
             if (action === 'nextWeapon') cycleWeapon(1);
@@ -648,8 +648,9 @@ function shoot() {
     weapon.muzzleFlashUntil = currentTime + config.muzzleTime;
 
     for (let pellet = 0; pellet < config.pellets; pellet++) {
-        const spreadStep = config.pellets === 1 ? 0 : config.spread / (config.pellets - 1);
-        const pelletAngle = player.angle - config.spread / 2 + spreadStep * pellet;
+        const pelletAngle = config.pellets === 1 
+            ? player.angle 
+            : player.angle - config.spread / 2 + (config.spread / (config.pellets - 1)) * pellet;
         const accuracyWindow = Math.max(0.14, config.spread * 0.6);
 
         enemies.forEach(enemy => {
