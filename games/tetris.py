@@ -245,7 +245,10 @@ class TetrisGame:
         else:
             # Swap current and held piece
             # In this branch, held_piece is guaranteed to be str (not None)
-            temp = cast(str, self.held_piece)
+            # MyPy understands the type narrowing from the if/else check above
+            if self.held_piece is None:
+                return  # This should never happen, but helps type checking
+            temp = self.held_piece
             self.held_piece = self.current_piece.shape_type
             new_piece = Tetromino(GRID_WIDTH // 2 - 1, 0, temp)
             # Validate that the swapped piece can spawn
@@ -778,7 +781,7 @@ class TetrisGame:
                     sys.exit()
 
                 if self.state == GameState.MENU:
-                    self.handle_menu_input(event)
+                    self.handle_menu_input(event)  # type: ignore[arg-type]
 
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_r:
