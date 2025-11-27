@@ -1223,6 +1223,12 @@ class TetrisGame:
 
     def restart_game(self) -> None:
         """Restart the current run"""
+        if self.state not in [
+            GameState.PLAYING,
+            GameState.PAUSED,
+            GameState.GAME_OVER,
+        ]:
+            return
         self.reset_game()
         self.state = GameState.PLAYING
 
