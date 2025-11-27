@@ -1,31 +1,38 @@
 // Game constants
 const SCREEN_WIDTH = 1024;
 const SCREEN_HEIGHT = 768;
-const MAP_SIZE = 16;
 const TILE_SIZE = 64;
 const FOV = Math.PI / 3; // 60 degrees
-const MAX_DEPTH = 20;
+const MAX_DEPTH = 40;
 const NUM_RAYS = SCREEN_WIDTH / 2;
 
+const PLAYER_PISTOL_DAMAGE = 10;
+const ZOMBIE_DAMAGE = 10;
+const ZOMBIE_HEALTH = 80;
+const ATTACK_RANGE = 70;
+const FIREBALL_DAMAGE = 15;
+const FIREBALL_SPEED = 2.4;
+const FIREBALL_COOLDOWN = 2200;
+
 // Game map (1 = wall, 0 = empty, 2 = door, 3 = exit)
-const map = [
-    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-    [1,0,0,0,0,0,0,1,1,0,0,0,0,0,0,1],
-    [1,0,0,0,0,0,0,1,1,0,0,0,0,0,0,1],
-    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,3,1],
-    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+const mapLayout = [
+    '111111111111111111111111111111111111111111111111',
+    '100000000000000000000000000000000000000000000001',
+    '100000001111100000000000000111111000000000000001',
+    '100000001111100000000100000111111000000000000001',
+    '100000001111100000011100000111111000000000000001',
+    '100000000000000111000000000000000000011110000001',
+    '100000000000000000000000000000000000000000000001',
+    '100000000001111000000000000000000001111000000001',
+    '100011100000000000000111100000000000000001111001',
+    '100000000000000000000000000000000000000000000001',
+    '100000000000000000000001111000000000000000000031',
+    '111111111111111111111111111111111111111111111111'
 ];
+
+const map = mapLayout.map(row => row.split('').map(Number));
+const MAP_HEIGHT = map.length;
+const MAP_WIDTH = map[0].length;
 
 // Game state
 let gameState = {
@@ -44,76 +51,58 @@ const player = {
     rotationSpeed: 0,
     health: 100,
     maxHealth: 100,
-    ammo: 50,
+    ammo: 120,
     kills: 0
 };
 
 // Enemies
 const enemyTypes = {
-    demon: { color: '#b52b1d', speed: 1.6, damage: 12, shootCooldown: 1800, sprite: 'Demon' },
-    dinosaur: { color: '#3fa34d', speed: 2.2, damage: 14, shootCooldown: 1500, sprite: 'Dino' },
-    raider: { color: '#7a5cff', speed: 1.8, damage: 10, shootCooldown: 1200, sprite: 'Raider' }
+    zombie: {
+        color: '#6b8a6f',
+        speed: 1.4,
+        damage: ZOMBIE_DAMAGE,
+        attackCooldown: 900,
+        sprite: 'Zombie',
+        scale: 1,
+        fireball: null
+    },
+    boss: {
+        color: '#8c3f3f',
+        speed: 1.1,
+        damage: 15,
+        attackCooldown: 800,
+        sprite: 'Boss',
+        scale: 2,
+        fireball: { damage: FIREBALL_DAMAGE, speed: FIREBALL_SPEED, cooldown: FIREBALL_COOLDOWN }
+    }
 };
 
 const enemies = [
-    {
-        x: 6 * TILE_SIZE,
-        y: 6 * TILE_SIZE,
-        health: 40,
-        maxHealth: 40,
-        angle: 0,
-        type: 'dinosaur',
-        lastShot: 0,
-        mouthOpen: false,
-        mouthTimer: 0,
-        eyeRotation: 0,
-        droolOffset: 0
-    },
-    {
-        x: 10 * TILE_SIZE,
-        y: 5 * TILE_SIZE,
-        health: 35,
-        maxHealth: 35,
-        angle: 0,
-        type: 'demon',
-        lastShot: 0,
-        mouthOpen: false,
-        mouthTimer: 0,
-        eyeRotation: 0,
-        droolOffset: 0
-    },
-    {
-        x: 4 * TILE_SIZE,
-        y: 11 * TILE_SIZE,
-        health: 30,
-        maxHealth: 30,
-        angle: 0,
-        type: 'raider',
-        lastShot: 0,
-        mouthOpen: false,
-        mouthTimer: 0,
-        eyeRotation: 0,
-        droolOffset: 0
-    },
-    {
-        x: 11 * TILE_SIZE,
-        y: 10 * TILE_SIZE,
-        health: 40,
-        maxHealth: 40,
-        angle: 0,
-        type: 'demon',
-        lastShot: 0,
-        mouthOpen: false,
-        mouthTimer: 0,
-        eyeRotation: 0,
-        droolOffset: 0
-    }
-];
+    { x: 6 * TILE_SIZE, y: 6 * TILE_SIZE, type: 'zombie' },
+    { x: 12 * TILE_SIZE, y: 4 * TILE_SIZE, type: 'zombie' },
+    { x: 18 * TILE_SIZE, y: 8 * TILE_SIZE, type: 'zombie' },
+    { x: 26 * TILE_SIZE, y: 5 * TILE_SIZE, type: 'zombie' },
+    { x: 32 * TILE_SIZE, y: 7 * TILE_SIZE, type: 'zombie' },
+    { x: 38 * TILE_SIZE, y: 4 * TILE_SIZE, type: 'zombie' },
+    { x: 44 * TILE_SIZE, y: 6 * TILE_SIZE, type: 'boss' }
+].map(enemy => ({
+    ...enemy,
+    health: enemy.type === 'boss' ? ZOMBIE_HEALTH * 2 : ZOMBIE_HEALTH,
+    maxHealth: enemy.type === 'boss' ? ZOMBIE_HEALTH * 2 : ZOMBIE_HEALTH,
+    angle: 0,
+    lastAttack: 0,
+    lastFireball: 0,
+    mouthOpen: false,
+    mouthTimer: 0,
+    eyeRotation: 0,
+    droolOffset: 0,
+    legPhase: 0
+}));
+
+const projectiles = [];
 
 // Input handling
 const keys = {};
-let mouseX = 0;
-let mouseLocked = false;
 
 // Weapon state
 const weapon = {
@@ -122,10 +111,12 @@ const weapon = {
     isShooting: false,
     lastShot: 0,
     shootCooldown: 300,
-    isHolstered: false
+    isHolstered: false,
+    aiming: false
 };
 
 let minimapVisible = true;
+let currentFov = FOV;
 
 // Canvas setup
 const canvas = document.getElementById('gameCanvas');
@@ -168,20 +159,34 @@ document.addEventListener('keyup', (e) => {
 
 document.addEventListener('mousemove', (e) => {
     if (document.pointerLockElement === canvas) {
-        mouseLocked = true;
         player.angle += e.movementX * 0.002;
     }
 });
 
-canvas.addEventListener('click', () => {
+canvas.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+});
+
+canvas.addEventListener('mousedown', (e) => {
     if (gameState.running && !gameState.gameOver && !gameState.won) {
         canvas.requestPointerLock();
-        shoot();
+
+        if (e.button === 0) {
+            weapon.aiming = true;
+            currentFov = FOV * 0.85;
+        }
+
+        if (e.button === 2) {
+            shoot();
+        }
     }
 });
 
-document.addEventListener('pointerlockchange', () => {
-    mouseLocked = document.pointerLockElement === canvas;
+document.addEventListener('mouseup', (e) => {
+    if (e.button === 0) {
+        weapon.aiming = false;
+        currentFov = FOV;
+    }
 });
 
 // Helper functions
@@ -203,7 +208,7 @@ function castRay(rayAngle, originX = player.x, originY = player.y) {
         const mapX = Math.floor(testX / TILE_SIZE);
         const mapY = Math.floor(testY / TILE_SIZE);
 
-        if (mapX < 0 || mapX >= MAP_SIZE || mapY < 0 || mapY >= MAP_SIZE) {
+        if (mapX < 0 || mapX >= MAP_WIDTH || mapY < 0 || mapY >= MAP_HEIGHT) {
             hitWall = true;
             distanceToWall = MAX_DEPTH;
         } else if (map[mapY][mapX] > 0) {
@@ -242,7 +247,7 @@ function drawWalls() {
 
     // Cast rays
     for (let x = 0; x < NUM_RAYS; x++) {
-        const rayAngle = (player.angle - FOV / 2) + (x / NUM_RAYS) * FOV;
+        const rayAngle = (player.angle - currentFov / 2) + (x / NUM_RAYS) * currentFov;
         const ray = castRay(rayAngle);
 
         const distance = ray.distance * Math.cos(rayAngle - player.angle); // Fix fisheye
@@ -280,6 +285,16 @@ function drawEnemySprite(spriteX, spriteY, spriteSize, enemy) {
     const centerX = spriteX + spriteSize / 2;
     const bodyX = centerX - bodyWidth / 2;
     const bodyY = spriteY + spriteSize * 0.05;
+
+    // Legs with speed-synced stride
+    const legStride = Math.sin(enemy.legPhase) * spriteSize * 0.08;
+    const legWidth = spriteSize * 0.18;
+    const legHeight = spriteSize * 0.45;
+    const legY = bodyY + bodyHeight * 0.55;
+
+    ctx.fillStyle = '#2a2a2a';
+    ctx.fillRect(centerX - bodyWidth * 0.45 + legStride, legY, legWidth, legHeight);
+    ctx.fillRect(centerX + bodyWidth * 0.25 - legStride, legY, legWidth, legHeight);
 
     ctx.fillStyle = type.color;
     ctx.fillRect(bodyX, bodyY + headSize * 0.8, bodyWidth, bodyHeight * 0.6);
@@ -366,13 +381,14 @@ function drawEnemies() {
         while (normalizedAngle < -Math.PI) normalizedAngle += 2 * Math.PI;
 
         // Check if enemy is in FOV
-        if (Math.abs(normalizedAngle) < FOV / 2 + 0.5) {
+        if (Math.abs(normalizedAngle) < currentFov / 2 + 0.5) {
             if (!hasLineOfSight(player.x, player.y, enemy.x, enemy.y)) {
                 return;
             }
 
-            const spriteSize = (TILE_SIZE / distance) * 277;
-            const spriteX = SCREEN_WIDTH / 2 + (normalizedAngle / FOV) * SCREEN_WIDTH - spriteSize / 2;
+            const type = enemyTypes[enemy.type];
+            const spriteSize = (TILE_SIZE / distance) * 277 * type.scale;
+            const spriteX = SCREEN_WIDTH / 2 + (normalizedAngle / currentFov) * SCREEN_WIDTH - spriteSize / 2;
             const spriteY = SCREEN_HEIGHT / 2 - spriteSize / 2;
 
             drawEnemySprite(spriteX, spriteY, spriteSize, enemy);
@@ -390,13 +406,61 @@ function drawEnemies() {
     });
 }
 
+function drawProjectiles() {
+    const sortedProjectiles = projectiles
+        .map(projectile => {
+            const dx = projectile.x - player.x;
+            const dy = projectile.y - player.y;
+            const distance = Math.max(0.1, Math.sqrt(dx * dx + dy * dy));
+            const angle = Math.atan2(dy, dx) - player.angle;
+            return { projectile, distance, angle };
+        })
+        .sort((a, b) => b.distance - a.distance);
+
+    sortedProjectiles.forEach(({ projectile, distance, angle }) => {
+        let normalizedAngle = angle;
+        while (normalizedAngle > Math.PI) normalizedAngle -= 2 * Math.PI;
+        while (normalizedAngle < -Math.PI) normalizedAngle += 2 * Math.PI;
+
+        if (
+            Math.abs(normalizedAngle) < currentFov / 2 + 0.5 &&
+            hasLineOfSight(player.x, player.y, projectile.x, projectile.y)
+        ) {
+            const spriteSize = (TILE_SIZE / distance) * 90;
+            const spriteX =
+                SCREEN_WIDTH / 2 + (normalizedAngle / currentFov) * SCREEN_WIDTH - spriteSize / 2;
+            const spriteY = SCREEN_HEIGHT / 2 - spriteSize / 2;
+
+            const gradient = ctx.createRadialGradient(
+                spriteX + spriteSize / 2,
+                spriteY + spriteSize / 2,
+                spriteSize * 0.1,
+                spriteX + spriteSize / 2,
+                spriteY + spriteSize / 2,
+                spriteSize * 0.6
+            );
+
+            gradient.addColorStop(0, '#ffcc66');
+            gradient.addColorStop(0.5, '#ff6600');
+            gradient.addColorStop(1, 'rgba(0,0,0,0)');
+
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(spriteX + spriteSize / 2, spriteY + spriteSize / 2, spriteSize / 2, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    });
+}
+
 function drawWeapon() {
     if (weapon.isHolstered) {
         return;
     }
 
-    const weaponY = SCREEN_HEIGHT - 200 + Math.sin(weapon.bobOffset) * 10 + weapon.shootAnimOffset;
-    const weaponX = SCREEN_WIDTH / 2 - 50;
+    const aimLift = weapon.aiming ? 25 : 0;
+    const weaponY =
+        SCREEN_HEIGHT - 200 + Math.sin(weapon.bobOffset) * 10 + weapon.shootAnimOffset - aimLift;
+    const weaponX = SCREEN_WIDTH / 2 - 50 + (weapon.aiming ? 8 : 0);
 
     // Draw simple gun
     ctx.fillStyle = '#444';
@@ -437,11 +501,12 @@ function drawHUD() {
     // Crosshair
     ctx.strokeStyle = '#00ff00';
     ctx.lineWidth = 2;
+    const crosshairSize = weapon.aiming ? 6 : 10;
     ctx.beginPath();
-    ctx.moveTo(SCREEN_WIDTH / 2 - 10, SCREEN_HEIGHT / 2);
-    ctx.lineTo(SCREEN_WIDTH / 2 + 10, SCREEN_HEIGHT / 2);
-    ctx.moveTo(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 - 10);
-    ctx.lineTo(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + 10);
+    ctx.moveTo(SCREEN_WIDTH / 2 - crosshairSize, SCREEN_HEIGHT / 2);
+    ctx.lineTo(SCREEN_WIDTH / 2 + crosshairSize, SCREEN_HEIGHT / 2);
+    ctx.moveTo(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 - crosshairSize);
+    ctx.lineTo(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + crosshairSize);
     ctx.stroke();
 }
 
@@ -475,7 +540,7 @@ function updatePlayer(deltaTime) {
 
     // Weapon bobbing
     if (player.speed !== 0 || player.strafeSpeed !== 0) {
-        weapon.bobOffset += 0.15;
+        weapon.bobOffset += weapon.aiming ? 0.08 : 0.15;
     }
 
     // Weapon shoot animation
@@ -499,7 +564,9 @@ function updateEnemies(deltaTime) {
         enemy.eyeRotation += deltaTime * 10;
         enemy.droolOffset = (enemy.droolOffset + deltaTime * 40) % 20;
 
-        const seesPlayer = distance < 550 && hasLineOfSight(enemy.x, enemy.y, player.x, player.y);
+        const seesPlayer =
+            distance < 900 && hasLineOfSight(enemy.x, enemy.y, player.x, player.y);
+        let movement = 0;
 
         if (seesPlayer) {
             enemy.mouthTimer += deltaTime;
@@ -515,33 +582,80 @@ function updateEnemies(deltaTime) {
             const mapY = Math.floor(newY / TILE_SIZE);
 
             if (map[mapY] && map[mapY][mapX] === 0) {
+                movement = Math.sqrt((newX - enemy.x) ** 2 + (newY - enemy.y) ** 2);
                 enemy.x = newX;
                 enemy.y = newY;
             }
 
-            if (distance < 220 && currentTime - enemy.lastShot > type.shootCooldown) {
+            const attackReach = ATTACK_RANGE + (enemy.type === 'boss' ? 10 : 0);
+            if (distance < attackReach && currentTime - enemy.lastAttack > type.attackCooldown) {
                 player.health -= type.damage;
-                enemy.lastShot = currentTime;
+                enemy.lastAttack = currentTime;
 
                 if (player.health <= 0) {
                     gameState.gameOver = true;
                 }
             }
-        } else if (currentTime % 2000 < 50) {
-            // small wander to keep them moving
-            const wanderAngle = Math.random() * Math.PI * 2;
-            const newX = enemy.x + Math.cos(wanderAngle) * type.speed * 0.5;
-            const newY = enemy.y + Math.sin(wanderAngle) * type.speed * 0.5;
+
+            if (type.fireball && currentTime - enemy.lastFireball > type.fireball.cooldown) {
+                projectiles.push({
+                    x: enemy.x,
+                    y: enemy.y,
+                    angle: angleToPlayer,
+                    speed: type.fireball.speed,
+                    damage: type.fireball.damage
+                });
+                enemy.lastFireball = currentTime;
+            }
+        } else if (currentTime % 1500 < 40) {
+            const wanderAngle = (enemy.x + enemy.y + currentTime * 0.0005) % (Math.PI * 2);
+            const newX = enemy.x + Math.cos(wanderAngle) * type.speed * 0.4;
+            const newY = enemy.y + Math.sin(wanderAngle) * type.speed * 0.4;
 
             const mapX = Math.floor(newX / TILE_SIZE);
             const mapY = Math.floor(newY / TILE_SIZE);
 
             if (map[mapY] && map[mapY][mapX] === 0) {
+                movement = Math.sqrt((newX - enemy.x) ** 2 + (newY - enemy.y) ** 2);
                 enemy.x = newX;
                 enemy.y = newY;
             }
         }
+
+        enemy.legPhase += movement * 0.2;
     });
+}
+
+function updateProjectiles(deltaTime) {
+    for (let i = projectiles.length - 1; i >= 0; i--) {
+        const projectile = projectiles[i];
+        projectile.x += Math.cos(projectile.angle) * projectile.speed * TILE_SIZE * deltaTime;
+        projectile.y += Math.sin(projectile.angle) * projectile.speed * TILE_SIZE * deltaTime;
+
+        const mapX = Math.floor(projectile.x / TILE_SIZE);
+        const mapY = Math.floor(projectile.y / TILE_SIZE);
+
+        if (
+            mapX < 0 ||
+            mapX >= MAP_WIDTH ||
+            mapY < 0 ||
+            mapY >= MAP_HEIGHT ||
+            (map[mapY] && map[mapY][mapX] > 0)
+        ) {
+            projectiles.splice(i, 1);
+            continue;
+        }
+
+        const distanceToPlayer = Math.hypot(projectile.x - player.x, projectile.y - player.y);
+        if (distanceToPlayer < 24) {
+            player.health -= projectile.damage;
+            projectiles.splice(i, 1);
+
+            if (player.health <= 0) {
+                gameState.gameOver = true;
+            }
+        }
+    }
 }
 
 function shoot() {
@@ -570,11 +684,16 @@ function shoot() {
         while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
         while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
 
-        const aimAllowance = 0.2 + Math.max(0, 0.05 - distance * 0.002);
+        const aimAllowance =
+            (weapon.aiming ? 0.1 : 0.2) + Math.max(0, 0.05 - distance * 0.002);
 
         // Check if enemy is in crosshair and visible
-        if (Math.abs(angleDiff) < aimAllowance && distance < centerRay.distance && hasLineOfSight(player.x, player.y, enemy.x, enemy.y)) {
-            enemy.health -= 20;
+        if (
+            Math.abs(angleDiff) < aimAllowance &&
+            distance < centerRay.distance &&
+            hasLineOfSight(player.x, player.y, enemy.x, enemy.y)
+        ) {
+            enemy.health -= PLAYER_PISTOL_DAMAGE;
 
             if (enemy.health <= 0) {
                 player.kills++;
@@ -615,14 +734,20 @@ function drawMinimap() {
     if (!minimapVisible) return;
 
     const mapScale = 4;
-    const minimapSize = MAP_SIZE * mapScale;
+    const minimapWidth = MAP_WIDTH * mapScale;
+    const minimapHeight = MAP_HEIGHT * mapScale;
     const offset = 20;
 
     ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-    ctx.fillRect(SCREEN_WIDTH - minimapSize - offset - 10, offset - 10, minimapSize + 20, minimapSize + 20);
+    ctx.fillRect(
+        SCREEN_WIDTH - minimapWidth - offset - 10,
+        offset - 10,
+        minimapWidth + 20,
+        minimapHeight + 20
+    );
 
-    for (let y = 0; y < MAP_SIZE; y++) {
-        for (let x = 0; x < MAP_SIZE; x++) {
+    for (let y = 0; y < MAP_HEIGHT; y++) {
+        for (let x = 0; x < MAP_WIDTH; x++) {
             const tile = map[y][x];
             if (tile === 1) {
                 ctx.fillStyle = '#6b4b3e';
@@ -634,14 +759,19 @@ function drawMinimap() {
                 ctx.fillStyle = '#1b1b1b';
             }
 
-            ctx.fillRect(SCREEN_WIDTH - minimapSize - offset + x * mapScale, offset + y * mapScale, mapScale, mapScale);
+            ctx.fillRect(
+                SCREEN_WIDTH - minimapWidth - offset + x * mapScale,
+                offset + y * mapScale,
+                mapScale,
+                mapScale
+            );
         }
     }
 
     // Player
     ctx.fillStyle = '#ffff00';
     ctx.fillRect(
-        SCREEN_WIDTH - minimapSize - offset + (player.x / TILE_SIZE) * mapScale - 2,
+        SCREEN_WIDTH - minimapWidth - offset + (player.x / TILE_SIZE) * mapScale - 2,
         offset + (player.y / TILE_SIZE) * mapScale - 2,
         4,
         4
@@ -651,11 +781,11 @@ function drawMinimap() {
     ctx.strokeStyle = '#ffff00';
     ctx.beginPath();
     ctx.moveTo(
-        SCREEN_WIDTH - minimapSize - offset + (player.x / TILE_SIZE) * mapScale,
+        SCREEN_WIDTH - minimapWidth - offset + (player.x / TILE_SIZE) * mapScale,
         offset + (player.y / TILE_SIZE) * mapScale
     );
     ctx.lineTo(
-        SCREEN_WIDTH - minimapSize - offset + ((player.x / TILE_SIZE) + Math.cos(player.angle)) * mapScale,
+        SCREEN_WIDTH - minimapWidth - offset + ((player.x / TILE_SIZE) + Math.cos(player.angle)) * mapScale,
         offset + ((player.y / TILE_SIZE) + Math.sin(player.angle)) * mapScale
     );
     ctx.stroke();
@@ -665,7 +795,7 @@ function drawMinimap() {
         if (enemy.health <= 0) return;
         ctx.fillStyle = enemyTypes[enemy.type].color;
         ctx.fillRect(
-            SCREEN_WIDTH - minimapSize - offset + (enemy.x / TILE_SIZE) * mapScale - 2,
+            SCREEN_WIDTH - minimapWidth - offset + (enemy.x / TILE_SIZE) * mapScale - 2,
             offset + (enemy.y / TILE_SIZE) * mapScale - 2,
             4,
             4
@@ -705,10 +835,12 @@ function gameLoop() {
         // Update
         updatePlayer(deltaTime);
         updateEnemies(deltaTime);
+        updateProjectiles(deltaTime);
 
         // Draw
         drawWalls();
         drawEnemies();
+        drawProjectiles();
         drawWeapon();
         drawHUD();
         drawMinimap();
