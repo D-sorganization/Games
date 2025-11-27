@@ -79,7 +79,7 @@ const enemyTypes = {
 
 const enemies = [
     { x: 6 * TILE_SIZE, y: 6 * TILE_SIZE, type: 'zombie' },
-    { x: 12 * TILE_SIZE, y: 4 * TILE_SIZE, type: 'zombie' },
+    { x: 12 * TILE_SIZE, y: 5 * TILE_SIZE, type: 'zombie' },
     { x: 18 * TILE_SIZE, y: 8 * TILE_SIZE, type: 'zombie' },
     { x: 26 * TILE_SIZE, y: 5 * TILE_SIZE, type: 'zombie' },
     { x: 32 * TILE_SIZE, y: 7 * TILE_SIZE, type: 'zombie' },
