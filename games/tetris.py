@@ -349,7 +349,8 @@ class TetrisGame:
             # Match original condition: only show combo for 3rd consecutive clear and beyond
             if combo_for_bonus > 1:
                 # Display combo number that matches the bonus calculation
-                # combo_for_bonus=2 means 3rd consecutive (show "x3"), combo_for_bonus=3 means 4th (show "x4"), etc.
+                # combo_for_bonus=2 means 3rd consecutive (show "x3"),
+                # combo_for_bonus=3 means 4th (show "x4"), etc.
                 popup_text += f" x{combo_for_bonus + 1} COMBO!"
             popup_x = TOP_LEFT_X + PLAY_WIDTH // 2
             popup_y = TOP_LEFT_Y + PLAY_HEIGHT // 2
