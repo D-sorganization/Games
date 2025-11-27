@@ -239,7 +239,14 @@ class TetrisGame:
             # Swap current and held piece
             temp = self.held_piece
             self.held_piece = self.current_piece.shape_type
-            self.current_piece = Tetromino(GRID_WIDTH // 2 - 1, 0, temp)
+            new_piece = Tetromino(GRID_WIDTH // 2 - 1, 0, temp)
+            # Validate that the swapped piece can spawn
+            if not self.valid_move(new_piece):
+                # Cannot spawn, game over
+                self.game_over = True
+                self.state = GameState.GAME_OVER
+                return
+            self.current_piece = new_piece
 
         self.can_hold = False
 
@@ -318,9 +325,10 @@ class TetrisGame:
             base_score = score_values.get(num_lines, 0)
             earned_score = base_score * self.level
 
-            # Add combo bonus
-            if self.combo > 0:
-                combo_bonus = 50 * self.combo * self.level
+            # Add combo bonus (calculate before incrementing combo)
+            combo_for_bonus = self.combo
+            if combo_for_bonus > 0:
+                combo_bonus = 50 * combo_for_bonus * self.level
                 earned_score += combo_bonus
 
             self.score += earned_score
@@ -336,10 +344,13 @@ class TetrisGame:
             elif num_lines == 4:
                 self.total_tetrises += 1
 
-            # Create score popup
+            # Create score popup (use combo value before increment for display)
             popup_text = self.get_line_clear_text(num_lines)
-            if self.combo > 1:
-                popup_text += f" x{self.combo} COMBO!"
+            # Match original condition: only show combo for 3rd consecutive clear and beyond
+            if combo_for_bonus > 1:
+                # Display combo number that matches the bonus calculation
+                # combo_for_bonus=2 means 3rd consecutive (show "x3"), combo_for_bonus=3 means 4th (show "x4"), etc.
+                popup_text += f" x{combo_for_bonus + 1} COMBO!"
             popup_x = TOP_LEFT_X + PLAY_WIDTH // 2
             popup_y = TOP_LEFT_Y + PLAY_HEIGHT // 2
             self.score_popups.append(ScorePopup(popup_text, popup_x, popup_y))
@@ -545,7 +556,7 @@ class TetrisGame:
             ("R", "Restart"),
         ]
 
-        panel_x = TOP_LEFT_X - 200
+        panel_x = 10
         panel_y = TOP_LEFT_Y
 
         title = self.font.render("Controls", True, WHITE)
@@ -639,8 +650,24 @@ class TetrisGame:
             self.draw_held_piece()
             self.draw_stats()
             self.draw_controls()
-            self.draw_particles()
-            self.draw_score_popups()
+            # Only animate particles and popups when playing (not paused)
+            if self.state == GameState.PLAYING:
+                self.draw_particles()
+                self.draw_score_popups()
+            else:
+                # Draw particles and popups without updating them when paused
+                for particle in self.particles:
+                    if particle.is_alive():
+                        surf = pygame.Surface((4, 4))
+                        surf.fill(particle.color)
+                        surf.set_alpha(particle.alpha)
+                        self.screen.blit(surf, (int(particle.x), int(particle.y)))
+                for popup in self.score_popups:
+                    if popup.is_alive():
+                        text_surf = self.font_large.render(popup.text, True, popup.color)
+                        text_surf.set_alpha(popup.alpha)
+                        text_rect = text_surf.get_rect(center=(int(popup.x), int(popup.y)))
+                        self.screen.blit(text_surf, text_rect)
 
             if self.state == GameState.PAUSED:
                 # Pause overlay
