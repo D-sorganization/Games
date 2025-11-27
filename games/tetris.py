@@ -7,8 +7,12 @@ A fully featured Tetris implementation with levels, scoring, and modern features
 import random
 import sys
 from enum import Enum
+from typing import TYPE_CHECKING
 
 import pygame
+
+if TYPE_CHECKING:
+    from pygame import event as pygame_event
 
 # Initialize Pygame
 pygame.init()
@@ -170,6 +174,9 @@ class TetrisGame:
 
         self.state = GameState.MENU
         self.starting_level = 1
+        self.held_piece: str | None = None
+        self.particles: list[Particle] = []
+        self.score_popups: list[ScorePopup] = []
         self.reset_game()
 
     def reset_game(self) -> None:
@@ -186,8 +193,8 @@ class TetrisGame:
         self.fall_time = 0
         self.fall_speed = max(50, 500 - (self.level - 1) * 40)
         self.combo = 0
-        self.particles = []
-        self.score_popups = []
+        self.particles.clear()
+        self.score_popups.clear()
         self.lines_cleared_this_drop = 0
         self.total_singles = 0
         self.total_doubles = 0
@@ -237,7 +244,9 @@ class TetrisGame:
             self.next_piece = self.new_piece()
         else:
             # Swap current and held piece
-            temp = self.held_piece
+            # In this branch, held_piece is guaranteed to be str (not None)
+            assert self.held_piece is not None  # Type guard for MyPy
+            temp: str = self.held_piece
             self.held_piece = self.current_piece.shape_type
             new_piece = Tetromino(GRID_WIDTH // 2 - 1, 0, temp)
             # Validate that the swapped piece can spawn
@@ -721,7 +730,7 @@ class TetrisGame:
 
         pygame.display.flip()
 
-    def handle_menu_input(self, event: pygame.event.Event) -> None:
+    def handle_menu_input(self, event: "pygame_event.Event") -> None:
         """Handle menu input"""
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_UP:
