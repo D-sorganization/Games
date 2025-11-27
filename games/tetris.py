@@ -1085,7 +1085,7 @@ class TetrisGame:
                 setattr(self, entry["key"], not current)
                 if entry["key"] == "allow_rewind":
                     self.rewind_history.clear()
-            elif entry["type"] == "mapping" and self.joystick:
+            elif entry["type"] == "mapping" and self.controller_enabled and self.joystick:
                 self.awaiting_controller_action = entry["key"]
 
     def handle_input(self) -> None:
@@ -1207,10 +1207,14 @@ class TetrisGame:
 
     def handle_controller_event(self, event: "pygame_event.Event") -> None:
         """Translate controller events into actions"""
-        if not self.controller_enabled or self.joystick is None:
+        if self.joystick is None:
             return
 
+        # Allow binding even when controller is disabled (for settings menu)
         if self.apply_controller_binding(event):
+            return
+
+        if not self.controller_enabled:
             return
 
         if event.type == pygame.JOYBUTTONDOWN:
@@ -1240,7 +1244,8 @@ class TetrisGame:
     def handle_mouse_input(self, position: tuple[int, int]) -> None:
         """Handle mouse clicks on UI buttons"""
         if self.controls_toggle_rect.collidepoint(position):
-            self.show_controls_panel = not self.show_controls_panel
+            if self.state in [GameState.PLAYING, GameState.PAUSED]:
+                self.show_controls_panel = not self.show_controls_panel
         if self.restart_button.collidepoint(position):
             if self.state in [GameState.PLAYING, GameState.PAUSED, GameState.GAME_OVER]:
                 self.restart_game()
