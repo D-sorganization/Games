@@ -10,22 +10,59 @@ const NUM_RAYS = SCREEN_WIDTH / 2;
 const PLAYER_MOVE_SPEED = 3;
 const PLAYER_STRAFE_SPEED = 3;
 const PLAYER_MAX_HEALTH = 100;
-const PLAYER_START_AMMO = 50;
 const PLAYER_ROTATE_SPEED = 0.002;
 
 const WEAPON_BOB_SPEED = 0.15;
 const WEAPON_RECOIL_RECOVER = 5;
-const WEAPON_MUZZLE_TIME = 120;
-const WEAPON_ACCURACY = 0.18; // Radians around crosshair
-const WEAPON_RANGE = MAX_DEPTH;
 const WEAPON_RECOIL_OFFSET = -30;
+const GAMEPAD_DEADZONE = 0.18;
+const GAMEPAD_ROTATE_SPEED = 0.04;
+const GAMEPAD_MOVE_SCALE = PLAYER_MOVE_SPEED;
 
-const WEAPON_CONFIG = {
-    magSize: 10,
-    damage: 20,
-    fireCooldown: 300,
-    reloadTime: 1200
-};
+const WEAPON_TYPES = [
+    {
+        id: 'pistol',
+        displayName: 'UAC Pistol',
+        magSize: 12,
+        startingReserve: 72,
+        damage: 20,
+        pellets: 1,
+        spread: 0.16,
+        fireCooldown: 280,
+        reloadTime: 1050,
+        muzzleTime: 140,
+        recoilOffset: WEAPON_RECOIL_OFFSET,
+        range: MAX_DEPTH
+    },
+    {
+        id: 'shotgun',
+        displayName: 'Combat Shotgun',
+        magSize: 6,
+        startingReserve: 30,
+        damage: 12,
+        pellets: 7,
+        spread: 0.5,
+        fireCooldown: 900,
+        reloadTime: 1500,
+        muzzleTime: 160,
+        recoilOffset: WEAPON_RECOIL_OFFSET * 1.6,
+        range: MAX_DEPTH * 0.85
+    },
+    {
+        id: 'bfg',
+        displayName: 'BFG 2000',
+        magSize: 1,
+        startingReserve: 6,
+        damage: 160,
+        pellets: 1,
+        spread: 0.1,
+        fireCooldown: 2000,
+        reloadTime: 2100,
+        muzzleTime: 240,
+        recoilOffset: WEAPON_RECOIL_OFFSET * 1.8,
+        range: MAX_DEPTH * 1.1
+    }
+];
 
 const ENEMY_VIEW_DISTANCE = 550;
 const ENEMY_ATTACK_DISTANCE = 200;
@@ -97,10 +134,17 @@ const weapon = {
     isShooting: false,
     lastShot: 0,
     muzzleFlashUntil: 0,
-    clip: WEAPON_CONFIG.magSize,
-    reserve: PLAYER_START_AMMO - WEAPON_CONFIG.magSize,
     isReloading: false,
-    reloadStart: 0
+    reloadStart: 0,
+    currentIndex: 0,
+    ammo: {}
+};
+
+// Gamepad state
+const gamepadState = {
+    index: null,
+    buttons: {},
+    connected: false
 };
 
 // Canvas setup
@@ -138,6 +182,18 @@ document.addEventListener('keydown', (e) => {
 
     if (e.key.toLowerCase() === 'r') {
         reloadWeapon();
+    }
+
+    if (['1', '2', '3'].includes(e.key)) {
+        selectWeaponByNumber(Number(e.key));
+    }
+
+    if (e.key.toLowerCase() === 'q') {
+        cycleWeapon(-1);
+    }
+
+    if (e.key.toLowerCase() === 'f') {
+        cycleWeapon(1);
     }
 
     if (e.key === 'Escape' && gameState.running) {
@@ -183,6 +239,130 @@ document.addEventListener('visibilitychange', () => {
         togglePause(true);
     }
 });
+
+window.addEventListener('gamepadconnected', (event) => {
+    gamepadState.index = event.gamepad.index;
+    gamepadState.connected = true;
+    infoBanner.textContent = 'Gamepad connected. Use triggers to shoot and LB/RB to swap weapons.';
+    flashBanner();
+});
+
+window.addEventListener('gamepaddisconnected', () => {
+    gamepadState.connected = false;
+    gamepadState.index = null;
+    gamepadState.buttons = {};
+});
+
+function applyDeadzone(value) {
+    return Math.abs(value) < GAMEPAD_DEADZONE ? 0 : value;
+}
+
+function getActiveWeapon() {
+    return WEAPON_TYPES[weapon.currentIndex];
+}
+
+function getWeaponAmmo(weaponId) {
+    const config = WEAPON_TYPES.find(type => type.id === weaponId);
+    if (!weapon.ammo[weaponId]) {
+        weapon.ammo[weaponId] = { clip: config.magSize, reserve: config.startingReserve };
+    }
+    return weapon.ammo[weaponId];
+}
+
+function getActiveAmmo() {
+    const current = getActiveWeapon();
+    return getWeaponAmmo(current.id);
+}
+
+function setWeapon(index) {
+    const clampedIndex = (index + WEAPON_TYPES.length) % WEAPON_TYPES.length;
+    weapon.currentIndex = clampedIndex;
+    weapon.isReloading = false;
+    weapon.reloadStart = 0;
+    weapon.shootAnimOffset = 0;
+    weapon.muzzleFlashUntil = 0;
+    const selection = getActiveWeapon();
+    infoBanner.textContent = `${selection.displayName} ready. LB/RB or 1-3 to switch weapons.`;
+    flashBanner();
+}
+
+function cycleWeapon(direction) {
+    setWeapon(weapon.currentIndex + direction);
+}
+
+function selectWeaponByNumber(number) {
+    if (number >= 1 && number <= WEAPON_TYPES.length) {
+        setWeapon(number - 1);
+    }
+}
+
+function getActiveGamepad() {
+    if (!navigator.getGamepads) return null;
+
+    if (gamepadState.index !== null) {
+        const existing = navigator.getGamepads()[gamepadState.index];
+        if (existing && existing.connected) {
+            return existing;
+        }
+    }
+
+    const pads = navigator.getGamepads();
+    for (let i = 0; i < pads.length; i++) {
+        if (pads[i] && pads[i].connected) {
+            gamepadState.index = pads[i].index;
+            return pads[i];
+        }
+    }
+    return null;
+}
+
+function handleGamepadButtons(pad) {
+    const buttons = pad.buttons;
+
+    const mappings = {
+        shoot: 7, // RT
+        reload: 2, // X
+        interact: 3, // Y
+        pause: 9, // Start
+        previousWeapon: 4, // LB
+        nextWeapon: 5, // RB
+        pistol: 12, // D-pad up
+        shotgun: 15, // D-pad right
+        bfg: 13 // D-pad down
+    };
+
+    Object.entries(mappings).forEach(([action, index]) => {
+        const pressed = Boolean(buttons[index] && buttons[index].pressed);
+        const wasPressed = gamepadState.buttons[index];
+
+        if (pressed && !wasPressed) {
+            if (action === 'reload') reloadWeapon();
+            if (action === 'interact') openDoor();
+            if (action === 'pause' && gameState.running) togglePause(!gameState.paused);
+            if (action === 'previousWeapon') cycleWeapon(-1);
+            if (action === 'nextWeapon') cycleWeapon(1);
+            if (action === 'pistol') selectWeaponByNumber(1);
+            if (action === 'shotgun') selectWeaponByNumber(2);
+            if (action === 'bfg') selectWeaponByNumber(3);
+        }
+
+        gamepadState.buttons[index] = pressed;
+    });
+
+    if (buttons[mappings.shoot] && buttons[mappings.shoot].pressed && !gameState.paused && !gameState.gameOver && !gameState.won) {
+        shoot();
+    }
+}
+
+function getGamepadMovement(pad) {
+    if (!pad) return { move: 0, strafe: 0, rotate: 0 };
+
+    const forward = applyDeadzone(-(pad.axes[1] || 0)) * GAMEPAD_MOVE_SCALE;
+    const strafe = applyDeadzone(pad.axes[0] || 0) * GAMEPAD_MOVE_SCALE;
+    const rotate = applyDeadzone(pad.axes[2] || 0) * GAMEPAD_ROTATE_SPEED;
+
+    return { move: forward, strafe, rotate };
+}
 
 // Helper functions
 function castRay(rayAngle) {
@@ -308,23 +488,31 @@ function drawEnemies() {
 }
 
 function drawWeapon() {
+    const activeWeapon = getActiveWeapon();
     const weaponY = SCREEN_HEIGHT - 200 + Math.sin(weapon.bobOffset) * 10 + weapon.shootAnimOffset;
     const weaponX = SCREEN_WIDTH / 2 - 50;
 
-    // Draw simple gun
-    ctx.fillStyle = '#444';
-    ctx.fillRect(weaponX, weaponY, 100, 200);
+    const colors = {
+        pistol: { base: '#444', grip: '#666', barrel: '#222', flash: '#ffd966' },
+        shotgun: { base: '#5b3924', grip: '#3b2417', barrel: '#1d120c', flash: '#ffae42' },
+        bfg: { base: '#193f31', grip: '#2f6f5a', barrel: '#0e2720', flash: '#6bffb5' }
+    };
 
-    ctx.fillStyle = '#666';
-    ctx.fillRect(weaponX + 20, weaponY, 60, 150);
+    const palette = colors[activeWeapon.id] || colors.pistol;
 
-    ctx.fillStyle = '#222';
-    ctx.fillRect(weaponX + 35, weaponY, 30, 80);
+    ctx.fillStyle = palette.base;
+    ctx.fillRect(weaponX, weaponY, 110, 200);
+
+    ctx.fillStyle = palette.grip;
+    ctx.fillRect(weaponX + 15, weaponY, 80, 160);
+
+    ctx.fillStyle = palette.barrel;
+    ctx.fillRect(weaponX + 30, weaponY, 40, 90);
 
     // Muzzle flash
     if (weapon.muzzleFlashUntil > Date.now()) {
-        ctx.fillStyle = '#ffff00';
-        ctx.fillRect(weaponX + 25, weaponY - 20, 50, 20);
+        ctx.fillStyle = palette.flash;
+        ctx.fillRect(weaponX + 20, weaponY - 20, 60, 24);
     }
 }
 
@@ -335,10 +523,12 @@ function drawHUD() {
     ctx.fillText(`HEALTH: ${Math.max(0, player.health)}`, 20, 30);
 
     // Ammo
+    const activeWeapon = getActiveWeapon();
+    const ammo = getActiveAmmo();
     ctx.fillStyle = '#ffff00';
-    const reserveText = weapon.reserve > 0 ? ` / ${weapon.reserve}` : ' / 0';
+    const reserveText = ammo.reserve > 0 ? ` / ${ammo.reserve}` : ' / 0';
     const reloadText = weapon.isReloading ? ' (RELOADING)' : '';
-    ctx.fillText(`AMMO: ${weapon.clip}${reserveText}${reloadText}`, 20, 60);
+    ctx.fillText(`${activeWeapon.displayName.toUpperCase()}: ${ammo.clip}${reserveText}${reloadText}`, 20, 60);
 
     // Kills
     ctx.fillStyle = '#00ff00';
@@ -365,10 +555,14 @@ function updatePlayer() {
     player.speed = 0;
     player.strafeSpeed = 0;
 
-    if (keys['w']) player.speed = PLAYER_MOVE_SPEED;
-    if (keys['s']) player.speed = -PLAYER_MOVE_SPEED;
-    if (keys['a']) player.strafeSpeed = -PLAYER_STRAFE_SPEED;
-    if (keys['d']) player.strafeSpeed = PLAYER_STRAFE_SPEED;
+    if (keys['w']) player.speed += PLAYER_MOVE_SPEED;
+    if (keys['s']) player.speed -= PLAYER_MOVE_SPEED;
+    if (keys['a']) player.strafeSpeed -= PLAYER_STRAFE_SPEED;
+    if (keys['d']) player.strafeSpeed += PLAYER_STRAFE_SPEED;
+
+    player.speed += lastGamepadMovement.move;
+    player.strafeSpeed += lastGamepadMovement.strafe;
+    player.angle += lastGamepadMovement.rotate;
 
     // Calculate new position
     const newX = player.x + Math.cos(player.angle) * player.speed + Math.cos(player.angle + Math.PI / 2) * player.strafeSpeed;
@@ -438,45 +632,68 @@ function updateEnemies() {
 
 function shoot() {
     const currentTime = Date.now();
+    const config = getActiveWeapon();
+    const ammo = getActiveAmmo();
 
     if (weapon.isReloading) return;
-    if (currentTime - weapon.lastShot < WEAPON_CONFIG.fireCooldown) return;
-    if (weapon.clip <= 0) {
+    if (currentTime - weapon.lastShot < config.fireCooldown) return;
+    if (ammo.clip <= 0) {
         reloadWeapon();
         return;
     }
 
-    weapon.clip -= 1;
+    ammo.clip -= 1;
     weapon.lastShot = currentTime;
-    weapon.shootAnimOffset = WEAPON_RECOIL_OFFSET;
-    weapon.muzzleFlashUntil = currentTime + WEAPON_MUZZLE_TIME;
+    weapon.shootAnimOffset = config.recoilOffset;
+    weapon.muzzleFlashUntil = currentTime + config.muzzleTime;
 
-    // Check if we hit an enemy
-    enemies.forEach(enemy => {
-        if (enemy.health <= 0) return;
+    for (let pellet = 0; pellet < config.pellets; pellet++) {
+        const spreadStep = config.pellets === 1 ? 0 : config.spread / (config.pellets - 1);
+        const pelletAngle = player.angle - config.spread / 2 + spreadStep * pellet;
+        const accuracyWindow = Math.max(0.14, config.spread * 0.6);
 
-        const dx = enemy.x - player.x;
-        const dy = enemy.y - player.y;
-        const distance = Math.sqrt(dx * dx + dy * dy) / TILE_SIZE;
-        const angle = Math.atan2(dy, dx);
+        enemies.forEach(enemy => {
+            if (enemy.health <= 0) return;
 
-        let angleDiff = angle - player.angle;
-        while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
-        while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
+            const dx = enemy.x - player.x;
+            const dy = enemy.y - player.y;
+            const distance = Math.sqrt(dx * dx + dy * dy) / TILE_SIZE;
+            const angle = Math.atan2(dy, dx);
 
-        // Check if enemy is in crosshair
-        if (Math.abs(angleDiff) < WEAPON_ACCURACY && hasLineOfSight(angle, distance)) {
-            enemy.health -= WEAPON_CONFIG.damage;
+            let angleDiff = angle - pelletAngle;
+            while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
+            while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
 
-            if (enemy.health <= 0) {
-                player.kills++;
-                infoBanner.textContent = `Enemy defeated! ${player.kills}/${enemies.length} down.`;
-                flashBanner();
+            if (Math.abs(angleDiff) < accuracyWindow && hasLineOfSight(pelletAngle, distance, config.range)) {
+                enemy.health -= config.damage;
+
+                if (config.id === 'bfg') {
+                    enemies.forEach(splash => {
+                        if (splash === enemy || splash.health <= 0) return;
+                        const splashDx = splash.x - enemy.x;
+                        const splashDy = splash.y - enemy.y;
+                        const splashDistance = Math.sqrt(splashDx * splashDx + splashDy * splashDy);
+                        if (splashDistance < TILE_SIZE * 3) {
+                            splash.health -= Math.round(config.damage * 0.45);
+                            if (splash.health <= 0) {
+                                player.kills++;
+                                infoBanner.textContent = `Enemy defeated! ${player.kills}/${enemies.length} down.`;
+                                flashBanner();
+                            }
+                        }
+                    });
+                }
+
+                if (enemy.health <= 0) {
+                    player.kills++;
+                    infoBanner.textContent = `Enemy defeated! ${player.kills}/${enemies.length} down.`;
+                    flashBanner();
+                }
             }
-        }
-    });
+        });
+    }
 
-    if (weapon.clip === 0 && weapon.reserve > 0) {
+    if (ammo.clip === 0 && ammo.reserve > 0) {
         reloadWeapon();
     }
 }
@@ -565,18 +782,21 @@ function resetGame() {
     player.health = PLAYER_MAX_HEALTH;
     player.kills = 0;
 
-    weapon.clip = WEAPON_CONFIG.magSize;
-    weapon.reserve = PLAYER_START_AMMO - WEAPON_CONFIG.magSize;
     weapon.isReloading = false;
     weapon.reloadStart = 0;
     weapon.shootAnimOffset = 0;
     weapon.bobOffset = 0;
     weapon.muzzleFlashUntil = 0;
+    weapon.currentIndex = 0;
+    weapon.ammo = {};
+    WEAPON_TYPES.forEach(type => {
+        weapon.ammo[type.id] = { clip: type.magSize, reserve: type.startingReserve };
+    });
 
     gameState.gameOver = false;
     gameState.won = false;
     gameState.paused = false;
-    infoBanner.textContent = 'Find and eliminate all enemies. ESC pauses, R reloads.';
+    infoBanner.textContent = 'Find and eliminate all enemies. ESC pauses, R reloads, 1-3 swap weapons.';
     infoBanner.classList.add('visible');
     setTimeout(() => infoBanner.classList.remove('visible'), 1200);
 }
@@ -590,25 +810,30 @@ function restartGame() {
 }
 
 function reloadWeapon() {
+    const config = getActiveWeapon();
+    const ammo = getActiveAmmo();
+
     if (weapon.isReloading) return;
-    if (weapon.clip === WEAPON_CONFIG.magSize) return;
-    if (weapon.reserve <= 0) return;
+    if (ammo.clip === config.magSize) return;
+    if (ammo.reserve <= 0) return;
 
     weapon.isReloading = true;
     weapon.reloadStart = Date.now();
 }
 
 function finishReload() {
-    const ammoNeeded = WEAPON_CONFIG.magSize - weapon.clip;
-    const ammoToLoad = Math.min(ammoNeeded, weapon.reserve);
-    weapon.clip += ammoToLoad;
-    weapon.reserve -= ammoToLoad;
+    const config = getActiveWeapon();
+    const ammo = getActiveAmmo();
+    const ammoNeeded = config.magSize - ammo.clip;
+    const ammoToLoad = Math.min(ammoNeeded, ammo.reserve);
+    ammo.clip += ammoToLoad;
+    ammo.reserve -= ammoToLoad;
     weapon.isReloading = false;
 }
 
-function hasLineOfSight(angle, enemyDistance) {
+function hasLineOfSight(angle, enemyDistance, range) {
     const ray = castRay(angle);
-    return enemyDistance < ray.distance && enemyDistance < WEAPON_RANGE;
+    return enemyDistance < ray.distance && enemyDistance < range;
 }
 
 function flashBanner() {
@@ -618,17 +843,33 @@ function flashBanner() {
 
 // Main game loop
 let lastTime = Date.now();
+let lastGamepadMovement = { move: 0, strafe: 0, rotate: 0 };
+
+function pollGamepad() {
+    const pad = getActiveGamepad();
+
+    if (pad) {
+        gamepadState.connected = true;
+        handleGamepadButtons(pad);
+        lastGamepadMovement = getGamepadMovement(pad);
+    } else {
+        gamepadState.connected = false;
+        lastGamepadMovement = { move: 0, strafe: 0, rotate: 0 };
+    }
+}
 
 function gameLoop() {
     if (!gameState.running) return;
 
     const currentTime = Date.now();
     lastTime = currentTime;
+    pollGamepad();
 
     ctx.clearRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
     if (!gameState.gameOver && !gameState.won && !gameState.paused) {
-        if (weapon.isReloading && currentTime - weapon.reloadStart >= WEAPON_CONFIG.reloadTime) {
+        const activeWeapon = getActiveWeapon();
+        if (weapon.isReloading && currentTime - weapon.reloadStart >= activeWeapon.reloadTime) {
             finishReload();
         }
 

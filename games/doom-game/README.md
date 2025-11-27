@@ -13,7 +13,8 @@ A classic first-person shooter game built with HTML5 Canvas and JavaScript, feat
   - ESC to pause and open the in-game menu
   - E to open doors
 - **Enemy AI**: Enemies track and attack the player
-- **Combat System**: Health, ammo, reloading, and damage mechanics
+- **Combat System**: Health, ammo, reloading, weapon switching (pistol, shotgun, BFG 2000), and damage mechanics
+- **Gamepad Support**: Microsoft/Xbox-style controller mappings for movement, shooting, reloading, pausing, and swapping weapons
 - **Pause Menu**: Resume or restart without leaving the browser tab
 - **Improved HUD**: Clip and reserve ammo display plus contextual banner updates
 - **Interactive Environment**: Doors that can be opened
@@ -24,12 +25,11 @@ A classic first-person shooter game built with HTML5 Canvas and JavaScript, feat
 1. Open `index.html` in a modern web browser
 2. Click "START GAME"
 3. Use WASD to move, mouse to look around
-4. Click to shoot enemies
-5. Press **R** to reload when your clip is empty (10-round magazine)
-6. Press **E** to open doors (gray walls)
-7. Press **ESC** to pause/resume or restart mid-run
-8. Kill all 5 enemies to unlock the exit (green wall)
-9. Don't let your health reach 0!
+4. Use **1/2/3** (or **Q/F**) to swap between pistol, shotgun, and the BFG 2000
+5. Click to shoot enemies; **R** reloads, **E** opens doors, **ESC** pauses/resumes
+6. Xbox/Microsoft controller: left stick moves, right stick looks, **RT** shoots, **X** reloads, **Y** opens doors, **LB/RB** swap weapons, **Start** pauses
+7. Kill all 5 enemies to unlock the exit (green wall)
+8. Don't let your health reach 0!
 
 ## Game Elements
 
@@ -51,22 +51,23 @@ A classic first-person shooter game built with HTML5 Canvas and JavaScript, feat
 
 ## Controls Summary
 
-| Key | Action |
-|-----|--------|
-| W | Move forward |
-| S | Move backward |
-| A | Strafe left |
-| D | Strafe right |
+| Control | Action |
+|---------|--------|
+| W / S | Move forward/backward |
+| A / D | Strafe left/right |
 | Mouse | Look around |
 | Click | Shoot |
+| 1 / 2 / 3 | Select pistol / shotgun / BFG 2000 |
+| Q / F | Cycle weapons previous/next |
 | R | Reload |
-| ESC | Pause/Resume |
 | E | Open door |
+| ESC | Pause/Resume |
+| Xbox/Microsoft controller | Left stick move, right stick look, **RT** shoot, **X** reload, **Y** interact, **LB/RB** swap weapons, **Start** pauses |
 
 ## Tips
 
-- Conserve ammo - you only have 50 bullets for 5 enemies
-- Each enemy takes multiple shots to kill
+- Conserve ammo - each weapon has its own reserve (pistol-friendly, limited BFG shots)
+- Shotgun blasts multiple pellets per shot; line up close targets to maximize damage
 - Keep moving to avoid enemy fire
 - Enemies deal 10 damage per hit
 - Use doors strategically to control enemy approach
