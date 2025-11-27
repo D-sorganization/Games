@@ -1,12 +1,14 @@
 """
 Main game file for Wizard of Wor remake.
 """
-import pygame
 import sys
+from typing import NoReturn
+
+import pygame
 from constants import *
 from dungeon import Dungeon
+from enemy import Burwor, Garwor, Thorwor, Wizard, Worluk
 from player import Player
-from enemy import Burwor, Garwor, Thorwor, Worluk, Wizard
 from radar import Radar
 
 
@@ -40,7 +42,7 @@ class WizardOfWorGame:
         self.font_medium = pygame.font.Font(None, 32)
         self.font_small = pygame.font.Font(None, 24)
 
-    def start_level(self):
+    def start_level(self) -> None:
         """Start a new level."""
         self.state = "playing"
         self.dungeon = Dungeon()
@@ -55,15 +57,15 @@ class WizardOfWorGame:
         self.enemies = []
         level_config = ENEMIES_PER_LEVEL.get(min(self.level, 5), ENEMIES_PER_LEVEL[5])
 
-        for _ in range(level_config['burwor']):
+        for _ in range(level_config["burwor"]):
             pos = self.dungeon.get_random_spawn_position()
             self.enemies.append(Burwor(pos[0], pos[1]))
 
-        for _ in range(level_config['garwor']):
+        for _ in range(level_config["garwor"]):
             pos = self.dungeon.get_random_spawn_position()
             self.enemies.append(Garwor(pos[0], pos[1]))
 
-        for _ in range(level_config['thorwor']):
+        for _ in range(level_config["thorwor"]):
             pos = self.dungeon.get_random_spawn_position()
             self.enemies.append(Thorwor(pos[0], pos[1]))
 
@@ -72,14 +74,14 @@ class WizardOfWorGame:
             pos = self.dungeon.get_random_spawn_position()
             self.enemies.append(Worluk(pos[0], pos[1]))
 
-    def spawn_wizard(self):
+    def spawn_wizard(self) -> None:
         """Spawn the Wizard of Wor."""
         if not self.wizard_spawned:
             pos = self.dungeon.get_random_spawn_position()
             self.enemies.append(Wizard(pos[0], pos[1]))
             self.wizard_spawned = True
 
-    def handle_events(self):
+    def handle_events(self) -> None:
         """Handle input events."""
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -114,7 +116,7 @@ class WizardOfWorGame:
                         self.level += 1
                         self.start_level()
 
-    def update(self):
+    def update(self) -> None:
         """Update game state."""
         if self.state != "playing":
             return
@@ -163,7 +165,7 @@ class WizardOfWorGame:
             else:
                 self.state = "game_over"
 
-    def check_collisions(self):
+    def check_collisions(self) -> None:
         """Check for collisions between bullets and entities."""
         # Player bullets hitting enemies
         for bullet in self.bullets[:]:
@@ -197,7 +199,7 @@ class WizardOfWorGame:
                     self.player.take_damage()
                     break
 
-    def draw(self):
+    def draw(self) -> None:
         """Draw everything."""
         self.screen.fill(BLACK)
 
@@ -212,7 +214,7 @@ class WizardOfWorGame:
 
         pygame.display.flip()
 
-    def draw_menu(self):
+    def draw_menu(self) -> None:
         """Draw main menu."""
         title = self.font_large.render("WIZARD OF WOR", True, YELLOW)
         title_rect = title.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 3))
@@ -234,7 +236,7 @@ class WizardOfWorGame:
             self.screen.blit(text, text_rect)
             y_offset += 30
 
-    def draw_game(self):
+    def draw_game(self) -> None:
         """Draw game screen."""
         # Draw dungeon
         self.dungeon.draw(self.screen)
@@ -256,7 +258,7 @@ class WizardOfWorGame:
         # Draw UI
         self.draw_ui()
 
-    def draw_ui(self):
+    def draw_ui(self) -> None:
         """Draw user interface (score, lives, level)."""
         # Score
         score_text = self.font_medium.render(f"SCORE: {self.score}", True, WHITE)
@@ -275,7 +277,7 @@ class WizardOfWorGame:
         enemies_text = self.font_small.render(f"Enemies: {alive_enemies}", True, CYAN)
         self.screen.blit(enemies_text, (RADAR_X, RADAR_Y + RADAR_SIZE + 10))
 
-    def draw_level_complete(self):
+    def draw_level_complete(self) -> None:
         """Draw level complete screen."""
         self.draw_game()  # Draw game in background
 
@@ -298,7 +300,7 @@ class WizardOfWorGame:
         continue_rect = continue_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 50))
         self.screen.blit(continue_text, continue_rect)
 
-    def draw_game_over(self):
+    def draw_game_over(self) -> None:
         """Draw game over screen."""
         title = self.font_large.render("GAME OVER", True, RED)
         title_rect = title.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 3))
@@ -320,7 +322,7 @@ class WizardOfWorGame:
         menu_rect = menu_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 130))
         self.screen.blit(menu_text, menu_rect)
 
-    def run(self):
+    def run(self) -> NoReturn:
         """Main game loop."""
         while self.running:
             self.handle_events()
@@ -332,7 +334,7 @@ class WizardOfWorGame:
         sys.exit()
 
 
-def main():
+def main() -> NoReturn:
     """Entry point."""
     game = WizardOfWorGame()
     game.run()

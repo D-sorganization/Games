@@ -1,9 +1,11 @@
 """
 Player character for Wizard of Wor.
 """
+from typing import Any
+
 import pygame
-from constants import *
 from bullet import Bullet
+from constants import *
 
 
 class Player:
@@ -22,7 +24,7 @@ class Player:
         self.shoot_cooldown = 0
         self.shoot_delay = 15  # Frames between shots
 
-    def update(self, keys, dungeon):
+    def update(self, keys: Any, dungeon: Any) -> None:
         """Update player based on keyboard input."""
         if not self.alive:
             return
@@ -64,7 +66,7 @@ class Player:
         if self.shoot_cooldown > 0:
             self.shoot_cooldown -= 1
 
-    def shoot(self):
+    def shoot(self) -> Bullet | None:
         """Create a bullet if cooldown allows."""
         if self.shoot_cooldown == 0 and self.alive:
             self.shoot_cooldown = self.shoot_delay
@@ -74,11 +76,11 @@ class Player:
             return Bullet(bullet_x, bullet_y, self.direction, YELLOW, True)
         return None
 
-    def take_damage(self):
+    def take_damage(self) -> None:
         """Player takes damage."""
         self.alive = False
 
-    def draw(self, screen):
+    def draw(self, screen: pygame.Surface) -> None:
         """Draw the player."""
         if self.alive:
             # Draw player body

@@ -2,6 +2,8 @@
 Dungeon/Maze generation and management for Wizard of Wor.
 """
 
+import random
+
 import pygame
 from constants import *
 
@@ -20,7 +22,7 @@ class Dungeon:
         # Build classic Wizard of Wor style maze
         self._build_classic_maze()
 
-    def _build_classic_maze(self):
+    def _build_classic_maze(self) -> None:
         """Build a maze similar to classic Wizard of Wor."""
         # Border walls
         for i in range(self.rows):
@@ -63,7 +65,7 @@ class Dungeon:
         self.grid[mid_row - 2][mid_col] = 1
         self.grid[mid_row + 2][mid_col] = 1
 
-    def is_wall(self, x, y):
+    def is_wall(self, x: float, y: float) -> bool:
         """Check if a position contains a wall."""
         # Convert pixel coordinates to grid coordinates
         grid_x = int((x - GAME_AREA_X) // CELL_SIZE)
@@ -73,7 +75,7 @@ class Dungeon:
             return self.grid[grid_y][grid_x] == 1
         return True  # Out of bounds counts as wall
 
-    def can_move_to(self, rect):
+    def can_move_to(self, rect: pygame.Rect) -> bool:
         """Check if a rectangle can move to a position without hitting walls."""
         # Check corners of the rectangle
         corners = [
@@ -88,10 +90,8 @@ class Dungeon:
                 return False
         return True
 
-    def get_random_spawn_position(self):
+    def get_random_spawn_position(self) -> tuple[int, int]:
         """Get a random valid spawn position in the dungeon."""
-        import random
-
         while True:
             grid_x = random.randint(2, self.cols - 3)
             grid_y = random.randint(2, self.rows - 3)
@@ -101,7 +101,7 @@ class Dungeon:
                 y = GAME_AREA_Y + grid_y * CELL_SIZE + CELL_SIZE // 2
                 return (x, y)
 
-    def draw(self, screen):
+    def draw(self, screen: pygame.Surface) -> None:
         """Draw the dungeon walls."""
         for i in range(self.rows):
             for j in range(self.cols):

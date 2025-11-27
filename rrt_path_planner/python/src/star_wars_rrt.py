@@ -6,7 +6,6 @@ Enhanced performance with real-time rendering and GPU acceleration
 
 import random
 from dataclasses import dataclass
-from typing import List, Optional, Tuple
 
 import numpy as np
 import pygame
@@ -23,7 +22,7 @@ class Obstacle:
     type: int  # 0=sphere, 1=cube
     position: np.ndarray
     size: float
-    color: Tuple[float, float, float]
+    color: tuple[float, float, float]
 
 
 @dataclass
@@ -33,14 +32,15 @@ class Ship:
     position: np.ndarray
     orientation: np.ndarray
     velocity: np.ndarray
-    model: Optional[trimesh.Trimesh] = None
-    color: Tuple[float, float, float] = (0.8, 0.8, 0.8)
+    model: trimesh.Trimesh | None = None
+    color: tuple[float, float, float] = (0.8, 0.8, 0.8)
 
 
 class RRTPlanner:
     """High-performance RRT path planner with GPU acceleration"""
 
-    def __init__(self, bounds: np.ndarray, max_iterations: int = 5000):
+    def __init__(self, bounds: np.ndarray, max_iterations: int = 5000) -> None:
+        """Initialize RRT planner with search bounds and iteration limit"""
         self.bounds = bounds
         self.max_iterations = max_iterations
         self.step_size = 0.05
@@ -48,8 +48,8 @@ class RRTPlanner:
         self.goal_bias = 0.2
 
     def plan_path(
-        self, start: np.ndarray, goal: np.ndarray, obstacles: List[Obstacle]
-    ) -> Optional[np.ndarray]:
+        self, start: np.ndarray, goal: np.ndarray, obstacles: list[Obstacle]
+    ) -> np.ndarray | None:
         """Plan path using RRT algorithm"""
         nodes = [np.append(start, -1)]  # [x, y, z, parent_index]
 
@@ -89,18 +89,17 @@ class RRTPlanner:
 
         return None
 
-    def _check_collision(self, point: np.ndarray, obstacles: List[Obstacle]) -> bool:
+    def _check_collision(self, point: np.ndarray, obstacles: list[Obstacle]) -> bool:
         """Fast collision checking using vectorized operations"""
         for obstacle in obstacles:
             if obstacle.type == 0:  # Sphere
                 if np.linalg.norm(point - obstacle.position) <= obstacle.size:
                     return True
-            else:  # Cube
-                if np.all(np.abs(point - obstacle.position) <= obstacle.size / 2):
-                    return True
+            elif np.all(np.abs(point - obstacle.position) <= obstacle.size / 2):
+                return True
         return False
 
-    def _extract_path(self, nodes: List[np.ndarray], goal_idx: int) -> np.ndarray:
+    def _extract_path(self, nodes: list[np.ndarray], goal_idx: int) -> np.ndarray:
         """Extract path from RRT tree"""
         path = []
         current_idx = goal_idx
@@ -115,7 +114,8 @@ class RRTPlanner:
 class PursuitAI:
     """Intelligent pursuit AI with advanced behavior"""
 
-    def __init__(self, bounds: np.ndarray):
+    def __init__(self, bounds: np.ndarray) -> None:
+        """Initialize pursuit AI with search bounds"""
         self.bounds = bounds
         self.evasion_radius = 0.15
         self.capture_radius = 0.05
@@ -123,7 +123,7 @@ class PursuitAI:
         self.target_speed = 0.015
 
     def update_target_behavior(
-        self, target: Ship, pursuer: Ship, obstacles: List[Obstacle]
+        self, target: Ship, pursuer: Ship, obstacles: list[Obstacle]
     ) -> np.ndarray:
         """Update target ship behavior (evade or move to goal)"""
         distance = np.linalg.norm(target.position - pursuer.position)
@@ -163,7 +163,8 @@ class PursuitAI:
 class StarWarsRenderer:
     """High-performance 3D renderer using OpenGL"""
 
-    def __init__(self, width: int = 1600, height: int = 900):
+    def __init__(self, width: int = 1600, height: int = 900) -> None:
+        """Initialize renderer with window dimensions"""
         pygame.init()
         pygame.display.set_mode((width, height), DOUBLEBUF | OPENGL)
         pygame.display.set_caption("Star Wars RRT Path Planner - Python")
@@ -188,11 +189,11 @@ class StarWarsRenderer:
 
     def render_frame(
         self,
-        ships: List[Ship],
-        obstacles: List[Obstacle],
-        paths: List[np.ndarray],
+        ships: list[Ship],
+        obstacles: list[Obstacle],
+        paths: list[np.ndarray],
         camera_mode: str = "cinematic",
-    ):
+    ) -> None:
         """Render a single frame at 60 FPS"""
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glLoadIdentity()
@@ -218,7 +219,7 @@ class StarWarsRenderer:
 
         pygame.display.flip()
 
-    def _update_camera(self, mode: str, ships: List[Ship]):
+    def _update_camera(self, mode: str, ships: list[Ship]) -> None:
         """Update camera position based on mode"""
         if mode == "cinematic":
             gluLookAt(
@@ -249,7 +250,7 @@ class StarWarsRenderer:
                 1,
             )
 
-    def _render_starfield(self):
+    def _render_starfield(self) -> None:
         """Render starfield with varying star sizes"""
         glDisable(GL_LIGHTING)
         glPointSize(2.0)
@@ -261,7 +262,7 @@ class StarWarsRenderer:
         glEnd()
         glEnable(GL_LIGHTING)
 
-    def _render_obstacle(self, obstacle: Obstacle):
+    def _render_obstacle(self, obstacle: Obstacle) -> None:
         """Render obstacle with proper lighting"""
         glPushMatrix()
         glTranslatef(obstacle.position[0], obstacle.position[1], obstacle.position[2])
@@ -308,7 +309,7 @@ class StarWarsRenderer:
 
         glPopMatrix()
 
-    def _render_ship(self, ship: Ship):
+    def _render_ship(self, ship: Ship) -> None:
         """Render ship with proper orientation"""
         glPushMatrix()
         glTranslatef(ship.position[0], ship.position[1], ship.position[2])
@@ -326,7 +327,7 @@ class StarWarsRenderer:
 
         glPopMatrix()
 
-    def _render_simple_ship(self):
+    def _render_simple_ship(self) -> None:
         """Render simple ship geometry"""
         size = 0.05
         glBegin(GL_TRIANGLES)
@@ -336,7 +337,7 @@ class StarWarsRenderer:
         glVertex3f(size, size / 2, 0)  # Left wing
         glEnd()
 
-    def _render_path(self, path: np.ndarray):
+    def _render_path(self, path: np.ndarray) -> None:
         """Render path as line"""
         glDisable(GL_LIGHTING)
         glColor3f(1.0, 1.0, 0.0)  # Yellow path
@@ -351,7 +352,8 @@ class StarWarsRenderer:
 class StarWarsRRTApp:
     """Main application class"""
 
-    def __init__(self):
+    def __init__(self) -> None:
+        """Initialize the Star Wars RRT application"""
         self.bounds = np.array([-1.0, 1.0, -0.6, 0.6, -0.3, 0.3])
         self.planner = RRTPlanner(self.bounds)
         self.pursuit_ai = PursuitAI(self.bounds)
@@ -380,7 +382,7 @@ class StarWarsRRTApp:
 
         return models
 
-    def setup_scenario(self, mode: str = "single"):
+    def setup_scenario(self, mode: str = "single") -> None:
         """Setup the scenario"""
         self.mode = mode
 
@@ -431,7 +433,7 @@ class StarWarsRRTApp:
             self.ships = [pursuer, target]
             self.paths = []
 
-    def _generate_obstacles(self, num_obstacles: int) -> List[Obstacle]:
+    def _generate_obstacles(self, num_obstacles: int) -> list[Obstacle]:
         """Generate random obstacles"""
         obstacles = []
         for _ in range(num_obstacles):
@@ -454,7 +456,7 @@ class StarWarsRRTApp:
 
         return obstacles
 
-    def run(self):
+    def run(self) -> None:
         """Main game loop"""
         print("🚀 Starting Star Wars RRT Path Planner - Python Version")
         print("Controls:")
@@ -474,8 +476,8 @@ class StarWarsRRTApp:
                         self.mode = "pursuit" if self.mode == "single" else "single"
                         self.setup_scenario(self.mode)
                     elif event.key == K_c:
-                        # Cycle camera modes
-                        pass
+                        # Cycle camera modes (not yet implemented)
+                        continue
 
             # Update game state
             if self.mode == "pursuit":
@@ -489,7 +491,7 @@ class StarWarsRRTApp:
 
         pygame.quit()
 
-    def _update_pursuit(self):
+    def _update_pursuit(self) -> None:
         """Update pursuit scenario"""
         if len(self.ships) >= 2:
             pursuer = self.ships[0]
@@ -514,7 +516,7 @@ class StarWarsRRTApp:
                 target.color = (1.0, 0.0, 0.0)  # Turn red
 
 
-def main():
+def main() -> None:
     """Main entry point"""
     app = StarWarsRRTApp()
     app.setup_scenario("single")
