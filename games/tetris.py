@@ -8,6 +8,7 @@ import pygame
 import random
 import sys
 from enum import Enum
+from typing import List, Tuple, Optional
 
 # Initialize Pygame
 pygame.init()
@@ -77,7 +78,9 @@ class GameState(Enum):
 
 class Particle:
     """Visual particle effect"""
-    def __init__(self, x, y, color, velocity_x, velocity_y):
+    def __init__(self, x: float, y: float, color: Tuple[int, int, int],
+                 velocity_x: float, velocity_y: float) -> None:
+        """Initialize particle with position, color, and velocity"""
         self.x = x
         self.y = y
         self.color = color
@@ -86,7 +89,7 @@ class Particle:
         self.lifetime = 60
         self.alpha = 255
 
-    def update(self):
+    def update(self) -> None:
         """Update particle position and lifetime"""
         self.x += self.velocity_x
         self.y += self.velocity_y
@@ -94,14 +97,16 @@ class Particle:
         self.lifetime -= 1
         self.alpha = int((self.lifetime / 60) * 255)
 
-    def is_alive(self):
+    def is_alive(self) -> bool:
         """Check if particle is still alive"""
         return self.lifetime > 0
 
 
 class ScorePopup:
     """Score notification popup"""
-    def __init__(self, text, x, y, color=GOLD):
+    def __init__(self, text: str, x: int, y: int,
+                 color: Tuple[int, int, int] = GOLD) -> None:
+        """Initialize score popup with text, position, and color"""
         self.text = text
         self.x = x
         self.y = y
@@ -110,13 +115,13 @@ class ScorePopup:
         self.lifetime = 90
         self.alpha = 255
 
-    def update(self):
+    def update(self) -> None:
         """Update popup position and lifetime"""
         self.y -= 1
         self.lifetime -= 1
         self.alpha = int((self.lifetime / 90) * 255)
 
-    def is_alive(self):
+    def is_alive(self) -> bool:
         """Check if popup is still alive"""
         return self.lifetime > 0
 
@@ -124,7 +129,8 @@ class ScorePopup:
 class Tetromino:
     """Represents a Tetris piece"""
 
-    def __init__(self, x, y, shape_type):
+    def __init__(self, x: int, y: int, shape_type: str) -> None:
+        """Initialize tetromino with position and shape type"""
         self.x = x
         self.y = y
         self.shape_type = shape_type
@@ -132,19 +138,19 @@ class Tetromino:
         self.color = SHAPE_COLORS[shape_type]
         self.rotation = 0
 
-    def get_rotated_shape(self):
+    def get_rotated_shape(self) -> List[List[int]]:
         """Get the current rotated shape"""
         shape = self.shape
         for _ in range(self.rotation % 4):
             shape = self._rotate_clockwise(shape)
         return shape
 
-    def _rotate_clockwise(self, shape):
+    def _rotate_clockwise(self, shape: List[List[int]]) -> List[List[int]]:
         """Rotate a shape 90 degrees clockwise"""
         return [[shape[y][x] for y in range(len(shape) - 1, -1, -1)]
                 for x in range(len(shape[0]))]
 
-    def rotate(self):
+    def rotate(self) -> None:
         """Rotate the tetromino"""
         self.rotation = (self.rotation + 1) % 4
 
@@ -152,7 +158,8 @@ class Tetromino:
 class TetrisGame:
     """Main Tetris game class"""
 
-    def __init__(self):
+    def __init__(self) -> None:
+        """Initialize the Tetris game with display and initial state"""
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         pygame.display.set_caption("Enhanced Tetris")
         self.clock = pygame.time.Clock()
@@ -165,7 +172,7 @@ class TetrisGame:
         self.starting_level = 1
         self.reset_game()
 
-    def reset_game(self):
+    def reset_game(self) -> None:
         """Reset the game state"""
         self.grid = [[BLACK for _ in range(GRID_WIDTH)] for _ in range(GRID_HEIGHT)]
         self.current_piece = self.new_piece()
@@ -187,12 +194,13 @@ class TetrisGame:
         self.total_triples = 0
         self.total_tetrises = 0
 
-    def new_piece(self):
+    def new_piece(self) -> Tetromino:
         """Create a new random tetromino"""
         shape_type = random.choice(list(SHAPES.keys()))
         return Tetromino(GRID_WIDTH // 2 - 1, 0, shape_type)
 
-    def valid_move(self, piece, x_offset=0, y_offset=0, rotation_offset=0):
+    def valid_move(self, piece: Tetromino, x_offset: int = 0,
+                   y_offset: int = 0, rotation_offset: int = 0) -> bool:
         """Check if a move is valid"""
         test_piece = Tetromino(piece.x + x_offset, piece.y + y_offset, piece.shape_type)
         test_piece.rotation = (piece.rotation + rotation_offset) % 4
@@ -205,7 +213,11 @@ class TetrisGame:
                     grid_y = test_piece.y + y
 
                     # Check boundaries
-                    if grid_x < 0 or grid_x >= GRID_WIDTH or grid_y >= GRID_HEIGHT:
+                    if grid_x < 0:
+                        return False
+                    if grid_x >= GRID_WIDTH:
+                        return False
+                    if grid_y >= GRID_HEIGHT:
                         return False
 
                     # Check collision with existing blocks
@@ -214,7 +226,7 @@ class TetrisGame:
 
         return True
 
-    def hold_piece(self):
+    def hold_piece(self) -> None:
         """Hold the current piece"""
         if not self.can_hold:
             return
@@ -231,7 +243,7 @@ class TetrisGame:
 
         self.can_hold = False
 
-    def lock_piece(self):
+    def lock_piece(self) -> None:
         """Lock the current piece into the grid"""
         shape = self.current_piece.get_rotated_shape()
 
@@ -259,7 +271,7 @@ class TetrisGame:
             self.game_over = True
             self.state = GameState.GAME_OVER
 
-    def create_particles(self, row):
+    def create_particles(self, row: int) -> None:
         """Create particle effects for cleared line"""
         for x in range(GRID_WIDTH):
             color = self.grid[row][x]
@@ -271,7 +283,7 @@ class TetrisGame:
                     vy = random.uniform(-5, -2)
                     self.particles.append(Particle(px, py, color, vx, vy))
 
-    def clear_lines(self):
+    def clear_lines(self) -> None:
         """Clear completed lines and update score"""
         lines_to_clear = []
 
@@ -344,7 +356,7 @@ class TetrisGame:
             # Reset combo if no lines cleared
             self.combo = 0
 
-    def get_line_clear_text(self, num_lines):
+    def get_line_clear_text(self, num_lines: int) -> str:
         """Get text description for line clear"""
         if num_lines == 1:
             return "SINGLE!"
@@ -356,7 +368,7 @@ class TetrisGame:
             return "TETRIS!"
         return ""
 
-    def hard_drop(self):
+    def hard_drop(self) -> None:
         """Drop the piece instantly to the bottom"""
         drop_distance = 0
         while self.valid_move(self.current_piece, y_offset=1):
@@ -366,7 +378,7 @@ class TetrisGame:
         self.score += drop_distance * 2
         self.lock_piece()
 
-    def draw_grid(self):
+    def draw_grid(self) -> None:
         """Draw the game grid"""
         # Draw the play area background
         pygame.draw.rect(self.screen, DARK_GRAY,
@@ -402,7 +414,8 @@ class TetrisGame:
                         (TOP_LEFT_X - 2, TOP_LEFT_Y - 2,
                          PLAY_WIDTH + 4, PLAY_HEIGHT + 4), 3)
 
-    def draw_piece(self, piece, offset_x=0, offset_y=0, alpha=255):
+    def draw_piece(self, piece: Tetromino, offset_x: int = 0,
+                   offset_y: int = 0, alpha: int = 255) -> None:
         """Draw a tetromino piece"""
         shape = piece.get_rotated_shape()
 
@@ -423,7 +436,7 @@ class TetrisGame:
                     pygame.draw.rect(self.screen, lighter,
                                    (px, py, GRID_SIZE - 1, GRID_SIZE - 1), 2)
 
-    def draw_ghost_piece(self):
+    def draw_ghost_piece(self) -> None:
         """Draw a ghost piece showing where the current piece will land"""
         ghost = Tetromino(self.current_piece.x, self.current_piece.y,
                          self.current_piece.shape_type)
@@ -441,7 +454,8 @@ class TetrisGame:
                     pygame.draw.rect(self.screen, GRAY,
                                    (px, py, GRID_SIZE - 1, GRID_SIZE - 1), 2)
 
-    def draw_mini_piece(self, shape_type, x, y, size=20):
+    def draw_mini_piece(self, shape_type: Optional[str],
+                        x: int, y: int, size: int = 20) -> None:
         """Draw a small preview piece"""
         if shape_type is None:
             return
@@ -457,7 +471,7 @@ class TetrisGame:
                                     y + row_idx * size,
                                     size - 1, size - 1))
 
-    def draw_next_piece(self):
+    def draw_next_piece(self) -> None:
         """Draw the next piece preview"""
         # Panel background
         panel_x = TOP_LEFT_X + PLAY_WIDTH + 20
@@ -473,7 +487,7 @@ class TetrisGame:
 
         self.draw_mini_piece(self.next_piece.shape_type, panel_x + 60, panel_y + 50, 25)
 
-    def draw_held_piece(self):
+    def draw_held_piece(self) -> None:
         """Draw the held piece preview"""
         panel_x = TOP_LEFT_X + PLAY_WIDTH + 20
         panel_y = TOP_LEFT_Y + 140
@@ -494,7 +508,7 @@ class TetrisGame:
             lock_text = self.tiny_font.render("(used)", True, GRAY)
             self.screen.blit(lock_text, (panel_x + 70, panel_y + 100))
 
-    def draw_stats(self):
+    def draw_stats(self) -> None:
         """Draw game statistics"""
         panel_x = TOP_LEFT_X + PLAY_WIDTH + 20
         panel_y = TOP_LEFT_Y + 280
@@ -519,7 +533,7 @@ class TetrisGame:
                 self.screen.blit(value_text, (panel_x + 100, y_offset))
             y_offset += 30
 
-    def draw_controls(self):
+    def draw_controls(self) -> None:
         """Draw control instructions"""
         controls = [
             ("←/→", "Move"),
@@ -545,7 +559,7 @@ class TetrisGame:
             self.screen.blit(action_text, (panel_x + 80, y_offset + 5))
             y_offset += 30
 
-    def draw_particles(self):
+    def draw_particles(self) -> None:
         """Draw particle effects"""
         for particle in self.particles[:]:
             if particle.is_alive():
@@ -558,7 +572,7 @@ class TetrisGame:
             else:
                 self.particles.remove(particle)
 
-    def draw_score_popups(self):
+    def draw_score_popups(self) -> None:
         """Draw score notification popups"""
         for popup in self.score_popups[:]:
             if popup.is_alive():
@@ -571,7 +585,7 @@ class TetrisGame:
             else:
                 self.score_popups.remove(popup)
 
-    def draw_menu(self):
+    def draw_menu(self) -> None:
         """Draw the level selection menu"""
         self.screen.fill(BLACK)
 
@@ -612,7 +626,7 @@ class TetrisGame:
         hint_rect = hint_text.get_rect(center=(SCREEN_WIDTH // 2, 600))
         self.screen.blit(hint_text, hint_rect)
 
-    def draw(self):
+    def draw(self) -> None:
         """Draw everything"""
         if self.state == GameState.MENU:
             self.draw_menu()
@@ -679,7 +693,7 @@ class TetrisGame:
 
         pygame.display.flip()
 
-    def handle_menu_input(self, event):
+    def handle_menu_input(self, event: pygame.event.Event) -> None:
         """Handle menu input"""
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_UP:
@@ -694,7 +708,7 @@ class TetrisGame:
                 self.reset_game()
                 self.state = GameState.PLAYING
 
-    def handle_input(self):
+    def handle_input(self) -> None:
         """Handle player input"""
         keys = pygame.key.get_pressed()
 
@@ -713,7 +727,7 @@ class TetrisGame:
                     self.score += 1
                 pygame.time.wait(50)
 
-    def run(self):
+    def run(self) -> None:
         """Main game loop"""
         while True:
             if self.state == GameState.PLAYING:
