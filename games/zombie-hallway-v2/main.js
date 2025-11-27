@@ -13,8 +13,8 @@ const FIREBALL_DAMAGE = 15;
 const FIREBALL_SPEED = 12;
 const FIREBALL_COOLDOWN = 2.3;
 const SHOOT_COOLDOWN = 0.35;
-const BASE_FOV = 65 * (Math.PI / 180);
-const AIM_FOV = 45 * (Math.PI / 180);
+const BASE_FOV = 65;
+const AIM_FOV = 45;
 
 let scene, camera, renderer, controls;
 let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false, canJump = false, isSprinting = false;

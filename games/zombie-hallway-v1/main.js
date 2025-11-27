@@ -12,8 +12,8 @@ const FIREBALL_SPEED = 14;
 const FIREBALL_COOLDOWN = 2.5;
 const SHOOT_COOLDOWN = 0.35;
 const AMMO_MAX = 60;
-const AIM_FOV = 45 * (Math.PI / 180);
-const BASE_FOV = 70 * (Math.PI / 180);
+const AIM_FOV = 45;
+const BASE_FOV = 70;
 
 let scene, camera, renderer, controls;
 let worldBoxes = [];
@@ -189,12 +189,13 @@ function updateEnemies(delta) {
     const direction = new THREE.Vector3().subVectors(playerPos, enemy.group.position);
     direction.y = 0; // prevent upward drift
     if (direction.lengthSq() < 0.0001) return;
+    const distance = direction.length();
     direction.normalize();
     const moveSpeed = enemy.isBoss ? 4 : 5;
     enemy.group.position.addScaledVector(direction, moveSpeed * delta);
 
     // Melee damage
-    if (direction.length() < 1.5) {
+    if (distance < 1.5) {
       const now = clock.getElapsedTime();
       if (now - enemy.lastAttack > 1) {
         applyDamage(enemy.isBoss ? BOSS_DAMAGE : ZOMBIE_DAMAGE);

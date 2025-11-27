@@ -18,8 +18,8 @@ const weaponStats = {
   pistol: { damage: PISTOL_DAMAGE, cooldown: SHOOT_COOLDOWN },
   rifle: { damage: RIFLE_DAMAGE, cooldown: RIFLE_COOLDOWN },
 };
-const AIM_FOV = 45 * (Math.PI / 180);
-const BASE_FOV = 70 * (Math.PI / 180);
+const AIM_FOV = 45;
+const BASE_FOV = 70;
 
 let scene, camera, renderer, controls;
 let worldBoxes = [];
@@ -205,12 +205,13 @@ function updateEnemies(delta) {
     const direction = new THREE.Vector3().subVectors(playerPos, enemy.group.position);
     direction.y = 0; // prevent upward drift
     if (direction.lengthSq() < 0.0001) return;
+    const distance = direction.length();
     direction.normalize();
     const moveSpeed = enemy.isBoss ? 4 : 5;
     enemy.group.position.addScaledVector(direction, moveSpeed * delta);
 
     // Melee damage
-    if (direction.length() < 1.5) {
+    if (distance < 1.5) {
       const now = clock.getElapsedTime();
       if (now - enemy.lastAttack > 1) {
         applyDamage(enemy.isBoss ? BOSS_DAMAGE : ZOMBIE_DAMAGE);
