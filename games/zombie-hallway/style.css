@@ -1,0 +1,127 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  overflow: hidden;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  color: #f2f2f2;
+  background: #050505;
+}
+
+canvas {
+  display: block;
+}
+
+#hud {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  background: rgba(10, 10, 10, 0.65);
+  padding: 12px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+  z-index: 5;
+}
+
+#hud .hud-row + .hud-row {
+  margin-top: 6px;
+}
+
+.label {
+  color: #9ed8ff;
+  font-weight: 600;
+  margin-right: 6px;
+}
+
+.value,
+#health-value {
+  color: #f7f7f7;
+  font-weight: 500;
+}
+
+#instructions {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.9), rgba(24, 48, 72, 0.65));
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: 24px;
+  z-index: 10;
+}
+
+#instructions h1 {
+  font-size: 2.6rem;
+  letter-spacing: 1px;
+  margin-bottom: 16px;
+}
+
+#instructions p {
+  margin: 6px 0;
+  font-size: 1.05rem;
+  color: #d4e7ff;
+}
+
+#instructions button {
+  margin-top: 18px;
+  padding: 12px 18px;
+  border: none;
+  background: #4caf50;
+  color: #fff;
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+}
+
+#instructions button:hover {
+  background: #43a047;
+}
+
+#reticle {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  z-index: 4;
+}
+
+#reticle span {
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.7);
+  border-radius: 50%;
+  transform: translateY(-1px);
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+#reticle span.aiming {
+  border-color: #ff8a65;
+  transform: translateY(-1px) scale(1.2);
+}
+
+#damage-overlay {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0) 40%, rgba(185, 35, 35, 0.45));
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s ease;
+  z-index: 6;
+}
+
+#damage-overlay.active {
+  opacity: 1;
+}
+
+#hud.hidden,
+#reticle.hidden,
+#instructions.hidden {
+  display: none;
+}

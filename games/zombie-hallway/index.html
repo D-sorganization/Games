@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Zombie Hallway</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div id="hud">
+      <div class="hud-row">
+        <span class="label">Health:</span>
+        <span id="health-value">100</span>
+      </div>
+      <div class="hud-row">
+        <span class="label">Weapon:</span>
+        <span class="value">Pistol (10 dmg)</span>
+      </div>
+      <div class="hud-row">
+        <span class="label">Objective:</span>
+        <span class="value">Avoid zombies, reach the boss, and survive.</span>
+      </div>
+    </div>
+
+    <div id="instructions">
+      <h1>Zombie Hallway</h1>
+      <p>Left click to aim &amp; look around</p>
+      <p>Right click to fire the pistol (10 damage)</p>
+      <p>WASD to move, space to jump</p>
+      <p>Stay out of melee range and avoid fireballs!</p>
+      <button id="start">Enter the hallway</button>
+    </div>
+
+    <div id="reticle"><span></span></div>
+    <div id="damage-overlay"></div>
+
+    <script type="module" src="main.js"></script>
+  </body>
+</html>

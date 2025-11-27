@@ -9,6 +9,7 @@ A collection of fun game projects and interactive simulations.
 - **Tetris** (`games/tetris.py`) - Classic Tetris game implementation in Python
 - **Doom-like Game** (`games/doom-game/`) - A Doom-inspired first-person shooter game in JavaScript
 - **Wizard of Wor** (`games/wizard_of_wor/`) - Remake of the classic Wizard of Wor arcade game
+- **Zombie Hallway** (`games/zombie-hallway/`) - FPS-style hallway run with zombies, a boss, and cover buildings
 
 ### Simulations
 
