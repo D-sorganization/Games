@@ -7,7 +7,7 @@ A fully featured Tetris implementation with levels, scoring, and modern features
 import random
 import sys
 from enum import Enum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import pygame
 
@@ -245,8 +245,7 @@ class TetrisGame:
         else:
             # Swap current and held piece
             # In this branch, held_piece is guaranteed to be str (not None)
-            assert self.held_piece is not None  # Type guard for MyPy
-            temp: str = self.held_piece
+            temp = cast(str, self.held_piece)
             self.held_piece = self.current_piece.shape_type
             new_piece = Tetromino(GRID_WIDTH // 2 - 1, 0, temp)
             # Validate that the swapped piece can spawn
