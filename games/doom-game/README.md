@@ -10,8 +10,10 @@ A classic first-person shooter game built with HTML5 Canvas and JavaScript, feat
   - Mouse for looking around
   - Click to shoot
   - E to open doors
-- **Enemy AI**: Enemies track and attack the player
+- **Enemy AI**: Enemies track and attack the player with new variants (dinosaurs, demons, raiders)
 - **Combat System**: Health, ammo, and damage mechanics
+- **Map Overlay**: Toggleable minimap to help with navigation
+- **Weapon Handling**: Ability to holster and re-draw your weapon
 - **Interactive Environment**: Doors that can be opened
 - **Win/Lose Conditions**: Eliminate all enemies to reach the exit and win
 
@@ -22,7 +24,7 @@ A classic first-person shooter game built with HTML5 Canvas and JavaScript, feat
 3. Use WASD to move, mouse to look around
 4. Click to shoot enemies (you have 50 bullets)
 5. Press E to open doors (gray walls)
-6. Kill all 5 enemies to unlock the exit (green wall)
+6. Kill all enemies to unlock the exit (green wall)
 7. Don't let your health reach 0!
 
 ## Game Elements
@@ -30,7 +32,7 @@ A classic first-person shooter game built with HTML5 Canvas and JavaScript, feat
 - **Brown Walls**: Solid obstacles
 - **Gray Walls**: Doors (press E to open)
 - **Green Wall**: Exit (only accessible after killing all enemies)
-- **Red Monsters**: Enemies that chase and shoot at you
+- **Enemies**: Demons, dinosaurs, and raiders that chase and shoot at you
 - **Health**: Starts at 100, decreases when enemies attack
 - **Ammo**: Starts at 50 bullets
 
@@ -54,13 +56,15 @@ A classic first-person shooter game built with HTML5 Canvas and JavaScript, feat
 | Mouse | Look around |
 | Click | Shoot |
 | E | Open door |
+| H | Holster/draw weapon |
+| M | Toggle minimap |
 
 ## Tips
 
-- Conserve ammo - you only have 50 bullets for 5 enemies
+- Conserve ammo - you only have 50 bullets for 4 enemies
 - Each enemy takes multiple shots to kill
 - Keep moving to avoid enemy fire
-- Enemies deal 10 damage per hit
+- Enemies deal varied damage based on their type
 - Use doors strategically to control enemy approach
 
 Enjoy the game!
