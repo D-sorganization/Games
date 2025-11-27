@@ -4,11 +4,11 @@ Enhanced Tetris Game Clone
 A fully featured Tetris implementation with levels, scoring, and modern features
 """
 
-import pygame
 import random
 import sys
 from enum import Enum
-from typing import List, Tuple, Optional
+
+import pygame
 
 # Initialize Pygame
 pygame.init()
@@ -42,29 +42,29 @@ SILVER = (192, 192, 192)
 
 # Tetromino shapes
 SHAPES = {
-    'I': [[1, 1, 1, 1]],
-    'O': [[1, 1],
+    "I": [[1, 1, 1, 1]],
+    "O": [[1, 1],
           [1, 1]],
-    'T': [[0, 1, 0],
+    "T": [[0, 1, 0],
           [1, 1, 1]],
-    'S': [[0, 1, 1],
+    "S": [[0, 1, 1],
           [1, 1, 0]],
-    'Z': [[1, 1, 0],
+    "Z": [[1, 1, 0],
           [0, 1, 1]],
-    'J': [[1, 0, 0],
+    "J": [[1, 0, 0],
           [1, 1, 1]],
-    'L': [[0, 0, 1],
+    "L": [[0, 0, 1],
           [1, 1, 1]]
 }
 
 SHAPE_COLORS = {
-    'I': CYAN,
-    'O': YELLOW,
-    'T': PURPLE,
-    'S': GREEN,
-    'Z': RED,
-    'J': BLUE,
-    'L': ORANGE
+    "I": CYAN,
+    "O": YELLOW,
+    "T": PURPLE,
+    "S": GREEN,
+    "Z": RED,
+    "J": BLUE,
+    "L": ORANGE
 }
 
 
@@ -78,7 +78,7 @@ class GameState(Enum):
 
 class Particle:
     """Visual particle effect"""
-    def __init__(self, x: float, y: float, color: Tuple[int, int, int],
+    def __init__(self, x: float, y: float, color: tuple[int, int, int],
                  velocity_x: float, velocity_y: float) -> None:
         """Initialize particle with position, color, and velocity"""
         self.x = x
@@ -105,7 +105,7 @@ class Particle:
 class ScorePopup:
     """Score notification popup"""
     def __init__(self, text: str, x: int, y: int,
-                 color: Tuple[int, int, int] = GOLD) -> None:
+                 color: tuple[int, int, int] = GOLD) -> None:
         """Initialize score popup with text, position, and color"""
         self.text = text
         self.x = x
@@ -138,14 +138,14 @@ class Tetromino:
         self.color = SHAPE_COLORS[shape_type]
         self.rotation = 0
 
-    def get_rotated_shape(self) -> List[List[int]]:
+    def get_rotated_shape(self) -> list[list[int]]:
         """Get the current rotated shape"""
         shape = self.shape
         for _ in range(self.rotation % 4):
             shape = self._rotate_clockwise(shape)
         return shape
 
-    def _rotate_clockwise(self, shape: List[List[int]]) -> List[List[int]]:
+    def _rotate_clockwise(self, shape: list[list[int]]) -> list[list[int]]:
         """Rotate a shape 90 degrees clockwise"""
         return [[shape[y][x] for y in range(len(shape) - 1, -1, -1)]
                 for x in range(len(shape[0]))]
@@ -360,11 +360,11 @@ class TetrisGame:
         """Get text description for line clear"""
         if num_lines == 1:
             return "SINGLE!"
-        elif num_lines == 2:
+        if num_lines == 2:
             return "DOUBLE!"
-        elif num_lines == 3:
+        if num_lines == 3:
             return "TRIPLE!"
-        elif num_lines == 4:
+        if num_lines == 4:
             return "TETRIS!"
         return ""
 
@@ -454,7 +454,7 @@ class TetrisGame:
                     pygame.draw.rect(self.screen, GRAY,
                                    (px, py, GRID_SIZE - 1, GRID_SIZE - 1), 2)
 
-    def draw_mini_piece(self, shape_type: Optional[str],
+    def draw_mini_piece(self, shape_type: str | None,
                         x: int, y: int, size: int = 20) -> None:
         """Draw a small preview piece"""
         if shape_type is None:
@@ -749,8 +749,12 @@ class TetrisGame:
                         self.state = GameState.MENU
                         self.starting_level = 1
 
-                    if event.key == pygame.K_p and self.state in [GameState.PLAYING, GameState.PAUSED]:
-                        self.state = GameState.PAUSED if self.state == GameState.PLAYING else GameState.PLAYING
+                    if event.key == pygame.K_p:
+                        if self.state in [GameState.PLAYING, GameState.PAUSED]:
+                            if self.state == GameState.PLAYING:
+                                self.state = GameState.PAUSED
+                            else:
+                                self.state = GameState.PLAYING
 
                     if self.state == GameState.PLAYING:
                         if event.key == pygame.K_UP:

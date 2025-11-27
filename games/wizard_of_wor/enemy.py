@@ -1,11 +1,12 @@
 """
 Enemy characters for Wizard of Wor.
 """
-import pygame
 import random
-from typing import Optional, Tuple, Any
-from constants import *
+from typing import Any
+
+import pygame
 from bullet import Bullet
+from constants import *
 
 
 class Enemy:
@@ -29,7 +30,7 @@ class Enemy:
         self.shoot_timer = random.randint(60, 180)
         self.can_shoot = True
 
-    def update(self, dungeon: Any, player_pos: Tuple[float, float]) -> None:
+    def update(self, dungeon: Any, player_pos: tuple[float, float]) -> None:
         """Update enemy position and behavior."""
         if not self.alive:
             return
@@ -74,7 +75,7 @@ class Enemy:
         # Update shoot timer
         self.shoot_timer -= 1
 
-    def try_shoot(self) -> Optional[Bullet]:
+    def try_shoot(self) -> Bullet | None:
         """Try to shoot a bullet."""
         if self.can_shoot and self.shoot_timer <= 0 and self.alive:
             self.shoot_timer = random.randint(90, 240)
@@ -103,7 +104,7 @@ class Burwor(Enemy):
 
     def __init__(self, x: float, y: float) -> None:
         """Initialize Burwor enemy at position"""
-        super().__init__(x, y, BURWOR_SPEED, PURPLE, BURWOR_POINTS, 'burwor')
+        super().__init__(x, y, BURWOR_SPEED, PURPLE, BURWOR_POINTS, "burwor")
         self.can_shoot = False  # Burwors don't shoot
 
 
@@ -112,7 +113,7 @@ class Garwor(Enemy):
 
     def __init__(self, x: float, y: float) -> None:
         """Initialize Garwor enemy at position"""
-        super().__init__(x, y, GARWOR_SPEED, ORANGE, GARWOR_POINTS, 'garwor')
+        super().__init__(x, y, GARWOR_SPEED, ORANGE, GARWOR_POINTS, "garwor")
 
 
 class Thorwor(Enemy):
@@ -120,7 +121,7 @@ class Thorwor(Enemy):
 
     def __init__(self, x: float, y: float) -> None:
         """Initialize Thorwor enemy at position"""
-        super().__init__(x, y, THORWOR_SPEED, RED, THORWOR_POINTS, 'thorwor')
+        super().__init__(x, y, THORWOR_SPEED, RED, THORWOR_POINTS, "thorwor")
 
 
 class Worluk(Enemy):
@@ -128,12 +129,12 @@ class Worluk(Enemy):
 
     def __init__(self, x: float, y: float) -> None:
         """Initialize Worluk enemy at position"""
-        super().__init__(x, y, WORLUK_SPEED, CYAN, WORLUK_POINTS, 'worluk')
+        super().__init__(x, y, WORLUK_SPEED, CYAN, WORLUK_POINTS, "worluk")
         self.visible = False
         self.blink_timer = 0
         self.can_shoot = False
 
-    def update(self, dungeon: Any, player_pos: Tuple[float, float]) -> None:
+    def update(self, dungeon: Any, player_pos: tuple[float, float]) -> None:
         """Update Worluk with special visibility behavior."""
         super().update(dungeon, player_pos)
 
@@ -149,10 +150,10 @@ class Wizard(Enemy):
 
     def __init__(self, x: float, y: float) -> None:
         """Initialize Wizard enemy at position"""
-        super().__init__(x, y, WIZARD_SPEED, YELLOW, WIZARD_POINTS, 'wizard')
+        super().__init__(x, y, WIZARD_SPEED, YELLOW, WIZARD_POINTS, "wizard")
         self.appearance_timer = 300  # Frames before appearing
 
-    def update(self, dungeon: Any, player_pos: Tuple[float, float]) -> None:
+    def update(self, dungeon: Any, player_pos: tuple[float, float]) -> None:
         """Update Wizard with special appearance behavior."""
         if self.appearance_timer > 0:
             self.appearance_timer -= 1

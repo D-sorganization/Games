@@ -1,8 +1,9 @@
 """
 Radar system for Wizard of Wor.
 """
+from typing import Any
+
 import pygame
-from typing import List, Any
 from constants import *
 
 
@@ -15,7 +16,7 @@ class Radar:
         self.y = RADAR_Y
         self.size = RADAR_SIZE
 
-    def draw(self, screen: pygame.Surface, enemies: List[Any], player: Any) -> None:
+    def draw(self, screen: pygame.Surface, enemies: list[Any], player: Any) -> None:
         """Draw the radar with enemy positions."""
         # Draw radar background
         pygame.draw.rect(screen, BLACK, (self.x, self.y, self.size, self.size))

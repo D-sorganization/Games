@@ -1,10 +1,11 @@
 """
 Player character for Wizard of Wor.
 """
+from typing import Any
+
 import pygame
-from typing import Any, Optional
-from constants import *
 from bullet import Bullet
+from constants import *
 
 
 class Player:
@@ -65,7 +66,7 @@ class Player:
         if self.shoot_cooldown > 0:
             self.shoot_cooldown -= 1
 
-    def shoot(self) -> Optional[Bullet]:
+    def shoot(self) -> Bullet | None:
         """Create a bullet if cooldown allows."""
         if self.shoot_cooldown == 0 and self.alive:
             self.shoot_cooldown = self.shoot_delay

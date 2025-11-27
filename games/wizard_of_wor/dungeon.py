@@ -2,8 +2,9 @@
 Dungeon/Maze generation and management for Wizard of Wor.
 """
 
+import random
+
 import pygame
-from typing import Tuple
 from constants import *
 
 
@@ -89,10 +90,8 @@ class Dungeon:
                 return False
         return True
 
-    def get_random_spawn_position(self) -> Tuple[int, int]:
+    def get_random_spawn_position(self) -> tuple[int, int]:
         """Get a random valid spawn position in the dungeon."""
-        import random
-
         while True:
             grid_x = random.randint(2, self.cols - 3)
             grid_y = random.randint(2, self.rows - 3)

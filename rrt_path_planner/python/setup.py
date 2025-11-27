@@ -4,7 +4,6 @@ Setup script for Star Wars RRT Path Planner - Python Version
 """
 
 import os
-from typing import List
 
 from setuptools import find_packages, setup
 
@@ -13,16 +12,16 @@ def read_readme() -> str:
     """Read the README file and return its contents"""
     readme_path = os.path.join(os.path.dirname(__file__), "README.md")
     if os.path.exists(readme_path):
-        with open(readme_path, "r", encoding="utf-8") as f:
+        with open(readme_path, encoding="utf-8") as f:
             return f.read()
     return "Star Wars RRT Path Planner - Python Version"
 
 
-def read_requirements() -> List[str]:
+def read_requirements() -> list[str]:
     """Read requirements.txt and return list of dependencies"""
     requirements_path = os.path.join(os.path.dirname(__file__), "requirements.txt")
     if os.path.exists(requirements_path):
-        with open(requirements_path, "r", encoding="utf-8") as f:
+        with open(requirements_path, encoding="utf-8") as f:
             return [
                 line.strip() for line in f if line.strip() and not line.startswith("#")
             ]

@@ -1,13 +1,14 @@
 """
 Main game file for Wizard of Wor remake.
 """
-import pygame
 import sys
 from typing import NoReturn
+
+import pygame
 from constants import *
 from dungeon import Dungeon
+from enemy import Burwor, Garwor, Thorwor, Wizard, Worluk
 from player import Player
-from enemy import Burwor, Garwor, Thorwor, Worluk, Wizard
 from radar import Radar
 
 
@@ -56,15 +57,15 @@ class WizardOfWorGame:
         self.enemies = []
         level_config = ENEMIES_PER_LEVEL.get(min(self.level, 5), ENEMIES_PER_LEVEL[5])
 
-        for _ in range(level_config['burwor']):
+        for _ in range(level_config["burwor"]):
             pos = self.dungeon.get_random_spawn_position()
             self.enemies.append(Burwor(pos[0], pos[1]))
 
-        for _ in range(level_config['garwor']):
+        for _ in range(level_config["garwor"]):
             pos = self.dungeon.get_random_spawn_position()
             self.enemies.append(Garwor(pos[0], pos[1]))
 
-        for _ in range(level_config['thorwor']):
+        for _ in range(level_config["thorwor"]):
             pos = self.dungeon.get_random_spawn_position()
             self.enemies.append(Thorwor(pos[0], pos[1]))
 

@@ -1,8 +1,9 @@
 """
 Bullet/Projectile system for Wizard of Wor.
 """
+from typing import Any
+
 import pygame
-from typing import Tuple, Any
 from constants import *
 
 

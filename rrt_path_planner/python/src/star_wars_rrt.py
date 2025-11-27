@@ -6,7 +6,6 @@ Enhanced performance with real-time rendering and GPU acceleration
 
 import random
 from dataclasses import dataclass
-from typing import List, Optional, Tuple
 
 import numpy as np
 import pygame
@@ -23,7 +22,7 @@ class Obstacle:
     type: int  # 0=sphere, 1=cube
     position: np.ndarray
     size: float
-    color: Tuple[float, float, float]
+    color: tuple[float, float, float]
 
 
 @dataclass
@@ -33,8 +32,8 @@ class Ship:
     position: np.ndarray
     orientation: np.ndarray
     velocity: np.ndarray
-    model: Optional[trimesh.Trimesh] = None
-    color: Tuple[float, float, float] = (0.8, 0.8, 0.8)
+    model: trimesh.Trimesh | None = None
+    color: tuple[float, float, float] = (0.8, 0.8, 0.8)
 
 
 class RRTPlanner:
@@ -49,8 +48,8 @@ class RRTPlanner:
         self.goal_bias = 0.2
 
     def plan_path(
-        self, start: np.ndarray, goal: np.ndarray, obstacles: List[Obstacle]
-    ) -> Optional[np.ndarray]:
+        self, start: np.ndarray, goal: np.ndarray, obstacles: list[Obstacle]
+    ) -> np.ndarray | None:
         """Plan path using RRT algorithm"""
         nodes = [np.append(start, -1)]  # [x, y, z, parent_index]
 
@@ -90,18 +89,17 @@ class RRTPlanner:
 
         return None
 
-    def _check_collision(self, point: np.ndarray, obstacles: List[Obstacle]) -> bool:
+    def _check_collision(self, point: np.ndarray, obstacles: list[Obstacle]) -> bool:
         """Fast collision checking using vectorized operations"""
         for obstacle in obstacles:
             if obstacle.type == 0:  # Sphere
                 if np.linalg.norm(point - obstacle.position) <= obstacle.size:
                     return True
-            else:  # Cube
-                if np.all(np.abs(point - obstacle.position) <= obstacle.size / 2):
-                    return True
+            elif np.all(np.abs(point - obstacle.position) <= obstacle.size / 2):
+                return True
         return False
 
-    def _extract_path(self, nodes: List[np.ndarray], goal_idx: int) -> np.ndarray:
+    def _extract_path(self, nodes: list[np.ndarray], goal_idx: int) -> np.ndarray:
         """Extract path from RRT tree"""
         path = []
         current_idx = goal_idx
@@ -125,7 +123,7 @@ class PursuitAI:
         self.target_speed = 0.015
 
     def update_target_behavior(
-        self, target: Ship, pursuer: Ship, obstacles: List[Obstacle]
+        self, target: Ship, pursuer: Ship, obstacles: list[Obstacle]
     ) -> np.ndarray:
         """Update target ship behavior (evade or move to goal)"""
         distance = np.linalg.norm(target.position - pursuer.position)
@@ -191,9 +189,9 @@ class StarWarsRenderer:
 
     def render_frame(
         self,
-        ships: List[Ship],
-        obstacles: List[Obstacle],
-        paths: List[np.ndarray],
+        ships: list[Ship],
+        obstacles: list[Obstacle],
+        paths: list[np.ndarray],
         camera_mode: str = "cinematic",
     ) -> None:
         """Render a single frame at 60 FPS"""
@@ -221,7 +219,7 @@ class StarWarsRenderer:
 
         pygame.display.flip()
 
-    def _update_camera(self, mode: str, ships: List[Ship]) -> None:
+    def _update_camera(self, mode: str, ships: list[Ship]) -> None:
         """Update camera position based on mode"""
         if mode == "cinematic":
             gluLookAt(
@@ -435,7 +433,7 @@ class StarWarsRRTApp:
             self.ships = [pursuer, target]
             self.paths = []
 
-    def _generate_obstacles(self, num_obstacles: int) -> List[Obstacle]:
+    def _generate_obstacles(self, num_obstacles: int) -> list[Obstacle]:
         """Generate random obstacles"""
         obstacles = []
         for _ in range(num_obstacles):
