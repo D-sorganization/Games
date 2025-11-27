@@ -27,6 +27,10 @@ PLAY_WIDTH = GRID_WIDTH * GRID_SIZE
 PLAY_HEIGHT = GRID_HEIGHT * GRID_SIZE
 TOP_LEFT_X = 50
 TOP_LEFT_Y = SCREEN_HEIGHT - PLAY_HEIGHT - 50
+REWIND_HISTORY_LIMIT = 360
+REWIND_STEP = 30
+BUTTON_WIDTH = 160
+BUTTON_HEIGHT = 36
 
 # Colors
 BLACK = (0, 0, 0)
@@ -47,18 +51,12 @@ SILVER = (192, 192, 192)
 # Tetromino shapes
 SHAPES = {
     "I": [[1, 1, 1, 1]],
-    "O": [[1, 1],
-          [1, 1]],
-    "T": [[0, 1, 0],
-          [1, 1, 1]],
-    "S": [[0, 1, 1],
-          [1, 1, 0]],
-    "Z": [[1, 1, 0],
-          [0, 1, 1]],
-    "J": [[1, 0, 0],
-          [1, 1, 1]],
-    "L": [[0, 0, 1],
-          [1, 1, 1]]
+    "O": [[1, 1], [1, 1]],
+    "T": [[0, 1, 0], [1, 1, 1]],
+    "S": [[0, 1, 1], [1, 1, 0]],
+    "Z": [[1, 1, 0], [0, 1, 1]],
+    "J": [[1, 0, 0], [1, 1, 1]],
+    "L": [[0, 0, 1], [1, 1, 1]],
 }
 
 SHAPE_COLORS = {
@@ -68,22 +66,31 @@ SHAPE_COLORS = {
     "S": GREEN,
     "Z": RED,
     "J": BLUE,
-    "L": ORANGE
+    "L": ORANGE,
 }
 
 
 class GameState(Enum):
     """Game states"""
+
     MENU = 1
     PLAYING = 2
     PAUSED = 3
     GAME_OVER = 4
+    SETTINGS = 5
 
 
 class Particle:
     """Visual particle effect"""
-    def __init__(self, x: float, y: float, color: tuple[int, int, int],
-                 velocity_x: float, velocity_y: float) -> None:
+
+    def __init__(
+        self,
+        x: float,
+        y: float,
+        color: tuple[int, int, int],
+        velocity_x: float,
+        velocity_y: float,
+    ) -> None:
         """Initialize particle with position, color, and velocity"""
         self.x = x
         self.y = y
@@ -108,8 +115,10 @@ class Particle:
 
 class ScorePopup:
     """Score notification popup"""
-    def __init__(self, text: str, x: int, y: int,
-                 color: tuple[int, int, int] = GOLD) -> None:
+
+    def __init__(
+        self, text: str, x: int, y: int, color: tuple[int, int, int] = GOLD
+    ) -> None:
         """Initialize score popup with text, position, and color"""
         self.text = text
         self.x = x
@@ -151,8 +160,10 @@ class Tetromino:
 
     def _rotate_clockwise(self, shape: list[list[int]]) -> list[list[int]]:
         """Rotate a shape 90 degrees clockwise"""
-        return [[shape[y][x] for y in range(len(shape) - 1, -1, -1)]
-                for x in range(len(shape[0]))]
+        return [
+            [shape[y][x] for y in range(len(shape) - 1, -1, -1)]
+            for x in range(len(shape[0]))
+        ]
 
     def rotate(self) -> None:
         """Rotate the tetromino"""
@@ -177,6 +188,54 @@ class TetrisGame:
         self.held_piece: str | None = None
         self.particles: list[Particle] = []
         self.score_popups: list[ScorePopup] = []
+        self.show_next_piece = True
+        self.show_hold_piece = True
+        self.show_ghost_piece = True
+        self.show_controls_panel = True
+        self.allow_rewind = False
+        self.controller_enabled = True
+        self.awaiting_controller_action: str | None = None
+        self.rewind_history: list[dict[str, object]] = []
+        self.controller_mapping = {
+            "move_left": {"type": "hat", "index": 0, "value": (-1, 0)},
+            "move_right": {"type": "hat", "index": 0, "value": (1, 0)},
+            "soft_drop": {"type": "hat", "index": 0, "value": (0, -1)},
+            "rotate": {"type": "button", "index": 0},
+            "hard_drop": {"type": "button", "index": 1},
+            "hold": {"type": "button", "index": 2},
+            "pause": {"type": "button", "index": 7},
+            "restart": {"type": "button", "index": 6},
+            "rewind": {"type": "button", "index": 3},
+        }
+        self.controller_action_labels = {
+            "move_left": "Move Left",
+            "move_right": "Move Right",
+            "soft_drop": "Soft Drop",
+            "rotate": "Rotate",
+            "hard_drop": "Hard Drop",
+            "hold": "Hold",
+            "pause": "Pause / Resume",
+            "restart": "Restart",
+            "rewind": "Rewind",
+        }
+
+        pygame.joystick.init()
+        self.joystick: pygame.joystick.Joystick | None = None
+        self.init_controller()
+
+        self.restart_button = pygame.Rect(
+            SCREEN_WIDTH - BUTTON_WIDTH - 20,
+            SCREEN_HEIGHT - BUTTON_HEIGHT - 10,
+            BUTTON_WIDTH,
+            BUTTON_HEIGHT,
+        )
+        self.controls_toggle_rect = pygame.Rect(
+            SCREEN_WIDTH - BUTTON_WIDTH - 20,
+            TOP_LEFT_Y - 40,
+            BUTTON_WIDTH,
+            BUTTON_HEIGHT,
+        )
+        self.settings_selection = 0
         self.reset_game()
 
     def reset_game(self) -> None:
@@ -200,14 +259,97 @@ class TetrisGame:
         self.total_doubles = 0
         self.total_triples = 0
         self.total_tetrises = 0
+        self.rewind_history.clear()
 
     def new_piece(self) -> Tetromino:
         """Create a new random tetromino"""
         shape_type = random.choice(list(SHAPES.keys()))
         return Tetromino(GRID_WIDTH // 2 - 1, 0, shape_type)
 
-    def valid_move(self, piece: Tetromino, x_offset: int = 0,
-                   y_offset: int = 0, rotation_offset: int = 0) -> bool:
+    def init_controller(self) -> None:
+        """Initialize the first available controller"""
+        if pygame.joystick.get_count() > 0:
+            self.joystick = pygame.joystick.Joystick(0)
+            self.joystick.init()
+        else:
+            self.joystick = None
+
+    def copy_piece(self, piece: Tetromino) -> Tetromino:
+        """Create a shallow copy of a tetromino"""
+        clone = Tetromino(piece.x, piece.y, piece.shape_type)
+        clone.rotation = piece.rotation
+        return clone
+
+    def create_snapshot(self) -> dict[str, object]:
+        """Capture the current game state for rewinding"""
+        return {
+            "grid": [row[:] for row in self.grid],
+            "current_piece": self.copy_piece(self.current_piece),
+            "next_piece": self.copy_piece(self.next_piece),
+            "held_piece": self.held_piece,
+            "can_hold": self.can_hold,
+            "score": self.score,
+            "lines_cleared": self.lines_cleared,
+            "level": self.level,
+            "fall_time": self.fall_time,
+            "fall_speed": self.fall_speed,
+            "combo": self.combo,
+            "lines_cleared_this_drop": self.lines_cleared_this_drop,
+            "total_singles": self.total_singles,
+            "total_doubles": self.total_doubles,
+            "total_triples": self.total_triples,
+            "total_tetrises": self.total_tetrises,
+        }
+
+    def restore_snapshot(self, snapshot: dict[str, object]) -> None:
+        """Restore a saved game state"""
+        self.grid = snapshot["grid"]  # type: ignore[assignment]
+        self.current_piece = snapshot["current_piece"]  # type: ignore[assignment]
+        self.next_piece = snapshot["next_piece"]  # type: ignore[assignment]
+        self.held_piece = snapshot["held_piece"]  # type: ignore[assignment]
+        self.can_hold = bool(snapshot["can_hold"])
+        self.score = int(snapshot["score"])
+        self.lines_cleared = int(snapshot["lines_cleared"])
+        self.level = int(snapshot["level"])
+        self.fall_time = int(snapshot["fall_time"])
+        self.fall_speed = int(snapshot["fall_speed"])
+        self.combo = int(snapshot["combo"])
+        self.lines_cleared_this_drop = int(snapshot["lines_cleared_this_drop"])
+        self.total_singles = int(snapshot["total_singles"])
+        self.total_doubles = int(snapshot["total_doubles"])
+        self.total_triples = int(snapshot["total_triples"])
+        self.total_tetrises = int(snapshot["total_tetrises"])
+
+    def update_rewind_history(self) -> None:
+        """Append the current state to the rewind history"""
+        if not self.allow_rewind:
+            self.rewind_history.clear()
+            return
+
+        self.rewind_history.append(self.create_snapshot())
+        if len(self.rewind_history) > REWIND_HISTORY_LIMIT:
+            self.rewind_history.pop(0)
+
+    def rewind(self) -> None:
+        """Rewind the game to a previous point"""
+        if not self.allow_rewind:
+            return
+        if len(self.rewind_history) <= REWIND_STEP:
+            return
+
+        snapshot = self.rewind_history[-REWIND_STEP]
+        self.rewind_history = self.rewind_history[:-REWIND_STEP]
+        self.restore_snapshot(snapshot)
+        self.game_over = False
+        self.state = GameState.PLAYING
+
+    def valid_move(
+        self,
+        piece: Tetromino,
+        x_offset: int = 0,
+        y_offset: int = 0,
+        rotation_offset: int = 0,
+    ) -> bool:
         """Check if a move is valid"""
         test_piece = Tetromino(piece.x + x_offset, piece.y + y_offset, piece.shape_type)
         test_piece.rotation = (piece.rotation + rotation_offset) % 4
@@ -326,10 +468,10 @@ class TetrisGame:
 
             # Base score values (classic Tetris scoring)
             score_values = {
-                1: 100,   # Single
-                2: 300,   # Double
-                3: 500,   # Triple
-                4: 800    # Tetris
+                1: 100,  # Single
+                2: 300,  # Double
+                3: 500,  # Triple
+                4: 800,  # Tetris
             }
 
             # Calculate score with level multiplier
@@ -373,7 +515,9 @@ class TetrisGame:
                 self.level = new_level
                 self.fall_speed = max(50, 500 - (self.level - 1) * 40)
                 # Level up popup
-                level_popup = ScorePopup(f"LEVEL {self.level}!", popup_x, popup_y - 40, SILVER)
+                level_popup = ScorePopup(
+                    f"LEVEL {self.level}!", popup_x, popup_y - 40, SILVER
+                )
                 self.score_popups.append(level_popup)
         else:
             # Reset combo if no lines cleared
@@ -404,8 +548,9 @@ class TetrisGame:
     def draw_grid(self) -> None:
         """Draw the game grid"""
         # Draw the play area background
-        pygame.draw.rect(self.screen, DARK_GRAY,
-                        (TOP_LEFT_X, TOP_LEFT_Y, PLAY_WIDTH, PLAY_HEIGHT))
+        pygame.draw.rect(
+            self.screen, DARK_GRAY, (TOP_LEFT_X, TOP_LEFT_Y, PLAY_WIDTH, PLAY_HEIGHT)
+        )
 
         # Draw the locked blocks
         for y in range(GRID_HEIGHT):
@@ -413,9 +558,12 @@ class TetrisGame:
                 color = self.grid[y][x]
                 if color != BLACK:
                     # Draw block with 3D effect
-                    rect = pygame.Rect(TOP_LEFT_X + x * GRID_SIZE,
-                                      TOP_LEFT_Y + y * GRID_SIZE,
-                                      GRID_SIZE - 1, GRID_SIZE - 1)
+                    rect = pygame.Rect(
+                        TOP_LEFT_X + x * GRID_SIZE,
+                        TOP_LEFT_Y + y * GRID_SIZE,
+                        GRID_SIZE - 1,
+                        GRID_SIZE - 1,
+                    )
                     pygame.draw.rect(self.screen, color, rect)
                     # Highlight
                     lighter = tuple(min(255, c + 50) for c in color)
@@ -423,22 +571,32 @@ class TetrisGame:
 
         # Draw grid lines
         for y in range(GRID_HEIGHT + 1):
-            pygame.draw.line(self.screen, GRAY,
-                           (TOP_LEFT_X, TOP_LEFT_Y + y * GRID_SIZE),
-                           (TOP_LEFT_X + PLAY_WIDTH, TOP_LEFT_Y + y * GRID_SIZE))
+            pygame.draw.line(
+                self.screen,
+                GRAY,
+                (TOP_LEFT_X, TOP_LEFT_Y + y * GRID_SIZE),
+                (TOP_LEFT_X + PLAY_WIDTH, TOP_LEFT_Y + y * GRID_SIZE),
+            )
 
         for x in range(GRID_WIDTH + 1):
-            pygame.draw.line(self.screen, GRAY,
-                           (TOP_LEFT_X + x * GRID_SIZE, TOP_LEFT_Y),
-                           (TOP_LEFT_X + x * GRID_SIZE, TOP_LEFT_Y + PLAY_HEIGHT))
+            pygame.draw.line(
+                self.screen,
+                GRAY,
+                (TOP_LEFT_X + x * GRID_SIZE, TOP_LEFT_Y),
+                (TOP_LEFT_X + x * GRID_SIZE, TOP_LEFT_Y + PLAY_HEIGHT),
+            )
 
         # Draw border
-        pygame.draw.rect(self.screen, WHITE,
-                        (TOP_LEFT_X - 2, TOP_LEFT_Y - 2,
-                         PLAY_WIDTH + 4, PLAY_HEIGHT + 4), 3)
+        pygame.draw.rect(
+            self.screen,
+            WHITE,
+            (TOP_LEFT_X - 2, TOP_LEFT_Y - 2, PLAY_WIDTH + 4, PLAY_HEIGHT + 4),
+            3,
+        )
 
-    def draw_piece(self, piece: Tetromino, offset_x: int = 0,
-                   offset_y: int = 0, alpha: int = 255) -> None:
+    def draw_piece(
+        self, piece: Tetromino, offset_x: int = 0, offset_y: int = 0, alpha: int = 255
+    ) -> None:
         """Draw a tetromino piece"""
         shape = piece.get_rotated_shape()
 
@@ -456,13 +614,15 @@ class TetrisGame:
 
                     # Draw highlight
                     lighter = tuple(min(255, c + 50) for c in piece.color)
-                    pygame.draw.rect(self.screen, lighter,
-                                   (px, py, GRID_SIZE - 1, GRID_SIZE - 1), 2)
+                    pygame.draw.rect(
+                        self.screen, lighter, (px, py, GRID_SIZE - 1, GRID_SIZE - 1), 2
+                    )
 
     def draw_ghost_piece(self) -> None:
         """Draw a ghost piece showing where the current piece will land"""
-        ghost = Tetromino(self.current_piece.x, self.current_piece.y,
-                         self.current_piece.shape_type)
+        ghost = Tetromino(
+            self.current_piece.x, self.current_piece.y, self.current_piece.shape_type
+        )
         ghost.rotation = self.current_piece.rotation
 
         while self.valid_move(ghost, y_offset=1):
@@ -474,11 +634,13 @@ class TetrisGame:
                 if cell:
                     px = TOP_LEFT_X + (ghost.x + x) * GRID_SIZE
                     py = TOP_LEFT_Y + (ghost.y + y) * GRID_SIZE
-                    pygame.draw.rect(self.screen, GRAY,
-                                   (px, py, GRID_SIZE - 1, GRID_SIZE - 1), 2)
+                    pygame.draw.rect(
+                        self.screen, GRAY, (px, py, GRID_SIZE - 1, GRID_SIZE - 1), 2
+                    )
 
-    def draw_mini_piece(self, shape_type: str | None,
-                        x: int, y: int, size: int = 20) -> None:
+    def draw_mini_piece(
+        self, shape_type: str | None, x: int, y: int, size: int = 20
+    ) -> None:
         """Draw a small preview piece"""
         if shape_type is None:
             return
@@ -489,10 +651,11 @@ class TetrisGame:
         for row_idx, row in enumerate(shape):
             for col_idx, cell in enumerate(row):
                 if cell:
-                    pygame.draw.rect(self.screen, piece.color,
-                                   (x + col_idx * size,
-                                    y + row_idx * size,
-                                    size - 1, size - 1))
+                    pygame.draw.rect(
+                        self.screen,
+                        piece.color,
+                        (x + col_idx * size, y + row_idx * size, size - 1, size - 1),
+                    )
 
     def draw_next_piece(self) -> None:
         """Draw the next piece preview"""
@@ -556,8 +719,20 @@ class TetrisGame:
                 self.screen.blit(value_text, (panel_x + 100, y_offset))
             y_offset += 30
 
+    def draw_button(self, rect: pygame.Rect, label: str, active: bool = True) -> None:
+        """Draw a reusable UI button"""
+        base_color = GREEN if active else GRAY
+        pygame.draw.rect(self.screen, base_color, rect)
+        pygame.draw.rect(self.screen, WHITE, rect, 2)
+        text = self.small_font.render(label, True, BLACK)
+        text_rect = text.get_rect(center=rect.center)
+        self.screen.blit(text, text_rect)
+
     def draw_controls(self) -> None:
         """Draw control instructions"""
+        if not self.show_controls_panel:
+            return
+
         controls = [
             ("←/→", "Move"),
             ("↑", "Rotate"),
@@ -566,10 +741,23 @@ class TetrisGame:
             ("C", "Hold"),
             ("P", "Pause"),
             ("R", "Restart"),
+            ("B", "Rewind"),
         ]
 
-        panel_x = 10
-        panel_y = TOP_LEFT_Y
+        panel_x = SCREEN_WIDTH - 220
+        panel_y = TOP_LEFT_Y + 60
+
+        pygame.draw.rect(
+            self.screen,
+            DARK_GRAY,
+            (panel_x - 10, panel_y - 10, 200, len(controls) * 30 + 40),
+        )
+        pygame.draw.rect(
+            self.screen,
+            WHITE,
+            (panel_x - 10, panel_y - 10, 200, len(controls) * 30 + 40),
+            2,
+        )
 
         title = self.font.render("Controls", True, WHITE)
         self.screen.blit(title, (panel_x, panel_y))
@@ -633,9 +821,17 @@ class TetrisGame:
 
             if level == self.starting_level:
                 # Draw selection indicator
-                pygame.draw.rect(self.screen, GOLD,
-                               (text_rect.x - 10, text_rect.y - 5,
-                                text_rect.width + 20, text_rect.height + 10), 2)
+                pygame.draw.rect(
+                    self.screen,
+                    GOLD,
+                    (
+                        text_rect.x - 10,
+                        text_rect.y - 5,
+                        text_rect.width + 20,
+                        text_rect.height + 10,
+                    ),
+                    2,
+                )
 
             y_offset += 50
 
@@ -644,24 +840,127 @@ class TetrisGame:
         start_rect = start_text.get_rect(center=(SCREEN_WIDTH // 2, 550))
         self.screen.blit(start_text, start_rect)
 
+        settings_text = self.small_font.render("Press S for Settings", True, LIGHT_GRAY)
+        settings_rect = settings_text.get_rect(center=(SCREEN_WIDTH // 2, 590))
+        self.screen.blit(settings_text, settings_rect)
+
         # Controls hint
-        hint_text = self.tiny_font.render("Use UP/DOWN arrows to select level", True, GRAY)
+        hint_text = self.tiny_font.render(
+            "Use UP/DOWN arrows to select level", True, GRAY
+        )
         hint_rect = hint_text.get_rect(center=(SCREEN_WIDTH // 2, 600))
         self.screen.blit(hint_text, hint_rect)
+
+    def get_settings_entries(self) -> list[dict[str, str]]:
+        """Return the settings configuration items"""
+        entries: list[dict[str, str]] = [
+            {"label": "Show Next Piece", "key": "show_next_piece", "type": "bool"},
+            {"label": "Show Held Piece", "key": "show_hold_piece", "type": "bool"},
+            {"label": "Show Ghost Piece", "key": "show_ghost_piece", "type": "bool"},
+            {
+                "label": "Show Controls Panel",
+                "key": "show_controls_panel",
+                "type": "bool",
+            },
+            {"label": "Enable Controller", "key": "controller_enabled", "type": "bool"},
+            {"label": "Allow Rewind", "key": "allow_rewind", "type": "bool"},
+            {"label": "Controller Mappings", "type": "header", "key": ""},
+        ]
+
+        for action_key, description in self.controller_action_labels.items():
+            entries.append(
+                {
+                    "label": description,
+                    "key": action_key,
+                    "type": "mapping",
+                }
+            )
+
+        return entries
+
+    def get_binding_label(self, action: str) -> str:
+        """Readable label for a controller binding"""
+        binding = self.controller_mapping.get(action)
+        if not binding:
+            return "Unbound"
+        if binding.get("type") == "button":
+            return f"Button {binding.get('index')}"
+        if binding.get("type") == "hat":
+            value = binding.get("value")
+            return f"D-pad {binding.get('index')} {value}"
+        return "Unbound"
+
+    def draw_settings(self) -> None:
+        """Render the settings menu"""
+        self.screen.fill(BLACK)
+        title = self.font_large.render("Settings", True, CYAN)
+        title_rect = title.get_rect(center=(SCREEN_WIDTH // 2, 80))
+        self.screen.blit(title, title_rect)
+
+        entries = self.get_settings_entries()
+        y_offset = 160
+
+        for idx, entry in enumerate(entries):
+            color = GOLD if idx == self.settings_selection else WHITE
+            label = entry["label"]
+            value_text = ""
+
+            if entry["type"] == "bool":
+                value = getattr(self, entry["key"])
+                value_text = "On" if value else "Off"
+            elif entry["type"] == "mapping":
+                value_text = self.get_binding_label(entry["key"])
+
+            label_text = self.font.render(label, True, color)
+            value_render = self.small_font.render(value_text, True, LIGHT_GRAY)
+
+            self.screen.blit(label_text, (140, y_offset))
+            if value_text:
+                self.screen.blit(value_render, (520, y_offset + 6))
+            y_offset += 40
+
+        hint = self.tiny_font.render(
+            "Arrow keys to navigate, ENTER to toggle or remap, ESC to return",
+            True,
+            GRAY,
+        )
+        hint_rect = hint.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT - 60))
+        self.screen.blit(hint, hint_rect)
+
+        if self.awaiting_controller_action:
+            waiting = self.small_font.render(
+                f"Waiting for input to bind {self.controller_action_labels[self.awaiting_controller_action]}",
+                True,
+                YELLOW,
+            )
+            waiting_rect = waiting.get_rect(
+                center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT - 100)
+            )
+            self.screen.blit(waiting, waiting_rect)
 
     def draw(self) -> None:
         """Draw everything"""
         if self.state == GameState.MENU:
             self.draw_menu()
+        elif self.state == GameState.SETTINGS:
+            self.draw_settings()
         elif self.state in [GameState.PLAYING, GameState.PAUSED]:
             self.screen.fill(BLACK)
             self.draw_grid()
-            self.draw_ghost_piece()
+            if self.show_ghost_piece:
+                self.draw_ghost_piece()
             self.draw_piece(self.current_piece)
-            self.draw_next_piece()
-            self.draw_held_piece()
+            if self.show_next_piece:
+                self.draw_next_piece()
+            if self.show_hold_piece:
+                self.draw_held_piece()
             self.draw_stats()
             self.draw_controls()
+            self.draw_button(
+                self.controls_toggle_rect,
+                "Hide Controls" if self.show_controls_panel else "Show Controls",
+            )
+            self.draw_button(self.restart_button, "Restart Run")
             # Only animate particles and popups when playing (not paused)
             if self.state == GameState.PLAYING:
                 self.draw_particles()
@@ -676,9 +975,13 @@ class TetrisGame:
                         self.screen.blit(surf, (int(particle.x), int(particle.y)))
                 for popup in self.score_popups:
                     if popup.is_alive():
-                        text_surf = self.font_large.render(popup.text, True, popup.color)
+                        text_surf = self.font_large.render(
+                            popup.text, True, popup.color
+                        )
                         text_surf.set_alpha(popup.alpha)
-                        text_rect = text_surf.get_rect(center=(int(popup.x), int(popup.y)))
+                        text_rect = text_surf.get_rect(
+                            center=(int(popup.x), int(popup.y))
+                        )
                         self.screen.blit(text_surf, text_rect)
 
             if self.state == GameState.PAUSED:
@@ -689,7 +992,9 @@ class TetrisGame:
                 self.screen.blit(overlay, (0, 0))
 
                 pause_text = self.font_large.render("PAUSED", True, YELLOW)
-                pause_rect = pause_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
+                pause_rect = pause_text.get_rect(
+                    center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2)
+                )
                 self.screen.blit(pause_text, pause_rect)
 
         elif self.state == GameState.GAME_OVER:
@@ -698,15 +1003,25 @@ class TetrisGame:
             # Game over screen
             game_over_text = self.font_large.render("GAME OVER", True, RED)
             score_text = self.font.render(f"Final Score: {self.score}", True, WHITE)
-            lines_text = self.font.render(f"Lines Cleared: {self.lines_cleared}", True, WHITE)
+            lines_text = self.font.render(
+                f"Lines Cleared: {self.lines_cleared}", True, WHITE
+            )
             level_text = self.font.render(f"Final Level: {self.level}", True, WHITE)
 
             # Statistics
             stats_title = self.font.render("Line Clears:", True, GOLD)
-            single_text = self.small_font.render(f"Singles: {self.total_singles}", True, WHITE)
-            double_text = self.small_font.render(f"Doubles: {self.total_doubles}", True, WHITE)
-            triple_text = self.small_font.render(f"Triples: {self.total_triples}", True, WHITE)
-            tetris_text = self.small_font.render(f"Tetrises: {self.total_tetrises}", True, CYAN)
+            single_text = self.small_font.render(
+                f"Singles: {self.total_singles}", True, WHITE
+            )
+            double_text = self.small_font.render(
+                f"Doubles: {self.total_doubles}", True, WHITE
+            )
+            triple_text = self.small_font.render(
+                f"Triples: {self.total_triples}", True, WHITE
+            )
+            tetris_text = self.small_font.render(
+                f"Tetrises: {self.total_tetrises}", True, CYAN
+            )
 
             restart_text = self.small_font.render("Press R to Restart", True, GREEN)
 
@@ -746,6 +1061,32 @@ class TetrisGame:
             elif event.key == pygame.K_RETURN:
                 self.reset_game()
                 self.state = GameState.PLAYING
+            elif event.key == pygame.K_s:
+                self.state = GameState.SETTINGS
+
+    def handle_settings_input(self, event: "pygame_event.Event") -> None:
+        """Handle settings menu input"""
+        if event.type != pygame.KEYDOWN:
+            return
+
+        entries = self.get_settings_entries()
+
+        if event.key == pygame.K_ESCAPE:
+            self.awaiting_controller_action = None
+            self.state = GameState.MENU
+        elif event.key == pygame.K_UP:
+            self.settings_selection = max(0, self.settings_selection - 1)
+        elif event.key == pygame.K_DOWN:
+            self.settings_selection = min(len(entries) - 1, self.settings_selection + 1)
+        elif event.key in [pygame.K_LEFT, pygame.K_RIGHT, pygame.K_RETURN]:
+            entry = entries[self.settings_selection]
+            if entry["type"] == "bool":
+                current = bool(getattr(self, entry["key"]))
+                setattr(self, entry["key"], not current)
+                if entry["key"] == "allow_rewind":
+                    self.rewind_history.clear()
+            elif entry["type"] == "mapping" and self.controller_enabled and self.joystick:
+                self.awaiting_controller_action = entry["key"]
 
     def handle_input(self) -> None:
         """Handle player input"""
@@ -766,51 +1107,226 @@ class TetrisGame:
                     self.score += 1
                 pygame.time.wait(50)
 
+        self.handle_controller_state()
+
+    def handle_controller_state(self) -> None:
+        """Handle held controller inputs for continuous movement"""
+        if not self.controller_enabled or self.joystick is None:
+            return
+
+        move_left = self.controller_mapping.get("move_left")
+        move_right = self.controller_mapping.get("move_right")
+        soft_drop = self.controller_mapping.get("soft_drop")
+
+        if move_left and move_left.get("type") == "hat":
+            if self.joystick.get_hat(int(move_left["index"])) == move_left.get("value"):
+                if self.valid_move(self.current_piece, x_offset=-1):
+                    self.current_piece.x -= 1
+                    pygame.time.wait(100)
+
+        if move_right and move_right.get("type") == "hat":
+            if self.joystick.get_hat(int(move_right["index"])) == move_right.get(
+                "value"
+            ):
+                if self.valid_move(self.current_piece, x_offset=1):
+                    self.current_piece.x += 1
+                    pygame.time.wait(100)
+
+        if soft_drop and soft_drop.get("type") == "hat":
+            if self.joystick.get_hat(int(soft_drop["index"])) == soft_drop.get("value"):
+                if self.valid_move(self.current_piece, y_offset=1):
+                    self.current_piece.y += 1
+                    self.score += 1
+                pygame.time.wait(50)
+
+    def apply_controller_binding(self, event: "pygame_event.Event") -> bool:
+        """Bind the awaiting action to the next controller input"""
+        if not self.awaiting_controller_action:
+            return False
+
+        action = self.awaiting_controller_action
+
+        if event.type == pygame.JOYBUTTONDOWN:
+            self.controller_mapping[action] = {"type": "button", "index": event.button}
+            self.awaiting_controller_action = None
+            return True
+
+        if event.type == pygame.JOYHATMOTION:
+            # Reject neutral D-pad position (0, 0) to prevent accidental bindings
+            if event.value == (0, 0):
+                return False
+            self.controller_mapping[action] = {
+                "type": "hat",
+                "index": event.hat,
+                "value": event.value,
+            }
+            self.awaiting_controller_action = None
+            return True
+
+        return False
+
+    def trigger_action(self, action: str) -> None:
+        """Execute an action from controller or keyboard"""
+        if action == "pause" and self.state in [GameState.PLAYING, GameState.PAUSED]:
+            self.state = (
+                GameState.PAUSED
+                if self.state == GameState.PLAYING
+                else GameState.PLAYING
+            )
+            return
+
+        if action == "restart":
+            if self.state in [GameState.PLAYING, GameState.PAUSED, GameState.GAME_OVER]:
+                self.restart_game()
+            return
+
+        if action == "rewind":
+            if self.state == GameState.PLAYING:
+                self.rewind()
+            return
+
+        if self.state != GameState.PLAYING:
+            return
+
+        if action == "move_left" and self.valid_move(self.current_piece, x_offset=-1):
+            self.current_piece.x -= 1
+        elif action == "move_right" and self.valid_move(self.current_piece, x_offset=1):
+            self.current_piece.x += 1
+        elif action == "soft_drop":
+            if self.valid_move(self.current_piece, y_offset=1):
+                self.current_piece.y += 1
+                self.score += 1
+        elif action == "rotate" and self.valid_move(
+            self.current_piece, rotation_offset=1
+        ):
+            self.current_piece.rotate()
+        elif action == "hard_drop":
+            self.hard_drop()
+        elif action == "hold":
+            self.hold_piece()
+
+    def handle_controller_event(self, event: "pygame_event.Event") -> None:
+        """Translate controller events into actions"""
+        if self.joystick is None:
+            return
+
+        # Allow binding even when controller is disabled (for settings menu)
+        if self.apply_controller_binding(event):
+            return
+
+        if not self.controller_enabled:
+            return
+
+        if event.type == pygame.JOYBUTTONDOWN:
+            for action, binding in self.controller_mapping.items():
+                if (
+                    binding.get("type") == "button"
+                    and binding.get("index") == event.button
+                ):
+                    self.trigger_action(action)
+        elif event.type == pygame.JOYHATMOTION:
+            for action, binding in self.controller_mapping.items():
+                if binding.get("type") == "hat" and binding.get("index") == event.hat:
+                    if binding.get("value") == event.value:
+                        self.trigger_action(action)
+
+    def restart_game(self) -> None:
+        """Restart the current run"""
+        if self.state not in [
+            GameState.PLAYING,
+            GameState.PAUSED,
+            GameState.GAME_OVER,
+        ]:
+            return
+        self.reset_game()
+        self.state = GameState.PLAYING
+
+    def handle_mouse_input(self, position: tuple[int, int]) -> None:
+        """Handle mouse clicks on UI buttons"""
+        if self.controls_toggle_rect.collidepoint(position):
+            if self.state in [GameState.PLAYING, GameState.PAUSED]:
+                self.show_controls_panel = not self.show_controls_panel
+        if self.restart_button.collidepoint(position):
+            if self.state in [GameState.PLAYING, GameState.PAUSED, GameState.GAME_OVER]:
+                self.restart_game()
+
+    def handle_keydown(self, event: "pygame_event.Event") -> None:
+        """Handle keydown events in active game states"""
+        if event.key == pygame.K_r:
+            self.restart_game()
+            return
+
+        if event.key == pygame.K_p and self.state in [
+            GameState.PLAYING,
+            GameState.PAUSED,
+        ]:
+            self.state = (
+                GameState.PAUSED
+                if self.state == GameState.PLAYING
+                else GameState.PLAYING
+            )
+            return
+
+        if self.state == GameState.GAME_OVER:
+            if event.key == pygame.K_RETURN:
+                self.state = GameState.MENU
+            return
+
+        if self.state != GameState.PLAYING:
+            return
+
+        if event.key == pygame.K_UP:
+            if self.valid_move(self.current_piece, rotation_offset=1):
+                self.current_piece.rotate()
+        elif event.key == pygame.K_SPACE:
+            self.hard_drop()
+        elif event.key == pygame.K_c:
+            self.hold_piece()
+        elif event.key == pygame.K_b:
+            self.rewind()
+
     def run(self) -> None:
         """Main game loop"""
         while True:
             if self.state == GameState.PLAYING:
+                self.update_rewind_history()
                 self.fall_time += self.clock.get_rawtime()
+            else:
+                self.clock.get_rawtime()
 
             self.clock.tick(60)
 
-            # Event handling
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit()
 
+                if (
+                    event.type == pygame.JOYDEVICEADDED
+                    or event.type == pygame.JOYDEVICEREMOVED
+                ):
+                    self.init_controller()
+
+                if event.type in [pygame.JOYBUTTONDOWN, pygame.JOYHATMOTION]:
+                    self.handle_controller_event(event)
+
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    self.handle_mouse_input(event.pos)
+
                 if self.state == GameState.MENU:
                     self.handle_menu_input(event)  # type: ignore[arg-type]
+                    continue
 
-                elif event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_r:
-                        self.state = GameState.MENU
-                        self.starting_level = 1
+                if self.state == GameState.SETTINGS:
+                    self.handle_settings_input(event)  # type: ignore[arg-type]
+                    continue
 
-                    if event.key == pygame.K_p:
-                        if self.state in [GameState.PLAYING, GameState.PAUSED]:
-                            if self.state == GameState.PLAYING:
-                                self.state = GameState.PAUSED
-                            else:
-                                self.state = GameState.PLAYING
-
-                    if self.state == GameState.PLAYING:
-                        if event.key == pygame.K_UP:
-                            if self.valid_move(self.current_piece, rotation_offset=1):
-                                self.current_piece.rotate()
-
-                        if event.key == pygame.K_SPACE:
-                            self.hard_drop()
-
-                        if event.key == pygame.K_c:
-                            self.hold_piece()
+                if event.type == pygame.KEYDOWN:
+                    self.handle_keydown(event)  # type: ignore[arg-type]
 
             if self.state == GameState.PLAYING:
-                # Handle continuous input
                 self.handle_input()
 
-                # Automatic falling
                 if self.fall_time >= self.fall_speed:
                     self.fall_time = 0
 
