@@ -72,6 +72,61 @@
             color: #888;
             font-size: 14px;
         }
+
+        #pauseScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #ffaa00;
+            z-index: 1000;
+        }
+
+        #pauseScreen h2 {
+            font-size: 48px;
+            margin-bottom: 20px;
+            text-shadow: 0 0 12px #ffaa00;
+        }
+
+        #pauseScreen button {
+            margin: 10px;
+            padding: 12px 28px;
+            font-size: 20px;
+            background: #ffaa00;
+            color: #000;
+            border: none;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            text-transform: uppercase;
+        }
+
+        #pauseScreen button:hover {
+            background: #d08a00;
+        }
+
+        #infoBanner {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 10px 16px;
+            background: rgba(0, 0, 0, 0.6);
+            color: #00ff99;
+            border: 1px solid #00ff99;
+            font-size: 14px;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            z-index: 900;
+        }
+
+        #infoBanner.visible {
+            opacity: 1;
+        }
     </style>
 </head>
 <body>
@@ -80,10 +135,21 @@
         <p class="controls">WASD - Move</p>
         <p class="controls">Mouse - Look Around</p>
         <p class="controls">Click - Shoot</p>
-        <p class="controls">E - Open Doors</p>
+        <p class="controls">E - Open Doors | R - Reload | ESC - Pause</p>
+        <p class="controls">1/2/3 or Q/F - Switch weapons (Pistol, Shotgun, BFG 2000)</p>
+        <p class="controls">Controller: Left stick move, Right stick look, RT shoot, X reload, Y interact, LB/RB swap, Start pauses</p>
         <p style="margin-top: 20px; color: #ff0000;">Kill all enemies to win!</p>
         <button id="startButton">START GAME</button>
     </div>
+    <div id="pauseScreen">
+        <h2>Game Paused</h2>
+        <p style="color: #fff; margin-bottom: 20px;">Resume to keep fighting or restart if you're surrounded.</p>
+        <div>
+            <button id="resumeButton">Resume</button>
+            <button class="restartButton">Restart</button>
+        </div>
+    </div>
+    <div id="infoBanner">Find and eliminate all enemies. ESC pauses, R reloads.</div>
     <canvas id="gameCanvas"></canvas>
 
     <script src="game.js"></script>
