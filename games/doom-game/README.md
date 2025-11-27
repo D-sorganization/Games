@@ -9,9 +9,13 @@ A classic first-person shooter game built with HTML5 Canvas and JavaScript, feat
   - WASD for movement
   - Mouse for looking around
   - Click to shoot
+  - R to reload
+  - ESC to pause and open the in-game menu
   - E to open doors
 - **Enemy AI**: Enemies track and attack the player
-- **Combat System**: Health, ammo, and damage mechanics
+- **Combat System**: Health, ammo, reloading, and damage mechanics
+- **Pause Menu**: Resume or restart without leaving the browser tab
+- **Improved HUD**: Clip and reserve ammo display plus contextual banner updates
 - **Interactive Environment**: Doors that can be opened
 - **Win/Lose Conditions**: Eliminate all enemies to reach the exit and win
 
@@ -20,10 +24,12 @@ A classic first-person shooter game built with HTML5 Canvas and JavaScript, feat
 1. Open `index.html` in a modern web browser
 2. Click "START GAME"
 3. Use WASD to move, mouse to look around
-4. Click to shoot enemies (you have 50 bullets)
-5. Press E to open doors (gray walls)
-6. Kill all 5 enemies to unlock the exit (green wall)
-7. Don't let your health reach 0!
+4. Click to shoot enemies
+5. Press **R** to reload when your clip is empty (10-round magazine)
+6. Press **E** to open doors (gray walls)
+7. Press **ESC** to pause/resume or restart mid-run
+8. Kill all 5 enemies to unlock the exit (green wall)
+9. Don't let your health reach 0!
 
 ## Game Elements
 
@@ -53,6 +59,8 @@ A classic first-person shooter game built with HTML5 Canvas and JavaScript, feat
 | D | Strafe right |
 | Mouse | Look around |
 | Click | Shoot |
+| R | Reload |
+| ESC | Pause/Resume |
 | E | Open door |
 
 ## Tips
