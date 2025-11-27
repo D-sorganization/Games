@@ -7,6 +7,8 @@ const MAX_DEPTH = 40;
 const NUM_RAYS = SCREEN_WIDTH / 2;
 
 const PLAYER_PISTOL_DAMAGE = 10;
+const PLAYER_RIFLE_DAMAGE = 18;
+const RIFLE_COOLDOWN = 180;
 const ZOMBIE_DAMAGE = 10;
 const ZOMBIE_HEALTH = 80;
 const ATTACK_RANGE = 70;
@@ -51,7 +53,8 @@ const player = {
     rotationSpeed: 0,
     health: 100,
     maxHealth: 100,
-    ammo: 120,
+    pistolAmmo: 120,
+    rifleAmmo: 90,
     kills: 0
 };
 
@@ -109,8 +112,10 @@ const weapon = {
     bobOffset: 0,
     shootAnimOffset: 0,
     isShooting: false,
-    lastShot: 0,
-    shootCooldown: 300,
+    lastShot: { pistol: 0, rifle: 0 },
+    cooldown: { pistol: 300, rifle: RIFLE_COOLDOWN },
+    damage: { pistol: PLAYER_PISTOL_DAMAGE, rifle: PLAYER_RIFLE_DAMAGE },
+    current: 'pistol',
     isHolstered: false,
     aiming: false
 };
@@ -127,6 +132,8 @@ canvas.height = SCREEN_HEIGHT;
 // Start screen
 const startScreen = document.getElementById('startScreen');
 const startButton = document.getElementById('startButton');
+const jumpScare = document.getElementById('jumpscare');
+let jumpScareShown = false;
 
 startButton.addEventListener('click', () => {
     startScreen.style.display = 'none';
@@ -150,6 +157,14 @@ document.addEventListener('keydown', (e) => {
 
     if (key === 'm') {
         minimapVisible = !minimapVisible;
+    }
+
+    if (key === '1') {
+        weapon.current = 'pistol';
+    }
+
+    if (key === '2') {
+        weapon.current = 'rifle';
     }
 });
 
@@ -188,6 +203,31 @@ document.addEventListener('mouseup', (e) => {
         currentFov = FOV;
     }
 });
+
+function triggerJumpScare() {
+    if (jumpScareShown) return;
+    jumpScareShown = true;
+    jumpScare.style.display = 'flex';
+    try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.frequency.value = 160;
+        gain.gain.value = 0.25;
+        osc.connect(gain).connect(audioCtx.destination);
+        osc.start();
+        gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.6);
+        osc.stop(audioCtx.currentTime + 0.65);
+    } catch (err) {
+        console.warn('Audio unavailable for jumpscare', err);
+    }
+}
+
+function handlePlayerDeath() {
+    if (gameState.gameOver) return;
+    gameState.gameOver = true;
+    triggerJumpScare();
+}
 
 // Helper functions
 function castRay(rayAngle, originX = player.x, originY = player.y) {
@@ -487,7 +527,7 @@ function drawHUD() {
 
     // Ammo
     ctx.fillStyle = '#ffff00';
-    ctx.fillText(`AMMO: ${player.ammo}`, 20, 60);
+    ctx.fillText(`Pistol: ${player.pistolAmmo} | Rifle: ${player.rifleAmmo}`, 20, 60);
 
     // Kills
     ctx.fillStyle = '#00ff00';
@@ -496,7 +536,7 @@ function drawHUD() {
     // Weapon state
     ctx.fillStyle = weapon.isHolstered ? '#ffaa00' : '#00ff00';
     const holsterText = weapon.isHolstered ? 'HOLSTERED' : 'READY';
-    ctx.fillText(`GUN: ${holsterText}`, 20, 120);
+    ctx.fillText(`GUN: ${holsterText} | ${weapon.current.toUpperCase()}`, 20, 120);
 
     // Crosshair
     ctx.strokeStyle = '#00ff00';
@@ -515,10 +555,12 @@ function updatePlayer(deltaTime) {
     player.speed = 0;
     player.strafeSpeed = 0;
 
-    if (keys['w']) player.speed = 3;
-    if (keys['s']) player.speed = -3;
-    if (keys['a']) player.strafeSpeed = -3;
-    if (keys['d']) player.strafeSpeed = 3;
+    const sprinting = keys['shift'];
+    const moveAmount = sprinting ? 4.5 : 3;
+    if (keys['w']) player.speed = moveAmount;
+    if (keys['s']) player.speed = -moveAmount;
+    if (keys['a']) player.strafeSpeed = -moveAmount;
+    if (keys['d']) player.strafeSpeed = moveAmount;
 
     // Calculate new position
     const newX = player.x + Math.cos(player.angle) * player.speed + Math.cos(player.angle + Math.PI / 2) * player.strafeSpeed;
@@ -593,7 +635,7 @@ function updateEnemies(deltaTime) {
                 enemy.lastAttack = currentTime;
 
                 if (player.health <= 0) {
-                    gameState.gameOver = true;
+                    handlePlayerDeath();
                 }
             }
 
@@ -652,7 +694,7 @@ function updateProjectiles(deltaTime) {
             projectiles.splice(i, 1);
 
             if (player.health <= 0) {
-                gameState.gameOver = true;
+                handlePlayerDeath();
             }
         }
     }
@@ -662,11 +704,15 @@ function shoot() {
     const currentTime = Date.now();
 
     if (weapon.isHolstered) return;
-    if (currentTime - weapon.lastShot < weapon.shootCooldown) return;
-    if (player.ammo <= 0) return;
+    const weaponId = weapon.current;
+    const ammoKey = weaponId === 'rifle' ? 'rifleAmmo' : 'pistolAmmo';
+    const cooldown = weapon.cooldown[weaponId];
 
-    player.ammo--;
-    weapon.lastShot = currentTime;
+    if (currentTime - weapon.lastShot[weaponId] < cooldown) return;
+    if (player[ammoKey] <= 0) return;
+
+    player[ammoKey]--;
+    weapon.lastShot[weaponId] = currentTime;
     weapon.shootAnimOffset = -30;
 
     // Check if we hit an enemy
@@ -684,8 +730,9 @@ function shoot() {
         while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
         while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
 
+        const baseAim = weaponId === 'rifle' ? 0.08 : 0.1;
         const aimAllowance =
-            (weapon.aiming ? 0.1 : 0.2) + Math.max(0, 0.05 - distance * 0.002);
+            (weapon.aiming ? baseAim : baseAim + 0.1) + Math.max(0, 0.05 - distance * 0.002);
 
         // Check if enemy is in crosshair and visible
         if (
@@ -693,7 +740,7 @@ function shoot() {
             distance < centerRay.distance &&
             hasLineOfSight(player.x, player.y, enemy.x, enemy.y)
         ) {
-            enemy.health -= PLAYER_PISTOL_DAMAGE;
+            enemy.health -= weapon.damage[weaponId];
 
             if (enemy.health <= 0) {
                 player.kills++;

@@ -72,15 +72,38 @@
             color: #888;
             font-size: 14px;
         }
+
+        #jumpscare {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle at center, rgba(255, 0, 0, 0.4), rgba(0, 0, 0, 0.95)), url('https://i.imgur.com/7N4k1U4.png') center/cover no-repeat;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            color: #fff;
+            font-size: 64px;
+            text-shadow: 0 0 20px #ff0000;
+            animation: shake 0.5s linear infinite;
+            z-index: 1200;
+        }
+
+        @keyframes shake {
+            0% { transform: translate(3px, 0); }
+            25% { transform: translate(-3px, 2px); }
+            50% { transform: translate(2px, -2px); }
+            75% { transform: translate(-2px, 3px); }
+            100% { transform: translate(0, 0); }
+        }
     </style>
 </head>
 <body>
     <div id="startScreen">
         <h1>DOOM-LIKE</h1>
-        <p class="controls">WASD - Move</p>
+        <p class="controls">WASD - Move (Hold Shift to Sprint)</p>
         <p class="controls">Mouse - Look Around</p>
         <p class="controls">Left Click - Aim</p>
         <p class="controls">Right Click - Fire</p>
+        <p class="controls">1/2 - Switch Pistol / Rifle</p>
         <p class="controls">E - Open Doors</p>
         <p class="controls">H - Holster/Draw Weapon</p>
         <p class="controls">M - Toggle Minimap</p>
@@ -88,6 +111,8 @@
         <button id="startButton">START GAME</button>
     </div>
     <canvas id="gameCanvas"></canvas>
+
+    <div id="jumpscare">BRAINS!</div>
 
     <script src="game.js"></script>
 </body>
