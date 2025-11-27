@@ -1152,6 +1152,9 @@ class TetrisGame:
             return True
 
         if event.type == pygame.JOYHATMOTION:
+            # Reject neutral D-pad position (0, 0) to prevent accidental bindings
+            if event.value == (0, 0):
+                return False
             self.controller_mapping[action] = {
                 "type": "hat",
                 "index": event.hat,
@@ -1173,11 +1176,13 @@ class TetrisGame:
             return
 
         if action == "restart":
-            self.restart_game()
+            if self.state in [GameState.PLAYING, GameState.PAUSED, GameState.GAME_OVER]:
+                self.restart_game()
             return
 
         if action == "rewind":
-            self.rewind()
+            if self.state == GameState.PLAYING:
+                self.rewind()
             return
 
         if self.state != GameState.PLAYING:
@@ -1237,7 +1242,8 @@ class TetrisGame:
         if self.controls_toggle_rect.collidepoint(position):
             self.show_controls_panel = not self.show_controls_panel
         if self.restart_button.collidepoint(position):
-            self.restart_game()
+            if self.state in [GameState.PLAYING, GameState.PAUSED, GameState.GAME_OVER]:
+                self.restart_game()
 
     def handle_keydown(self, event: "pygame_event.Event") -> None:
         """Handle keydown events in active game states"""
