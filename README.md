@@ -7,9 +7,7 @@ A collection of fun game projects and interactive simulations.
 ### Games
 
 - **Tetris** (`games/tetris.py`) - Classic Tetris game implementation in Python
-- **Doom-like Game** (`games/doom-game/`) - A Doom-inspired first-person shooter game in JavaScript
-- **Zombie Hallway FPS (v1)** (`games/zombie-hallway-v1/`) - Corridor survival prototype with zombies, a boss, and pistol combat
-- **Zombie Hallway FPS (v2)** (`games/zombie-hallway-v2/`) - Refined hallway demo with clearer HUD, boss tracking, and improved pacing
+- **Zombie Games Collection** (`games/zombie-games/`) - Three browser FPS experiences (Doom-inspired arena plus two zombie hallway variants) with rifles, sprinting, and zombie jump scares
 - **Wizard of Wor** (`games/wizard_of_wor/`) - Remake of the classic Wizard of Wor arcade game
 
 ### Simulations
@@ -22,9 +20,10 @@ A collection of fun game projects and interactive simulations.
 Games/
 ├── games/              # Game implementations
 │   ├── tetris.py
-│   ├── doom-game/
-│   ├── zombie-hallway-v1/
-│   ├── zombie-hallway-v2/
+│   ├── zombie-games/
+│   │   ├── doom-game/
+│   │   ├── zombie-hallway-v1/
+│   │   └── zombie-hallway-v2/
 │   └── wizard_of_wor/
 ├── rrt_path_planner/   # RRT path planning simulation
 ├── python/             # Python utilities and shared code
