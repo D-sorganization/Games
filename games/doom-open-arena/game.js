@@ -1,31 +1,272 @@
 // Game constants
 const SCREEN_WIDTH = 1024;
 const SCREEN_HEIGHT = 768;
+const HORIZON = SCREEN_HEIGHT * 0.52;
+const SKY_DRIFT_SPEED = 0.04;
+const AURORA_SCROLL_SPEED = 0.025;
 const MAP_SIZE = 16;
 const TILE_SIZE = 64;
 const FOV = Math.PI / 3; // 60 degrees
 const MAX_DEPTH = 20;
 const NUM_RAYS = SCREEN_WIDTH / 2;
+const LIGHT_DIRECTION = { x: -0.45, y: 0.65 };
+const VIGNETTE_STRENGTH = 0.35;
+const FLOOR_DETAIL_STEP = 3;
+const SHADOW_BASE_OFFSET = 0.15;
+const SHADOW_DEPTH_FACTOR = 0.45;
+const WANDER_BASE_INTERVAL = 1200;
+const WANDER_RANDOM_VARIANCE = 400;
 
-// Game map (1 = wall, 0 = empty, 2 = door, 3 = exit)
-const map = [
-    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-    [1,0,0,0,0,0,0,0,0,0,0,0,0,3,0,1],
-    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-    [1,0,0,0,1,1,0,0,0,0,0,1,1,0,0,1],
-    [1,0,0,0,1,0,0,0,0,0,0,0,1,0,0,1],
-    [1,0,0,0,0,0,1,1,1,1,0,0,0,0,0,1],
-    [1,0,0,0,0,0,1,0,2,0,0,0,0,0,0,1],
-    [1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1],
-    [1,0,0,0,0,0,1,1,1,1,0,0,0,0,0,1],
-    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+function buildLevel(rows) {
+    return rows.map((row) => row.split('').map(Number));
+}
+
+// Game maps (1 = wall, 0 = empty, 2 = door, 3 = exit)
+const LEVELS = [
+    {
+        name: 'Gateway Ruins',
+        spawn: { x: 2, y: 2, angle: 0 },
+        minEnemies: 4,
+        maxEnemies: 6,
+        layout: buildLevel([
+            '1111111111111111',
+            '1000000000000001',
+            '1000000000000301',
+            '1000000000000001',
+            '1000110000011001',
+            '1000100000001001',
+            '1000001111100001',
+            '1000001010102001',
+            '1000001010100001',
+            '1000001111100001',
+            '1000000000000001',
+            '1000000000000001',
+            '1000000000000001',
+            '1000000000000001',
+            '1000000000000001',
+            '1111111111111111'
+        ])
+    },
+    {
+        name: 'Crossfire Halls',
+        spawn: { x: 2, y: 13, angle: Math.PI / 2 },
+        minEnemies: 5,
+        maxEnemies: 8,
+        layout: buildLevel([
+            '1111111111111111',
+            '1000000002000001',
+            '1011101110111011',
+            '1000100010001001',
+            '1000103010001001',
+            '1011101110111011',
+            '1000100000001001',
+            '1000111111101001',
+            '1000100000101001',
+            '1010102220101011',
+            '1000100000101001',
+            '1000111111101001',
+            '1000000000001001',
+            '1000000000001001',
+            '1000000000000001',
+            '1111111111111111'
+        ])
+    },
+    {
+        name: 'Spiral Chambers',
+        spawn: { x: 1, y: 1, angle: Math.PI / 4 },
+        minEnemies: 6,
+        maxEnemies: 9,
+        layout: buildLevel([
+            '1111111111111111',
+            '1000000000000001',
+            '1011111111111101',
+            '1010000000000101',
+            '1010111111110101',
+            '1010100000010101',
+            '1010101111010101',
+            '1010101001010101',
+            '1010101011010101',
+            '1010101000010101',
+            '1010111111110101',
+            '1010000000030101',
+            '1011111111100101',
+            '1000000000000101',
+            '1222222222200001',
+            '1111111111111111'
+        ])
+    },
+    {
+        name: 'Vaulted Plaza',
+        spawn: { x: 8, y: 8, angle: 0 },
+        minEnemies: 7,
+        maxEnemies: 10,
+        layout: buildLevel([
+            '1111111111111111',
+            '1000000000000001',
+            '1011110111111101',
+            '1010000100000101',
+            '1010111101110101',
+            '1010100001010101',
+            '1010102221010101',
+            '1000100001010001',
+            '1000100001010001',
+            '1010102221010101',
+            '1010100001010101',
+            '1010111101110101',
+            '1010000100000101',
+            '1011110111111101',
+            '1000000030000001',
+            '1111111111111111'
+        ])
+    },
+    {
+        name: 'Broken Keep',
+        spawn: { x: 1, y: 1, angle: Math.PI / 2 },
+        minEnemies: 7,
+        maxEnemies: 11,
+        layout: buildLevel([
+            '1111111111111111',
+            '1000001110000001',
+            '1011101010111101',
+            '1010101010100101',
+            '1010101010100101',
+            '1010101010100101',
+            '1010101010100101',
+            '1010101010100101',
+            '1010101010100101',
+            '1010101010100101',
+            '1010101010100101',
+            '1010101010100101',
+            '1010101010100101',
+            '1010111010111101',
+            '1000000010000301',
+            '1111111111111111'
+        ])
+    },
+    {
+        name: 'Ashen Courtyard',
+        spawn: { x: 8, y: 1, angle: Math.PI },
+        minEnemies: 8,
+        maxEnemies: 12,
+        layout: buildLevel([
+            '1111111111111111',
+            '1000000000000001',
+            '1011111011111101',
+            '1010001010000101',
+            '1010201010200101',
+            '1010001010000101',
+            '1011111011111101',
+            '1000000000000001',
+            '1000111111100001',
+            '1010100000101011',
+            '1010103330101011',
+            '1010100000101011',
+            '1000111111100001',
+            '1000000000000001',
+            '1000000000000001',
+            '1111111111111111'
+        ])
+    },
+    {
+        name: 'Arc Furnace',
+        spawn: { x: 2, y: 1, angle: 0 },
+        minEnemies: 9,
+        maxEnemies: 12,
+        layout: buildLevel([
+            '1111111111111111',
+            '1000220000000001',
+            '1011111111111101',
+            '1010000000000101',
+            '1010111111100101',
+            '1010100000100101',
+            '1010103030100101',
+            '1010100000100101',
+            '1010111111100101',
+            '1010000000000101',
+            '1011111111111101',
+            '1000000000000001',
+            '1000000220000001',
+            '1011111111111101',
+            '1000000000000001',
+            '1111111111111111'
+        ])
+    },
+    {
+        name: 'Chokepoint Canyons',
+        spawn: { x: 1, y: 1, angle: Math.PI / 2 },
+        minEnemies: 9,
+        maxEnemies: 13,
+        layout: buildLevel([
+            '1111111111111111',
+            '1000000000000001',
+            '1011111111111101',
+            '1000100000100001',
+            '1110101110101111',
+            '1000101010101001',
+            '1011101010111011',
+            '1010001010001011',
+            '1010111011101011',
+            '1010100030101011',
+            '1010101010101011',
+            '1010101010101011',
+            '1010101010101011',
+            '1000000000000001',
+            '1000002220000001',
+            '1111111111111111'
+        ])
+    },
+    {
+        name: 'Citadel Approach',
+        spawn: { x: 8, y: 14, angle: -Math.PI / 2 },
+        minEnemies: 10,
+        maxEnemies: 14,
+        layout: buildLevel([
+            '1111111111111111',
+            '1000000000000001',
+            '1011111111111101',
+            '1010000000000101',
+            '1010111111100101',
+            '1010100000100101',
+            '1010101110100101',
+            '1010101010100101',
+            '1010101010100101',
+            '1010101110100101',
+            '1010100000100101',
+            '1010111111100101',
+            '1010000000000101',
+            '1011111111111101',
+            '1000000000030001',
+            '1111111111111111'
+        ])
+    },
+    {
+        name: 'Hellmouth',
+        spawn: { x: 1, y: 1, angle: Math.PI / 4 },
+        minEnemies: 11,
+        maxEnemies: 15,
+        layout: buildLevel([
+            '1111111111111111',
+            '1000000000000001',
+            '1011111111111101',
+            '1010000000000101',
+            '1010111111100101',
+            '1010100000100101',
+            '1010103330100101',
+            '1010100000100101',
+            '1010111111100101',
+            '1010000000000101',
+            '1011111111111101',
+            '1000000000000001',
+            '1000222222200001',
+            '1011111111111101',
+            '1000000000000001',
+            '1111111111111111'
+        ])
+    }
 ];
+
+let map;
+let currentLevelIndex = 0;
 
 // Game state
 let gameState = {
@@ -36,79 +277,47 @@ let gameState = {
 
 // Player
 const player = {
-    x: 2 * TILE_SIZE,
-    y: 2 * TILE_SIZE,
-    angle: 0,
+    x: LEVELS[0].spawn.x * TILE_SIZE,
+    y: LEVELS[0].spawn.y * TILE_SIZE,
+    angle: LEVELS[0].spawn.angle,
     speed: 0,
     strafeSpeed: 0,
     rotationSpeed: 0,
     health: 100,
     maxHealth: 100,
-    ammo: 50,
+    ammo: 0,
     kills: 0
 };
 
 // Enemies
 const enemyTypes = {
-    demon: { color: '#b52b1d', speed: 1.6, damage: 12, shootCooldown: 1800, sprite: 'Demon' },
-    dinosaur: { color: '#3fa34d', speed: 2.2, damage: 14, shootCooldown: 1500, sprite: 'Dino' },
-    raider: { color: '#7a5cff', speed: 1.8, damage: 10, shootCooldown: 1200, sprite: 'Raider' }
+    demon: {
+        color: '#b52b1d',
+        speed: 1.6,
+        damage: 12,
+        shootCooldown: 1800,
+        sprite: 'Demon',
+        health: 40
+    },
+    dinosaur: {
+        color: '#3fa34d',
+        speed: 2.2,
+        damage: 14,
+        shootCooldown: 1500,
+        sprite: 'Dino',
+        health: 45
+    },
+    raider: {
+        color: '#7a5cff',
+        speed: 1.8,
+        damage: 10,
+        shootCooldown: 1200,
+        sprite: 'Raider',
+        health: 35
+    }
 };
 
-const enemies = [
-    {
-        x: 8 * TILE_SIZE,
-        y: 5 * TILE_SIZE,
-        health: 40,
-        maxHealth: 40,
-        angle: 0,
-        type: 'dinosaur',
-        lastShot: 0,
-        mouthOpen: false,
-        mouthTimer: 0,
-        eyeRotation: 0,
-        droolOffset: 0
-    },
-    {
-        x: 12 * TILE_SIZE,
-        y: 8 * TILE_SIZE,
-        health: 35,
-        maxHealth: 35,
-        angle: 0,
-        type: 'demon',
-        lastShot: 0,
-        mouthOpen: false,
-        mouthTimer: 0,
-        eyeRotation: 0,
-        droolOffset: 0
-    },
-    {
-        x: 4 * TILE_SIZE,
-        y: 11 * TILE_SIZE,
-        health: 30,
-        maxHealth: 30,
-        angle: 0,
-        type: 'raider',
-        lastShot: 0,
-        mouthOpen: false,
-        mouthTimer: 0,
-        eyeRotation: 0,
-        droolOffset: 0
-    },
-    {
-        x: 9 * TILE_SIZE,
-        y: 12 * TILE_SIZE,
-        health: 40,
-        maxHealth: 40,
-        angle: 0,
-        type: 'demon',
-        lastShot: 0,
-        mouthOpen: false,
-        mouthTimer: 0,
-        eyeRotation: 0,
-        droolOffset: 0
-    }
-];
+let enemies = [];
 
 // Input handling
 const keys = {};
@@ -116,13 +325,49 @@ let mouseX = 0;
 let mouseLocked = false;
 
 // Weapon state
+const weaponLoadout = [
+    {
+        name: 'Trusty Pistol',
+        damage: 20,
+        shootCooldown: 280,
+        ammo: 90,
+        baseColor: '#444',
+        midColor: '#666',
+        muzzleColor: '#ffea76'
+    },
+    {
+        name: 'Boomstick',
+        damage: 35,
+        shootCooldown: 520,
+        ammo: 65,
+        baseColor: '#5c3b2e',
+        midColor: '#7a5a3f',
+        muzzleColor: '#ffbb55'
+    },
+    {
+        name: 'Plasma Burster',
+        damage: 18,
+        shootCooldown: 160,
+        ammo: 140,
+        baseColor: '#133d7a',
+        midColor: '#1f63c4',
+        muzzleColor: '#66e2ff'
+    }
+];
+
 const weapon = {
     bobOffset: 0,
     shootAnimOffset: 0,
     isShooting: false,
     lastShot: 0,
-    shootCooldown: 300,
-    isHolstered: false
+    shootCooldown: weaponLoadout[0].shootCooldown,
+    isHolstered: false,
+    damage: weaponLoadout[0].damage,
+    baseColor: weaponLoadout[0].baseColor,
+    midColor: weaponLoadout[0].midColor,
+    muzzleColor: weaponLoadout[0].muzzleColor,
+    name: weaponLoadout[0].name,
+    maxAmmo: weaponLoadout[0].ammo
 };
 
 let minimapVisible = true;
@@ -139,7 +384,7 @@ const startButton = document.getElementById('startButton');
 
 startButton.addEventListener('click', () => {
     startScreen.style.display = 'none';
-    gameState.running = true;
+    startNewGame();
     canvas.requestPointerLock();
     gameLoop();
 });
@@ -183,6 +428,125 @@ canvas.addEventListener('click', () => {
 document.addEventListener('pointerlockchange', () => {
     mouseLocked = document.pointerLockElement === canvas;
 });
+
+function randomIntInclusive(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function randomChoice(list) {
+    return list[Math.floor(Math.random() * list.length)];
+}
+
+function randomizeWeaponLoadout() {
+    const selection = randomChoice(weaponLoadout);
+    weapon.name = selection.name;
+    weapon.damage = selection.damage;
+    weapon.shootCooldown = selection.shootCooldown;
+    weapon.baseColor = selection.baseColor;
+    weapon.midColor = selection.midColor;
+    weapon.muzzleColor = selection.muzzleColor;
+    weapon.maxAmmo = selection.ammo;
+    weapon.bobOffset = 0;
+    weapon.shootAnimOffset = 0;
+    weapon.isHolstered = false;
+    player.ammo = selection.ammo;
+}
+
+function spawnEnemiesForLevel(level) {
+    enemies = [];
+
+    const openTiles = [];
+    for (let y = 1; y < MAP_SIZE - 1; y++) {
+        for (let x = 1; x < MAP_SIZE - 1; x++) {
+            if (map[y][x] === 0) {
+                const spawnDistance = Math.hypot(x - level.spawn.x, y - level.spawn.y);
+                if (spawnDistance > 2) {
+                    openTiles.push({ x, y });
+                }
+            }
+        }
+    }
+
+    const enemyCount = randomIntInclusive(level.minEnemies, level.maxEnemies);
+    for (let i = 0; i < enemyCount && openTiles.length > 0; i++) {
+        const position = openTiles.splice(randomIntInclusive(0, openTiles.length - 1), 1)[0];
+        const typeKey = randomChoice(Object.keys(enemyTypes));
+        const type = enemyTypes[typeKey];
+        const healthVariance = 0.9 + Math.random() * 0.25;
+        const speedVariance = 0.9 + Math.random() * 0.35;
+        const damageVariance = 0.9 + Math.random() * 0.35;
+
+        const enemy = {
+            x: position.x * TILE_SIZE + TILE_SIZE / 2,
+            y: position.y * TILE_SIZE + TILE_SIZE / 2,
+            health: Math.round(type.health * healthVariance),
+            maxHealth: Math.round(type.health * healthVariance),
+            angle: 0,
+            type: typeKey,
+            lastShot: 0,
+            mouthOpen: false,
+            mouthTimer: 0,
+            eyeRotation: 0,
+            droolOffset: 0,
+            speed: type.speed * speedVariance,
+            damage: Math.round(type.damage * damageVariance),
+            shootCooldown: type.shootCooldown * (0.85 + Math.random() * 0.3),
+            behaviorSeed: Math.random() * 1000,
+            wanderTimer: 0
+        };
+
+        enemies.push(enemy);
+    }
+}
+
+function loadLevel(levelIndex, isNewRun = false) {
+    currentLevelIndex = levelIndex;
+    const level = LEVELS[currentLevelIndex];
+    map = level.layout.map((row) => [...row]);
+    player.x = level.spawn.x * TILE_SIZE;
+    player.y = level.spawn.y * TILE_SIZE;
+    player.angle = level.spawn.angle;
+    player.kills = 0;
+
+    if (isNewRun) {
+        player.health = player.maxHealth;
+        player.ammo = weapon.maxAmmo;
+    } else {
+        player.health = Math.min(player.maxHealth, player.health + 25);
+        player.ammo = Math.min(weapon.maxAmmo, player.ammo + Math.round(weapon.maxAmmo * 0.25));
+    }
+
+    spawnEnemiesForLevel(level);
+}
+
+function startNewGame() {
+    gameState.running = true;
+    gameState.won = false;
+    gameState.gameOver = false;
+    randomizeWeaponLoadout();
+    loadLevel(0, true);
+}
+
+const lightMagnitude = Math.hypot(LIGHT_DIRECTION.x, LIGHT_DIRECTION.y) || 1;
+const normalizedLight = {
+    x: LIGHT_DIRECTION.x / lightMagnitude,
+    y: LIGHT_DIRECTION.y / lightMagnitude
+};
+
+function hexToRgb(hex) {
+    const value = parseInt(hex.replace('#', ''), 16);
+    return {
+        r: (value >> 16) & 255,
+        g: (value >> 8) & 255,
+        b: value & 255
+    };
+}
+
+function shadeColor(hex, factor, alpha = 1) {
+    const { r, g, b } = hexToRgb(hex);
+    const apply = (channel) => Math.min(255, Math.max(0, Math.round(channel * factor)));
+    return `rgba(${apply(r)}, ${apply(g)}, ${apply(b)}, ${alpha})`;
+}
 
 // Helper functions
 function castRay(rayAngle, originX = player.x, originY = player.y) {
@@ -231,14 +595,83 @@ function hasLineOfSight(originX, originY, targetX, targetY) {
     return ray.distance >= distanceToTarget - 0.1;
 }
 
-function drawWalls() {
-    // Sky
-    ctx.fillStyle = '#2a2a3e';
-    ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT / 2);
+function drawSkyAndFloor() {
+    const baseSky = ctx.createLinearGradient(0, 0, 0, HORIZON);
+    baseSky.addColorStop(0, '#050714');
+    baseSky.addColorStop(0.4, '#0f1533');
+    baseSky.addColorStop(0.75, '#141937');
+    baseSky.addColorStop(1, '#1c1f3d');
 
-    // Floor
-    ctx.fillStyle = '#3d3d3d';
-    ctx.fillRect(0, SCREEN_HEIGHT / 2, SCREEN_WIDTH, SCREEN_HEIGHT / 2);
+    const normalizedAngle = ((player.angle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+    const time = Date.now() * 0.001;
+    const skyOffset = ((normalizedAngle / (Math.PI * 2)) + time * SKY_DRIFT_SPEED) * SCREEN_WIDTH;
+
+    ctx.save();
+    ctx.translate(-skyOffset, 0);
+    for (let i = -1; i <= 1; i++) {
+        ctx.fillStyle = baseSky;
+        ctx.fillRect(i * SCREEN_WIDTH, 0, SCREEN_WIDTH, HORIZON);
+
+        const aurora = ctx.createLinearGradient(
+            i * SCREEN_WIDTH,
+            HORIZON * 0.25,
+            (i + 1) * SCREEN_WIDTH,
+            HORIZON * 0.65
+        );
+        const auroraPulse = 0.08 + Math.sin(time * 0.8) * 0.04;
+        const auroraShift = Math.sin(time * AURORA_SCROLL_SPEED * 6) * 0.1 * SCREEN_WIDTH;
+        aurora.addColorStop(0, `rgba(124, 150, 255, ${0.12 + auroraPulse})`);
+        aurora.addColorStop(0.5, `rgba(255, 255, 255, ${0.07 + auroraPulse * 0.6})`);
+        aurora.addColorStop(1, `rgba(124, 150, 255, ${0.12 + auroraPulse})`);
+
+        ctx.fillStyle = aurora;
+        ctx.fillRect(i * SCREEN_WIDTH + auroraShift, 0, SCREEN_WIDTH, HORIZON);
+    }
+    ctx.restore();
+
+    const floorGradient = ctx.createLinearGradient(0, HORIZON, 0, SCREEN_HEIGHT);
+    floorGradient.addColorStop(0, '#3a3a44');
+    floorGradient.addColorStop(0.4, '#2a2a31');
+    floorGradient.addColorStop(1, '#101015');
+
+    ctx.fillStyle = floorGradient;
+    ctx.fillRect(0, HORIZON, SCREEN_WIDTH, SCREEN_HEIGHT - HORIZON);
+
+    for (let y = HORIZON; y < SCREEN_HEIGHT; y += FLOOR_DETAIL_STEP) {
+        const depthFactor = (y - HORIZON) / (SCREEN_HEIGHT - HORIZON);
+        const fog = Math.min(0.7, depthFactor * 0.95);
+        const sheen = Math.max(0, 0.16 - depthFactor * 0.16);
+        const parallax = Math.pow(1 - depthFactor, 2.4);
+        const stripeWidth = 280 * parallax;
+        const stripeX = SCREEN_WIDTH / 2 - stripeWidth / 2;
+
+        ctx.fillStyle = `rgba(0, 0, 0, ${fog})`;
+        ctx.fillRect(0, y, SCREEN_WIDTH, FLOOR_DETAIL_STEP);
+
+        if (sheen > 0) {
+            const sheenAlpha = sheen * parallax;
+            ctx.fillStyle = `rgba(160, 160, 180, ${sheenAlpha})`;
+            ctx.fillRect(stripeX, y, stripeWidth, 1);
+        }
+    }
+
+    const groundGlow = ctx.createRadialGradient(
+        SCREEN_WIDTH / 2,
+        SCREEN_HEIGHT,
+        SCREEN_HEIGHT * 0.05,
+        SCREEN_WIDTH / 2,
+        SCREEN_HEIGHT,
+        SCREEN_HEIGHT * 0.55
+    );
+    groundGlow.addColorStop(0, 'rgba(90, 110, 140, 0.2)');
+    groundGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+    ctx.fillStyle = groundGlow;
+    ctx.fillRect(0, HORIZON, SCREEN_WIDTH, SCREEN_HEIGHT - HORIZON);
+}
+
+function drawWalls() {
+    drawSkyAndFloor();
 
     // Cast rays
     for (let x = 0; x < NUM_RAYS; x++) {
@@ -260,15 +693,41 @@ function drawWalls() {
 
         // Draw wall slice
         const drawX = x * (SCREEN_WIDTH / NUM_RAYS);
-        const drawY = (SCREEN_HEIGHT - wallHeight) / 2;
+        const drawY = HORIZON - wallHeight / 2;
 
-        ctx.fillStyle = color;
+        const surfaceNormal = ray.side === 0
+            ? { x: Math.sign(Math.cos(rayAngle)) || 1, y: 0 }
+            : { x: 0, y: Math.sign(Math.sin(rayAngle)) || 1 };
+
+        const lightInfluence = Math.max(
+            0,
+            surfaceNormal.x * normalizedLight.x + surfaceNormal.y * normalizedLight.y
+        );
+        const ambient = 0.25;
+        const lightFactor = Math.min(1, ambient + lightInfluence * 0.75);
+
+        const gradient = ctx.createLinearGradient(drawX, drawY, drawX, drawY + wallHeight);
+        gradient.addColorStop(0, shadeColor(color, lightFactor + 0.1));
+        gradient.addColorStop(0.65, shadeColor(color, lightFactor));
+        gradient.addColorStop(1, shadeColor(color, Math.max(0.2, lightFactor - 0.12)));
+
+        ctx.fillStyle = gradient;
         ctx.fillRect(drawX, drawY, SCREEN_WIDTH / NUM_RAYS + 1, wallHeight);
 
         // Add darkness based on distance
-        const darkness = Math.min(distance / MAX_DEPTH, 0.7);
+        const darkness = Math.min(distance / MAX_DEPTH, 0.75);
         ctx.fillStyle = `rgba(0, 0, 0, ${darkness})`;
         ctx.fillRect(drawX, drawY, SCREEN_WIDTH / NUM_RAYS + 1, wallHeight);
+
+        const contactShadow = Math.min(0.45, darkness + 0.15);
+        ctx.fillStyle = `rgba(0, 0, 0, ${contactShadow})`;
+        ctx.fillRect(drawX, drawY + wallHeight - 3, SCREEN_WIDTH / NUM_RAYS + 1, 5);
+
+        const rimHighlight = Math.max(0, 0.18 - darkness);
+        if (rimHighlight > 0) {
+            ctx.fillStyle = `rgba(255, 255, 255, ${rimHighlight * 0.15})`;
+            ctx.fillRect(drawX, drawY, 1.5, wallHeight);
+        }
     }
 }
 
@@ -374,6 +833,28 @@ function drawEnemies() {
             const spriteSize = (TILE_SIZE / distance) * 277;
             const spriteX = SCREEN_WIDTH / 2 + (normalizedAngle / FOV) * SCREEN_WIDTH - spriteSize / 2;
             const spriteY = SCREEN_HEIGHT / 2 - spriteSize / 2;
+            const spriteCenterX = spriteX + spriteSize / 2;
+            const groundY = HORIZON + (SCREEN_HEIGHT - HORIZON) * SHADOW_BASE_OFFSET + Math.min(1, distance / (MAX_DEPTH * TILE_SIZE)) * (SCREEN_HEIGHT - HORIZON) * SHADOW_DEPTH_FACTOR;
+            const shadowWidth = spriteSize * 0.6;
+            const shadowHeight = spriteSize * 0.14;
+            const shadowGradient = ctx.createRadialGradient(
+                spriteCenterX,
+                groundY,
+                shadowWidth * 0.1,
+                spriteCenterX,
+                groundY,
+                shadowWidth * 0.6
+            );
+            shadowGradient.addColorStop(0, 'rgba(0, 0, 0, 0.35)');
+            shadowGradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+            ctx.fillStyle = shadowGradient;
+            ctx.fillRect(
+                spriteCenterX - shadowWidth / 2,
+                groundY - shadowHeight / 2,
+                shadowWidth,
+                shadowHeight
+            );
 
             drawEnemySprite(spriteX, spriteY, spriteSize, enemy);
 
@@ -390,6 +871,23 @@ function drawEnemies() {
     });
 }
 
+function drawVignette() {
+    const vignette = ctx.createRadialGradient(
+        SCREEN_WIDTH / 2,
+        SCREEN_HEIGHT * 0.55,
+        Math.min(SCREEN_WIDTH, SCREEN_HEIGHT) * 0.25,
+        SCREEN_WIDTH / 2,
+        SCREEN_HEIGHT * 0.55,
+        Math.max(SCREEN_WIDTH, SCREEN_HEIGHT) * 0.7
+    );
+
+    vignette.addColorStop(0, 'rgba(0, 0, 0, 0)');
+    vignette.addColorStop(1, `rgba(0, 0, 0, ${VIGNETTE_STRENGTH})`);
+
+    ctx.fillStyle = vignette;
+    ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+}
+
 function drawWeapon() {
     if (weapon.isHolstered) {
         return;
@@ -399,18 +897,18 @@ function drawWeapon() {
     const weaponX = SCREEN_WIDTH / 2 - 50;
 
     // Draw simple gun
-    ctx.fillStyle = '#444';
+    ctx.fillStyle = weapon.baseColor;
     ctx.fillRect(weaponX, weaponY, 100, 200);
 
-    ctx.fillStyle = '#666';
+    ctx.fillStyle = shadeColor(weapon.midColor, 1.1);
     ctx.fillRect(weaponX + 20, weaponY, 60, 150);
 
-    ctx.fillStyle = '#222';
+    ctx.fillStyle = shadeColor(weapon.baseColor, 0.6);
     ctx.fillRect(weaponX + 35, weaponY, 30, 80);
 
     // Muzzle flash
     if (weapon.shootAnimOffset < 0) {
-        ctx.fillStyle = '#ffff00';
+        ctx.fillStyle = weapon.muzzleColor;
         ctx.fillRect(weaponX + 25, weaponY - 20, 50, 20);
     }
 }
@@ -423,7 +921,7 @@ function drawHUD() {
 
     // Ammo
     ctx.fillStyle = '#ffff00';
-    ctx.fillText(`AMMO: ${player.ammo}`, 20, 60);
+    ctx.fillText(`AMMO: ${player.ammo}/${weapon.maxAmmo}`, 20, 60);
 
     // Kills
     ctx.fillStyle = '#00ff00';
@@ -432,7 +930,14 @@ function drawHUD() {
     // Weapon state
     ctx.fillStyle = weapon.isHolstered ? '#ffaa00' : '#00ff00';
     const holsterText = weapon.isHolstered ? 'HOLSTERED' : 'READY';
-    ctx.fillText(`GUN: ${holsterText}`, 20, 120);
+    ctx.fillText(`GUN: ${weapon.name} - ${holsterText}`, 20, 120);
+
+    ctx.fillStyle = '#7cd1ff';
+    ctx.fillText(
+        `LEVEL: ${currentLevelIndex + 1}/${LEVELS.length} - ${LEVELS[currentLevelIndex].name}`,
+        20,
+        150
+    );
 
     // Crosshair
     ctx.strokeStyle = '#00ff00';
@@ -470,7 +975,11 @@ function updatePlayer(deltaTime) {
 
     // Check for exit
     if (map[mapY] && map[mapY][mapX] === 3 && player.kills === enemies.length) {
-        gameState.won = true;
+        if (currentLevelIndex < LEVELS.length - 1) {
+            loadLevel(currentLevelIndex + 1);
+        } else {
+            gameState.won = true;
+        }
     }
 
     // Weapon bobbing
@@ -508,8 +1017,12 @@ function updateEnemies(deltaTime) {
                 enemy.mouthTimer = 0;
             }
 
-            const newX = enemy.x + Math.cos(angleToPlayer) * type.speed;
-            const newY = enemy.y + Math.sin(angleToPlayer) * type.speed;
+            const surge = 1 + Math.sin((currentTime + enemy.behaviorSeed) * 0.002) * 0.2;
+            const jitter = Math.sin((currentTime + enemy.behaviorSeed) * 0.0035) * 0.35;
+            const moveAngle = angleToPlayer + jitter;
+            const step = enemy.speed * surge;
+            const newX = enemy.x + Math.cos(moveAngle) * step;
+            const newY = enemy.y + Math.sin(moveAngle) * step;
 
             const mapX = Math.floor(newX / TILE_SIZE);
             const mapY = Math.floor(newY / TILE_SIZE);
@@ -519,19 +1032,19 @@ function updateEnemies(deltaTime) {
                 enemy.y = newY;
             }
 
-            if (distance < 220 && currentTime - enemy.lastShot > type.shootCooldown) {
-                player.health -= type.damage;
+            if (distance < 220 && currentTime - enemy.lastShot > enemy.shootCooldown) {
+                player.health -= enemy.damage;
                 enemy.lastShot = currentTime;
 
                 if (player.health <= 0) {
                     gameState.gameOver = true;
                 }
             }
-        } else if (currentTime % 2000 < 50) {
-            // small wander to keep them moving
+        } else if (currentTime - enemy.wanderTimer > WANDER_BASE_INTERVAL + (enemy.behaviorSeed % WANDER_RANDOM_VARIANCE)) {
+            enemy.wanderTimer = currentTime;
             const wanderAngle = Math.random() * Math.PI * 2;
-            const newX = enemy.x + Math.cos(wanderAngle) * type.speed * 0.5;
-            const newY = enemy.y + Math.sin(wanderAngle) * type.speed * 0.5;
+            const newX = enemy.x + Math.cos(wanderAngle) * enemy.speed * 0.6;
+            const newY = enemy.y + Math.sin(wanderAngle) * enemy.speed * 0.6;
 
             const mapX = Math.floor(newX / TILE_SIZE);
             const mapY = Math.floor(newY / TILE_SIZE);
@@ -574,7 +1087,7 @@ function shoot() {
 
         // Check if enemy is in crosshair and visible
         if (Math.abs(angleDiff) < aimAllowance && distance < centerRay.distance && hasLineOfSight(player.x, player.y, enemy.x, enemy.y)) {
-            enemy.health -= 20;
+            enemy.health -= weapon.damage;
 
             if (enemy.health <= 0) {
                 player.kills++;
@@ -684,7 +1197,7 @@ function drawWin() {
 
     ctx.fillStyle = '#ffffff';
     ctx.font = '24px Courier New';
-    ctx.fillText('All enemies eliminated!', SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + 50);
+    ctx.fillText('All levels cleared!', SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + 50);
     ctx.textAlign = 'left';
 }
 
@@ -709,6 +1222,7 @@ function gameLoop() {
         // Draw
         drawWalls();
         drawEnemies();
+        drawVignette();
         drawWeapon();
         drawHUD();
         drawMinimap();
