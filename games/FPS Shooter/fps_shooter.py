@@ -393,7 +393,10 @@ class Raycaster:
 
             # Check if bot is in ray direction
             bot_angle = math.atan2(dy, dx)
-            angle_diff = abs(bot_angle - angle)
+            # Normalize angles to [0, 2π) range for comparison
+            bot_angle_norm = bot_angle if bot_angle >= 0 else bot_angle + 2 * math.pi
+            angle_norm = angle % (2 * math.pi)
+            angle_diff = abs(bot_angle_norm - angle_norm)
             if angle_diff > math.pi:
                 angle_diff = 2 * math.pi - angle_diff
 
@@ -492,18 +495,18 @@ class Raycaster:
         # Draw bots
         for bot in bots:
             if bot.alive:
-                bot_x = minimap_x + bot.y * minimap_scale
-                bot_y = minimap_y + bot.x * minimap_scale
+                bot_x = minimap_x + bot.x * minimap_scale
+                bot_y = minimap_y + bot.y * minimap_scale
                 pygame.draw.circle(screen, RED, (int(bot_x), int(bot_y)), 3)
 
         # Draw player
-        player_x = minimap_x + player.y * minimap_scale
-        player_y = minimap_y + player.x * minimap_scale
+        player_x = minimap_x + player.x * minimap_scale
+        player_y = minimap_y + player.y * minimap_scale
         pygame.draw.circle(screen, GREEN, (int(player_x), int(player_y)), 3)
 
         # Draw direction
-        dir_x = player_x + math.sin(player.angle) * 10
-        dir_y = player_y + math.cos(player.angle) * 10
+        dir_x = player_x + math.cos(player.angle) * 10
+        dir_y = player_y + math.sin(player.angle) * 10
         pygame.draw.line(screen, GREEN, (player_x, player_y), (dir_x, dir_y), 2)
 
 
@@ -662,7 +665,9 @@ class Game:
 
             # Check if bot is in front of player
             bot_angle = math.atan2(dy, dx)
-            angle_diff = abs(bot_angle - self.player.angle)
+            # Normalize bot_angle to [0, 2π) range for comparison (player.angle is already normalized)
+            bot_angle_norm = bot_angle if bot_angle >= 0 else bot_angle + 2 * math.pi
+            angle_diff = abs(bot_angle_norm - self.player.angle)
             if angle_diff > math.pi:
                 angle_diff = 2 * math.pi - angle_diff
 
