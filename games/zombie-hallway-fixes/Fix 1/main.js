@@ -1,5 +1,5 @@
-import * as THREE from '../vendor/three/three.module.js';
-import { PointerLockControls } from '../vendor/three/PointerLockControls.js';
+import * as THREE from '../../vendor/three/three.module.js';
+import { PointerLockControls } from '../../vendor/three/PointerLockControls.js';
 
 const PLAYER_SPEED = 12;
 const PLAYER_SPRINT = 18;

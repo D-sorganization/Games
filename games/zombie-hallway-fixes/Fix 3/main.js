@@ -1,11 +1,14 @@
-import * as THREE from '../vendor/three/three.module.js';
-import { PointerLockControls } from '../vendor/three/PointerLockControls.js';
+import * as THREE from '../../vendor/three/three.module.js';
+import { PointerLockControls } from '../../vendor/three/PointerLockControls.js';
 
 const PLAYER_SPEED = 12;
 const PLAYER_SPRINT = 18;
 const PLAYER_HEIGHT = 1.8;
 const GRAVITY = 30;
 const JUMP_VELOCITY = 10;
+const PISTOL_DAMAGE = 10;
+const RIFLE_DAMAGE = 18;
+const RIFLE_COOLDOWN = 0.22;
 const ZOMBIE_HEALTH = 80;
 const BOSS_HEALTH = 160;
 const ZOMBIE_DAMAGE = 10;
@@ -14,15 +17,19 @@ const FIREBALL_DAMAGE = 15;
 const FIREBALL_SPEED = 14;
 const FIREBALL_COOLDOWN = 2.5;
 const SHOOT_COOLDOWN = 0.35;
-const AMMO_MAX = 60;
+const weaponStats = {
+  pistol: { damage: PISTOL_DAMAGE, cooldown: SHOOT_COOLDOWN },
+  rifle: { damage: RIFLE_DAMAGE, cooldown: RIFLE_COOLDOWN },
+};
 const AIM_FOV = 45;
 const BASE_FOV = 70;
 
 let scene, camera, renderer, controls;
 let worldBoxes = [];
 let playerVelocityY = 0;
-let lastShot = 0;
-let ammo = AMMO_MAX;
+let lastShot = { pistol: 0, rifle: 0 };
+let ammo = { pistol: 60, rifle: 90 };
+let currentWeapon = 'pistol';
 let playerHealth = 100;
 let gameEnded = false;
 let clock = new THREE.Clock();
@@ -36,9 +43,17 @@ const uiHealth = document.getElementById('health');
 const uiBossHealth = document.getElementById('bossHealth');
 const uiAmmo = document.getElementById('ammo');
 const crosshair = document.getElementById('crosshair');
+const damageFlash = document.getElementById('damageFlash');
+const jumpscare = document.getElementById('jumpscare');
+let jumpScareShown = false;
+
+function updateAmmoUI() {
+  uiAmmo.textContent = `Weapon: ${currentWeapon.toUpperCase()} | Pistol: ${ammo.pistol} | Rifle: ${ammo.rifle}`;
+}
 
 startButton.addEventListener('click', () => {
   overlay.style.display = 'none';
+  updateAmmoUI();
   init();
   animate();
 });
@@ -164,10 +179,11 @@ function updateHealthBars() {
 
 function handleShoot() {
   const now = clock.getElapsedTime();
-  if (now - lastShot < SHOOT_COOLDOWN || ammo <= 0 || gameEnded) return;
-  lastShot = now;
-  ammo -= 1;
-  uiAmmo.textContent = `Ammo: ${ammo}`;
+  const stats = weaponStats[currentWeapon];
+  if (!stats || now - lastShot[currentWeapon] < stats.cooldown || ammo[currentWeapon] <= 0 || gameEnded) return;
+  lastShot[currentWeapon] = now;
+  ammo[currentWeapon] -= 1;
+  updateAmmoUI();
 
   const raycaster = new THREE.Raycaster();
   raycaster.setFromCamera(new THREE.Vector2(), camera);
@@ -175,7 +191,7 @@ function handleShoot() {
   if (intersects.length > 0) {
     const target = enemies.find(e => e.group === intersects[0].object.parent || e.group.children.includes(intersects[0].object));
     if (target && target.alive) {
-      target.health -= target.isBoss ? 10 : 10;
+      target.health -= stats.damage;
       if (target.health <= 0) {
         target.alive = false;
         target.group.visible = false;
@@ -247,6 +263,8 @@ function applyDamage(amount) {
   if (gameEnded) return;
   playerHealth = Math.max(0, playerHealth - amount);
   uiHealth.textContent = `Health: ${playerHealth}`;
+  damageFlash.classList.add('active');
+  setTimeout(() => damageFlash.classList.remove('active'), 180);
   if (playerHealth <= 0) {
     endGame('You were overrun!');
   }
@@ -255,7 +273,27 @@ function applyDamage(amount) {
 function endGame(message) {
   if (gameEnded) return;
   gameEnded = true;
-  alert(message);
+  showJumpScare(message);
+}
+
+function showJumpScare(message = 'BRAAAINS!') {
+  if (jumpScareShown) return;
+  jumpScareShown = true;
+  jumpscare.textContent = message;
+  jumpscare.classList.add('active');
+  try {
+    const audio = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = audio.createOscillator();
+    const gain = audio.createGain();
+    osc.frequency.value = 170;
+    gain.gain.value = 0.22;
+    osc.connect(gain).connect(audio.destination);
+    osc.start();
+    gain.gain.exponentialRampToValueAtTime(0.0001, audio.currentTime + 0.5);
+    osc.stop(audio.currentTime + 0.55);
+  } catch (e) {
+    console.warn('Unable to play jumpscare audio', e);
+  }
 }
 
 function onWindowResize() {
@@ -314,6 +352,8 @@ document.addEventListener('keydown', (event) => {
     case 'KeyD': moveRight = true; break;
     case 'Space': if (canJump) { playerVelocityY = JUMP_VELOCITY; canJump = false; } break;
     case 'ShiftLeft': isSprinting = true; break;
+    case 'Digit1': currentWeapon = 'pistol'; updateAmmoUI(); break;
+    case 'Digit2': currentWeapon = 'rifle'; updateAmmoUI(); break;
   }
 });
 
