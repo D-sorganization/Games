@@ -141,7 +141,7 @@ class Map:
         map_x = int(x)
         map_y = int(y)
         if 0 <= map_x < MAP_SIZE and 0 <= map_y < MAP_SIZE:
-            return self.grid[map_x][map_y] != 0
+            return self.grid[map_y][map_x] != 0
         return True
 
     def get_wall_type(self, x: float, y: float) -> int:
@@ -149,7 +149,7 @@ class Map:
         map_x = int(x)
         map_y = int(y)
         if 0 <= map_x < MAP_SIZE and 0 <= map_y < MAP_SIZE:
-            return self.grid[map_x][map_y]
+            return self.grid[map_y][map_x]
         return 1
 
 
@@ -575,8 +575,8 @@ class Game:
         offset = 5
         return [
             (offset, offset, math.pi / 4),  # Top-left
-            (offset, MAP_SIZE - offset, 3 * math.pi / 4),  # Bottom-left
-            (MAP_SIZE - offset, offset, 7 * math.pi / 4),  # Top-right
+            (offset, MAP_SIZE - offset, 7 * math.pi / 4),  # Bottom-left
+            (MAP_SIZE - offset, offset, 3 * math.pi / 4),  # Top-right
             (MAP_SIZE - offset, MAP_SIZE - offset, 5 * math.pi / 4),  # Bottom-right
         ]
 
@@ -925,8 +925,9 @@ class Game:
         self.screen.blit(title, title_rect)
 
         # Stats
+        completed_levels = max(0, self.level - 1)
         stats = [
-            f"You survived {self.level} level{'s' if self.level != 1 else ''}",
+            f"You survived {completed_levels} level{'s' if completed_levels != 1 else ''}",
             f"Total Kills: {self.kills}",
             "",
             "Press SPACE to restart",
