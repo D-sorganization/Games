@@ -12,6 +12,10 @@ const NUM_RAYS = SCREEN_WIDTH / 2;
 const LIGHT_DIRECTION = { x: -0.45, y: 0.65 };
 const VIGNETTE_STRENGTH = 0.35;
 const FLOOR_DETAIL_STEP = 3;
+const SHADOW_BASE_OFFSET = 0.15;
+const SHADOW_DEPTH_FACTOR = 0.45;
+const WANDER_BASE_INTERVAL = 1200;
+const WANDER_RANDOM_VARIANCE = 400;
 
 function buildLevel(rows) {
     return rows.map((row) => row.split('').map(Number));
@@ -69,7 +73,7 @@ const LEVELS = [
     },
     {
         name: 'Spiral Chambers',
-        spawn: { x: 2, y: 2, angle: Math.PI / 4 },
+        spawn: { x: 1, y: 1, angle: Math.PI / 4 },
         minEnemies: 6,
         maxEnemies: 9,
         layout: buildLevel([
@@ -117,7 +121,7 @@ const LEVELS = [
     },
     {
         name: 'Broken Keep',
-        spawn: { x: 2, y: 2, angle: Math.PI / 2 },
+        spawn: { x: 1, y: 1, angle: Math.PI / 2 },
         minEnemies: 7,
         maxEnemies: 11,
         layout: buildLevel([
@@ -141,7 +145,7 @@ const LEVELS = [
     },
     {
         name: 'Ashen Courtyard',
-        spawn: { x: 8, y: 2, angle: Math.PI },
+        spawn: { x: 8, y: 1, angle: Math.PI },
         minEnemies: 8,
         maxEnemies: 12,
         layout: buildLevel([
@@ -165,7 +169,7 @@ const LEVELS = [
     },
     {
         name: 'Arc Furnace',
-        spawn: { x: 2, y: 8, angle: 0 },
+        spawn: { x: 2, y: 1, angle: 0 },
         minEnemies: 9,
         maxEnemies: 12,
         layout: buildLevel([
@@ -189,7 +193,7 @@ const LEVELS = [
     },
     {
         name: 'Chokepoint Canyons',
-        spawn: { x: 2, y: 2, angle: Math.PI / 2 },
+        spawn: { x: 1, y: 1, angle: Math.PI / 2 },
         minEnemies: 9,
         maxEnemies: 13,
         layout: buildLevel([
@@ -237,7 +241,7 @@ const LEVELS = [
     },
     {
         name: 'Hellmouth',
-        spawn: { x: 2, y: 2, angle: Math.PI / 4 },
+        spawn: { x: 1, y: 1, angle: Math.PI / 4 },
         minEnemies: 11,
         maxEnemies: 15,
         layout: buildLevel([
@@ -261,7 +265,7 @@ const LEVELS = [
     }
 ];
 
-let map = LEVELS[0].layout.map((row) => [...row]);
+let map;
 let currentLevelIndex = 0;
 
 // Game state
@@ -425,7 +429,7 @@ document.addEventListener('pointerlockchange', () => {
     mouseLocked = document.pointerLockElement === canvas;
 });
 
-function randomInt(min, max) {
+function randomIntInclusive(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
@@ -463,9 +467,9 @@ function spawnEnemiesForLevel(level) {
         }
     }
 
-    const enemyCount = randomInt(level.minEnemies, level.maxEnemies);
+    const enemyCount = randomIntInclusive(level.minEnemies, level.maxEnemies);
     for (let i = 0; i < enemyCount && openTiles.length > 0; i++) {
-        const position = openTiles.splice(randomInt(0, openTiles.length - 1), 1)[0];
+        const position = openTiles.splice(randomIntInclusive(0, openTiles.length - 1), 1)[0];
         const typeKey = randomChoice(Object.keys(enemyTypes));
         const type = enemyTypes[typeKey];
         const healthVariance = 0.9 + Math.random() * 0.25;
@@ -830,7 +834,7 @@ function drawEnemies() {
             const spriteX = SCREEN_WIDTH / 2 + (normalizedAngle / FOV) * SCREEN_WIDTH - spriteSize / 2;
             const spriteY = SCREEN_HEIGHT / 2 - spriteSize / 2;
             const spriteCenterX = spriteX + spriteSize / 2;
-            const groundY = HORIZON + (SCREEN_HEIGHT - HORIZON) * 0.15 + Math.min(1, distance / (MAX_DEPTH * TILE_SIZE)) * (SCREEN_HEIGHT - HORIZON) * 0.45;
+            const groundY = HORIZON + (SCREEN_HEIGHT - HORIZON) * SHADOW_BASE_OFFSET + Math.min(1, distance / (MAX_DEPTH * TILE_SIZE)) * (SCREEN_HEIGHT - HORIZON) * SHADOW_DEPTH_FACTOR;
             const shadowWidth = spriteSize * 0.6;
             const shadowHeight = spriteSize * 0.14;
             const shadowGradient = ctx.createRadialGradient(
@@ -1036,7 +1040,7 @@ function updateEnemies(deltaTime) {
                     gameState.gameOver = true;
                 }
             }
-        } else if (currentTime - enemy.wanderTimer > 1200 + (enemy.behaviorSeed % 400)) {
+        } else if (currentTime - enemy.wanderTimer > WANDER_BASE_INTERVAL + (enemy.behaviorSeed % WANDER_RANDOM_VARIANCE)) {
             enemy.wanderTimer = currentTime;
             const wanderAngle = Math.random() * Math.PI * 2;
             const newX = enemy.x + Math.cos(wanderAngle) * enemy.speed * 0.6;
