@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Zombie Hallway FPS (v2)</title>
+  <link rel="stylesheet" href="style.css" />
+
+  <script type="module" src="main.js"></script>
+</head>
+<body>
+  <div id="start" class="overlay">
+    <div class="overlay-content">
+      <h1>Zombie Hallway v2</h1>
+      <p>Left click: aim, Right click: fire. 1 = Pistol, 2 = Rifle. WASD to move, Shift to sprint, Space to jump. Avoid melee and fireballs.</p>
+      <button id="play">Start</button>
+    </div>
+  </div>
+  <div id="hud" class="hud">
+    <div id="hp" class="bar">HP: 100</div>
+    <div id="boss" class="bar">Boss: 200</div>
+    <div id="ammo" class="bar">Weapon: Pistol | Pistol: 120 | Rifle: 90</div>
+    <div id="kills" class="bar">Kills: 0</div>
+  </div>
+  <div id="crosshair">+</div>
+  <div id="damageFlash" class="damage"></div>
+  <div id="jumpscare" class="jumpscare">BRAAAINS!</div>
+</body>
+</html>
