@@ -1,6 +1,8 @@
 """
 Enemy characters for Wizard of Wor.
 """
+
+import math
 import random
 from typing import Any
 
@@ -22,13 +24,19 @@ class Enemy:
         self.enemy_type = enemy_type
         self.alive = True
         self.visible = True  # Some enemies can become invisible
-        self.rect = pygame.Rect(x - ENEMY_SIZE // 2, y - ENEMY_SIZE // 2,
-                               ENEMY_SIZE, ENEMY_SIZE)
+        self.rect = pygame.Rect(
+            x - ENEMY_SIZE // 2, y - ENEMY_SIZE // 2, ENEMY_SIZE, ENEMY_SIZE
+        )
         self.direction = random.choice([UP, DOWN, LEFT, RIGHT])
         self.move_timer = 0
         self.direction_change_interval = random.randint(30, 90)
         self.shoot_timer = random.randint(60, 180)
         self.can_shoot = True
+        self.animation_timer = 0
+        self.step_frame = 0
+        self.invisibility_cooldown = 0
+        self.invisibility_time = 0
+        self.spawn_flash = 36
 
     def update(self, dungeon: Any, player_pos: tuple[float, float]) -> None:
         """Update enemy position and behavior."""
@@ -72,8 +80,37 @@ class Enemy:
             # Change direction when hitting wall
             self.direction = random.choice([UP, DOWN, LEFT, RIGHT])
 
+        # Advance walk animation
+        if (self.x, self.y) != (old_x, old_y):
+            self.animation_timer += 1
+            if self.animation_timer >= ENEMY_ANIMATION_SPEED:
+                self.animation_timer = 0
+                self.step_frame = 1 - self.step_frame
+
         # Update shoot timer
         self.shoot_timer -= 1
+
+        # Handle invisibility cadence for stealthy foes
+        if self.invisibility_time > 0:
+            self.invisibility_time -= 1
+            self.visible = (
+                self.invisibility_time % INVISIBILITY_FLICKER_PERIOD
+                < INVISIBILITY_FLICKER_ON_FRAMES
+            )
+            if self.invisibility_time == 0:
+                self.visible = True
+                self.invisibility_cooldown = INVISIBILITY_INTERVAL
+        elif self.enemy_type in {"garwor", "thorwor", "worluk"}:
+            if self.invisibility_cooldown > 0:
+                self.invisibility_cooldown -= 1
+            else:
+                self.invisibility_time = INVISIBILITY_DURATION
+                self.visible = False
+        else:
+            self.visible = True
+
+        if self.spawn_flash > 0:
+            self.spawn_flash -= 1
 
     def try_shoot(self) -> Bullet | None:
         """Try to shoot a bullet."""
@@ -92,11 +129,48 @@ class Enemy:
     def draw(self, screen: pygame.Surface) -> None:
         """Draw the enemy."""
         if self.alive and self.visible:
-            pygame.draw.rect(screen, self.color, self.rect)
-            # Add a darker border
-            pygame.draw.rect(screen, (max(0, self.color[0] - 50),
-                                     max(0, self.color[1] - 50),
-                                     max(0, self.color[2] - 50)), self.rect, 2)
+            body_rect = pygame.Rect(self.rect)
+            body_rect.inflate_ip(-ENEMY_OUTLINE, -ENEMY_OUTLINE)
+
+            # Glowing aura
+            aura_radius = ENEMY_GLOW
+            aura_surface = pygame.Surface(
+                (body_rect.width + aura_radius * 2, body_rect.height + aura_radius * 2),
+                pygame.SRCALPHA,
+            )
+            flash = 180 if self.spawn_flash > 0 else 120
+            aura_alpha = flash + 40 * math.sin(pygame.time.get_ticks() / 180)
+            pygame.draw.ellipse(
+                aura_surface,
+                (self.color[0], self.color[1], self.color[2], int(aura_alpha)),
+                aura_surface.get_rect(),
+            )
+            screen.blit(
+                aura_surface,
+                (
+                    body_rect.centerx - aura_surface.get_width() // 2,
+                    body_rect.centery - aura_surface.get_height() // 2,
+                ),
+            )
+
+            pygame.draw.ellipse(screen, self.color, body_rect)
+
+            # Feet positions to mimic stomping
+            foot_offset = 3 if self.step_frame else -3
+            left_foot = (self.x - 5, self.y + foot_offset)
+            right_foot = (self.x + 5, self.y - foot_offset)
+            pygame.draw.circle(screen, self.color, left_foot, 4)
+            pygame.draw.circle(screen, self.color, right_foot, 4)
+
+            # Eye slit to hint direction
+            eye_width = 8
+            eye_height = 4
+            eye_rect = pygame.Rect(0, 0, eye_width, eye_height)
+            eye_rect.center = (
+                self.x + self.direction[0] * 5,
+                self.y + self.direction[1] * 5,
+            )
+            pygame.draw.rect(screen, BLACK, eye_rect, border_radius=2)
 
 
 class Burwor(Enemy):
@@ -131,18 +205,13 @@ class Worluk(Enemy):
         """Initialize Worluk enemy at position"""
         super().__init__(x, y, WORLUK_SPEED, CYAN, WORLUK_POINTS, "worluk")
         self.visible = False
-        self.blink_timer = 0
         self.can_shoot = False
+        self.invisibility_cooldown = INVISIBILITY_INTERVAL // 2
+        self.invisibility_time = INVISIBILITY_DURATION // 2
 
     def update(self, dungeon: Any, player_pos: tuple[float, float]) -> None:
         """Update Worluk with special visibility behavior."""
         super().update(dungeon, player_pos)
-
-        # Blink in and out of visibility
-        self.blink_timer += 1
-        if self.blink_timer >= 30:
-            self.blink_timer = 0
-            self.visible = not self.visible
 
 
 class Wizard(Enemy):
