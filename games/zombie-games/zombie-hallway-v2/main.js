@@ -1,3 +1,7 @@
+
+import * as THREE from 'https://unpkg.com/three@0.158.0/build/three.module.js';
+import { PointerLockControls } from 'https://unpkg.com/three@0.158.0/examples/jsm/controls/PointerLockControls.js';
+
 const PLAYER_SPEED = 12;
 const PLAYER_SPRINT = 18;
 const PLAYER_HEIGHT = 1.8;
@@ -92,7 +96,7 @@ function init() {
   renderer.setSize(window.innerWidth, window.innerHeight);
   document.body.appendChild(renderer.domElement);
 
-  controls = new THREE.PointerLockControls(camera, renderer.domElement);
+  controls = new PointerLockControls(camera, renderer.domElement);
   renderer.domElement.addEventListener('click', () => controls.lock());
 
   scene.add(new THREE.HemisphereLight(0xffffff, 0x555555, 1.1));
@@ -106,7 +110,7 @@ function init() {
   window.addEventListener('resize', onResize);
 }
 
-function buildLevel() {
+// ...existing code...
   const floorGeom = new THREE.BoxGeometry(8, 0.5, 240);
   const floor = new THREE.Mesh(floorGeom, new THREE.MeshStandardMaterial({ color: 0x202020 }));
   floor.position.set(0, -0.25, 0);
