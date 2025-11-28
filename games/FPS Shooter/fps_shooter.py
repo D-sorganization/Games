@@ -728,14 +728,21 @@ class Game:
             self.map_size_buttons.append((btn, size))
 
     def get_corner_positions(self) -> List[Tuple[float, float, float]]:
-        """Get spawn positions for four corners (x, y, angle)"""
+        """Get spawn positions for four corners (x, y, angle)
+        Ensures spawns are outside buildings, especially avoiding Building 4 in bottom-right
+        """
         offset = 5
         map_size = self.game_map.size if self.game_map else self.selected_map_size
+        
+        # Building 4 occupies 0.75 * size to 0.95 * size, so bottom-right spawn must be before 0.75 * size
+        # Use a proportional offset that ensures we're outside Building 4
+        bottom_right_offset = max(offset, int(map_size * 0.7))  # Spawn before Building 4 starts
+        
         return [
             (offset, offset, math.pi / 4),  # Top-left
             (offset, map_size - offset, 7 * math.pi / 4),  # Bottom-left
             (map_size - offset, offset, 3 * math.pi / 4),  # Top-right
-            (map_size - offset, map_size - offset, 5 * math.pi / 4),  # Bottom-right
+            (map_size - bottom_right_offset, map_size - bottom_right_offset, 5 * math.pi / 4),  # Bottom-right (outside Building 4)
         ]
 
     def start_game(self):
