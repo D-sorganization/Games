@@ -115,11 +115,14 @@ class Map:
             self.grid[i][size - 1] = 1
 
         # Scale building positions based on map size
+        # Use proportional minimums that scale with map size to ensure buildings generate for all sizes
+        min_offset = max(3, int(size * 0.1))  # Minimum offset, scales with size but has floor
+        
         # Building 1 - Large rectangular building (top-left area)
-        b1_start_i = max(10, int(size * 0.15))
-        b1_end_i = min(int(size * 0.3), size - 1)
-        b1_start_j = max(10, int(size * 0.15))
-        b1_end_j = min(int(size * 0.4), size - 1)
+        b1_start_i = max(min_offset, int(size * 0.15))
+        b1_end_i = max(b1_start_i + 2, min(int(size * 0.3), size - 1))
+        b1_start_j = max(min_offset, int(size * 0.15))
+        b1_end_j = max(b1_start_j + 2, min(int(size * 0.4), size - 1))
         if b1_end_i > b1_start_i and b1_end_j > b1_start_j:
             for i in range(b1_start_i, b1_end_i):
                 for j in range(b1_start_j, b1_end_j):
@@ -127,10 +130,10 @@ class Map:
                         self.grid[i][j] = 2
 
         # Building 2 - Medium building (top-right area)
-        b2_start_i = max(10, int(size * 0.15))
-        b2_end_i = min(int(size * 0.25), size - 1)
-        b2_start_j = int(size * 0.7)
-        b2_end_j = min(int(size * 0.9), size - 1)
+        b2_start_i = max(min_offset, int(size * 0.15))
+        b2_end_i = max(b2_start_i + 2, min(int(size * 0.25), size - 1))
+        b2_start_j = max(min_offset, int(size * 0.7))
+        b2_end_j = max(b2_start_j + 2, min(int(size * 0.9), size - 1))
         if b2_end_i > b2_start_i and b2_end_j > b2_start_j:
             for i in range(b2_start_i, b2_end_i):
                 for j in range(b2_start_j, b2_end_j):
@@ -138,10 +141,10 @@ class Map:
                         self.grid[i][j] = 3
 
         # Building 3 - L-shaped building (bottom-left)
-        b3_start_i = int(size * 0.7)
-        b3_end_i = min(int(size * 0.95), size - 1)
-        b3_start_j = max(10, int(size * 0.15))
-        b3_end_j = min(int(size * 0.35), size - 1)
+        b3_start_i = max(min_offset, int(size * 0.7))
+        b3_end_i = max(b3_start_i + 2, min(int(size * 0.95), size - 1))
+        b3_start_j = max(min_offset, int(size * 0.15))
+        b3_end_j = max(b3_start_j + 2, min(int(size * 0.35), size - 1))
         if b3_end_i > b3_start_i and b3_end_j > b3_start_j:
             for i in range(b3_start_i, b3_end_i):
                 for j in range(b3_start_j, b3_end_j):
@@ -640,9 +643,20 @@ class Button:
         """Initialize button"""
         self.rect = pygame.Rect(x, y, width, height)
         self.text = text
-        self.color = color
+        self._color = color
         self.hover_color = tuple(min(255, c + 30) for c in color)
         self.hovered = False
+
+    @property
+    def color(self):
+        """Get button color"""
+        return self._color
+
+    @color.setter
+    def color(self, value: Tuple[int, int, int]):
+        """Set button color and update hover color"""
+        self._color = value
+        self.hover_color = tuple(min(255, c + 30) for c in value)
 
     def draw(self, screen: pygame.Surface, font: pygame.font.Font):
         """Draw button"""
