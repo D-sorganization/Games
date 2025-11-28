@@ -93,7 +93,10 @@ class Enemy:
         # Handle invisibility cadence for stealthy foes
         if self.invisibility_time > 0:
             self.invisibility_time -= 1
-            self.visible = self.invisibility_time % 14 < 7
+            self.visible = (
+                self.invisibility_time % INVISIBILITY_FLICKER_PERIOD
+                < INVISIBILITY_FLICKER_ON_FRAMES
+            )
             if self.invisibility_time == 0:
                 self.visible = True
                 self.invisibility_cooldown = INVISIBILITY_INTERVAL

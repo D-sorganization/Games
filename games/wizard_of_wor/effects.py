@@ -90,8 +90,11 @@ class SparkleBurst:
 
     def draw(self, screen: pygame.Surface) -> None:
         alpha = max(60, int(255 * (self.life / SPARKLE_LIFETIME)))
+        radius = 2
+        dot = pygame.Surface((radius * 2, radius * 2), pygame.SRCALPHA)
+        pygame.draw.circle(dot, (*self.color, alpha), (radius, radius), radius)
         for pos, _ in self.particles:
-            pygame.draw.circle(screen, (*self.color, alpha), pos, 2)
+            screen.blit(dot, (pos.x - radius, pos.y - radius))
 
 
 class MuzzleFlash:
@@ -135,7 +138,13 @@ class RadarPing:
         progress = 1 - (self.life / RADAR_PING_INTERVAL)
         radius = int(progress * 40)
         alpha = max(40, 160 - int(progress * 160))
-        pygame.draw.circle(screen, (*CYAN, alpha), self.center, radius, width=2)
+        if radius <= 0:
+            return
+
+        surface = pygame.Surface((radius * 2 + 4, radius * 2 + 4), pygame.SRCALPHA)
+        center = (surface.get_width() // 2, surface.get_height() // 2)
+        pygame.draw.circle(surface, (*CYAN, alpha), center, radius, width=2)
+        screen.blit(surface, (self.center[0] - center[0], self.center[1] - center[1]))
 
 
 class Vignette:
@@ -143,17 +152,26 @@ class Vignette:
 
     layer = "overlay"
 
+    _surface_cache: dict[tuple[int, int], pygame.Surface] = {}
+
     def __init__(self, size: tuple[int, int], top_left: tuple[int, int] = (0, 0)):
-        self.surface = pygame.Surface(size, pygame.SRCALPHA)
         self.top_left = top_left
         width, height = size
+        cached = self._surface_cache.get(size)
+        if cached is not None:
+            self.surface = cached
+            return
+
+        self.surface = pygame.Surface(size, pygame.SRCALPHA)
+        max_distance = math.hypot(width / 2, height / 2)
         for y in range(height):
             for x in range(width):
                 distance = pygame.math.Vector2(x - width / 2, y - height / 2).length()
-                max_distance = math.hypot(width / 2, height / 2)
                 intensity = min(1.0, distance / max_distance)
                 alpha = int(intensity * VIGNETTE_ALPHA)
                 self.surface.set_at((x, y), (*BLACK, alpha))
+
+        self._surface_cache[size] = self.surface
 
     def update(self) -> bool:
         return True

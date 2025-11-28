@@ -131,7 +131,7 @@ class WizardOfWorGame:
         chosen_pos = None
         for _ in range(8):
             pos = self.dungeon.get_random_spawn_position()
-            if not self.player:
+            if self.player is None:
                 chosen_pos = pos
                 break
             player_vector = pygame.math.Vector2(self.player.x, self.player.y)

@@ -172,7 +172,22 @@ class Dungeon:
         """Get a random valid spawn position in the dungeon."""
         source = self.player_spawn_cells if prefer_player else self.enemy_spawn_cells
         if not source:
-            return self._cell_to_world(self.cols // 2, self.rows // 2)
+            empty_cells = [
+                (x, y)
+                for y in range(1, self.rows - 1)
+                for x in range(1, self.cols - 1)
+                if self.grid[y][x] == 0
+            ]
+            if empty_cells:
+                center = (self.cols // 2, self.rows // 2)
+                grid_x, grid_y = min(
+                    empty_cells,
+                    key=lambda cell: abs(cell[0] - center[0])
+                    + abs(cell[1] - center[1]),
+                )
+            else:
+                grid_x, grid_y = self.cols // 2, self.rows // 2
+            return self._cell_to_world(grid_x, grid_y)
 
         grid_x, grid_y = random.choice(source)
         return self._cell_to_world(grid_x, grid_y)
