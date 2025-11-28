@@ -47,12 +47,12 @@ document.addEventListener('contextmenu', e => e.preventDefault());
 
 document.addEventListener('mousedown', (e) => {
   if (!controls || !controls.isLocked) return;
-  if (e.button === 0) {
-    handleShoot();
-  } else if (e.button === 2) {
+  if (e.button === 2) {
     camera.fov = THREE.MathUtils.lerp(camera.fov, AIM_FOV, 0.8);
     camera.updateProjectionMatrix();
     crosshair.style.transform = 'translate(-50%, -50%) scale(0.7)';
+  } else if (e.button === 0) {
+    handleShoot();
   }
 });
 

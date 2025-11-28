@@ -186,19 +186,19 @@ canvas.addEventListener('mousedown', (e) => {
     if (gameState.running && !gameState.gameOver && !gameState.won) {
         canvas.requestPointerLock();
 
-        if (e.button === 0) {
+        if (e.button === 2) {
             weapon.aiming = true;
             currentFov = FOV * 0.85;
         }
 
-        if (e.button === 2) {
+        if (e.button === 0) {
             shoot();
         }
     }
 });
 
 document.addEventListener('mouseup', (e) => {
-    if (e.button === 0) {
+    if (e.button === 2) {
         weapon.aiming = false;
         currentFov = FOV;
     }

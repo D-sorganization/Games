@@ -171,19 +171,19 @@ canvas.addEventListener('mousedown', (e) => {
     if (gameState.running && !gameState.gameOver && !gameState.won) {
         canvas.requestPointerLock();
 
-        if (e.button === 0) {
+        if (e.button === 2) {
             weapon.aiming = true;
             currentFov = FOV * 0.85;
         }
 
-        if (e.button === 2) {
+        if (e.button === 0) {
             shoot();
         }
     }
 });
 
 document.addEventListener('mouseup', (e) => {
-    if (e.button === 0) {
+    if (e.button === 2) {
         weapon.aiming = false;
         currentFov = FOV;
     }
@@ -685,7 +685,7 @@ function shoot() {
         while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
 
         const aimAllowance =
-            (weapon.aiming ? 0.1 : 0.2) + Math.max(0, 0.05 - distance * 0.002);
+            (weapon.aiming ? 0.15 : 0.25) + Math.max(0, 0.08 - distance * 0.002);
 
         // Check if enemy is in crosshair and visible
         if (

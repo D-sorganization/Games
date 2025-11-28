@@ -1,6 +1,5 @@
-
-import * as THREE from 'https://unpkg.com/three@0.158.0/build/three.module.js';
-import { PointerLockControls } from 'https://unpkg.com/three@0.158.0/examples/jsm/controls/PointerLockControls.js';
+import * as THREE from '../vendor/three/three.module.js';
+import { PointerLockControls } from '../vendor/three/PointerLockControls.js';
 
 const PLAYER_SPEED = 12;
 const PLAYER_SPRINT = 18;
@@ -8,8 +7,6 @@ const PLAYER_HEIGHT = 1.8;
 const JUMP_VELOCITY = 10;
 const GRAVITY = 30;
 const PISTOL_DAMAGE = 10;
-const RIFLE_DAMAGE = 18;
-const RIFLE_COOLDOWN = 0.22;
 const ZOMBIE_HEALTH = 80;
 const BOSS_HEALTH = 200;
 const ZOMBIE_DAMAGE = 10;
@@ -21,10 +18,6 @@ const FIREBALL_COOLDOWN = 2.3;
 const SHOOT_COOLDOWN = 0.35;
 const BASE_FOV = 65;
 const AIM_FOV = 45;
-const weaponStats = {
-  pistol: { damage: PISTOL_DAMAGE, cooldown: SHOOT_COOLDOWN },
-  rifle: { damage: RIFLE_DAMAGE, cooldown: RIFLE_COOLDOWN },
-};
 
 let scene, camera, renderer, controls;
 let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false, canJump = false, isSprinting = false;
@@ -32,9 +25,8 @@ let velocityY = 0;
 let clock = new THREE.Clock();
 let enemies = [];
 let projectiles = [];
-let ammo = { pistol: 120, rifle: 90 };
-let lastShot = { pistol: 0, rifle: 0 };
-let currentWeapon = 'pistol';
+let ammo = 120;
+let lastShot = 0;
 let playerHealth = 100;
 let kills = 0;
 let bossRef = null;
@@ -49,16 +41,9 @@ const uiAmmo = document.getElementById('ammo');
 const uiKills = document.getElementById('kills');
 const crosshair = document.getElementById('crosshair');
 const damageFlash = document.getElementById('damageFlash');
-const jumpScare = document.getElementById('jumpscare');
-let jumpScareShown = false;
-
-function updateAmmoUI() {
-  uiAmmo.textContent = `Weapon: ${currentWeapon.toUpperCase()} | Pistol: ${ammo.pistol} | Rifle: ${ammo.rifle}`;
-}
 
 startButton.addEventListener('click', () => {
   startOverlay.style.display = 'none';
-  updateAmmoUI();
   init();
   animate();
 });
@@ -66,19 +51,20 @@ startButton.addEventListener('click', () => {
 document.addEventListener('contextmenu', (e) => e.preventDefault());
 
 document.addEventListener('mousedown', (e) => {
-  if (!controls || !controls.isLocked) return;
-  if (e.button === 0) {
+  if (!camera || !controls || !controls.isLocked) return;
+  if (e.button === 2) {
     // aim
     camera.fov = AIM_FOV;
     camera.updateProjectionMatrix();
     crosshair.style.transform = 'translate(-50%, -50%) scale(0.75)';
-  } else if (e.button === 2) {
+  } else if (e.button === 0) {
     shoot();
   }
 });
 
 document.addEventListener('mouseup', (e) => {
-  if (e.button === 0) {
+  if (!camera || !controls || !controls.isLocked) return;
+  if (e.button === 2) {
     camera.fov = BASE_FOV;
     camera.updateProjectionMatrix();
     crosshair.style.transform = 'translate(-50%, -50%) scale(1)';
@@ -110,7 +96,7 @@ function init() {
   window.addEventListener('resize', onResize);
 }
 
-// ...existing code...
+function buildLevel() {
   const floorGeom = new THREE.BoxGeometry(8, 0.5, 240);
   const floor = new THREE.Mesh(floorGeom, new THREE.MeshStandardMaterial({ color: 0x202020 }));
   floor.position.set(0, -0.25, 0);
@@ -180,11 +166,10 @@ function buildEnemy(isBoss) {
 
 function shoot() {
   const now = clock.getElapsedTime();
-  const stats = weaponStats[currentWeapon];
-  if (!stats || now - lastShot[currentWeapon] < stats.cooldown || ammo[currentWeapon] <= 0 || gameOver) return;
-  lastShot[currentWeapon] = now;
-  ammo[currentWeapon] -= 1;
-  updateAmmoUI();
+  if (now - lastShot < SHOOT_COOLDOWN || ammo <= 0 || gameOver) return;
+  lastShot = now;
+  ammo -= 1;
+  uiAmmo.textContent = `Ammo: ${ammo}`;
 
   const ray = new THREE.Raycaster();
   ray.setFromCamera(new THREE.Vector2(), camera);
@@ -192,7 +177,7 @@ function shoot() {
   if (hits.length === 0) return;
   const enemy = enemies.find(e => e.group === hits[0].object.parent || e.group.children.includes(hits[0].object));
   if (!enemy || !enemy.alive) return;
-  enemy.health -= stats.damage;
+  enemy.health -= PISTOL_DAMAGE;
   enemy.bar.scale.x = Math.max(enemy.health, 0) / enemy.maxHealth;
   enemy.bar.position.x = (Math.max(enemy.health, 0) / enemy.maxHealth - 1) * 0.7;
   if (enemy.health <= 0) {
@@ -275,27 +260,7 @@ function applyDamage(amount) {
 function endGame(message) {
   if (gameOver) return;
   gameOver = true;
-  showJumpScare(message);
-}
-
-function showJumpScare(message = 'BRAAAINS!') {
-  if (jumpScareShown) return;
-  jumpScareShown = true;
-  jumpScare.textContent = message;
-  jumpScare.classList.add('active');
-  try {
-    const audio = new (window.AudioContext || window.webkitAudioContext)();
-    const osc = audio.createOscillator();
-    const gain = audio.createGain();
-    osc.frequency.value = 170;
-    gain.gain.value = 0.22;
-    osc.connect(gain).connect(audio.destination);
-    osc.start();
-    gain.gain.exponentialRampToValueAtTime(0.0001, audio.currentTime + 0.5);
-    osc.stop(audio.currentTime + 0.55);
-  } catch (e) {
-    console.warn('Unable to play jumpscare audio', e);
-  }
+  alert(message);
 }
 
 function willCollide(nextPos) {
@@ -342,8 +307,6 @@ document.addEventListener('keydown', (event) => {
     case 'KeyD': moveRight = true; break;
     case 'Space': if (canJump) { velocityY = JUMP_VELOCITY; canJump = false; } break;
     case 'ShiftLeft': isSprinting = true; break;
-    case 'Digit1': currentWeapon = 'pistol'; updateAmmoUI(); break;
-    case 'Digit2': currentWeapon = 'rifle'; updateAmmoUI(); break;
   }
 });
 
