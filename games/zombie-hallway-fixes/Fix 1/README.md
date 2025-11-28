@@ -2,7 +2,7 @@
 
 A lightweight Three.js demo of a long hallway survival run. Survive zombies and a boss while staying mobile.
 
-Three.js and PointerLockControls are bundled locally under `../vendor/three` so the game runs without CDN access.
+Three.js and PointerLockControls are bundled locally under `../../vendor/three` so the game runs without CDN access.
 
 ## Controls
 - Click canvas to lock pointer

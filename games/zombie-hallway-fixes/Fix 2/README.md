@@ -2,7 +2,7 @@
 
 An updated corridor shooter demo with clearer HUD feedback, boss health tracking, and improved combat pacing.
 
-Three.js and PointerLockControls are bundled locally under `../vendor/three` so the game runs without CDN access.
+Three.js and PointerLockControls are bundled locally under `../../vendor/three` so the game runs without CDN access.
 
 ## Controls
 - Click to lock pointer
