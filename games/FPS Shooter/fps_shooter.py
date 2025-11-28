@@ -111,54 +111,99 @@ class Map:
             self.grid[i][0] = 1
             self.grid[i][size - 1] = 1
 
+        # Scale building positions based on map size
         # Building 1 - Large rectangular building (top-left area)
-        for i in range(10, 25):
-            for j in range(10, 30):
-                if i == 10 or i == 24 or j == 10 or j == 29:
-                    self.grid[i][j] = 2
+        b1_start_i = max(10, int(size * 0.15))
+        b1_end_i = min(int(size * 0.3), size - 1)
+        b1_start_j = max(10, int(size * 0.15))
+        b1_end_j = min(int(size * 0.4), size - 1)
+        if b1_end_i > b1_start_i and b1_end_j > b1_start_j:
+            for i in range(b1_start_i, b1_end_i):
+                for j in range(b1_start_j, b1_end_j):
+                    if i == b1_start_i or i == b1_end_i - 1 or j == b1_start_j or j == b1_end_j - 1:
+                        self.grid[i][j] = 2
 
         # Building 2 - Medium building (top-right area)
-        for i in range(10, 20):
-            for j in range(60, 75):
-                if i == 10 or i == 19 or j == 60 or j == 74:
-                    self.grid[i][j] = 3
+        b2_start_i = max(10, int(size * 0.15))
+        b2_end_i = min(int(size * 0.25), size - 1)
+        b2_start_j = max(int(size * 0.7), int(size * 0.65))
+        b2_end_j = min(int(size * 0.9), size - 1)
+        if b2_end_i > b2_start_i and b2_end_j > b2_start_j:
+            for i in range(b2_start_i, b2_end_i):
+                for j in range(b2_start_j, b2_end_j):
+                    if i == b2_start_i or i == b2_end_i - 1 or j == b2_start_j or j == b2_end_j - 1:
+                        self.grid[i][j] = 3
 
         # Building 3 - L-shaped building (bottom-left)
-        for i in range(60, 80):
-            for j in range(10, 25):
-                if i == 60 or i == 79 or j == 10 or j == 24:
-                    self.grid[i][j] = 2
-        for i in range(60, 80):
-            for j in range(10, 40):
-                if i >= 70 and (i == 70 or i == 79 or j == 10 or j == 39):
-                    self.grid[i][j] = 2
+        b3_start_i = max(int(size * 0.7), int(size * 0.65))
+        b3_end_i = min(int(size * 0.95), size - 1)
+        b3_start_j = max(10, int(size * 0.15))
+        b3_end_j = min(int(size * 0.35), size - 1)
+        if b3_end_i > b3_start_i and b3_end_j > b3_start_j:
+            for i in range(b3_start_i, b3_end_i):
+                for j in range(b3_start_j, b3_end_j):
+                    if i == b3_start_i or i == b3_end_i - 1 or j == b3_start_j or j == b3_end_j - 1:
+                        self.grid[i][j] = 2
+            # L-shape extension
+            b3_ext_start_i = max(int(size * 0.8), b3_start_i)
+            b3_ext_end_j = min(int(size * 0.5), size - 1)
+            if b3_ext_start_i < b3_end_i and b3_ext_end_j > b3_start_j:
+                for i in range(b3_ext_start_i, b3_end_i):
+                    for j in range(b3_start_j, b3_ext_end_j):
+                        if i == b3_ext_start_i or i == b3_end_i - 1 or j == b3_start_j or j == b3_ext_end_j - 1:
+                            self.grid[i][j] = 2
 
         # Building 4 - Square building (bottom-right)
-        for i in range(65, 80):
-            for j in range(65, 80):
-                if i == 65 or i == 79 or j == 65 or j == 79:
-                    self.grid[i][j] = 3
+        b4_start_i = max(int(size * 0.75), int(size * 0.7))
+        b4_end_i = min(int(size * 0.95), size - 1)
+        b4_start_j = max(int(size * 0.75), int(size * 0.7))
+        b4_end_j = min(int(size * 0.95), size - 1)
+        if b4_end_i > b4_start_i and b4_end_j > b4_start_j:
+            for i in range(b4_start_i, b4_end_i):
+                for j in range(b4_start_j, b4_end_j):
+                    if i == b4_start_i or i == b4_end_i - 1 or j == b4_start_j or j == b4_end_j - 1:
+                        self.grid[i][j] = 3
 
-        # Central courtyard walls
-        for i in range(40, 50):
-            self.grid[i][40] = 4
-            self.grid[i][50] = 4
-        for j in range(40, 51):
-            self.grid[40][j] = 4
-            self.grid[50][j] = 4
+        # Central courtyard walls (only if map is large enough)
+        center_start = max(int(size * 0.45), int(size * 0.4))
+        center_end = min(int(size * 0.55), size - 1)
+        if center_end > center_start:
+            for i in range(center_start, center_end):
+                self.grid[i][center_start] = 4
+                self.grid[i][center_end] = 4
+            for j in range(center_start, min(center_end + 1, size)):
+                self.grid[center_start][j] = 4
+                if center_end < size:
+                    self.grid[center_end][j] = 4
 
-        # Scattered walls for cover
-        for i in range(30, 35):
-            self.grid[i][45] = 1
+        # Scattered walls for cover (scale with map size)
+        if size >= 30:
+            wall1_i = max(int(size * 0.4), int(size * 0.35))
+            wall1_j = max(int(size * 0.6), int(size * 0.55))
+            if wall1_i < size and wall1_j < size:
+                for i in range(wall1_i, min(wall1_i + 5, size)):
+                    self.grid[i][wall1_j] = 1
 
-        for j in range(55, 60):
-            self.grid[45][j] = 1
+        if size >= 40:
+            wall2_i = max(int(size * 0.6), int(size * 0.55))
+            wall2_j = max(int(size * 0.7), int(size * 0.65))
+            if wall2_i < size and wall2_j < size:
+                for j in range(wall2_j, min(wall2_j + 5, size)):
+                    self.grid[wall2_i][j] = 1
 
-        for i in range(25, 30):
-            self.grid[i][60] = 1
+        if size >= 50:
+            wall3_i = max(int(size * 0.35), int(size * 0.3))
+            wall3_j = max(int(size * 0.7), int(size * 0.65))
+            if wall3_i < size and wall3_j < size:
+                for i in range(wall3_i, min(wall3_i + 5, size)):
+                    self.grid[i][wall3_j] = 1
 
-        for j in range(30, 35):
-            self.grid[55][j] = 1
+        if size >= 60:
+            wall4_j = max(int(size * 0.4), int(size * 0.35))
+            wall4_i = max(int(size * 0.75), int(size * 0.7))
+            if wall4_i < size and wall4_j < size:
+                for j in range(wall4_j, min(wall4_j + 5, size)):
+                    self.grid[wall4_i][j] = 1
 
     def is_wall(self, x: float, y: float) -> bool:
         """Check if position contains a wall"""
