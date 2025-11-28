@@ -25,6 +25,7 @@ FPS = 60
 DEFAULT_MAP_SIZE = 50
 MAP_SIZE = DEFAULT_MAP_SIZE  # Will be set by user
 TILE_SIZE = 64
+MIN_BUILDING_OFFSET = 3  # Minimum offset from map edges for building generation
 
 # Player settings
 PLAYER_SPEED = 0.2
@@ -116,7 +117,7 @@ class Map:
 
         # Scale building positions based on map size
         # Use proportional minimums that scale with map size to ensure buildings generate for all sizes
-        min_offset = max(3, int(size * 0.1))  # Minimum offset, scales with size but has floor
+        min_offset = max(MIN_BUILDING_OFFSET, int(size * 0.1))  # Minimum offset, scales with size but has floor
         
         # Building 1 - Large rectangular building (top-left area)
         b1_start_i = max(min_offset, int(size * 0.15))
@@ -171,7 +172,7 @@ class Map:
                         self.grid[i][j] = 3
 
         # Central courtyard walls (only if map is large enough)
-        center_start = max(int(size * 0.45), int(size * 0.4))
+        center_start = int(size * 0.45)
         center_end = min(int(size * 0.55), size - 1)
         if center_end > center_start:
             for i in range(center_start, center_end):
@@ -184,29 +185,29 @@ class Map:
 
         # Scattered walls for cover (scale with map size)
         if size >= 30:
-            wall1_i = max(int(size * 0.4), int(size * 0.35))
-            wall1_j = max(int(size * 0.6), int(size * 0.55))
+            wall1_i = int(size * 0.4)
+            wall1_j = int(size * 0.6)
             if wall1_i < size and wall1_j < size:
                 for i in range(wall1_i, min(wall1_i + 5, size)):
                     self.grid[i][wall1_j] = 1
 
         if size >= 40:
-            wall2_i = max(int(size * 0.6), int(size * 0.55))
-            wall2_j = max(int(size * 0.7), int(size * 0.65))
+            wall2_i = int(size * 0.6)
+            wall2_j = int(size * 0.7)
             if wall2_i < size and wall2_j < size:
                 for j in range(wall2_j, min(wall2_j + 5, size)):
                     self.grid[wall2_i][j] = 1
 
         if size >= 50:
-            wall3_i = max(int(size * 0.35), int(size * 0.3))
-            wall3_j = max(int(size * 0.7), int(size * 0.65))
+            wall3_i = int(size * 0.35)
+            wall3_j = int(size * 0.7)
             if wall3_i < size and wall3_j < size:
                 for i in range(wall3_i, min(wall3_i + 5, size)):
                     self.grid[i][wall3_j] = 1
 
         if size >= 60:
-            wall4_j = max(int(size * 0.4), int(size * 0.35))
-            wall4_i = max(int(size * 0.75), int(size * 0.7))
+            wall4_j = int(size * 0.4)
+            wall4_i = int(size * 0.75)
             if wall4_i < size and wall4_j < size:
                 for j in range(wall4_j, min(wall4_j + 5, size)):
                     self.grid[wall4_i][j] = 1
@@ -638,13 +639,14 @@ class Raycaster:
 
 class Button:
     """UI Button"""
+    HOVER_BRIGHTNESS_OFFSET = 30  # Brightness increase for hover state
 
     def __init__(self, x: int, y: int, width: int, height: int, text: str, color: Tuple[int, int, int]):
         """Initialize button"""
         self.rect = pygame.Rect(x, y, width, height)
         self.text = text
         self._color = color
-        self.hover_color = tuple(min(255, c + 30) for c in color)
+        self.hover_color = tuple(min(255, c + self.HOVER_BRIGHTNESS_OFFSET) for c in color)
         self.hovered = False
 
     @property
@@ -656,7 +658,7 @@ class Button:
     def color(self, value: Tuple[int, int, int]):
         """Set button color and update hover color"""
         self._color = value
-        self.hover_color = tuple(min(255, c + 30) for c in value)
+        self.hover_color = tuple(min(255, c + self.HOVER_BRIGHTNESS_OFFSET) for c in value)
 
     def draw(self, screen: pygame.Surface, font: pygame.font.Font):
         """Draw button"""
@@ -871,8 +873,8 @@ class Game:
                 if hit and distance < closest_dist:
                     closest_bot = bot
                     closest_dist = distance
-                    # Headshot detection: very precise horizontal aim required
-                    # Very tight horizontal angle difference indicates precise headshot
+                    # Headshot detection: very precise aim required
+                    # Very tight total angular difference (between player aim and bot direction) indicates a headshot
                     is_headshot = angle_diff < HEADSHOT_THRESHOLD
 
         # Damage the closest bot in crosshair
@@ -1075,9 +1077,8 @@ class Game:
         self.screen.blit(ammo_text, ammo_rect)
         
         # Weapon selection hints (inside weapon box) - dynamically generated
-        weapon_keys = ['1', '2', '3', '4']
-        weapon_names = ['pistol', 'rifle', 'shotgun', 'plasma']
-        weapon_hints = " ".join(f"{key}:{WEAPONS[name]['name']}" for key, name in zip(weapon_keys, weapon_names))
+        weapon_bindings = [('1', 'pistol'), ('2', 'rifle'), ('3', 'shotgun'), ('4', 'plasma')]
+        weapon_hints = " ".join(f"{key}:{WEAPONS[name]['name']}" for key, name in weapon_bindings)
         hints_text = self.tiny_font.render(weapon_hints, True, GRAY)
         hints_rect = hints_text.get_rect(center=(weapon_x + weapon_width // 2, weapon_y + 58))
         self.screen.blit(hints_text, hints_rect)
