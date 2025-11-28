@@ -2,7 +2,7 @@
 """
 First-Person Shooter Game
 A raycasting-based FPS game with a 90x90 map featuring walls, buildings, and bot enemies.
-Uses WASD for movement, mouse for looking, and left-click to shoot.
+Uses WASD for movement, mouse for looking and aiming, left-click to aim, and right-click to shoot.
 Fight waves of increasingly difficult bots across multiple levels!
 """
 
@@ -630,9 +630,11 @@ class Game:
                     pygame.mouse.set_visible(True)
                     pygame.event.set_grab(False)
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                if event.button == 1:
+                if event.button == 3:  # Right-click to fire
                     if self.player.shoot():
                         self.check_shot_hit()
+                elif event.button == 1:  # Left-click to aim (currently no special effect)
+                    pass
             elif event.type == pygame.MOUSEMOTION:
                 self.player.rotate(event.rel[0] * PLAYER_ROT_SPEED)
 
@@ -746,7 +748,7 @@ class Game:
             "Fight waves of enemy bots!",
             "Each level, bots get stronger (+3 HP, +DMG)",
             "",
-            "WASD: Move | Mouse: Look | Click: Shoot"
+            "WASD: Move | Mouse: Look | Left: Aim | Right: Shoot"
         ]
 
         y = 320

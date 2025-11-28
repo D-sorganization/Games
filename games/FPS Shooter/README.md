@@ -35,10 +35,11 @@ A raycasting-based first-person shooter game built with Python and Pygame, featu
 ### Controls & UI
 - **Movement**:
   - WASD: Move forward/back, strafe left/right
-  - Mouse: Look around and aim
+  - Mouse: Look around
   - Arrow keys: Alternative rotation
 - **Combat**:
-  - Left Click: Shoot rifle
+  - Left Click: Aim
+  - Right Click: Shoot rifle
   - ESC: Return to menu
 - **HUD Display**:
   - Health bar with color-coded status
@@ -114,8 +115,9 @@ Each level, the four corners of the map are randomly assigned:
 - **S**: Move backward
 - **A**: Strafe left
 - **D**: Strafe right
-- **Mouse**: Look around / Aim
-- **Left Click**: Shoot rifle
+- **Mouse**: Look around
+- **Left Click**: Aim
+- **Right Click**: Shoot rifle
 - **Arrow Keys**: Rotate view (alternative to mouse)
 - **ESC**: Return to menu
 
