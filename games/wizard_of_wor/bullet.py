@@ -1,6 +1,7 @@
 """
 Bullet/Projectile system for Wizard of Wor.
 """
+
 from typing import Any
 
 import pygame
@@ -18,8 +19,9 @@ class Bullet:
         self.color = color
         self.is_player_bullet = is_player_bullet
         self.active = True
-        self.rect = pygame.Rect(x - BULLET_SIZE // 2, y - BULLET_SIZE // 2,
-                                BULLET_SIZE, BULLET_SIZE)
+        self.rect = pygame.Rect(
+            x - BULLET_SIZE // 2, y - BULLET_SIZE // 2, BULLET_SIZE, BULLET_SIZE
+        )
 
     def update(self, dungeon: Any) -> None:
         """Update bullet position."""
@@ -49,5 +51,6 @@ class Bullet:
     def draw(self, screen: pygame.Surface) -> None:
         """Draw the bullet."""
         if self.active:
-            pygame.draw.circle(screen, self.color, (int(self.x), int(self.y)),
-                             BULLET_SIZE // 2)
+            pygame.draw.circle(
+                screen, self.color, (int(self.x), int(self.y)), BULLET_SIZE // 2
+            )
