@@ -1,0 +1,162 @@
+"""Visual effects helpers for the Wizard of Wor remake."""
+
+from __future__ import annotations
+
+import math
+import random
+from typing import Protocol
+
+import pygame
+from constants import (
+    BLACK,
+    CYAN,
+    FOOTSTEP_INTERVAL,
+    MUZZLE_FLASH_TIME,
+    RADAR_PING_INTERVAL,
+    SPARKLE_LIFETIME,
+    VIGNETTE_ALPHA,
+)
+
+
+class VisualEffect(Protocol):
+    """Protocol for transient visual effects."""
+
+    layer: str
+
+    def update(self) -> bool:
+        """Return True while the effect should stay alive."""
+
+    def draw(self, screen: pygame.Surface) -> None:
+        """Render the effect on screen."""
+
+
+class Footstep:
+    """Dusty footstep decal when characters move."""
+
+    layer = "floor"
+
+    def __init__(self, position: tuple[float, float], color: tuple[int, int, int]):
+        self.position = pygame.math.Vector2(position)
+        self.life = FOOTSTEP_INTERVAL
+        self.color = color
+
+    def update(self) -> bool:
+        self.life -= 1
+        return self.life > 0
+
+    def draw(self, screen: pygame.Surface) -> None:
+        alpha = max(40, int(180 * (self.life / FOOTSTEP_INTERVAL)))
+        radius = 6
+        surface = pygame.Surface((radius * 2, radius * 2), pygame.SRCALPHA)
+        faded_color = (*self.color, alpha)
+        pygame.draw.circle(surface, faded_color, (radius, radius), radius)
+        screen.blit(
+            surface,
+            (self.position.x - radius, self.position.y - radius),
+        )
+
+
+class SparkleBurst:
+    """Particle burst used for spawns, hits, and radar pings."""
+
+    layer = "top"
+
+    def __init__(
+        self,
+        position: tuple[float, float],
+        color: tuple[int, int, int],
+        count: int = 10,
+    ):
+        self.color = color
+        self.life = SPARKLE_LIFETIME
+        self.particles: list[tuple[pygame.math.Vector2, pygame.math.Vector2]] = []
+        center = pygame.math.Vector2(position)
+
+        for _ in range(count):
+            angle = random.uniform(0, math.tau)
+            speed = random.uniform(1.2, 2.8)
+            velocity = pygame.math.Vector2(math.cos(angle), math.sin(angle)) * speed
+            self.particles.append((center.copy(), velocity))
+
+    def update(self) -> bool:
+        self.life -= 1
+        decay = 0.9
+        for idx, particle in enumerate(self.particles):
+            position, velocity = particle
+            position += velocity
+            velocity *= decay
+            self.particles[idx] = (position, velocity)
+        return self.life > 0
+
+    def draw(self, screen: pygame.Surface) -> None:
+        alpha = max(60, int(255 * (self.life / SPARKLE_LIFETIME)))
+        for pos, _ in self.particles:
+            pygame.draw.circle(screen, (*self.color, alpha), pos, 2)
+
+
+class MuzzleFlash:
+    """Short-lived bolt flash at gun barrels."""
+
+    layer = "middle"
+
+    def __init__(self, position: tuple[float, float]):
+        self.position = pygame.math.Vector2(position)
+        self.life = MUZZLE_FLASH_TIME
+
+    def update(self) -> bool:
+        self.life -= 1
+        return self.life > 0
+
+    def draw(self, screen: pygame.Surface) -> None:
+        alpha = max(100, int(255 * (self.life / MUZZLE_FLASH_TIME)))
+        radius = 8
+        surface = pygame.Surface((radius * 2, radius * 2), pygame.SRCALPHA)
+        pygame.draw.circle(surface, (255, 255, 170, alpha), (radius, radius), radius)
+        pygame.draw.circle(
+            surface, (255, 255, 255, alpha), (radius, radius), radius // 2
+        )
+        screen.blit(surface, (self.position.x - radius, self.position.y - radius))
+
+
+class RadarPing:
+    """Expanding ring on the radar for nearby activity."""
+
+    layer = "hud"
+
+    def __init__(self, center: tuple[int, int]):
+        self.center = center
+        self.life = RADAR_PING_INTERVAL
+
+    def update(self) -> bool:
+        self.life -= 1
+        return self.life > 0
+
+    def draw(self, screen: pygame.Surface) -> None:
+        progress = 1 - (self.life / RADAR_PING_INTERVAL)
+        radius = int(progress * 40)
+        alpha = max(40, 160 - int(progress * 160))
+        pygame.draw.circle(screen, (*CYAN, alpha), self.center, radius, width=2)
+
+
+class Vignette:
+    """A subtle darkening around the playfield to focus action."""
+
+    layer = "overlay"
+
+    def __init__(self, size: tuple[int, int], top_left: tuple[int, int] = (0, 0)):
+        self.surface = pygame.Surface(size, pygame.SRCALPHA)
+        self.top_left = top_left
+        width, height = size
+        for y in range(height):
+            for x in range(width):
+                distance = pygame.math.Vector2(x - width / 2, y - height / 2).length()
+                max_distance = math.hypot(width / 2, height / 2)
+                intensity = min(1.0, distance / max_distance)
+                alpha = int(intensity * VIGNETTE_ALPHA)
+                self.surface.set_at((x, y), (*BLACK, alpha))
+
+    def update(self) -> bool:
+        return True
+
+    def draw(self, screen: pygame.Surface) -> None:
+        screen.blit(self.surface, self.top_left, special_flags=pygame.BLEND_RGBA_MULT)

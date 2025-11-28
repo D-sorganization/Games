@@ -1,15 +1,54 @@
 """
 Main game file for Wizard of Wor remake.
 """
+
+import math
 import sys
+from array import array
 from typing import NoReturn
 
 import pygame
 from constants import *
 from dungeon import Dungeon
+from effects import RadarPing, SparkleBurst, Vignette, VisualEffect
 from enemy import Burwor, Garwor, Thorwor, Wizard, Worluk
 from player import Player
 from radar import Radar
+
+
+class SoundBoard:
+    """Lightweight tone generator for classic arcade-style beeps."""
+
+    def __init__(self) -> None:
+        self.enabled = False
+        self.sounds: dict[str, pygame.mixer.Sound] = {}
+        try:
+            if not pygame.mixer.get_init():
+                pygame.mixer.init(frequency=22050, size=-16, channels=1)
+            self.enabled = True
+        except pygame.error:
+            self.enabled = False
+            return
+
+        self.sounds = {
+            "shot": self._build_tone(920, 80),
+            "enemy_hit": self._build_tone(480, 120),
+            "spawn": self._build_tone(640, 150),
+            "wizard": self._build_tone(300, 200),
+        }
+
+    def _build_tone(self, frequency: int, duration_ms: int) -> pygame.mixer.Sound:
+        sample_rate = 22050
+        sample_count = int(sample_rate * duration_ms / 1000)
+        waveform = array("h")
+        for i in range(sample_count):
+            value = int(14000 * math.sin(2 * math.pi * frequency * (i / sample_rate)))
+            waveform.append(value)
+        return pygame.mixer.Sound(buffer=waveform.tobytes())
+
+    def play(self, name: str) -> None:
+        if self.enabled and name in self.sounds:
+            self.sounds[name].play()
 
 
 class WizardOfWorGame:
@@ -36,6 +75,11 @@ class WizardOfWorGame:
         self.bullets = []
         self.radar = Radar()
         self.wizard_spawned = False
+        self.soundboard = SoundBoard()
+        self.effects: list[VisualEffect] = []
+        self.vignette = Vignette(
+            (GAME_AREA_WIDTH, GAME_AREA_HEIGHT), (GAME_AREA_X, GAME_AREA_Y)
+        )
 
         # Fonts
         self.font_large = pygame.font.Font(None, 48)
@@ -48,31 +92,31 @@ class WizardOfWorGame:
         self.dungeon = Dungeon()
         self.bullets = []
         self.wizard_spawned = False
+        self.effects = []
 
         # Spawn player
-        player_pos = self.dungeon.get_random_spawn_position()
+        player_pos = self.dungeon.get_random_spawn_position(prefer_player=True)
         self.player = Player(player_pos[0], player_pos[1])
+        self.player.grant_shield(RESPAWN_SHIELD_FRAMES)
+        self.effects.append(SparkleBurst(player_pos, GREEN, count=14))
 
         # Spawn enemies based on level
         self.enemies = []
         level_config = ENEMIES_PER_LEVEL.get(min(self.level, 5), ENEMIES_PER_LEVEL[5])
 
         for _ in range(level_config["burwor"]):
-            pos = self.dungeon.get_random_spawn_position()
-            self.enemies.append(Burwor(pos[0], pos[1]))
+            self._spawn_enemy(Burwor)
 
         for _ in range(level_config["garwor"]):
-            pos = self.dungeon.get_random_spawn_position()
-            self.enemies.append(Garwor(pos[0], pos[1]))
+            self._spawn_enemy(Garwor)
 
         for _ in range(level_config["thorwor"]):
-            pos = self.dungeon.get_random_spawn_position()
-            self.enemies.append(Thorwor(pos[0], pos[1]))
+            self._spawn_enemy(Thorwor)
 
         # Occasionally spawn Worluk
         if self.level > 1 and len(self.enemies) > 0:
-            pos = self.dungeon.get_random_spawn_position()
-            self.enemies.append(Worluk(pos[0], pos[1]))
+            self._spawn_enemy(Worluk)
+        self.soundboard.play("spawn")
 
     def spawn_wizard(self) -> None:
         """Spawn the Wizard of Wor."""
@@ -80,6 +124,25 @@ class WizardOfWorGame:
             pos = self.dungeon.get_random_spawn_position()
             self.enemies.append(Wizard(pos[0], pos[1]))
             self.wizard_spawned = True
+            self.soundboard.play("wizard")
+
+    def _spawn_enemy(self, enemy_cls) -> None:
+        """Spawn a single enemy with spacing away from the player."""
+        chosen_pos = None
+        for _ in range(8):
+            pos = self.dungeon.get_random_spawn_position()
+            if not self.player:
+                chosen_pos = pos
+                break
+            player_vector = pygame.math.Vector2(self.player.x, self.player.y)
+            if player_vector.distance_to(pygame.math.Vector2(pos)) > CELL_SIZE * 3:
+                chosen_pos = pos
+                break
+        if chosen_pos is None:
+            chosen_pos = pos
+
+        self.enemies.append(enemy_cls(chosen_pos[0], chosen_pos[1]))
+        self.effects.append(SparkleBurst(chosen_pos, CYAN, count=12))
 
     def handle_events(self) -> None:
         """Handle input events."""
@@ -96,9 +159,12 @@ class WizardOfWorGame:
 
                 elif self.state == "playing":
                     if event.key == pygame.K_SPACE:
-                        bullet = self.player.shoot()
+                        bullet, muzzle = self.player.shoot()
                         if bullet:
                             self.bullets.append(bullet)
+                            if muzzle:
+                                self.effects.append(muzzle)
+                            self.soundboard.play("shot")
                     elif event.key == pygame.K_ESCAPE:
                         self.state = "menu"
 
@@ -121,11 +187,20 @@ class WizardOfWorGame:
         if self.state != "playing":
             return
 
+        previous_ping = self.radar.ping_timer
+        self.radar.update()
+        if self.radar.ping_timer > previous_ping:
+            center = (
+                self.radar.x + self.radar.size // 2,
+                self.radar.y + self.radar.size // 2,
+            )
+            self.effects.append(RadarPing(center))
+
         # Get keys for continuous input
         keys = pygame.key.get_pressed()
 
         # Update player
-        self.player.update(keys, self.dungeon)
+        self.player.update(keys, self.dungeon, self.effects)
 
         # Update enemies
         player_pos = (self.player.x, self.player.y)
@@ -161,9 +236,13 @@ class WizardOfWorGame:
                 # Respawn player
                 pos = self.dungeon.get_random_spawn_position()
                 self.player = Player(pos[0], pos[1])
+                self.player.grant_shield(RESPAWN_SHIELD_FRAMES)
+                self.effects.append(SparkleBurst(pos, GREEN, count=12))
                 self.bullets = [b for b in self.bullets if b.is_player_bullet]
             else:
                 self.state = "game_over"
+
+        self._update_effects()
 
     def check_collisions(self) -> None:
         """Check for collisions between bullets and entities."""
@@ -177,8 +256,12 @@ class WizardOfWorGame:
                     points = enemy.take_damage()
                     self.score += points
                     bullet.active = False
+                    self.soundboard.play("enemy_hit")
                     if bullet in self.bullets:
                         self.bullets.remove(bullet)
+                    self.effects.append(
+                        SparkleBurst((enemy.x, enemy.y), enemy.color, count=10)
+                    )
                     break
 
         # Enemy bullets hitting player
@@ -187,17 +270,39 @@ class WizardOfWorGame:
                 continue
 
             if self.player.alive and bullet.rect.colliderect(self.player.rect):
-                self.player.take_damage()
+                took_damage = self.player.take_damage()
                 bullet.active = False
                 if bullet in self.bullets:
                     self.bullets.remove(bullet)
+                if took_damage:
+                    self.effects.append(
+                        SparkleBurst((self.player.x, self.player.y), RED, count=16)
+                    )
 
         # Player colliding with enemies
         if self.player.alive:
             for enemy in self.enemies:
                 if enemy.alive and self.player.rect.colliderect(enemy.rect):
-                    self.player.take_damage()
+                    took_damage = self.player.take_damage()
+                    if took_damage:
+                        self.effects.append(
+                            SparkleBurst((self.player.x, self.player.y), RED, count=16)
+                        )
                     break
+
+    def _update_effects(self) -> None:
+        """Advance and cull transient visual effects."""
+        next_effects: list[VisualEffect] = []
+        for effect in self.effects:
+            if effect.update():
+                next_effects.append(effect)
+        self.effects = next_effects
+
+    def _draw_effects_by_layer(self, layer: str) -> None:
+        """Draw all effects matching a specific layer."""
+        for effect in self.effects:
+            if getattr(effect, "layer", "") == layer:
+                effect.draw(self.screen)
 
     def draw(self) -> None:
         """Draw everything."""
@@ -226,7 +331,7 @@ class WizardOfWorGame:
             "ESC - Pause/Menu",
             "",
             "Press ENTER to Start",
-            "Press ESC to Quit"
+            "Press ESC to Quit",
         ]
 
         y_offset = SCREEN_HEIGHT // 2
@@ -241,6 +346,9 @@ class WizardOfWorGame:
         # Draw dungeon
         self.dungeon.draw(self.screen)
 
+        # Effects under actors
+        self._draw_effects_by_layer("floor")
+
         # Draw player
         self.player.draw(self.screen)
 
@@ -248,12 +356,19 @@ class WizardOfWorGame:
         for enemy in self.enemies:
             enemy.draw(self.screen)
 
-        # Draw bullets
+        self._draw_effects_by_layer("middle")
+
+        # Draw bullets and top-layer effects
         for bullet in self.bullets:
             bullet.draw(self.screen)
+        self._draw_effects_by_layer("top")
+
+        # Vignette over playfield
+        self.vignette.draw(self.screen)
 
         # Draw radar
         self.radar.draw(self.screen, self.enemies, self.player)
+        self._draw_effects_by_layer("hud")
 
         # Draw UI
         self.draw_ui()
@@ -277,6 +392,45 @@ class WizardOfWorGame:
         enemies_text = self.font_small.render(f"Enemies: {alive_enemies}", True, CYAN)
         self.screen.blit(enemies_text, (RADAR_X, RADAR_Y + RADAR_SIZE + 10))
 
+        # Shield indicator
+        if self.player.invulnerable_timer > 0:
+            shield_ratio = min(
+                1.0, self.player.invulnerable_timer / RESPAWN_SHIELD_FRAMES
+            )
+            bar_width = 140
+            bar_height = 10
+            bar_x = GAME_AREA_X
+            bar_y = GAME_AREA_Y + GAME_AREA_HEIGHT + 16
+            pygame.draw.rect(
+                self.screen, DARK_GRAY, (bar_x, bar_y, bar_width, bar_height)
+            )
+            pygame.draw.rect(
+                self.screen,
+                PALE_YELLOW,
+                (bar_x, bar_y, int(bar_width * shield_ratio), bar_height),
+            )
+            shield_text = self.font_small.render("Shield", True, PALE_YELLOW)
+            self.screen.blit(shield_text, (bar_x, bar_y - 18))
+
+        # Wizard arrival meter
+        total_enemies = sum(1 for e in self.enemies)
+        if total_enemies > 0:
+            progress = 1 - (alive_enemies / max(1, total_enemies))
+            bar_width = 180
+            bar_height = 8
+            bar_x = GAME_AREA_X + 220
+            bar_y = GAME_AREA_Y + GAME_AREA_HEIGHT + 16
+            pygame.draw.rect(
+                self.screen, DARK_GRAY, (bar_x, bar_y, bar_width, bar_height)
+            )
+            pygame.draw.rect(
+                self.screen,
+                ORANGE,
+                (bar_x, bar_y, int(bar_width * progress), bar_height),
+            )
+            wizard_text = self.font_small.render("Wizard Warmup", True, ORANGE)
+            self.screen.blit(wizard_text, (bar_x, bar_y - 18))
+
     def draw_level_complete(self) -> None:
         """Draw level complete screen."""
         self.draw_game()  # Draw game in background
@@ -297,7 +451,9 @@ class WizardOfWorGame:
         self.screen.blit(score_text, score_rect)
 
         continue_text = self.font_small.render("Press ENTER to continue", True, WHITE)
-        continue_rect = continue_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 50))
+        continue_rect = continue_text.get_rect(
+            center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 50)
+        )
         self.screen.blit(continue_text, continue_rect)
 
     def draw_game_over(self) -> None:
@@ -310,16 +466,24 @@ class WizardOfWorGame:
         score_rect = score_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
         self.screen.blit(score_text, score_rect)
 
-        level_text = self.font_medium.render(f"Reached Level: {self.level}", True, WHITE)
-        level_rect = level_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 50))
+        level_text = self.font_medium.render(
+            f"Reached Level: {self.level}", True, WHITE
+        )
+        level_rect = level_text.get_rect(
+            center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 50)
+        )
         self.screen.blit(level_text, level_rect)
 
         restart_text = self.font_small.render("Press ENTER to play again", True, WHITE)
-        restart_rect = restart_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 100))
+        restart_rect = restart_text.get_rect(
+            center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 100)
+        )
         self.screen.blit(restart_text, restart_rect)
 
         menu_text = self.font_small.render("Press ESC for menu", True, WHITE)
-        menu_rect = menu_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 130))
+        menu_rect = menu_text.get_rect(
+            center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 130)
+        )
         self.screen.blit(menu_text, menu_rect)
 
     def run(self) -> NoReturn:
