@@ -51,6 +51,9 @@ BOT_SPEED = 0.05
 BOT_ATTACK_RANGE = 10
 BOT_ATTACK_COOLDOWN = 60
 
+# Combat settings
+HEADSHOT_THRESHOLD = 0.05  # Angle difference in radians for headshot detection (~2.86 degrees)
+
 # Colors
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
@@ -126,7 +129,7 @@ class Map:
         # Building 2 - Medium building (top-right area)
         b2_start_i = max(10, int(size * 0.15))
         b2_end_i = min(int(size * 0.25), size - 1)
-        b2_start_j = max(int(size * 0.7), int(size * 0.65))
+        b2_start_j = int(size * 0.7)
         b2_end_j = min(int(size * 0.9), size - 1)
         if b2_end_i > b2_start_i and b2_end_j > b2_start_j:
             for i in range(b2_start_i, b2_end_i):
@@ -135,7 +138,7 @@ class Map:
                         self.grid[i][j] = 3
 
         # Building 3 - L-shaped building (bottom-left)
-        b3_start_i = max(int(size * 0.7), int(size * 0.65))
+        b3_start_i = int(size * 0.7)
         b3_end_i = min(int(size * 0.95), size - 1)
         b3_start_j = max(10, int(size * 0.15))
         b3_end_j = min(int(size * 0.35), size - 1)
@@ -154,9 +157,9 @@ class Map:
                             self.grid[i][j] = 2
 
         # Building 4 - Square building (bottom-right)
-        b4_start_i = max(int(size * 0.75), int(size * 0.7))
+        b4_start_i = int(size * 0.75)
         b4_end_i = min(int(size * 0.95), size - 1)
-        b4_start_j = max(int(size * 0.75), int(size * 0.7))
+        b4_start_j = int(size * 0.75)
         b4_end_j = min(int(size * 0.95), size - 1)
         if b4_end_i > b4_start_i and b4_end_j > b4_start_j:
             for i in range(b4_start_i, b4_end_i):
@@ -564,7 +567,7 @@ class Raycaster:
 
                 sprite_top = (SCREEN_HEIGHT - sprite_height) // 2
                 # Add walk animation offset for humanoid appearance
-                walk_offset = int(math.sin(hit_bot.walk_animation) * 2) if hit_bot.walk_animation > 0 else 0
+                walk_offset = int(math.sin(hit_bot.walk_animation) * 2)
                 pygame.draw.rect(screen, color, (ray * 2, sprite_top + walk_offset, 2, sprite_height))
 
             elif wall_type > 0:
@@ -704,7 +707,7 @@ class Game:
         for i, size in enumerate(map_sizes):
             x = start_x + i * (button_width + button_spacing)
             y = SCREEN_HEIGHT // 2 - 20
-            color = GREEN if size == DEFAULT_MAP_SIZE else DARK_GRAY
+            color = GREEN if size == self.selected_map_size else DARK_GRAY
             btn = Button(x, y, button_width, 40, str(size), color)
             self.map_size_buttons.append((btn, size))
 
@@ -856,7 +859,7 @@ class Game:
                     closest_dist = distance
                     # Headshot detection: very precise horizontal aim required
                     # Very tight horizontal angle difference indicates precise headshot
-                    is_headshot = angle_diff < 0.05  # Very tight angle = headshot
+                    is_headshot = angle_diff < HEADSHOT_THRESHOLD
 
         # Damage the closest bot in crosshair
         if closest_bot:
@@ -1057,8 +1060,11 @@ class Game:
         ammo_rect = ammo_text.get_rect(center=(weapon_x + weapon_width // 2, weapon_y + 40))
         self.screen.blit(ammo_text, ammo_rect)
         
-        # Weapon selection hints (inside weapon box)
-        hints_text = self.tiny_font.render("1:Pistol 2:Rifle 3:Shotgun 4:Plasma", True, GRAY)
+        # Weapon selection hints (inside weapon box) - dynamically generated
+        weapon_keys = ['1', '2', '3', '4']
+        weapon_names = ['pistol', 'rifle', 'shotgun', 'plasma']
+        weapon_hints = " ".join(f"{key}:{WEAPONS[name]['name']}" for key, name in zip(weapon_keys, weapon_names))
+        hints_text = self.tiny_font.render(weapon_hints, True, GRAY)
         hints_rect = hints_text.get_rect(center=(weapon_x + weapon_width // 2, weapon_y + 58))
         self.screen.blit(hints_text, hints_rect)
 
@@ -1070,9 +1076,14 @@ class Game:
         kills_text = self.small_font.render(f"Enemies: {bots_alive}/3", True, RED)
         self.screen.blit(kills_text, (SCREEN_WIDTH - 200, hud_bottom + 30))
         
-        # Controls hint (top right)
-        controls_hint = self.tiny_font.render("WASD:Move | Shift:Sprint | ESC:Menu", True, GRAY)
-        self.screen.blit(controls_hint, (SCREEN_WIDTH - 250, 10))
+        # Controls hint (top right) - with semi-transparent background for better readability
+        controls_hint_text = "WASD:Move | Shift:Sprint | ESC:Menu"
+        controls_hint = self.tiny_font.render(controls_hint_text, True, WHITE)
+        controls_hint_rect = controls_hint.get_rect(topleft=(SCREEN_WIDTH - 250, 10))
+        bg_surface = pygame.Surface((controls_hint_rect.width + 10, controls_hint_rect.height + 4), pygame.SRCALPHA)
+        bg_surface.fill((30, 30, 30, 180))  # Semi-transparent dark background
+        self.screen.blit(bg_surface, (controls_hint_rect.x - 5, controls_hint_rect.y - 2))
+        self.screen.blit(controls_hint, controls_hint_rect)
 
     def render_crosshair(self):
         """Render crosshair"""
