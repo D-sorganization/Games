@@ -45,7 +45,7 @@ WEAPONS = {
 }
 
 # Bot settings - increased health for 5-shot kill
-BASE_BOT_HEALTH = 125  # ~5 shots with rifle (25 damage each)
+BASE_BOT_HEALTH = 125  # ~5 shots with rifle (25 damage each) in base case (no enemy type multipliers); more shots needed if multipliers apply
 BASE_BOT_DAMAGE = 10
 BOT_SPEED = 0.05
 BOT_ATTACK_RANGE = 10
@@ -164,7 +164,7 @@ class Map:
         """Check if position contains a wall"""
         map_x = int(x)
         map_y = int(y)
-        if 0 <= map_x < MAP_SIZE and 0 <= map_y < MAP_SIZE:
+        if 0 <= map_x < self.size and 0 <= map_y < self.size:
             return self.grid[map_y][map_x] != 0
         return True
 
@@ -172,7 +172,7 @@ class Map:
         """Get the wall type at position"""
         map_x = int(x)
         map_y = int(y)
-        if 0 <= map_x < MAP_SIZE and 0 <= map_y < MAP_SIZE:
+        if 0 <= map_x < self.size and 0 <= map_y < self.size:
             return self.grid[map_y][map_x]
         return 1
 
@@ -546,7 +546,8 @@ class Raycaster:
     def render_minimap(self, screen: pygame.Surface, player: Player, bots: List[Bot]):
         """Render 2D minimap"""
         minimap_size = 200
-        minimap_scale = minimap_size / MAP_SIZE
+        map_size = self.game_map.size
+        minimap_scale = minimap_size / map_size
         minimap_x = SCREEN_WIDTH - minimap_size - 20
         minimap_y = 20
 
@@ -555,8 +556,8 @@ class Raycaster:
         pygame.draw.rect(screen, DARK_GRAY, (minimap_x, minimap_y, minimap_size, minimap_size))
 
         # Draw walls
-        for i in range(MAP_SIZE):
-            for j in range(MAP_SIZE):
+        for i in range(map_size):
+            for j in range(map_size):
                 if self.game_map.grid[i][j] != 0:
                     wall_type = self.game_map.grid[i][j]
                     color = WALL_COLORS.get(wall_type, WHITE)
@@ -665,11 +666,12 @@ class Game:
     def get_corner_positions(self) -> List[Tuple[float, float, float]]:
         """Get spawn positions for four corners (x, y, angle)"""
         offset = 5
+        map_size = self.game_map.size if self.game_map else self.selected_map_size
         return [
             (offset, offset, math.pi / 4),  # Top-left
-            (offset, MAP_SIZE - offset, 7 * math.pi / 4),  # Bottom-left
-            (MAP_SIZE - offset, offset, 3 * math.pi / 4),  # Top-right
-            (MAP_SIZE - offset, MAP_SIZE - offset, 5 * math.pi / 4),  # Bottom-right
+            (offset, map_size - offset, 7 * math.pi / 4),  # Bottom-left
+            (map_size - offset, offset, 3 * math.pi / 4),  # Top-right
+            (map_size - offset, map_size - offset, 5 * math.pi / 4),  # Bottom-right
         ]
 
     def start_game(self):
@@ -678,8 +680,6 @@ class Game:
         self.kills = 0
         self.level_times = []
         # Create map with selected size
-        global MAP_SIZE
-        MAP_SIZE = self.selected_map_size
         self.game_map = Map(self.selected_map_size)
         self.raycaster = Raycaster(self.game_map)
         self.start_level()
@@ -809,8 +809,8 @@ class Game:
                 if hit and distance < closest_dist:
                     closest_bot = bot
                     closest_dist = distance
-                    # Headshot detection: very precise aim (top portion of crosshair)
-                    # Check if aiming at upper portion (simulated by checking vertical offset)
+                    # Headshot detection: very precise horizontal aim required
+                    # Very tight horizontal angle difference indicates precise headshot
                     is_headshot = angle_diff < 0.05  # Very tight angle = headshot
 
         # Damage the closest bot in crosshair
@@ -995,7 +995,7 @@ class Game:
         weapon_x = SCREEN_WIDTH // 2 - 100
         weapon_y = hud_bottom
         weapon_width = 200
-        weapon_height = 60
+        weapon_height = 70  # Increased to accommodate hints
         
         # Weapon background
         pygame.draw.rect(self.screen, DARK_GRAY, (weapon_x, weapon_y, weapon_width, weapon_height))
@@ -1012,9 +1012,9 @@ class Game:
         ammo_rect = ammo_text.get_rect(center=(weapon_x + weapon_width // 2, weapon_y + 40))
         self.screen.blit(ammo_text, ammo_rect)
         
-        # Weapon selection hints (bottom of weapon box)
+        # Weapon selection hints (inside weapon box)
         hints_text = self.tiny_font.render("1:Pistol 2:Rifle 3:Shotgun 4:Plasma", True, GRAY)
-        hints_rect = hints_text.get_rect(center=(weapon_x + weapon_width // 2, weapon_y + 55))
+        hints_rect = hints_text.get_rect(center=(weapon_x + weapon_width // 2, weapon_y + 58))
         self.screen.blit(hints_text, hints_rect)
 
         # Level and enemies (right side)
