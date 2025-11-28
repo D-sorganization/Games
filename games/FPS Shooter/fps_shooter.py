@@ -22,11 +22,13 @@ SCREEN_HEIGHT = 800
 FPS = 60
 
 # Map settings
-MAP_SIZE = 90
+DEFAULT_MAP_SIZE = 50
+MAP_SIZE = DEFAULT_MAP_SIZE  # Will be set by user
 TILE_SIZE = 64
 
 # Player settings
-PLAYER_SPEED = 0.1
+PLAYER_SPEED = 0.2
+PLAYER_SPRINT_SPEED = 0.35
 PLAYER_ROT_SPEED = 0.003
 FOV = math.pi / 3  # 60 degrees
 HALF_FOV = FOV / 2
@@ -35,11 +37,15 @@ MAX_DEPTH = 20
 DELTA_ANGLE = FOV / NUM_RAYS
 
 # Weapon settings
-RIFLE_DAMAGE = 25
-RIFLE_RANGE = 15
+WEAPONS = {
+    'pistol': {'name': 'Pistol', 'damage': 20, 'range': 12, 'ammo': 999, 'cooldown': 10},
+    'rifle': {'name': 'Rifle', 'damage': 25, 'range': 15, 'ammo': 999, 'cooldown': 15},
+    'shotgun': {'name': 'Shotgun', 'damage': 30, 'range': 8, 'ammo': 999, 'cooldown': 20},
+    'plasma': {'name': 'Plasma', 'damage': 35, 'range': 18, 'ammo': 999, 'cooldown': 12},
+}
 
-# Bot settings
-BASE_BOT_HEALTH = 50
+# Bot settings - increased health for 5-shot kill
+BASE_BOT_HEALTH = 125  # ~5 shots with rifle (25 damage each)
 BASE_BOT_DAMAGE = 10
 BOT_SPEED = 0.05
 BOT_ATTACK_RANGE = 10
@@ -59,6 +65,20 @@ YELLOW = (255, 255, 0)
 ORANGE = (255, 165, 0)
 PURPLE = (200, 0, 200)
 CYAN = (0, 255, 255)
+DARK_RED = (139, 0, 0)
+MAROON = (128, 0, 0)
+CRIMSON = (220, 20, 60)
+DARK_GREEN = (0, 100, 0)
+LIME = (50, 205, 50)
+
+# Enemy types (defined after colors)
+ENEMY_TYPES = {
+    'zombie': {'color': DARK_RED, 'health_mult': 1.0, 'speed_mult': 1.0, 'damage_mult': 1.0},
+    'demon': {'color': MAROON, 'health_mult': 1.2, 'speed_mult': 1.1, 'damage_mult': 1.2},
+    'ghoul': {'color': CRIMSON, 'health_mult': 0.9, 'speed_mult': 1.2, 'damage_mult': 0.9},
+    'brute': {'color': DARK_GREEN, 'health_mult': 1.5, 'speed_mult': 0.8, 'damage_mult': 1.5},
+    'spectre': {'color': PURPLE, 'health_mult': 1.1, 'speed_mult': 1.3, 'damage_mult': 1.1},
+}
 
 # Wall colors
 WALL_COLORS = {
@@ -72,20 +92,24 @@ WALL_COLORS = {
 class Map:
     """Game map with walls and buildings"""
 
-    def __init__(self):
-        """Initialize a 90x90 map with walls and buildings"""
-        self.size = MAP_SIZE
-        self.grid = [[0 for _ in range(MAP_SIZE)] for _ in range(MAP_SIZE)]
+    def __init__(self, size: int = DEFAULT_MAP_SIZE):
+        """Initialize a map with walls and buildings
+        Args:
+            size: Map size (default: DEFAULT_MAP_SIZE)
+        """
+        self.size = size
+        self.grid = [[0 for _ in range(size)] for _ in range(size)]
         self.create_map()
 
     def create_map(self):
         """Create the map layout with walls and buildings"""
+        size = self.size
         # Border walls
-        for i in range(MAP_SIZE):
+        for i in range(size):
             self.grid[0][i] = 1
-            self.grid[MAP_SIZE - 1][i] = 1
+            self.grid[size - 1][i] = 1
             self.grid[i][0] = 1
-            self.grid[i][MAP_SIZE - 1] = 1
+            self.grid[i][size - 1] = 1
 
         # Building 1 - Large rectangular building (top-left area)
         for i in range(10, 25):
@@ -163,15 +187,16 @@ class Player:
         self.angle = angle
         self.health = 100
         self.max_health = 100
-        self.ammo = 999
+        self.ammo = {weapon: WEAPONS[weapon]['ammo'] for weapon in WEAPONS}
+        self.current_weapon = 'rifle'
         self.shooting = False
         self.shoot_timer = 0
         self.alive = True
 
-    def move(self, game_map: Map, bots: List['Bot'], forward: bool = True):
+    def move(self, game_map: Map, bots: List['Bot'], forward: bool = True, speed: float = PLAYER_SPEED):
         """Move player forward or backward"""
-        dx = math.cos(self.angle) * PLAYER_SPEED * (1 if forward else -1)
-        dy = math.sin(self.angle) * PLAYER_SPEED * (1 if forward else -1)
+        dx = math.cos(self.angle) * speed * (1 if forward else -1)
+        dy = math.sin(self.angle) * speed * (1 if forward else -1)
 
         new_x = self.x + dx
         new_y = self.y + dy
@@ -200,11 +225,11 @@ class Player:
             if not collision:
                 self.y = new_y
 
-    def strafe(self, game_map: Map, bots: List['Bot'], right: bool = True):
+    def strafe(self, game_map: Map, bots: List['Bot'], right: bool = True, speed: float = PLAYER_SPEED):
         """Strafe left or right"""
         angle = self.angle + math.pi / 2 * (1 if right else -1)
-        dx = math.cos(angle) * PLAYER_SPEED
-        dy = math.sin(angle) * PLAYER_SPEED
+        dx = math.cos(angle) * speed
+        dy = math.sin(angle) * speed
 
         new_x = self.x + dx
         new_y = self.y + dy
@@ -238,12 +263,26 @@ class Player:
 
     def shoot(self) -> bool:
         """Initiate shooting, return True if shot was fired"""
-        if self.ammo > 0 and self.shoot_timer <= 0:
+        weapon_data = WEAPONS[self.current_weapon]
+        if self.ammo[self.current_weapon] > 0 and self.shoot_timer <= 0:
             self.shooting = True
-            self.shoot_timer = 15
-            self.ammo -= 1
+            self.shoot_timer = weapon_data['cooldown']
+            self.ammo[self.current_weapon] -= 1
             return True
         return False
+    
+    def switch_weapon(self, weapon: str):
+        """Switch to a different weapon"""
+        if weapon in WEAPONS:
+            self.current_weapon = weapon
+    
+    def get_current_weapon_damage(self) -> int:
+        """Get damage of current weapon"""
+        return WEAPONS[self.current_weapon]['damage']
+    
+    def get_current_weapon_range(self) -> int:
+        """Get range of current weapon"""
+        return WEAPONS[self.current_weapon]['range']
 
     def take_damage(self, damage: int):
         """Take damage"""
@@ -263,17 +302,33 @@ class Player:
 class Bot:
     """Enemy bot with AI"""
 
-    def __init__(self, x: float, y: float, level: int):
-        """Initialize bot"""
+    def __init__(self, x: float, y: float, level: int, enemy_type: str = None):
+        """Initialize bot
+        Args:
+            x, y: Position
+            level: Current level (affects stats)
+            enemy_type: Type of enemy (zombie, demon, ghoul, brute, spectre)
+        """
         self.x = x
         self.y = y
         self.angle = 0
-        self.health = BASE_BOT_HEALTH + (level - 1) * 3
+        self.enemy_type = enemy_type if enemy_type else random.choice(list(ENEMY_TYPES.keys()))
+        self.type_data = ENEMY_TYPES[self.enemy_type]
+        
+        base_health = int(BASE_BOT_HEALTH * self.type_data['health_mult'])
+        self.health = base_health + (level - 1) * 3
         self.max_health = self.health
-        self.damage = BASE_BOT_DAMAGE + (level - 1) * 2
+        
+        base_damage = int(BASE_BOT_DAMAGE * self.type_data['damage_mult'])
+        self.damage = base_damage + (level - 1) * 2
+        
+        self.speed = BOT_SPEED * self.type_data['speed_mult']
         self.alive = True
         self.attack_timer = 0
         self.level = level
+        self.walk_animation = 0.0  # For walk animation
+        self.last_x = x
+        self.last_y = y
 
     def update(self, game_map: Map, player: Player, other_bots: List['Bot']):
         """Update bot AI"""
@@ -297,8 +352,8 @@ class Bot:
                     self.attack_timer = BOT_ATTACK_COOLDOWN
         else:
             # Move toward player
-            move_dx = math.cos(self.angle) * BOT_SPEED
-            move_dy = math.sin(self.angle) * BOT_SPEED
+            move_dx = math.cos(self.angle) * self.speed
+            move_dy = math.sin(self.angle) * self.speed
 
             new_x = self.x + move_dx
             new_y = self.y + move_dy
@@ -321,6 +376,15 @@ class Bot:
                 self.x = new_x
             if can_move_y:
                 self.y = new_y
+            
+            # Update walk animation
+            moved = (self.x != self.last_x or self.y != self.last_y)
+            if moved:
+                self.walk_animation += 0.3
+                if self.walk_animation > 2 * math.pi:
+                    self.walk_animation -= 2 * math.pi
+            self.last_x = self.x
+            self.last_y = self.y
 
         # Update attack timer
         if self.attack_timer > 0:
@@ -337,12 +401,20 @@ class Bot:
                 return False
         return True
 
-    def take_damage(self, damage: int):
-        """Take damage"""
-        self.health -= damage
-        if self.health <= 0:
+    def take_damage(self, damage: int, is_headshot: bool = False):
+        """Take damage
+        Args:
+            damage: Base damage amount
+            is_headshot: If True, instant kill
+        """
+        if is_headshot:
             self.health = 0
             self.alive = False
+        else:
+            self.health -= damage
+            if self.health <= 0:
+                self.health = 0
+                self.alive = False
 
 
 class Raycaster:
@@ -440,13 +512,15 @@ class Raycaster:
                 else:
                     sprite_height = SCREEN_HEIGHT
 
-                # Bot color (purple/magenta)
-                color = PURPLE
+                # Bot color based on enemy type
+                base_color = hit_bot.type_data['color']
                 shade = max(0, 255 - int(distance * 25))
-                color = tuple(min(255, max(0, c * shade // 255)) for c in color)
+                color = tuple(min(255, max(0, c * shade // 255)) for c in base_color)
 
                 sprite_top = (SCREEN_HEIGHT - sprite_height) // 2
-                pygame.draw.rect(screen, color, (ray * 2, sprite_top, 2, sprite_height))
+                # Add walk animation offset for humanoid appearance
+                walk_offset = int(math.sin(hit_bot.walk_animation) * 2) if hit_bot.walk_animation > 0 else 0
+                pygame.draw.rect(screen, color, (ray * 2, sprite_top + walk_offset, 2, sprite_height))
 
             elif wall_type > 0:
                 # Render wall
@@ -546,7 +620,7 @@ class Game:
     def __init__(self):
         """Initialize game"""
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-        pygame.display.set_caption("FPS Shooter - Arena Combat")
+        pygame.display.set_caption("Force Field - Arena Combat")
         self.clock = pygame.time.Clock()
         self.running = True
 
@@ -554,12 +628,15 @@ class Game:
         self.state = "menu"  # menu, playing, game_over, level_complete
         self.level = 1
         self.kills = 0
+        self.level_start_time = 0
+        self.level_times = []  # Track time for each level
+        self.selected_map_size = DEFAULT_MAP_SIZE
 
         # Game objects
-        self.game_map = Map()
+        self.game_map = None  # Will be created with selected size
         self.player = None
         self.bots = []
-        self.raycaster = Raycaster(self.game_map)
+        self.raycaster = None
 
         # Fonts
         self.title_font = pygame.font.Font(None, 72)
@@ -567,11 +644,23 @@ class Game:
         self.small_font = pygame.font.Font(None, 32)
         self.tiny_font = pygame.font.Font(None, 24)
 
-        # Menu button
+        # Menu buttons
         self.start_button = Button(
-            SCREEN_WIDTH // 2 - 150, SCREEN_HEIGHT // 2 - 50,
-            300, 80, "START GAME", GREEN
+            SCREEN_WIDTH // 2 - 150, SCREEN_HEIGHT // 2 + 50,
+            300, 60, "START GAME", GREEN
         )
+        self.map_size_buttons = []
+        map_sizes = [30, 40, 50, 60, 70]
+        button_width = 80
+        button_spacing = 10
+        total_width = len(map_sizes) * (button_width + button_spacing) - button_spacing
+        start_x = SCREEN_WIDTH // 2 - total_width // 2
+        for i, size in enumerate(map_sizes):
+            x = start_x + i * (button_width + button_spacing)
+            y = SCREEN_HEIGHT // 2 - 20
+            color = GREEN if size == DEFAULT_MAP_SIZE else DARK_GRAY
+            btn = Button(x, y, button_width, 40, str(size), color)
+            self.map_size_buttons.append((btn, size))
 
     def get_corner_positions(self) -> List[Tuple[float, float, float]]:
         """Get spawn positions for four corners (x, y, angle)"""
@@ -587,10 +676,17 @@ class Game:
         """Start new game"""
         self.level = 1
         self.kills = 0
+        self.level_times = []
+        # Create map with selected size
+        global MAP_SIZE
+        MAP_SIZE = self.selected_map_size
+        self.game_map = Map(self.selected_map_size)
+        self.raycaster = Raycaster(self.game_map)
         self.start_level()
 
     def start_level(self):
         """Start a new level"""
+        self.level_start_time = pygame.time.get_ticks()
         corners = self.get_corner_positions()
         random.shuffle(corners)
 
@@ -598,11 +694,12 @@ class Game:
         player_pos = corners[0]
         self.player = Player(player_pos[0], player_pos[1], player_pos[2])
 
-        # Bots spawn in other three corners
+        # Bots spawn in other three corners with random enemy types
         self.bots = []
         for i in range(1, 4):
             bot_pos = corners[i]
-            self.bots.append(Bot(bot_pos[0], bot_pos[1], self.level))
+            enemy_type = random.choice(list(ENEMY_TYPES.keys()))
+            self.bots.append(Bot(bot_pos[0], bot_pos[1], self.level, enemy_type))
 
         self.state = "playing"
 
@@ -614,13 +711,25 @@ class Game:
         """Handle menu events"""
         mouse_pos = pygame.mouse.get_pos()
         self.start_button.update(mouse_pos)
+        for btn, _ in self.map_size_buttons:
+            btn.update(mouse_pos)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                if event.button == 1 and self.start_button.is_clicked(mouse_pos):
-                    self.start_game()
+                if event.button == 1:
+                    if self.start_button.is_clicked(mouse_pos):
+                        self.start_game()
+                    else:
+                        # Check map size buttons
+                        for btn, size in self.map_size_buttons:
+                            if btn.is_clicked(mouse_pos):
+                                self.selected_map_size = size
+                                # Update button colors
+                                for b, s in self.map_size_buttons:
+                                    b.color = GREEN if s == size else DARK_GRAY
+                                break
 
     def handle_game_events(self):
         """Handle gameplay events"""
@@ -632,6 +741,15 @@ class Game:
                     self.state = "menu"
                     pygame.mouse.set_visible(True)
                     pygame.event.set_grab(False)
+                # Weapon switching
+                elif event.key == pygame.K_1:
+                    self.player.switch_weapon('pistol')
+                elif event.key == pygame.K_2:
+                    self.player.switch_weapon('rifle')
+                elif event.key == pygame.K_3:
+                    self.player.switch_weapon('shotgun')
+                elif event.key == pygame.K_4:
+                    self.player.switch_weapon('plasma')
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 3:  # Right-click to fire
                     if self.player.shoot():
@@ -646,10 +764,14 @@ class Game:
         # Cast ray in player's view direction
         sin_a = math.sin(self.player.angle)
         cos_a = math.cos(self.player.angle)
+        
+        weapon_range = self.player.get_current_weapon_range()
+        weapon_damage = self.player.get_current_weapon_damage()
 
         # Find closest bot in crosshair
         closest_bot = None
         closest_dist = float('inf')
+        is_headshot = False
 
         for bot in self.bots:
             if not bot.alive:
@@ -660,7 +782,7 @@ class Game:
             dy = bot.y - self.player.y
             distance = math.sqrt(dx**2 + dy**2)
 
-            if distance > RIFLE_RANGE:
+            if distance > weapon_range:
                 continue
 
             # Check if bot is in front of player
@@ -687,10 +809,13 @@ class Game:
                 if hit and distance < closest_dist:
                     closest_bot = bot
                     closest_dist = distance
+                    # Headshot detection: very precise aim (top portion of crosshair)
+                    # Check if aiming at upper portion (simulated by checking vertical offset)
+                    is_headshot = angle_diff < 0.05  # Very tight angle = headshot
 
         # Damage the closest bot in crosshair
         if closest_bot:
-            closest_bot.take_damage(RIFLE_DAMAGE)
+            closest_bot.take_damage(weapon_damage, is_headshot=is_headshot)
             if not closest_bot.alive:
                 self.kills += 1
 
@@ -705,6 +830,9 @@ class Game:
         # Check if all bots are dead
         all_dead = all(not bot.alive for bot in self.bots)
         if all_dead:
+            # Record level completion time
+            level_time = (pygame.time.get_ticks() - self.level_start_time) / 1000.0  # Convert to seconds
+            self.level_times.append(level_time)
             self.state = "level_complete"
             pygame.mouse.set_visible(True)
             pygame.event.set_grab(False)
@@ -712,15 +840,19 @@ class Game:
 
         keys = pygame.key.get_pressed()
 
+        # Check for sprint (Shift key)
+        is_sprinting = keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]
+        current_speed = PLAYER_SPRINT_SPEED if is_sprinting else PLAYER_SPEED
+
         # Movement
         if keys[pygame.K_w]:
-            self.player.move(self.game_map, self.bots, forward=True)
+            self.player.move(self.game_map, self.bots, forward=True, speed=current_speed)
         if keys[pygame.K_s]:
-            self.player.move(self.game_map, self.bots, forward=False)
+            self.player.move(self.game_map, self.bots, forward=False, speed=current_speed)
         if keys[pygame.K_a]:
-            self.player.strafe(self.game_map, self.bots, right=False)
+            self.player.strafe(self.game_map, self.bots, right=False, speed=current_speed)
         if keys[pygame.K_d]:
-            self.player.strafe(self.game_map, self.bots, right=True)
+            self.player.strafe(self.game_map, self.bots, right=True, speed=current_speed)
 
         # Arrow keys
         if keys[pygame.K_LEFT]:
@@ -738,30 +870,46 @@ class Game:
         """Render main menu"""
         self.screen.fill(BLACK)
 
-        # Title
-        title = self.title_font.render("FPS ARENA", True, RED)
-        title_rect = title.get_rect(center=(SCREEN_WIDTH // 2, 150))
+        # Stylized title "FORCE FIELD"
+        title_y = 120
+        title_text = "FORCE FIELD"
+        # Draw title with outline effect
+        for offset_x, offset_y in [(-2, -2), (-2, 2), (2, -2), (2, 2)]:
+            title_outline = self.title_font.render(title_text, True, DARK_RED)
+            title_rect_outline = title_outline.get_rect(center=(SCREEN_WIDTH // 2 + offset_x, title_y + offset_y))
+            self.screen.blit(title_outline, title_rect_outline)
+        title = self.title_font.render(title_text, True, RED)
+        title_rect = title.get_rect(center=(SCREEN_WIDTH // 2, title_y))
         self.screen.blit(title, title_rect)
-
+        
         # Subtitle
-        subtitle = self.small_font.render("90x90 Combat Zone", True, WHITE)
-        subtitle_rect = subtitle.get_rect(center=(SCREEN_WIDTH // 2, 220))
+        subtitle = self.small_font.render("Arena Combat", True, WHITE)
+        subtitle_rect = subtitle.get_rect(center=(SCREEN_WIDTH // 2, title_y + 80))
         self.screen.blit(subtitle, subtitle_rect)
+
+        # Map size selection label
+        map_label = self.small_font.render("Map Size:", True, CYAN)
+        map_label_rect = map_label.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 50))
+        self.screen.blit(map_label, map_label_rect)
+        
+        # Map size buttons
+        for btn, _ in self.map_size_buttons:
+            btn.draw(self.screen, self.tiny_font)
 
         # Instructions
         instructions = [
-            "Fight waves of enemy bots!",
-            "Each level, bots get stronger (+3 HP, +DMG)",
+            "Fight waves of enemy monsters!",
+            "Each level, enemies get stronger",
             "",
-            "WASD: Move | Mouse: Look | Left: Aim | Right: Shoot"
+            "WASD: Move | Shift: Sprint | Mouse: Look | 1-4: Weapons | Right: Shoot"
         ]
 
-        y = 320
+        y = SCREEN_HEIGHT // 2 + 130
         for line in instructions:
             text = self.tiny_font.render(line, True, CYAN)
             text_rect = text.get_rect(center=(SCREEN_WIDTH // 2, y))
             self.screen.blit(text, text_rect)
-            y += 35
+            y += 30
 
         # Start button
         self.start_button.draw(self.screen, self.font)
@@ -821,40 +969,65 @@ class Game:
         pygame.draw.rect(self.screen, barrel_color, (rifle_x + 140, rifle_y + 125, 15, 25))
 
     def render_hud(self):
-        """Render HUD"""
-        # Health bar
-        health_width = 200
-        health_height = 30
+        """Render HUD in Doom-style"""
+        hud_bottom = SCREEN_HEIGHT - 80
+        
+        # Health bar (left side)
+        health_width = 150
+        health_height = 25
         health_x = 20
-        health_y = 20
+        health_y = hud_bottom
 
         # Background
         pygame.draw.rect(self.screen, DARK_GRAY, (health_x, health_y, health_width, health_height))
-
         # Health fill
         health_percent = max(0, self.player.health / self.player.max_health)
         fill_width = int(health_width * health_percent)
         health_color = GREEN if health_percent > 0.5 else (ORANGE if health_percent > 0.25 else RED)
         pygame.draw.rect(self.screen, health_color, (health_x, health_y, fill_width, health_height))
-
         # Border
         pygame.draw.rect(self.screen, WHITE, (health_x, health_y, health_width, health_height), 2)
-
         # Text
-        health_text = self.tiny_font.render(f"HP: {self.player.health}/{self.player.max_health}", True, WHITE)
-        self.screen.blit(health_text, (health_x + 5, health_y + 5))
+        health_text = self.tiny_font.render(f"HP: {self.player.health}", True, WHITE)
+        self.screen.blit(health_text, (health_x + 5, health_y + 3))
 
-        # Level and kills
+        # Weapon display (center-bottom, Doom-style)
+        weapon_x = SCREEN_WIDTH // 2 - 100
+        weapon_y = hud_bottom
+        weapon_width = 200
+        weapon_height = 60
+        
+        # Weapon background
+        pygame.draw.rect(self.screen, DARK_GRAY, (weapon_x, weapon_y, weapon_width, weapon_height))
+        pygame.draw.rect(self.screen, WHITE, (weapon_x, weapon_y, weapon_width, weapon_height), 2)
+        
+        # Current weapon name
+        current_weapon_data = WEAPONS[self.player.current_weapon]
+        weapon_name = self.small_font.render(current_weapon_data['name'], True, YELLOW)
+        weapon_name_rect = weapon_name.get_rect(center=(weapon_x + weapon_width // 2, weapon_y + 15))
+        self.screen.blit(weapon_name, weapon_name_rect)
+        
+        # Ammo
+        ammo_text = self.tiny_font.render(f"Ammo: {self.player.ammo[self.player.current_weapon]}", True, CYAN)
+        ammo_rect = ammo_text.get_rect(center=(weapon_x + weapon_width // 2, weapon_y + 40))
+        self.screen.blit(ammo_text, ammo_rect)
+        
+        # Weapon selection hints (bottom of weapon box)
+        hints_text = self.tiny_font.render("1:Pistol 2:Rifle 3:Shotgun 4:Plasma", True, GRAY)
+        hints_rect = hints_text.get_rect(center=(weapon_x + weapon_width // 2, weapon_y + 55))
+        self.screen.blit(hints_text, hints_rect)
+
+        # Level and enemies (right side)
         level_text = self.small_font.render(f"Level: {self.level}", True, YELLOW)
-        self.screen.blit(level_text, (20, 60))
+        self.screen.blit(level_text, (SCREEN_WIDTH - 200, hud_bottom))
 
         bots_alive = sum(1 for bot in self.bots if bot.alive)
         kills_text = self.small_font.render(f"Enemies: {bots_alive}/3", True, RED)
-        self.screen.blit(kills_text, (20, 95))
-
-        # Ammo
-        ammo_text = self.small_font.render(f"Ammo: {self.player.ammo}", True, CYAN)
-        self.screen.blit(ammo_text, (20, 130))
+        self.screen.blit(kills_text, (SCREEN_WIDTH - 200, hud_bottom + 30))
+        
+        # Controls hint (top right)
+        controls_hint = self.tiny_font.render("WASD:Move | Shift:Sprint | ESC:Menu", True, GRAY)
+        self.screen.blit(controls_hint, (SCREEN_WIDTH - 250, 10))
 
     def render_crosshair(self):
         """Render crosshair"""
@@ -885,27 +1058,31 @@ class Game:
 
         # Title
         title = self.title_font.render("LEVEL COMPLETE!", True, GREEN)
-        title_rect = title.get_rect(center=(SCREEN_WIDTH // 2, 200))
+        title_rect = title.get_rect(center=(SCREEN_WIDTH // 2, 150))
         self.screen.blit(title, title_rect)
 
         # Stats
+        level_time = self.level_times[-1] if self.level_times else 0
+        total_time = sum(self.level_times)
         stats = [
             f"Level {self.level} cleared!",
+            f"Time: {level_time:.1f}s",
+            f"Total Time: {total_time:.1f}s",
             f"Total Kills: {self.kills}",
             "",
-            "Next level: Bots get stronger!",
+            "Next level: Enemies get stronger!",
             "",
             "Press SPACE for next level",
             "Press ESC for menu"
         ]
 
-        y = 320
+        y = 250
         for line in stats:
-            color = YELLOW if "stronger" in line else WHITE
+            color = YELLOW if "stronger" in line else (GREEN if "Time" in line else WHITE)
             text = self.small_font.render(line, True, color)
             text_rect = text.get_rect(center=(SCREEN_WIDTH // 2, y))
             self.screen.blit(text, text_rect)
-            y += 45
+            y += 40
 
         pygame.display.flip()
 
@@ -931,20 +1108,26 @@ class Game:
 
         # Stats
         completed_levels = max(0, self.level - 1)
+        total_time = sum(self.level_times)
+        avg_time = total_time / len(self.level_times) if self.level_times else 0
         stats = [
             f"You survived {completed_levels} level{'s' if completed_levels != 1 else ''}",
             f"Total Kills: {self.kills}",
+            f"Total Time: {total_time:.1f}s",
+            f"Average Time/Level: {avg_time:.1f}s" if self.level_times else "",
             "",
             "Press SPACE to restart",
             "Press ESC for menu"
         ]
 
-        y = 350
+        y = 250
         for line in stats:
-            text = self.small_font.render(line, True, WHITE)
-            text_rect = text.get_rect(center=(SCREEN_WIDTH // 2, y))
-            self.screen.blit(text, text_rect)
-            y += 50
+            if line:  # Skip empty lines
+                color = GREEN if "Time" in line else WHITE
+                text = self.small_font.render(line, True, color)
+                text_rect = text.get_rect(center=(SCREEN_WIDTH // 2, y))
+                self.screen.blit(text, text_rect)
+                y += 40
 
         pygame.display.flip()
 
