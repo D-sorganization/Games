@@ -6,6 +6,8 @@ Uses WASD for movement, mouse for looking and aiming, left-click to aim, and rig
 Fight waves of increasingly difficult bots across multiple levels!
 """
 
+from __future__ import annotations
+
 import math
 import random
 import sys
@@ -1016,7 +1018,8 @@ class Raycaster:
 
             # Create a temporary surface for the sprite
             sprite_surface = pygame.Surface(
-                (int(sprite_size), int(sprite_size)), pygame.SRCALPHA
+                (int(sprite_size), int(sprite_size)),
+                pygame.SRCALPHA,
             )
             self.render_enemy_sprite(sprite_surface, bot, 0, 0, sprite_size)
 
@@ -1027,7 +1030,7 @@ class Raycaster:
                     int(255 * distance_shade),
                     int(255 * distance_shade),
                     int(255 * distance_shade),
-                )
+                ),
             )
             sprite_surface.blit(shade_surface, (0, 0), special_flags=pygame.BLEND_MULT)
 
@@ -1037,12 +1040,17 @@ class Raycaster:
     def render_floor_ceiling(self, screen: pygame.Surface) -> None:
         """Render floor and ceiling"""
         pygame.draw.rect(
-            screen, DARK_GRAY, (0, SCREEN_HEIGHT // 2, SCREEN_WIDTH, SCREEN_HEIGHT // 2)
+            screen,
+            DARK_GRAY,
+            (0, SCREEN_HEIGHT // 2, SCREEN_WIDTH, SCREEN_HEIGHT // 2),
         )
         pygame.draw.rect(screen, BLACK, (0, 0, SCREEN_WIDTH, SCREEN_HEIGHT // 2))
 
     def render_minimap(
-        self, screen: pygame.Surface, player: Player, bots: List[Bot]
+        self,
+        screen: pygame.Surface,
+        player: Player,
+        bots: List[Bot],
     ) -> None:
         """Render 2D minimap"""
         minimap_size = 200
