@@ -800,7 +800,9 @@ class TetrisGame:
                 # Render text with alpha
                 text_surf = self.font_large.render(popup.text, True, popup.color)
                 text_surf.set_alpha(popup.alpha)
-                text_rect = text_surf.get_rect(center=(int(popup.x), int(popup.y)))
+                text_rect = text_surf.get_rect(
+                    center=(int(popup.x), int(popup.y)),
+                )
                 self.screen.blit(text_surf, text_rect)
             else:
                 self.score_popups.remove(popup)
@@ -1005,7 +1007,7 @@ class TetrisGame:
 
                 pause_text = self.font_large.render("PAUSED", True, YELLOW)
                 pause_rect = pause_text.get_rect(
-                    center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2)
+                    center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2),
                 )
                 self.screen.blit(pause_text, pause_rect)
 
@@ -1016,23 +1018,33 @@ class TetrisGame:
             game_over_text = self.font_large.render("GAME OVER", True, RED)
             score_text = self.font.render(f"Final Score: {self.score}", True, WHITE)
             lines_text = self.font.render(
-                f"Lines Cleared: {self.lines_cleared}", True, WHITE
+                f"Lines Cleared: {self.lines_cleared}",
+                True,
+                WHITE,
             )
             level_text = self.font.render(f"Final Level: {self.level}", True, WHITE)
 
             # Statistics
             stats_title = self.font.render("Line Clears:", True, GOLD)
             single_text = self.small_font.render(
-                f"Singles: {self.total_singles}", True, WHITE
+                f"Singles: {self.total_singles}",
+                True,
+                WHITE,
             )
             double_text = self.small_font.render(
-                f"Doubles: {self.total_doubles}", True, WHITE
+                f"Doubles: {self.total_doubles}",
+                True,
+                WHITE,
             )
             triple_text = self.small_font.render(
-                f"Triples: {self.total_triples}", True, WHITE
+                f"Triples: {self.total_triples}",
+                True,
+                WHITE,
             )
             tetris_text = self.small_font.render(
-                f"Tetrises: {self.total_tetrises}", True, CYAN
+                f"Tetrises: {self.total_tetrises}",
+                True,
+                CYAN,
             )
 
             restart_text = self.small_font.render("Press R to Restart", True, GREEN)
@@ -1140,7 +1152,7 @@ class TetrisGame:
 
         if move_right and move_right.get("type") == "hat":
             if self.joystick.get_hat(int(move_right["index"])) == move_right.get(
-                "value"
+                "value",
             ):
                 if self.valid_move(self.current_piece, x_offset=1):
                     self.current_piece.x += 1
