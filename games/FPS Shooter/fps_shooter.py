@@ -9,7 +9,7 @@ Fight waves of increasingly difficult bots across multiple levels!
 import math
 import random
 import sys
-from typing import List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import pygame
 
@@ -74,7 +74,10 @@ WEAPONS = {
 }
 
 # Bot settings - increased health for 5-shot kill
-BASE_BOT_HEALTH = 125  # Exactly 5 shots with rifle (25 damage each) in base case (no enemy type multipliers); e.g., brute (1.5× health = 187.5 HP) requires 8 shots, demon (1.2× health = 150 HP) requires 6 shots
+# Exactly 5 shots with rifle (25 damage each) in base case (no enemy type multipliers)
+# e.g., brute (1.5x health = 187.5 HP) requires 8 shots,
+# demon (1.2x health = 150 HP) requires 6 shots
+BASE_BOT_HEALTH = 125
 BASE_BOT_DAMAGE = 10
 BOT_SPEED = 0.05
 BOT_ATTACK_RANGE = 12
@@ -114,7 +117,8 @@ DARK_GREEN = (0, 100, 0)
 LIME = (50, 205, 50)
 
 # Enemy types (matching doom game colors and adding more variety)
-# Colors from doom games: zombie (#6b8a6f = grayish-green), boss (#8c3f3f = dark red), demon (#b52b1d = red), dinosaur (#3fa34d = green), raider (#7a5cff = purple)
+# Colors from doom games: zombie (#6b8a6f = grayish-green), boss (#8c3f3f = dark red),
+# demon (#b52b1d = red), dinosaur (#3fa34d = green), raider (#7a5cff = purple)
 ZOMBIE_COLOR = (107, 138, 111)  # #6b8a6f
 BOSS_COLOR = (140, 63, 63)  # #8c3f3f
 DEMON_COLOR = (181, 43, 29)  # #b52b1d
@@ -191,7 +195,8 @@ class Map:
             self.grid[i][size - 1] = 1
 
         # Scale building positions based on map size
-        # Use proportional minimums that scale with map size to ensure buildings generate for all sizes
+        # Use proportional minimums that scale with map size
+        # to ensure buildings generate for all sizes
         building_edge_margin = max(
             MIN_BUILDING_OFFSET, int(size * 0.1)
         )  # Minimum distance from map edges where buildings can spawn
@@ -204,12 +209,10 @@ class Map:
         if b1_end_i > b1_start_i and b1_end_j > b1_start_j:
             for i in range(b1_start_i, b1_end_i):
                 for j in range(b1_start_j, b1_end_j):
-                    if (
-                        i == b1_start_i
-                        or i == b1_end_i - 1
-                        or j == b1_start_j
-                        or j == b1_end_j - 1
-                    ):
+                    if i in {b1_start_i, b1_end_i - 1} or j in {
+                        b1_start_j,
+                        b1_end_j - 1,
+                    }:
                         self.grid[i][j] = 2
 
         # Building 2 - Medium building (top-right area)
@@ -220,12 +223,10 @@ class Map:
         if b2_end_i > b2_start_i and b2_end_j > b2_start_j:
             for i in range(b2_start_i, b2_end_i):
                 for j in range(b2_start_j, b2_end_j):
-                    if (
-                        i == b2_start_i
-                        or i == b2_end_i - 1
-                        or j == b2_start_j
-                        or j == b2_end_j - 1
-                    ):
+                    if i in {b2_start_i, b2_end_i - 1} or j in {
+                        b2_start_j,
+                        b2_end_j - 1,
+                    }:
                         self.grid[i][j] = 3
 
         # Building 3 - L-shaped building (bottom-left)
@@ -236,12 +237,10 @@ class Map:
         if b3_end_i > b3_start_i and b3_end_j > b3_start_j:
             for i in range(b3_start_i, b3_end_i):
                 for j in range(b3_start_j, b3_end_j):
-                    if (
-                        i == b3_start_i
-                        or i == b3_end_i - 1
-                        or j == b3_start_j
-                        or j == b3_end_j - 1
-                    ):
+                    if i in {b3_start_i, b3_end_i - 1} or j in {
+                        b3_start_j,
+                        b3_end_j - 1,
+                    }:
                         self.grid[i][j] = 2
             # L-shape extension
             b3_ext_start_i = min(max(int(size * 0.8), b3_start_i), b3_end_i - 1)
@@ -249,12 +248,10 @@ class Map:
             if b3_ext_start_i < b3_end_i and b3_ext_end_j > b3_start_j:
                 for i in range(b3_ext_start_i, b3_end_i):
                     for j in range(b3_start_j, b3_ext_end_j):
-                        if (
-                            i == b3_ext_start_i
-                            or i == b3_end_i - 1
-                            or j == b3_start_j
-                            or j == b3_ext_end_j - 1
-                        ):
+                        if i in {b3_ext_start_i, b3_end_i - 1} or j in {
+                            b3_start_j,
+                            b3_ext_end_j - 1,
+                        }:
                             self.grid[i][j] = 2
 
         # Building 4 - Square building (bottom-right)
@@ -265,12 +262,10 @@ class Map:
         if b4_end_i > b4_start_i and b4_end_j > b4_start_j:
             for i in range(b4_start_i, b4_end_i):
                 for j in range(b4_start_j, b4_end_j):
-                    if (
-                        i == b4_start_i
-                        or i == b4_end_i - 1
-                        or j == b4_start_j
-                        or j == b4_end_j - 1
-                    ):
+                    if i in {b4_start_i, b4_end_i - 1} or j in {
+                        b4_start_j,
+                        b4_end_j - 1,
+                    }:
                         self.grid[i][j] = 3
 
         # Central courtyard walls (only if map is large enough)
@@ -380,10 +375,7 @@ class Map:
         # Central courtyard
         center_start = int(size * 0.45)
         center_end = min(int(size * 0.55), size - 1)
-        if center_start < i < center_end and center_start < j < center_end:
-            return True
-
-        return False
+        return center_start < i < center_end and center_start < j < center_end
 
 
 class Player:
@@ -396,7 +388,9 @@ class Player:
         self.angle = angle
         self.health = 100
         self.max_health = 100
-        self.ammo = {weapon: WEAPONS[weapon]["ammo"] for weapon in WEAPONS}
+        self.ammo: Dict[str, int] = {
+            weapon: int(WEAPONS[weapon]["ammo"]) for weapon in WEAPONS
+        }
         self.current_weapon = "rifle"
         self.shooting = False
         self.shoot_timer = 0
@@ -484,10 +478,10 @@ class Player:
 
     def shoot(self) -> bool:
         """Initiate shooting, return True if shot was fired"""
-        weapon_data = WEAPONS[self.current_weapon]
+        weapon_data: Dict[str, Any] = WEAPONS[self.current_weapon]
         if self.ammo[self.current_weapon] > 0 and self.shoot_timer <= 0:
             self.shooting = True
-            self.shoot_timer = weapon_data["cooldown"]
+            self.shoot_timer = int(weapon_data["cooldown"])
             self.ammo[self.current_weapon] -= 1
             return True
         return False
@@ -499,11 +493,13 @@ class Player:
 
     def get_current_weapon_damage(self) -> int:
         """Get damage of current weapon"""
-        return WEAPONS[self.current_weapon]["damage"]
+        weapon_data: Dict[str, Any] = WEAPONS[self.current_weapon]
+        return int(weapon_data["damage"])
 
     def get_current_weapon_range(self) -> int:
         """Get range of current weapon"""
-        return WEAPONS[self.current_weapon]["range"]
+        weapon_data: Dict[str, Any] = WEAPONS[self.current_weapon]
+        return int(weapon_data["range"])
 
     def take_damage(self, damage: int) -> None:
         """Take damage"""
@@ -564,7 +560,7 @@ class Projectile:
 class Bot:
     """Enemy bot with AI"""
 
-    def __init__(self, x: float, y: float, level: int, enemy_type: str = None):
+    def __init__(self, x: float, y: float, level: int, enemy_type: str | None = None):
         """Initialize bot
         Args:
             x, y: Position
@@ -579,14 +575,15 @@ class Bot:
         )
         self.type_data = ENEMY_TYPES[self.enemy_type]
 
-        base_health = int(BASE_BOT_HEALTH * self.type_data["health_mult"])
+        type_data: Dict[str, Any] = self.type_data
+        base_health = int(BASE_BOT_HEALTH * float(type_data["health_mult"]))
         self.health = base_health + (level - 1) * 3
         self.max_health = self.health
 
-        base_damage = int(BASE_BOT_DAMAGE * self.type_data["damage_mult"])
+        base_damage = int(BASE_BOT_DAMAGE * float(type_data["damage_mult"]))
         self.damage = base_damage + (level - 1) * 2
 
-        self.speed = BOT_SPEED * self.type_data["speed_mult"]
+        self.speed = float(BOT_SPEED * float(type_data["speed_mult"]))
         self.alive = True
         self.attack_timer = 0
         self.level = level
@@ -617,7 +614,7 @@ class Bot:
         distance = math.sqrt(dx**2 + dy**2)
 
         # Face player
-        self.angle = math.atan2(dy, dx)
+        self.angle = float(math.atan2(dy, dx))
 
         # Attack if in range
         if distance < BOT_ATTACK_RANGE:
@@ -813,7 +810,8 @@ class Raycaster:
         arm_width = sprite_size * 0.1
         arm_height = sprite_size * 0.35
 
-        base_color = bot.type_data["color"]
+        type_data: Dict[str, Any] = bot.type_data
+        base_color: Tuple[int, int, int] = type_data["color"]
         dark_color = tuple(max(0, c - 40) for c in base_color)
         leg_color = (30, 30, 30)
 
@@ -1001,7 +999,8 @@ class Raycaster:
             base_sprite_size = (
                 SCREEN_HEIGHT / bot_dist if bot_dist > 0 else SCREEN_HEIGHT
             )
-            sprite_size = base_sprite_size * bot.type_data.get("scale", 1.0)
+            type_data: Dict[str, Any] = bot.type_data
+            sprite_size = base_sprite_size * float(type_data.get("scale", 1.0))
 
             # Calculate sprite position on screen
             sprite_x = (
@@ -1012,7 +1011,7 @@ class Raycaster:
             sprite_y = SCREEN_HEIGHT / 2 - sprite_size / 2
 
             # Apply distance shading
-            shade = max(0.4, 1.0 - bot_dist / MAX_DEPTH)
+            shade: float = max(0.4, 1.0 - bot_dist / MAX_DEPTH)
 
             # Create a temporary surface for the sprite
             sprite_surface = pygame.Surface(
@@ -1148,7 +1147,7 @@ class Button:
 class Game:
     """Main game class"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize game"""
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         pygame.display.set_caption("Force Field - Arena Combat")
@@ -1166,11 +1165,11 @@ class Game:
         self.selected_map_size = DEFAULT_MAP_SIZE
 
         # Game objects
-        self.game_map = None  # Will be created with selected size
-        self.player = None
-        self.bots = []
-        self.projectiles = []  # Bot projectiles
-        self.raycaster = None
+        self.game_map: Optional["Map"] = None  # Will be created with selected size
+        self.player: Optional["Player"] = None
+        self.bots: List["Bot"] = []
+        self.projectiles: List[Any] = []  # Bot projectiles
+        self.raycaster: Optional["Raycaster"] = None
 
         # Fonts
         self.title_font = pygame.font.Font(None, 72)
@@ -1290,6 +1289,7 @@ class Game:
 
     def start_level(self) -> None:
         """Start a new level"""
+        assert self.game_map is not None
         self.level_start_time = pygame.time.get_ticks()
         corners = self.get_corner_positions()
         random.shuffle(corners)
@@ -1400,14 +1400,19 @@ class Game:
                     pygame.event.set_grab(False)
                 # Weapon switching
                 elif event.key == pygame.K_1:
+                    assert self.player is not None
                     self.player.switch_weapon("pistol")
                 elif event.key == pygame.K_2:
+                    assert self.player is not None
                     self.player.switch_weapon("rifle")
                 elif event.key == pygame.K_3:
+                    assert self.player is not None
                     self.player.switch_weapon("shotgun")
                 elif event.key == pygame.K_4:
+                    assert self.player is not None
                     self.player.switch_weapon("plasma")
             elif event.type == pygame.MOUSEBUTTONDOWN:
+                assert self.player is not None
                 if event.button == 3:  # Right-click to fire
                     if self.player.shoot():
                         self.check_shot_hit()
@@ -1416,10 +1421,12 @@ class Game:
                 ):  # Left-click to aim (currently no special effect)
                     pass  # No-op: Left-click aim not yet implemented
             elif event.type == pygame.MOUSEMOTION:
+                assert self.player is not None
                 self.player.rotate(event.rel[0] * PLAYER_ROT_SPEED)
 
     def check_shot_hit(self) -> None:
         """Check if player's shot hit a bot"""
+        assert self.player is not None
         # Cast ray in player's view direction
         sin_a = math.sin(self.player.angle)
         cos_a = math.cos(self.player.angle)
@@ -1440,6 +1447,7 @@ class Game:
                 continue
 
             # Calculate bot position relative to player
+            assert self.player is not None
             dx = bot.x - self.player.x
             dy = bot.y - self.player.y
             distance = math.sqrt(dx**2 + dy**2)
@@ -1500,6 +1508,8 @@ class Game:
             pygame.event.set_grab(False)
             return
 
+        assert self.player is not None
+        assert self.game_map is not None
         keys = pygame.key.get_pressed()
 
         # Check for sprint (Shift key)
