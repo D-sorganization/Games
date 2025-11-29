@@ -88,9 +88,7 @@ BOT_PROJECTILE_SPEED = 0.3
 BOT_PROJECTILE_DAMAGE = 15
 
 # Combat settings
-HEADSHOT_THRESHOLD = (
-    0.05  # Angle difference in radians for headshot detection (2.86 degrees)
-)
+HEADSHOT_THRESHOLD = 0.05  # Angle difference in radians for headshot detection (2.86 degrees)
 SPAWN_SAFETY_MARGIN = 3  # Minimum tiles away from building start for spawn positions
 
 # UI settings
@@ -390,12 +388,8 @@ class Player:
         self.angle = angle
         self.health = 100
         self.max_health = 100
-        weapon_ammo: Dict[str, Any] = {
-            weapon: WEAPONS[weapon].get("ammo", 0) for weapon in WEAPONS
-        }
-        self.ammo: Dict[str, int] = {
-            weapon: int(weapon_ammo[weapon]) for weapon in WEAPONS
-        }
+        weapon_ammo: Dict[str, Any] = {weapon: WEAPONS[weapon].get("ammo", 0) for weapon in WEAPONS}
+        self.ammo: Dict[str, int] = {weapon: int(weapon_ammo[weapon]) for weapon in WEAPONS}
         self.current_weapon = "rifle"
         self.shooting = False
         self.shoot_timer = 0
@@ -575,9 +569,7 @@ class Bot:
         self.x = x
         self.y = y
         self.angle: float = 0.0
-        self.enemy_type = (
-            enemy_type if enemy_type else random.choice(list(ENEMY_TYPES.keys()))
-        )
+        self.enemy_type = enemy_type if enemy_type else random.choice(list(ENEMY_TYPES.keys()))
         self.type_data = ENEMY_TYPES[self.enemy_type]
 
         type_data: Dict[str, Any] = self.type_data
@@ -597,9 +589,7 @@ class Bot:
         self.last_y = y
         self.shoot_animation = 0.0  # For shoot animation
 
-    def update(
-        self, game_map: Map, player: Player, other_bots: List[Bot]
-    ) -> Optional[Projectile]:
+    def update(self, game_map: Map, player: Player, other_bots: List[Bot]) -> Optional[Projectile]:
         """Update bot AI
         Returns:
             Projectile if bot shoots, None otherwise
@@ -653,14 +643,10 @@ class Bot:
             # Check collision with other bots
             for other_bot in other_bots:
                 if other_bot != self and other_bot.alive:
-                    other_dist = math.sqrt(
-                        (new_x - other_bot.x) ** 2 + (self.y - other_bot.y) ** 2
-                    )
+                    other_dist = math.sqrt((new_x - other_bot.x) ** 2 + (self.y - other_bot.y) ** 2)
                     if other_dist < 0.5:
                         can_move_x = False
-                    other_dist = math.sqrt(
-                        (self.x - other_bot.x) ** 2 + (new_y - other_bot.y) ** 2
-                    )
+                    other_dist = math.sqrt((self.x - other_bot.x) ** 2 + (new_y - other_bot.y) ** 2)
                     if other_dist < 0.5:
                         can_move_y = False
 
@@ -836,12 +822,8 @@ class Raycaster:
         eye_size = head_size * 0.15
         eye_y = head_y + head_size * 0.3
         eye_spacing = head_size * 0.25
-        pygame.draw.circle(
-            screen, WHITE, (int(center_x - eye_spacing), int(eye_y)), int(eye_size)
-        )
-        pygame.draw.circle(
-            screen, WHITE, (int(center_x + eye_spacing), int(eye_y)), int(eye_size)
-        )
+        pygame.draw.circle(screen, WHITE, (int(center_x - eye_spacing), int(eye_y)), int(eye_size))
+        pygame.draw.circle(screen, WHITE, (int(center_x + eye_spacing), int(eye_y)), int(eye_size))
         pygame.draw.circle(
             screen,
             BLACK,
@@ -868,9 +850,7 @@ class Raycaster:
         # Right arm (with shoot animation)
         right_arm_x = body_x + body_width - shoot_offset
         right_arm_y = arm_y + shoot_offset * 0.3
-        pygame.draw.rect(
-            screen, dark_color, (right_arm_x, right_arm_y, arm_width, arm_height)
-        )
+        pygame.draw.rect(screen, dark_color, (right_arm_x, right_arm_y, arm_width, arm_height))
 
         # Legs
         leg_y = body_y + body_height * 0.7
@@ -886,16 +866,10 @@ class Raycaster:
             flash_size = sprite_size * 0.2
             flash_x = right_arm_x + arm_width
             flash_y = right_arm_y + arm_height * 0.3
-            pygame.draw.circle(
-                screen, YELLOW, (int(flash_x), int(flash_y)), int(flash_size)
-            )
-            pygame.draw.circle(
-                screen, ORANGE, (int(flash_x), int(flash_y)), int(flash_size * 0.6)
-            )
+            pygame.draw.circle(screen, YELLOW, (int(flash_x), int(flash_y)), int(flash_size))
+            pygame.draw.circle(screen, ORANGE, (int(flash_x), int(flash_y)), int(flash_size * 0.6))
 
-    def render_3d(
-        self, screen: pygame.Surface, player: Player, bots: List[Bot]
-    ) -> None:
+    def render_3d(self, screen: pygame.Surface, player: Player, bots: List[Bot]) -> None:
         """Render 3D view using raycasting"""
         ray_angle = player.angle - HALF_FOV
 
@@ -971,9 +945,7 @@ class Raycaster:
                 if texture_pattern < 4:  # Add texture stripes
                     darker_color = tuple(max(0, c - 20) for c in color)
                     # Vertical stripes for texture
-                    for stripe_y in range(
-                        int(wall_top), int(wall_top + wall_height), 4
-                    ):
+                    for stripe_y in range(int(wall_top), int(wall_top + wall_height), 4):
                         pygame.draw.line(
                             screen,
                             darker_color,
@@ -999,17 +971,13 @@ class Raycaster:
         # Render enemy sprites (after walls, far to near)
         for bot, bot_dist, angle_to_bot in bots_to_render:
             # Calculate sprite size based on distance and enemy scale
-            base_sprite_size = (
-                SCREEN_HEIGHT / bot_dist if bot_dist > 0 else SCREEN_HEIGHT
-            )
+            base_sprite_size = SCREEN_HEIGHT / bot_dist if bot_dist > 0 else SCREEN_HEIGHT
             type_data: Dict[str, Any] = bot.type_data
             sprite_size = base_sprite_size * float(type_data.get("scale", 1.0))
 
             # Calculate sprite position on screen
             sprite_x = (
-                SCREEN_WIDTH / 2
-                + (angle_to_bot / HALF_FOV) * SCREEN_WIDTH / 2
-                - sprite_size / 2
+                SCREEN_WIDTH / 2 + (angle_to_bot / HALF_FOV) * SCREEN_WIDTH / 2 - sprite_size / 2
             )
             sprite_y = SCREEN_HEIGHT / 2 - sprite_size / 2
 
@@ -1065,9 +1033,7 @@ class Raycaster:
             BLACK,
             (minimap_x - 2, minimap_y - 2, minimap_size + 4, minimap_size + 4),
         )
-        pygame.draw.rect(
-            screen, DARK_GRAY, (minimap_x, minimap_y, minimap_size, minimap_size)
-        )
+        pygame.draw.rect(screen, DARK_GRAY, (minimap_x, minimap_y, minimap_size, minimap_size))
 
         # Draw walls
         for i in range(map_size):
@@ -1122,9 +1088,7 @@ class Button:
         self.rect = pygame.Rect(x, y, width, height)
         self.text = text
         self._color = color
-        self.hover_color = tuple(
-            min(255, c + self.HOVER_BRIGHTNESS_OFFSET) for c in color
-        )
+        self.hover_color = tuple(min(255, c + self.HOVER_BRIGHTNESS_OFFSET) for c in color)
         self.hovered = False
 
     @property
@@ -1136,9 +1100,7 @@ class Button:
     def color(self, value: Tuple[int, int, int]) -> None:
         """Set button color and update hover color"""
         self._color = value
-        self.hover_color = tuple(
-            min(255, c + self.HOVER_BRIGHTNESS_OFFSET) for c in value
-        )
+        self.hover_color = tuple(min(255, c + self.HOVER_BRIGHTNESS_OFFSET) for c in value)
 
     def draw(self, screen: pygame.Surface, font: pygame.font.Font) -> None:
         """Draw button"""
@@ -1194,8 +1156,7 @@ class Game:
 
         # Cache static UI strings
         self.weapon_hints = " ".join(
-            f"{weapon_data['key']}:{weapon_data['name']}"
-            for weapon_data in WEAPONS.values()
+            f"{weapon_data['key']}:{weapon_data['name']}" for weapon_data in WEAPONS.values()
         )
 
         # Menu buttons
@@ -1254,12 +1215,7 @@ class Game:
                     test_y = base_y + math.sin(angle_offset) * radius
 
                     # Ensure within bounds
-                    if (
-                        test_x < 2
-                        or test_x >= map_size - 2
-                        or test_y < 2
-                        or test_y >= map_size - 2
-                    ):
+                    if test_x < 2 or test_x >= map_size - 2 or test_y < 2 or test_y >= map_size - 2:
                         continue
 
                     # Check if not in building and not a wall
@@ -1348,9 +1304,7 @@ class Game:
             for j in range(enemies_per_corner):
                 # Spread enemies in a small radius around the corner
                 angle_offset = j * 2 * math.pi / enemies_per_corner
-                radius = (
-                    1.5 + (j % 2) * 0.5
-                )  # Alternate between close and slightly further
+                radius = 1.5 + (j % 2) * 0.5  # Alternate between close and slightly further
                 spawn_x = bot_pos[0] + math.cos(angle_offset) * radius
                 spawn_y = bot_pos[1] + math.sin(angle_offset) * radius
 
@@ -1375,9 +1329,7 @@ class Game:
                             and 2 <= test_x < self.game_map.size - 2
                             and 2 <= test_y < self.game_map.size - 2
                         ):
-                            self.bots.append(
-                                Bot(test_x, test_y, self.level, enemy_type)
-                            )
+                            self.bots.append(Bot(test_x, test_y, self.level, enemy_type))
                             break
 
         self.state = "playing"
@@ -1438,9 +1390,7 @@ class Game:
                 if event.button == 3:  # Right-click to fire
                     if self.player.shoot():
                         self.check_shot_hit()
-                elif (
-                    event.button == 1
-                ):  # Left-click to aim (currently no special effect)
+                elif event.button == 1:  # Left-click to aim (currently no special effect)
                     pass  # No-op: Left-click aim not yet implemented
             elif event.type == pygame.MOUSEMOTION:
                 assert self.player is not None
@@ -1555,13 +1505,9 @@ class Game:
                 speed=current_speed,
             )
         if keys[pygame.K_a]:
-            self.player.strafe(
-                self.game_map, self.bots, right=False, speed=current_speed
-            )
+            self.player.strafe(self.game_map, self.bots, right=False, speed=current_speed)
         if keys[pygame.K_d]:
-            self.player.strafe(
-                self.game_map, self.bots, right=True, speed=current_speed
-            )
+            self.player.strafe(self.game_map, self.bots, right=True, speed=current_speed)
 
         # Arrow keys
         if keys[pygame.K_LEFT]:
@@ -1693,14 +1639,10 @@ class Game:
         rifle_y = SCREEN_HEIGHT - 200
 
         # Stock
-        pygame.draw.rect(
-            self.screen, rifle_color, (rifle_x + 150, rifle_y + 120, 80, 40)
-        )
+        pygame.draw.rect(self.screen, rifle_color, (rifle_x + 150, rifle_y + 120, 80, 40))
 
         # Main body
-        pygame.draw.rect(
-            self.screen, rifle_color, (rifle_x + 80, rifle_y + 100, 120, 30)
-        )
+        pygame.draw.rect(self.screen, rifle_color, (rifle_x + 80, rifle_y + 100, 120, 30))
 
         # Barrel
         pygame.draw.rect(self.screen, barrel_color, (rifle_x, rifle_y + 105, 120, 20))
@@ -1712,9 +1654,7 @@ class Game:
         pygame.draw.rect(self.screen, BLACK, (rifle_x + 110, rifle_y + 125, 30, 50))
 
         # Trigger guard
-        pygame.draw.rect(
-            self.screen, barrel_color, (rifle_x + 140, rifle_y + 125, 15, 25)
-        )
+        pygame.draw.rect(self.screen, barrel_color, (rifle_x + 140, rifle_y + 125, 15, 25))
 
     def render_hud(self) -> None:
         """Render HUD in Doom-style"""
@@ -1727,25 +1667,15 @@ class Game:
         health_y = hud_bottom
 
         # Background
-        pygame.draw.rect(
-            self.screen, DARK_GRAY, (health_x, health_y, health_width, health_height)
-        )
+        pygame.draw.rect(self.screen, DARK_GRAY, (health_x, health_y, health_width, health_height))
         # Health fill
         assert self.player is not None
         health_percent = max(0, self.player.health / self.player.max_health)
         fill_width = int(health_width * health_percent)
-        health_color = (
-            GREEN
-            if health_percent > 0.5
-            else (ORANGE if health_percent > 0.25 else RED)
-        )
-        pygame.draw.rect(
-            self.screen, health_color, (health_x, health_y, fill_width, health_height)
-        )
+        health_color = GREEN if health_percent > 0.5 else (ORANGE if health_percent > 0.25 else RED)
+        pygame.draw.rect(self.screen, health_color, (health_x, health_y, fill_width, health_height))
         # Border
-        pygame.draw.rect(
-            self.screen, WHITE, (health_x, health_y, health_width, health_height), 2
-        )
+        pygame.draw.rect(self.screen, WHITE, (health_x, health_y, health_width, health_height), 2)
         # Text
         health_text = self.tiny_font.render(f"HP: {self.player.health}", True, WHITE)
         self.screen.blit(health_text, (health_x + 5, health_y + 3))
@@ -1757,19 +1687,13 @@ class Game:
         weapon_height = 70  # Increased to accommodate hints
 
         # Weapon background
-        pygame.draw.rect(
-            self.screen, DARK_GRAY, (weapon_x, weapon_y, weapon_width, weapon_height)
-        )
-        pygame.draw.rect(
-            self.screen, WHITE, (weapon_x, weapon_y, weapon_width, weapon_height), 2
-        )
+        pygame.draw.rect(self.screen, DARK_GRAY, (weapon_x, weapon_y, weapon_width, weapon_height))
+        pygame.draw.rect(self.screen, WHITE, (weapon_x, weapon_y, weapon_width, weapon_height), 2)
 
         # Current weapon name
         assert self.player is not None
         current_weapon_data: Dict[str, Any] = WEAPONS[self.player.current_weapon]
-        weapon_name = self.small_font.render(
-            str(current_weapon_data["name"]), True, YELLOW
-        )
+        weapon_name = self.small_font.render(str(current_weapon_data["name"]), True, YELLOW)
         weapon_name_rect = weapon_name.get_rect(
             center=(weapon_x + weapon_width // 2, weapon_y + 15),
         )
@@ -1797,9 +1721,7 @@ class Game:
 
         bots_alive = sum(1 for bot in self.bots if bot.alive)
         total_enemies = (4 + (self.level - 1)) * 3  # 3 corners × enemies_per_corner
-        kills_text = self.small_font.render(
-            f"Enemies: {bots_alive}/{total_enemies}", True, RED
-        )
+        kills_text = self.small_font.render(f"Enemies: {bots_alive}/{total_enemies}", True, RED)
         self.screen.blit(kills_text, (SCREEN_WIDTH - 200, hud_bottom + 30))
 
         # Controls hint (top left) - with semi-transparent background for better readability
@@ -1876,15 +1798,11 @@ class Game:
             if abs(angle_to_proj) < HALF_FOV:
                 # Calculate screen position
                 proj_size = max(2, 10 / proj_dist) if proj_dist > 0 else 10
-                proj_x = (
-                    SCREEN_WIDTH / 2 + (angle_to_proj / HALF_FOV) * SCREEN_WIDTH / 2
-                )
+                proj_x = SCREEN_WIDTH / 2 + (angle_to_proj / HALF_FOV) * SCREEN_WIDTH / 2
                 proj_y = SCREEN_HEIGHT / 2
 
                 # Draw projectile as a glowing circle
-                pygame.draw.circle(
-                    self.screen, RED, (int(proj_x), int(proj_y)), int(proj_size)
-                )
+                pygame.draw.circle(self.screen, RED, (int(proj_x), int(proj_y)), int(proj_size))
                 pygame.draw.circle(
                     self.screen,
                     ORANGE,
@@ -1970,11 +1888,7 @@ class Game:
             ),
             (f"Total Kills: {self.kills}", WHITE),
             (f"Total Time: {total_time:.1f}s", GREEN),
-            (
-                (f"Average Time/Level: {avg_time:.1f}s", GREEN)
-                if self.level_times
-                else ("", WHITE)
-            ),
+            ((f"Average Time/Level: {avg_time:.1f}s", GREEN) if self.level_times else ("", WHITE)),
             ("", WHITE),
             ("Press SPACE to restart", WHITE),
             ("Press ESC for menu", WHITE),

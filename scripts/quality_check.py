@@ -207,9 +207,7 @@ def main() -> None:
         ".ipynb_checkpoints",  # Add checkpoint files to exclusion
         ".Trash",  # Add trash files to exclusion
     }
-    python_files = [
-        f for f in python_files if not any(part in exclude_dirs for part in f.parts)
-    ]
+    python_files = [f for f in python_files if not any(part in exclude_dirs for part in f.parts)]
 
     all_issues = []
     for filepath in python_files:
