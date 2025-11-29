@@ -389,7 +389,7 @@ class Player:
         self.health = 100
         self.max_health = 100
         self.ammo: Dict[str, int] = {
-            weapon: int(WEAPONS[weapon]["ammo"]) for weapon in WEAPONS
+            weapon: int(WEAPONS[weapon].get("ammo", 0)) for weapon in WEAPONS
         }
         self.current_weapon = "rifle"
         self.shooting = False
@@ -569,7 +569,7 @@ class Bot:
         """
         self.x = x
         self.y = y
-        self.angle = 0
+        self.angle: float = 0.0
         self.enemy_type = (
             enemy_type if enemy_type else random.choice(list(ENEMY_TYPES.keys()))
         )
@@ -1011,7 +1011,7 @@ class Raycaster:
             sprite_y = SCREEN_HEIGHT / 2 - sprite_size / 2
 
             # Apply distance shading
-            shade: float = max(0.4, 1.0 - bot_dist / MAX_DEPTH)
+            distance_shade: float = max(0.4, 1.0 - bot_dist / MAX_DEPTH)
 
             # Create a temporary surface for the sprite
             sprite_surface = pygame.Surface(
@@ -1021,7 +1021,13 @@ class Raycaster:
 
             # Apply shading by creating a dark overlay
             shade_surface = pygame.Surface((int(sprite_size), int(sprite_size)))
-            shade_surface.fill((int(255 * shade), int(255 * shade), int(255 * shade)))
+            shade_surface.fill(
+                (
+                    int(255 * distance_shade),
+                    int(255 * distance_shade),
+                    int(255 * distance_shade),
+                )
+            )
             sprite_surface.blit(shade_surface, (0, 0), special_flags=pygame.BLEND_MULT)
 
             # Blit sprite to screen
@@ -1470,6 +1476,8 @@ class Game:
                 steps = int(distance * 10)
                 for i in range(1, steps):
                     t = i / steps
+                    assert self.player is not None
+                    assert self.game_map is not None
                     check_x = self.player.x + dx * t
                     check_y = self.player.y + dy * t
                     if self.game_map.is_wall(check_x, check_y):
@@ -1549,6 +1557,8 @@ class Game:
                 self.projectiles.append(projectile)
 
         # Update projectiles
+        assert self.game_map is not None
+        assert self.player is not None
         for projectile in self.projectiles[:]:
             projectile.update(self.game_map)
 
