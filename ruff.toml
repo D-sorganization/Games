@@ -46,6 +46,10 @@ ignore = [
     "PTH120",  # os.path.dirname → Path.parent (backward compatibility)
     "PTH123",  # open() → Path.open() (backward compatibility)
     "B007",    # Unused loop variable (iteration counters are acceptable)
+    "S101",    # Use of assert (common in game code for type narrowing/defensive checks)
+    "RUF003",  # Comment contains ambiguous characters (allow Unicode in comments)
+    "PLR1714", # Merge multiple comparisons (readability preference for game logic)
+    "TCH003",  # Move import into type-checking block (Iterable used at runtime)
 ]
 
 # Stricter than defaults
