@@ -39,14 +39,14 @@ DELTA_ANGLE = FOV / NUM_RAYS
 
 # Weapon settings
 WEAPONS = {
-    'pistol': {'name': 'Pistol', 'damage': 20, 'range': 12, 'ammo': 999, 'cooldown': 10},
-    'rifle': {'name': 'Rifle', 'damage': 25, 'range': 15, 'ammo': 999, 'cooldown': 15},
-    'shotgun': {'name': 'Shotgun', 'damage': 30, 'range': 8, 'ammo': 999, 'cooldown': 20},
-    'plasma': {'name': 'Plasma', 'damage': 35, 'range': 18, 'ammo': 999, 'cooldown': 12},
+    'pistol': {'name': 'Pistol', 'damage': 20, 'range': 12, 'ammo': 999, 'cooldown': 10, 'key': '1'},
+    'rifle': {'name': 'Rifle', 'damage': 25, 'range': 15, 'ammo': 999, 'cooldown': 15, 'key': '2'},
+    'shotgun': {'name': 'Shotgun', 'damage': 30, 'range': 8, 'ammo': 999, 'cooldown': 20, 'key': '3'},
+    'plasma': {'name': 'Plasma', 'damage': 35, 'range': 18, 'ammo': 999, 'cooldown': 12, 'key': '4'},
 }
 
 # Bot settings - increased health for 5-shot kill
-BASE_BOT_HEALTH = 125  # ~5 shots with rifle (25 damage each) in base case (no enemy type multipliers); more shots needed if multipliers apply
+BASE_BOT_HEALTH = 125  # Exactly 5 shots with rifle (25 damage each) in base case (no enemy type multipliers); e.g., brute (1.5× health = 187.5 HP) requires 8 shots, demon (1.2× health = 150 HP) requires 6 shots
 BASE_BOT_DAMAGE = 10
 BOT_SPEED = 0.05
 BOT_ATTACK_RANGE = 10
@@ -54,6 +54,11 @@ BOT_ATTACK_COOLDOWN = 60
 
 # Combat settings
 HEADSHOT_THRESHOLD = 0.05  # Angle difference in radians for headshot detection (~2.86 degrees)
+
+# UI settings
+HINT_BG_PADDING_H = 10  # Horizontal padding for hint background
+HINT_BG_PADDING_V = 4  # Vertical padding for hint background
+HINT_BG_COLOR = (30, 30, 30, 180)  # Semi-transparent dark background color for hints
 
 # Colors
 BLACK = (0, 0, 0)
@@ -117,12 +122,12 @@ class Map:
 
         # Scale building positions based on map size
         # Use proportional minimums that scale with map size to ensure buildings generate for all sizes
-        min_offset = max(MIN_BUILDING_OFFSET, int(size * 0.1))  # Minimum offset, scales with size but has floor
+        building_offset = max(MIN_BUILDING_OFFSET, int(size * 0.1))  # Calculated offset, scales with size but has floor
         
         # Building 1 - Large rectangular building (top-left area)
-        b1_start_i = max(min_offset, int(size * 0.15))
+        b1_start_i = max(building_offset, int(size * 0.15))
         b1_end_i = max(b1_start_i + 2, min(int(size * 0.3), size - 1))
-        b1_start_j = max(min_offset, int(size * 0.15))
+        b1_start_j = max(building_offset, int(size * 0.15))
         b1_end_j = max(b1_start_j + 2, min(int(size * 0.4), size - 1))
         if b1_end_i > b1_start_i and b1_end_j > b1_start_j:
             for i in range(b1_start_i, b1_end_i):
@@ -131,9 +136,9 @@ class Map:
                         self.grid[i][j] = 2
 
         # Building 2 - Medium building (top-right area)
-        b2_start_i = max(min_offset, int(size * 0.15))
+        b2_start_i = max(building_offset, int(size * 0.15))
         b2_end_i = max(b2_start_i + 2, min(int(size * 0.25), size - 1))
-        b2_start_j = max(min_offset, int(size * 0.7))
+        b2_start_j = max(building_offset, int(size * 0.7))
         b2_end_j = max(b2_start_j + 2, min(int(size * 0.9), size - 1))
         if b2_end_i > b2_start_i and b2_end_j > b2_start_j:
             for i in range(b2_start_i, b2_end_i):
@@ -142,9 +147,9 @@ class Map:
                         self.grid[i][j] = 3
 
         # Building 3 - L-shaped building (bottom-left)
-        b3_start_i = max(min_offset, int(size * 0.7))
+        b3_start_i = max(building_offset, int(size * 0.7))
         b3_end_i = max(b3_start_i + 2, min(int(size * 0.95), size - 1))
-        b3_start_j = max(min_offset, int(size * 0.15))
+        b3_start_j = max(building_offset, int(size * 0.15))
         b3_end_j = max(b3_start_j + 2, min(int(size * 0.35), size - 1))
         if b3_end_i > b3_start_i and b3_end_j > b3_start_j:
             for i in range(b3_start_i, b3_end_i):
@@ -735,8 +740,13 @@ class Game:
         map_size = self.game_map.size if self.game_map else self.selected_map_size
         
         # Building 4 occupies 0.75 * size to 0.95 * size, so bottom-right spawn must be before 0.75 * size
-        # Use a proportional offset that ensures we're outside Building 4
-        bottom_right_offset = max(offset, int(map_size * 0.7))  # Spawn before Building 4 starts
+        # Use a larger safety margin to ensure spawn is well outside Building 4
+        building4_start = int(map_size * 0.75)
+        safety_margin = 3  # Minimum tiles away from building start
+        bottom_right_offset = min(
+            max(offset, int(map_size * 0.65)),
+            building4_start - safety_margin
+        )
         
         return [
             (offset, offset, math.pi / 4),  # Top-left
@@ -881,7 +891,7 @@ class Game:
                     closest_bot = bot
                     closest_dist = distance
                     # Headshot detection: very precise aim required
-                    # Very tight total angular difference (between player aim and bot direction) indicates a headshot
+                    # Very tight total angular difference (between player's crosshair and the direction to the bot's center) indicates a headshot
                     is_headshot = angle_diff < HEADSHOT_THRESHOLD
 
         # Damage the closest bot in crosshair
@@ -1083,9 +1093,8 @@ class Game:
         ammo_rect = ammo_text.get_rect(center=(weapon_x + weapon_width // 2, weapon_y + 40))
         self.screen.blit(ammo_text, ammo_rect)
         
-        # Weapon selection hints (inside weapon box) - dynamically generated
-        weapon_bindings = [('1', 'pistol'), ('2', 'rifle'), ('3', 'shotgun'), ('4', 'plasma')]
-        weapon_hints = " ".join(f"{key}:{WEAPONS[name]['name']}" for key, name in weapon_bindings)
+        # Weapon selection hints (inside weapon box) - dynamically generated from WEAPONS dictionary
+        weapon_hints = " ".join(f"{weapon_data['key']}:{weapon_data['name']}" for weapon_data in WEAPONS.values())
         hints_text = self.tiny_font.render(weapon_hints, True, GRAY)
         hints_rect = hints_text.get_rect(center=(weapon_x + weapon_width // 2, weapon_y + 58))
         self.screen.blit(hints_text, hints_rect)
@@ -1102,9 +1111,9 @@ class Game:
         controls_hint_text = "WASD:Move | Shift:Sprint | ESC:Menu"
         controls_hint = self.tiny_font.render(controls_hint_text, True, WHITE)
         controls_hint_rect = controls_hint.get_rect(topleft=(SCREEN_WIDTH - 250, 10))
-        bg_surface = pygame.Surface((controls_hint_rect.width + 10, controls_hint_rect.height + 4), pygame.SRCALPHA)
-        bg_surface.fill((30, 30, 30, 180))  # Semi-transparent dark background
-        self.screen.blit(bg_surface, (controls_hint_rect.x - 5, controls_hint_rect.y - 2))
+        bg_surface = pygame.Surface((controls_hint_rect.width + HINT_BG_PADDING_H, controls_hint_rect.height + HINT_BG_PADDING_V), pygame.SRCALPHA)
+        bg_surface.fill(HINT_BG_COLOR)
+        self.screen.blit(bg_surface, (controls_hint_rect.x - HINT_BG_PADDING_H // 2, controls_hint_rect.y - HINT_BG_PADDING_V // 2))
         self.screen.blit(controls_hint, controls_hint_rect)
 
     def render_crosshair(self):
