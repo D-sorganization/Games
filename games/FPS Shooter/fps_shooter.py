@@ -388,8 +388,11 @@ class Player:
         self.angle = angle
         self.health = 100
         self.max_health = 100
+        weapon_ammo: Dict[str, Any] = {
+            weapon: WEAPONS[weapon].get("ammo", 0) for weapon in WEAPONS
+        }
         self.ammo: Dict[str, int] = {
-            weapon: int(WEAPONS[weapon].get("ammo", 0)) for weapon in WEAPONS
+            weapon: int(weapon_ammo[weapon]) for weapon in WEAPONS
         }
         self.current_weapon = "rifle"
         self.shooting = False
@@ -1167,7 +1170,7 @@ class Game:
         self.level = 1
         self.kills = 0
         self.level_start_time = 0
-        self.level_times = []  # Track time for each level
+        self.level_times: List[float] = []  # Track time for each level
         self.selected_map_size = DEFAULT_MAP_SIZE
 
         # Game objects
@@ -1561,6 +1564,8 @@ class Game:
         assert self.game_map is not None
         assert self.player is not None
         for projectile in self.projectiles[:]:
+            if projectile is None:
+                continue
             projectile.update(self.game_map)
 
             # Check collision with player
@@ -1707,6 +1712,7 @@ class Game:
             self.screen, DARK_GRAY, (health_x, health_y, health_width, health_height)
         )
         # Health fill
+        assert self.player is not None
         health_percent = max(0, self.player.health / self.player.max_health)
         fill_width = int(health_width * health_percent)
         health_color = (
