@@ -1436,8 +1436,6 @@ class Game:
         """Check if player's shot hit a bot"""
         assert self.player is not None
         # Cast ray in player's view direction
-        cos_a = math.cos(self.player.angle)
-
         weapon_range = self.player.get_current_weapon_range()
         weapon_damage = self.player.get_current_weapon_damage()
 
