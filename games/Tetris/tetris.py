@@ -601,7 +601,11 @@ class TetrisGame:
         )
 
     def draw_piece(
-        self, piece: Tetromino, offset_x: int = 0, offset_y: int = 0, alpha: int = 255
+        self,
+        piece: Tetromino,
+        offset_x: int = 0,
+        offset_y: int = 0,
+        alpha: int = 255,
     ) -> None:
         """Draw a tetromino piece"""
         shape = piece.get_rotated_shape()
@@ -621,7 +625,10 @@ class TetrisGame:
                     # Draw highlight
                     lighter = tuple(min(255, c + 50) for c in piece.color)
                     pygame.draw.rect(
-                        self.screen, lighter, (px, py, GRID_SIZE - 1, GRID_SIZE - 1), 2
+                        self.screen,
+                        lighter,
+                        (px, py, GRID_SIZE - 1, GRID_SIZE - 1),
+                        2,
                     )
 
     def draw_ghost_piece(self) -> None:
@@ -873,7 +880,7 @@ class TetrisGame:
                     "label": description,
                     "key": action_key,
                     "type": "mapping",
-                }
+                },
             )
 
         return entries
