@@ -198,7 +198,7 @@ class Map:
         # Use proportional minimums that scale with map size
         # to ensure buildings generate for all sizes
         building_edge_margin = max(
-            MIN_BUILDING_OFFSET, int(size * 0.1)
+            MIN_BUILDING_OFFSET, int(size * 0.1),
         )  # Minimum distance from map edges where buildings can spawn
 
         # Building 1 - Large rectangular building (top-left area)
@@ -704,7 +704,7 @@ class Raycaster:
         self.game_map = game_map
 
     def cast_ray(
-        self, origin_x: float, origin_y: float, angle: float
+        self, origin_x: float, origin_y: float, angle: float,
     ) -> Tuple[float, int, Optional[Bot]]:
         """Cast a single ray and return distance, wall type, and hit bot"""
         sin_a = math.sin(angle)
@@ -782,7 +782,7 @@ class Raycaster:
 
         return MAX_DEPTH, 0, None
 
-    def render_enemy_sprite(
+    def render_enemy_sprite(  # type: ignore[no-any-unimported]
         self,
         screen: pygame.Surface,
         bot: Bot,
@@ -815,7 +815,7 @@ class Raycaster:
         # Head
         head_y = sprite_y + sprite_size * 0.05
         pygame.draw.ellipse(
-            screen, base_color, (center_x - head_size / 2, head_y, head_size, head_size)
+            screen, base_color, (center_x - head_size / 2, head_y, head_size, head_size),
         )
 
         # Eyes
@@ -869,7 +869,7 @@ class Raycaster:
             pygame.draw.circle(screen, YELLOW, (int(flash_x), int(flash_y)), int(flash_size))
             pygame.draw.circle(screen, ORANGE, (int(flash_x), int(flash_y)), int(flash_size * 0.6))
 
-    def render_3d(self, screen: pygame.Surface, player: Player, bots: List[Bot]) -> None:
+    def render_3d(self, screen: pygame.Surface, player: Player, bots: List[Bot]) -> None:  # type: ignore[no-any-unimported]
         """Render 3D view using raycasting"""
         ray_angle = player.angle - HALF_FOV
 
@@ -917,7 +917,7 @@ class Raycaster:
 
         for ray in range(NUM_RAYS):
             distance, wall_type, hit_bot = self.cast_ray_with_bots(
-                player.x, player.y, ray_angle, player.angle, bots
+                player.x, player.y, ray_angle, player.angle, bots,
             )
 
             if hit_bot:
@@ -1005,7 +1005,7 @@ class Raycaster:
             # Blit sprite to screen
             screen.blit(sprite_surface, (int(sprite_x), int(sprite_y)))
 
-    def render_floor_ceiling(self, screen: pygame.Surface) -> None:
+    def render_floor_ceiling(self, screen: pygame.Surface) -> None:  # type: ignore[no-any-unimported]
         """Render floor and ceiling"""
         pygame.draw.rect(
             screen,
@@ -1014,7 +1014,7 @@ class Raycaster:
         )
         pygame.draw.rect(screen, BLACK, (0, 0, SCREEN_WIDTH, SCREEN_HEIGHT // 2))
 
-    def render_minimap(
+    def render_minimap(  # type: ignore[no-any-unimported]
         self,
         screen: pygame.Surface,
         player: Player,
@@ -1102,7 +1102,7 @@ class Button:
         self._color = value
         self.hover_color = tuple(min(255, c + self.HOVER_BRIGHTNESS_OFFSET) for c in value)
 
-    def draw(self, screen: pygame.Surface, font: pygame.font.Font) -> None:
+    def draw(self, screen: pygame.Surface, font: pygame.font.Font) -> None:  # type: ignore[no-any-unimported]
         """Draw button"""
         color = self.hover_color if self.hovered else self.color
         pygame.draw.rect(screen, color, self.rect)
@@ -1118,7 +1118,7 @@ class Button:
 
     def is_clicked(self, mouse_pos: Tuple[int, int]) -> bool:
         """Check if button was clicked"""
-        return self.rect.collidepoint(mouse_pos)
+        return self.rect.collidepoint(mouse_pos)  # type: ignore[no-any-return]
 
 
 class Game:
@@ -1701,7 +1701,7 @@ class Game:
 
         # Ammo
         ammo_text = self.tiny_font.render(
-            f"Ammo: {self.player.ammo[self.player.current_weapon]}", True, CYAN
+            f"Ammo: {self.player.ammo[self.player.current_weapon]}", True, CYAN,
         )
         ammo_rect = ammo_text.get_rect(
             center=(weapon_x + weapon_width // 2, weapon_y + 40),
@@ -1811,7 +1811,7 @@ class Game:
                 )
 
     def render_stats_lines(
-        self, stats: List[Tuple[str, Tuple[int, int, int]]], start_y: int
+        self, stats: List[Tuple[str, Tuple[int, int, int]]], start_y: int,
     ) -> None:
         """Helper method to render stats lines with spacing
 

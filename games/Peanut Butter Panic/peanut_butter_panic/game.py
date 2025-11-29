@@ -9,7 +9,7 @@ from .core import GameConfig, GameWorld, InputState
 Color = tuple[int, int, int]
 
 
-def _draw_circle(
+def _draw_circle(  # type: ignore[no-any-unimported]
     surface: pygame.Surface,
     color: Color,
     position: tuple[float, float],
@@ -24,7 +24,7 @@ def _draw_circle(
     )
 
 
-def _draw_text(
+def _draw_text(  # type: ignore[no-any-unimported]
     surface: pygame.Surface,
     text: str,
     position: tuple[int, int],
@@ -53,7 +53,7 @@ def _build_input_state() -> InputState:
     )
 
 
-def _render_world(
+def _render_world(  # type: ignore[no-any-unimported]
     surface: pygame.Surface,
     world: GameWorld,
     hud_font: pygame.font.Font,
