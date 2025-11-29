@@ -54,6 +54,7 @@ BOT_ATTACK_COOLDOWN = 60
 
 # Combat settings
 HEADSHOT_THRESHOLD = 0.05  # Angle difference in radians for headshot detection (~2.86 degrees)
+SPAWN_SAFETY_MARGIN = 3  # Minimum tiles away from building start for spawn positions
 
 # UI settings
 HINT_BG_PADDING_H = 10  # Horizontal padding for hint background
@@ -122,12 +123,12 @@ class Map:
 
         # Scale building positions based on map size
         # Use proportional minimums that scale with map size to ensure buildings generate for all sizes
-        building_offset = max(MIN_BUILDING_OFFSET, int(size * 0.1))  # Calculated offset, scales with size but has floor
+        building_edge_margin = max(MIN_BUILDING_OFFSET, int(size * 0.1))  # Minimum distance from map edges where buildings can spawn
         
         # Building 1 - Large rectangular building (top-left area)
-        b1_start_i = max(building_offset, int(size * 0.15))
+        b1_start_i = max(building_edge_margin, int(size * 0.15))
         b1_end_i = max(b1_start_i + 2, min(int(size * 0.3), size - 1))
-        b1_start_j = max(building_offset, int(size * 0.15))
+        b1_start_j = max(building_edge_margin, int(size * 0.15))
         b1_end_j = max(b1_start_j + 2, min(int(size * 0.4), size - 1))
         if b1_end_i > b1_start_i and b1_end_j > b1_start_j:
             for i in range(b1_start_i, b1_end_i):
@@ -136,9 +137,9 @@ class Map:
                         self.grid[i][j] = 2
 
         # Building 2 - Medium building (top-right area)
-        b2_start_i = max(building_offset, int(size * 0.15))
+        b2_start_i = max(building_edge_margin, int(size * 0.15))
         b2_end_i = max(b2_start_i + 2, min(int(size * 0.25), size - 1))
-        b2_start_j = max(building_offset, int(size * 0.7))
+        b2_start_j = max(building_edge_margin, int(size * 0.7))
         b2_end_j = max(b2_start_j + 2, min(int(size * 0.9), size - 1))
         if b2_end_i > b2_start_i and b2_end_j > b2_start_j:
             for i in range(b2_start_i, b2_end_i):
@@ -147,9 +148,9 @@ class Map:
                         self.grid[i][j] = 3
 
         # Building 3 - L-shaped building (bottom-left)
-        b3_start_i = max(building_offset, int(size * 0.7))
+        b3_start_i = max(building_edge_margin, int(size * 0.7))
         b3_end_i = max(b3_start_i + 2, min(int(size * 0.95), size - 1))
-        b3_start_j = max(building_offset, int(size * 0.15))
+        b3_start_j = max(building_edge_margin, int(size * 0.15))
         b3_end_j = max(b3_start_j + 2, min(int(size * 0.35), size - 1))
         if b3_end_i > b3_start_i and b3_end_j > b3_start_j:
             for i in range(b3_start_i, b3_end_i):
@@ -157,7 +158,7 @@ class Map:
                     if i == b3_start_i or i == b3_end_i - 1 or j == b3_start_j or j == b3_end_j - 1:
                         self.grid[i][j] = 2
             # L-shape extension
-            b3_ext_start_i = max(int(size * 0.8), b3_start_i)
+            b3_ext_start_i = min(max(int(size * 0.8), b3_start_i), b3_end_i - 1)
             b3_ext_end_j = min(int(size * 0.5), size - 1)
             if b3_ext_start_i < b3_end_i and b3_ext_end_j > b3_start_j:
                 for i in range(b3_ext_start_i, b3_end_i):
@@ -714,6 +715,9 @@ class Game:
         self.small_font = pygame.font.Font(None, 32)
         self.tiny_font = pygame.font.Font(None, 24)
 
+        # Cache static UI strings
+        self.weapon_hints = " ".join(f"{weapon_data['key']}:{weapon_data['name']}" for weapon_data in WEAPONS.values())
+
         # Menu buttons
         self.start_button = Button(
             SCREEN_WIDTH // 2 - 150, SCREEN_HEIGHT // 2 + 50,
@@ -742,9 +746,8 @@ class Game:
         # Building 4 occupies 0.75 * size to 0.95 * size, so bottom-right spawn must be before 0.75 * size
         # Use a larger safety margin to ensure spawn is well outside Building 4
         building4_start = int(map_size * 0.75)
-        safety_margin = 3  # Minimum tiles away from building start
         # Calculate maximum spawn position (before Building 4 starts)
-        max_spawn_position = building4_start - safety_margin
+        max_spawn_position = building4_start - SPAWN_SAFETY_MARGIN
         # Convert position to offset from map edge: offset = map_size - position
         bottom_right_offset = map_size - max_spawn_position
         
@@ -890,8 +893,9 @@ class Game:
                 if hit and distance < closest_dist:
                     closest_bot = bot
                     closest_dist = distance
-                    # Headshot detection: very precise aim required
-                    # Very tight total angular difference (between player's crosshair and the direction to the bot's center) indicates a headshot
+                    # "Headshot" detection: This is a precision-based mechanic.
+                    # Bots are rectangles without distinct head hitboxes; a very tight angular difference
+                    # between the player's crosshair and the bot's center is considered a "headshot".
                     is_headshot = angle_diff < HEADSHOT_THRESHOLD
 
         # Damage the closest bot in crosshair
@@ -1093,9 +1097,8 @@ class Game:
         ammo_rect = ammo_text.get_rect(center=(weapon_x + weapon_width // 2, weapon_y + 40))
         self.screen.blit(ammo_text, ammo_rect)
         
-        # Weapon selection hints (inside weapon box) - dynamically generated from WEAPONS dictionary
-        weapon_hints = " ".join(f"{weapon_data['key']}:{weapon_data['name']}" for weapon_data in WEAPONS.values())
-        hints_text = self.tiny_font.render(weapon_hints, True, GRAY)
+        # Weapon selection hints (inside weapon box) - use cached string
+        hints_text = self.tiny_font.render(self.weapon_hints, True, GRAY)
         hints_rect = hints_text.get_rect(center=(weapon_x + weapon_width // 2, weapon_y + 58))
         self.screen.blit(hints_text, hints_rect)
 
@@ -1151,25 +1154,26 @@ class Game:
         # Stats
         level_time = self.level_times[-1] if self.level_times else 0
         total_time = sum(self.level_times)
+        # Define stats with explicit color information
         stats = [
-            f"Level {self.level} cleared!",
-            f"Time: {level_time:.1f}s",
-            f"Total Time: {total_time:.1f}s",
-            f"Total Kills: {self.kills}",
-            "",
-            "Next level: Enemies get stronger!",
-            "",
-            "Press SPACE for next level",
-            "Press ESC for menu"
+            (f"Level {self.level} cleared!", WHITE),
+            (f"Time: {level_time:.1f}s", GREEN),
+            (f"Total Time: {total_time:.1f}s", GREEN),
+            (f"Total Kills: {self.kills}", WHITE),
+            ("", WHITE),
+            ("Next level: Enemies get stronger!", YELLOW),
+            ("", WHITE),
+            ("Press SPACE for next level", WHITE),
+            ("Press ESC for menu", WHITE)
         ]
 
         y = 250
-        for line in stats:
-            color = YELLOW if "stronger" in line else (GREEN if "Time" in line else WHITE)
-            text = self.small_font.render(line, True, color)
-            text_rect = text.get_rect(center=(SCREEN_WIDTH // 2, y))
-            self.screen.blit(text, text_rect)
-            y += 40
+        for line, color in stats:
+            if line:  # Skip empty lines
+                text = self.small_font.render(line, True, color)
+                text_rect = text.get_rect(center=(SCREEN_WIDTH // 2, y))
+                self.screen.blit(text, text_rect)
+                y += 40
 
         pygame.display.flip()
 
@@ -1197,20 +1201,20 @@ class Game:
         completed_levels = max(0, self.level - 1)
         total_time = sum(self.level_times)
         avg_time = total_time / len(self.level_times) if self.level_times else 0
+        # Define stats with explicit color information
         stats = [
-            f"You survived {completed_levels} level{'s' if completed_levels != 1 else ''}",
-            f"Total Kills: {self.kills}",
-            f"Total Time: {total_time:.1f}s",
-            f"Average Time/Level: {avg_time:.1f}s" if self.level_times else "",
-            "",
-            "Press SPACE to restart",
-            "Press ESC for menu"
+            (f"You survived {completed_levels} level{'s' if completed_levels != 1 else ''}", WHITE),
+            (f"Total Kills: {self.kills}", WHITE),
+            (f"Total Time: {total_time:.1f}s", GREEN),
+            (f"Average Time/Level: {avg_time:.1f}s", GREEN) if self.level_times else ("", WHITE),
+            ("", WHITE),
+            ("Press SPACE to restart", WHITE),
+            ("Press ESC for menu", WHITE)
         ]
 
         y = 250
-        for line in stats:
+        for line, color in stats:
             if line:  # Skip empty lines
-                color = GREEN if "Time" in line else WHITE
                 text = self.small_font.render(line, True, color)
                 text_rect = text.get_rect(center=(SCREEN_WIDTH // 2, y))
                 self.screen.blit(text, text_rect)
