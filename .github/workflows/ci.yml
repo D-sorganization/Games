@@ -23,23 +23,30 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
+          # ✅ Comprehensive cache key pattern (from UNIFIED_CI_APPROACH.md)
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/*requirements*.txt', '**/pyproject.toml', '**/setup.py', '**/setup.cfg') }}
           restore-keys: |
             ${{ runner.os }}-pip-
             
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pre-commit pytest pytest-cov
+          # ✅ Pin tool versions (from UNIFIED_CI_APPROACH.md)
+          pip install pre-commit pytest pytest-cov ruff==0.5.0 mypy==1.10.0 black==24.4.2
           if [ -f python/requirements.txt ]; then pip install -r python/requirements.txt; fi
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           
       - name: Run quality check
         run: |
-          if [ -f scripts/quality-check.py ]; then
-            python scripts/quality-check.py
+          # ✅ Check both possible script locations (quality_check.py is the actual file name)
+          if [ -f scripts/quality_check.py ]; then
+            python scripts/quality_check.py || exit 1
+          elif [ -f scripts/quality-check.py ]; then
+            python scripts/quality-check.py || exit 1
+          elif [ -f quality_check_script.py ]; then
+            python quality_check_script.py || exit 1
           else
-            echo "⚠️ Warning: scripts/quality-check.py not found"
+            echo "⚠️ Warning: No quality check script found, skipping..."
           fi
           
       - name: Check for placeholders
@@ -87,9 +94,30 @@ jobs:
         run: |
           pre-commit run --all-files --show-diff-on-failure || exit 1
           
+      - name: Format check with Black
+        run: |
+          echo "🔍 Checking code formatting with Black..."
+          # ✅ Check source directories explicitly
+          if [ -d python/src ]; then
+            if [ -d python/tests ]; then
+              black --check --diff python/src python/tests || exit 1
+            else
+              black --check --diff python/src || exit 1
+            fi
+          elif [ -d python ]; then
+            black --check --diff python || exit 1
+          elif [ -d src ]; then
+            if [ -d tests ]; then
+              black --check --diff src tests/ || exit 1
+            else
+              black --check --diff src || exit 1
+            fi
+          else
+            black --check --diff . || exit 1
+          fi
+          
       - name: Run strict type checking
         run: |
-          pip install mypy
           if find . -name "*.py" -not -path "./archive/*" -not -path "./legacy/*" | head -n1 | grep -q .; then
             mypy . --strict --ignore-missing-imports || exit 1
           else
