@@ -80,7 +80,9 @@ class WizardOfWorGame:
         self.wizard_spawned = False
         self.soundboard = SoundBoard()
         self.effects: list[VisualEffect] = []
-        self.vignette = Vignette((GAME_AREA_WIDTH, GAME_AREA_HEIGHT), (GAME_AREA_X, GAME_AREA_Y))
+        self.vignette = Vignette(
+            (GAME_AREA_WIDTH, GAME_AREA_HEIGHT), (GAME_AREA_X, GAME_AREA_Y)
+        )
 
         # Fonts
         self.font_large = pygame.font.Font(None, 48)
@@ -260,7 +262,9 @@ class WizardOfWorGame:
                     self.soundboard.play("enemy_hit")
                     if bullet in self.bullets:
                         self.bullets.remove(bullet)
-                    self.effects.append(SparkleBurst((enemy.x, enemy.y), enemy.color, count=10))
+                    self.effects.append(
+                        SparkleBurst((enemy.x, enemy.y), enemy.color, count=10)
+                    )
                     break
 
         # Enemy bullets hitting player
@@ -274,7 +278,9 @@ class WizardOfWorGame:
                 if bullet in self.bullets:
                     self.bullets.remove(bullet)
                 if took_damage:
-                    self.effects.append(SparkleBurst((self.player.x, self.player.y), RED, count=16))
+                    self.effects.append(
+                        SparkleBurst((self.player.x, self.player.y), RED, count=16)
+                    )
 
         # Player colliding with enemies
         if self.player.alive:
@@ -391,12 +397,16 @@ class WizardOfWorGame:
 
         # Shield indicator
         if self.player.invulnerable_timer > 0:
-            shield_ratio = min(1.0, self.player.invulnerable_timer / RESPAWN_SHIELD_FRAMES)
+            shield_ratio = min(
+                1.0, self.player.invulnerable_timer / RESPAWN_SHIELD_FRAMES
+            )
             bar_width = 140
             bar_height = 10
             bar_x = GAME_AREA_X
             bar_y = GAME_AREA_Y + GAME_AREA_HEIGHT + 16
-            pygame.draw.rect(self.screen, DARK_GRAY, (bar_x, bar_y, bar_width, bar_height))
+            pygame.draw.rect(
+                self.screen, DARK_GRAY, (bar_x, bar_y, bar_width, bar_height)
+            )
             pygame.draw.rect(
                 self.screen,
                 PALE_YELLOW,
@@ -413,7 +423,9 @@ class WizardOfWorGame:
             bar_height = 8
             bar_x = GAME_AREA_X + 220
             bar_y = GAME_AREA_Y + GAME_AREA_HEIGHT + 16
-            pygame.draw.rect(self.screen, DARK_GRAY, (bar_x, bar_y, bar_width, bar_height))
+            pygame.draw.rect(
+                self.screen, DARK_GRAY, (bar_x, bar_y, bar_width, bar_height)
+            )
             pygame.draw.rect(
                 self.screen,
                 ORANGE,
@@ -442,7 +454,9 @@ class WizardOfWorGame:
         self.screen.blit(score_text, score_rect)
 
         continue_text = self.font_small.render("Press ENTER to continue", True, WHITE)
-        continue_rect = continue_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 50))
+        continue_rect = continue_text.get_rect(
+            center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 50)
+        )
         self.screen.blit(continue_text, continue_rect)
 
     def draw_game_over(self) -> None:
@@ -455,16 +469,24 @@ class WizardOfWorGame:
         score_rect = score_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
         self.screen.blit(score_text, score_rect)
 
-        level_text = self.font_medium.render(f"Reached Level: {self.level}", True, WHITE)
-        level_rect = level_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 50))
+        level_text = self.font_medium.render(
+            f"Reached Level: {self.level}", True, WHITE
+        )
+        level_rect = level_text.get_rect(
+            center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 50)
+        )
         self.screen.blit(level_text, level_rect)
 
         restart_text = self.font_small.render("Press ENTER to play again", True, WHITE)
-        restart_rect = restart_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 100))
+        restart_rect = restart_text.get_rect(
+            center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 100)
+        )
         self.screen.blit(restart_text, restart_rect)
 
         menu_text = self.font_small.render("Press ESC for menu", True, WHITE)
-        menu_rect = menu_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 130))
+        menu_rect = menu_text.get_rect(
+            center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 130)
+        )
         self.screen.blit(menu_text, menu_rect)
 
     def run(self) -> NoReturn:
