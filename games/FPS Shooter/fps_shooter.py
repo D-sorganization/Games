@@ -2001,7 +2001,7 @@ class Game:
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE or event.key == pygame.K_ESCAPE:
                     self.state = "menu"
-                    self.intro_scroll_y = SCREEN_HEIGHT  # Reset for next time
+                    self.intro_scroll_y = float(SCREEN_HEIGHT)  # Reset for next time
 
     def render_intro(self) -> None:
         """Render Star Wars style opening crawl"""
@@ -2070,7 +2070,7 @@ class Game:
         # Auto-advance to menu after text scrolls past
         if self.intro_scroll_y < -len(intro_text) * line_height:
             self.state = "menu"
-            self.intro_scroll_y = SCREEN_HEIGHT
+            self.intro_scroll_y = float(SCREEN_HEIGHT)
 
         pygame.display.flip()
 
