@@ -9,14 +9,17 @@ Vec2 = tuple[float, float]
 
 
 def _clamp(value: float, minimum: float, maximum: float) -> float:
+    """Clamp a value between minimum and maximum."""
     return max(minimum, min(maximum, value))
 
 
 def _length(vec: Vec2) -> float:
+    """Calculate the length of a 2D vector."""
     return math.sqrt(vec[0] ** 2 + vec[1] ** 2)
 
 
 def _normalize(vec: Vec2) -> Vec2:
+    """Normalize a 2D vector to unit length."""
     magnitude = _length(vec)
     if magnitude == 0:
         return (0.0, 0.0)
@@ -24,14 +27,17 @@ def _normalize(vec: Vec2) -> Vec2:
 
 
 def _add(a: Vec2, b: Vec2) -> Vec2:
+    """Add two 2D vectors."""
     return (a[0] + b[0], a[1] + b[1])
 
 
 def _scale(vec: Vec2, scalar: float) -> Vec2:
+    """Scale a 2D vector by a scalar."""
     return (vec[0] * scalar, vec[1] * scalar)
 
 
 def _distance(a: Vec2, b: Vec2) -> float:
+    """Calculate the distance between two 2D points."""
     return _length((a[0] - b[0], a[1] - b[1]))
 
 
@@ -98,6 +104,7 @@ class Sandwich:
 
     @property
     def alive(self) -> bool:
+        """Check if the sandwich is still alive."""
         return self.health > 0
 
 
@@ -128,10 +135,12 @@ class Trap:
     lifetime: float
 
     def tick(self, dt: float) -> None:
+        """Update the trap's lifetime."""
         self.lifetime = max(0.0, self.lifetime - dt)
 
     @property
     def expired(self) -> bool:
+        """Check if the trap has expired."""
         return self.lifetime <= 0.0
 
 
@@ -154,7 +163,10 @@ class WorldStats:
 
 
 class GameWorld:
-    def __init__(self, config: GameConfig | None = None, seed: int | None = 1337):
+    def __init__(
+        self, config: GameConfig | None = None, seed: int | None = 1337
+    ) -> None:
+        """Initialize the game world with the given configuration and random seed."""
         self.config = config or GameConfig()
         self.rng = random.Random(seed)
         self.base_player_speed = self.config.player_speed
@@ -184,6 +196,7 @@ class GameWorld:
         self.wave_timer = self.config.wave_duration
 
     def update(self, dt: float, input_state: InputState) -> None:
+        """Update the game world state by one frame."""
         self.stats.elapsed += dt
         self._handle_wave_progression(dt)
         self._tick_cooldowns(dt)
@@ -197,6 +210,7 @@ class GameWorld:
         self._maybe_spawn_enemy(dt)
 
     def _handle_wave_progression(self, dt: float) -> None:
+        """Handle wave progression and spawn timer acceleration."""
         self.wave_timer -= dt
         if self.wave_timer <= 0 and self.stats.wave < self.config.max_wave:
             self.stats.wave += 1
@@ -206,6 +220,7 @@ class GameWorld:
             )
 
     def _tick_cooldowns(self, dt: float) -> None:
+        """Update all player ability cooldowns."""
         self.player.dash_cooldown = max(0.0, self.player.dash_cooldown - dt)
         self.player.dash_time = max(0.0, self.player.dash_time - dt)
         self.player.swing_cooldown = max(0.0, self.player.swing_cooldown - dt)
@@ -213,6 +228,7 @@ class GameWorld:
         self.player.shockwave_cooldown = max(0.0, self.player.shockwave_cooldown - dt)
 
     def _update_player(self, dt: float, input_state: InputState) -> None:
+        """Update player position and handle ability usage."""
         direction = _normalize(input_state.move)
         speed = (
             self.config.dash_speed if self.player.dash_time > 0 else self.player.speed
@@ -238,6 +254,7 @@ class GameWorld:
             self.player.shockwave_cooldown = self.config.shockwave_cooldown
 
     def _perform_swing(self) -> None:
+        """Perform a swing attack that damages nearby enemies."""
         radius = self.config.swing_radius
         defeated: list[Enemy] = []
         for enemy in list(self.enemies):
@@ -247,6 +264,7 @@ class GameWorld:
         self._remove_enemies(defeated)
 
     def _deploy_trap(self) -> None:
+        """Deploy a sticky trap at the player's position."""
         self.traps.append(
             Trap(
                 position=self.player.position,
@@ -257,6 +275,7 @@ class GameWorld:
         )
 
     def _detonate_shockwave(self) -> None:
+        """Detonate a shockwave that damages all nearby enemies."""
         defeated: list[Enemy] = []
         for enemy in list(self.enemies):
             if (
@@ -268,6 +287,7 @@ class GameWorld:
         self._remove_enemies(defeated)
 
     def _move_enemies(self, dt: float) -> None:
+        """Move all enemies towards their primary targets."""
         for enemy in self.enemies:
             target = self._primary_target(enemy)
             direction = _normalize(
@@ -279,6 +299,7 @@ class GameWorld:
             )
 
     def _primary_target(self, enemy: Enemy) -> Vec2:
+        """Determine the primary target for an enemy (nearest sandwich or player)."""
         living = [s for s in self.sandwiches if s.alive]
         if living:
             return min(
@@ -287,6 +308,7 @@ class GameWorld:
         return self.player.position
 
     def _trap_slowdown(self, enemy: Enemy) -> float:
+        """Calculate speed slowdown factor for an enemy based on nearby traps."""
         slowdown = 1.0
         for trap in self.traps:
             if _distance(trap.position, enemy.position) <= trap.radius:
@@ -294,6 +316,7 @@ class GameWorld:
         return slowdown
 
     def _resolve_enemy_collisions(self) -> None:
+        """Resolve collisions between enemies and their targets (sandwiches or player)."""
         surviving_enemies: list[Enemy] = []
         for enemy in self.enemies:
             target = self._find_hit_target(enemy)
@@ -309,6 +332,7 @@ class GameWorld:
         )
 
     def _find_hit_target(self, enemy: Enemy) -> Sandwich | Player | None:
+        """Find the target that an enemy would hit (sandwich or player)."""
         for sandwich in self.sandwiches:
             if (
                 sandwich.alive
@@ -324,6 +348,7 @@ class GameWorld:
         return None
 
     def _collect_powerups(self) -> None:
+        """Collect powerups that the player is touching."""
         remaining: list[PowerUp] = []
         for powerup in self.powerups:
             if (
@@ -336,18 +361,20 @@ class GameWorld:
         self.powerups = remaining
 
     def _age_traps(self, dt: float) -> None:
+        """Age all traps and remove expired ones."""
         for trap in self.traps:
             trap.tick(dt)
         self.traps = [trap for trap in self.traps if not trap.expired]
 
     def _tick_effects(self, dt: float) -> None:
+        """Update active powerup effects and remove expired ones."""
         expired: list[str] = []
-        for name, remaining in list(self.active_effects.items()):
-            remaining -= dt
-            if remaining <= 0:
+        for name, remaining_time in list(self.active_effects.items()):
+            new_time = remaining_time - dt
+            if new_time <= 0:
                 expired.append(name)
             else:
-                self.active_effects[name] = remaining
+                self.active_effects[name] = new_time
 
         for name in expired:
             del self.active_effects[name]
@@ -357,12 +384,14 @@ class GameWorld:
                 self.config.swing_radius = self.base_swing_radius
 
     def _decay_combo(self, dt: float) -> None:
+        """Decay the combo timer and reset combo if timer expires."""
         if self.stats.combo_timer > 0:
             self.stats.combo_timer = max(0.0, self.stats.combo_timer - dt)
             if self.stats.combo_timer == 0:
                 self.stats.combo = 0
 
     def _maybe_spawn_enemy(self, dt: float) -> None:
+        """Spawn a new enemy if the spawn timer has elapsed."""
         self.spawn_timer -= dt
         if self.spawn_timer <= 0:
             self.spawn_timer = max(
@@ -372,15 +401,22 @@ class GameWorld:
             self.enemies.append(self._make_enemy())
 
     def _make_enemy(self) -> Enemy:
+        """Create a new enemy at a random edge position."""
         side = self.rng.choice(["top", "bottom", "left", "right"])
         if side == "top":
-            position = (self.rng.uniform(0, self.config.width), -10)
+            position = (self.rng.uniform(0, self.config.width), -10.0)
         elif side == "bottom":
-            position = (self.rng.uniform(0, self.config.width), self.config.height + 10)
+            position = (
+                self.rng.uniform(0, self.config.width),
+                float(self.config.height + 10),
+            )
         elif side == "left":
-            position = (-10, self.rng.uniform(0, self.config.height))
+            position = (-10.0, self.rng.uniform(0, self.config.height))
         else:
-            position = (self.config.width + 10, self.rng.uniform(0, self.config.height))
+            position = (
+                float(self.config.width + 10),
+                self.rng.uniform(0, self.config.height),
+            )
 
         archetype = self._choose_archetype()
         speed = (90 + 14 * (self.stats.wave - 1)) * archetype.speed_scale
@@ -396,6 +432,7 @@ class GameWorld:
         )
 
     def _choose_archetype(self) -> EnemyArchetype:
+        """Choose an enemy archetype based on spawn chance."""
         retro_roll = self.rng.random()
         if retro_roll <= self.config.retro_spawn_chance:
             return EnemyArchetype(
@@ -415,6 +452,7 @@ class GameWorld:
         )
 
     def _register_kill(self, enemy: Enemy) -> None:
+        """Register an enemy kill and update score/combo."""
         self.stats.combo = min(self.config.max_combo, self.stats.combo + 1)
         self.stats.combo_timer = self.config.combo_window
         multiplier = 1 + (self.stats.combo - 1) * self.config.combo_bonus
@@ -426,11 +464,13 @@ class GameWorld:
             self._drop_powerup(enemy.position)
 
     def _drop_powerup(self, position: Vec2) -> None:
+        """Drop a random powerup at the given position."""
         kind = self.rng.choice(["sugar_rush", "sticky_gloves", "free_shockwave"])
         duration = 7.0 if kind != "free_shockwave" else 0.0
         self.powerups.append(PowerUp(position=position, kind=kind, duration=duration))
 
     def _apply_powerup(self, powerup: PowerUp) -> None:
+        """Apply a powerup effect to the player."""
         if powerup.kind == "sugar_rush":
             self.active_effects["sugar_rush"] = max(
                 powerup.duration, self.active_effects.get("sugar_rush", 0.0)
@@ -445,18 +485,21 @@ class GameWorld:
             self.player.shockwave_cooldown = 0.0
 
     def _remove_enemies(self, defeated: Iterable[Enemy]) -> None:
+        """Remove defeated enemies from the enemy list."""
         defeated_ids = {id(enemy) for enemy in defeated}
         self.enemies = [
             enemy for enemy in self.enemies if id(enemy) not in defeated_ids
         ]
 
     def _clamped_position(self, position: Vec2) -> Vec2:
+        """Clamp a position to stay within the game world bounds."""
         return (
             _clamp(position[0], 0, self.config.width),
             _clamp(position[1], 0, self.config.height),
         )
 
     def reset(self) -> None:
+        """Reset the game world to its initial state."""
         self.player = Player(
             position=(self.config.width / 2, self.config.height / 2),
             speed=self.config.player_speed,
@@ -492,6 +535,7 @@ class GameWorld:
         radius: float = 14.0,
         kind: str = "modern_swarm",
     ) -> None:
+        """Add an enemy to the game world."""
         self.enemies.append(
             Enemy(
                 position=position,
@@ -505,5 +549,6 @@ class GameWorld:
 
     @property
     def defeated(self) -> bool:
+        """Check if the player has been defeated."""
         sandwiches_lost = all(not sandwich.alive for sandwich in self.sandwiches)
         return sandwiches_lost or self.player.health <= 0

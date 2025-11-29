@@ -23,7 +23,10 @@ class Player:
         self.color = GREEN
         self.alive = True
         self.rect = pygame.Rect(
-            x - PLAYER_SIZE // 2, y - PLAYER_SIZE // 2, PLAYER_SIZE, PLAYER_SIZE
+            x - PLAYER_SIZE // 2,
+            y - PLAYER_SIZE // 2,
+            PLAYER_SIZE,
+            PLAYER_SIZE,
         )
         self.shoot_cooldown = 0
         self.shoot_delay = 15  # Frames between shots
@@ -124,10 +127,11 @@ class Player:
             # Shield glow
             if self.invulnerable_timer > 0:
                 flash = 120 + 80 * math.sin(
-                    self.invulnerable_timer / PLAYER_SHIELD_FLASH
+                    self.invulnerable_timer / PLAYER_SHIELD_FLASH,
                 )
                 glow_surface = pygame.Surface(
-                    (body_rect.width + 10, body_rect.height + 10), pygame.SRCALPHA
+                    (body_rect.width + 10, body_rect.height + 10),
+                    pygame.SRCALPHA,
                 )
                 pygame.draw.ellipse(
                     glow_surface,
@@ -163,10 +167,18 @@ class Player:
                 left_leg = (self.x + leg_offset, self.y + 4)
                 right_leg = (self.x - leg_offset, self.y - 4)
             pygame.draw.line(
-                screen, self.color, left_leg, (left_leg[0], left_leg[1] + 6), 3
+                screen,
+                self.color,
+                left_leg,
+                (left_leg[0], left_leg[1] + 6),
+                3,
             )
             pygame.draw.line(
-                screen, self.color, right_leg, (right_leg[0], right_leg[1] + 6), 3
+                screen,
+                self.color,
+                right_leg,
+                (right_leg[0], right_leg[1] + 6),
+                3,
             )
 
             # Direction indicator

@@ -25,7 +25,10 @@ class Enemy:
         self.alive = True
         self.visible = True  # Some enemies can become invisible
         self.rect = pygame.Rect(
-            x - ENEMY_SIZE // 2, y - ENEMY_SIZE // 2, ENEMY_SIZE, ENEMY_SIZE
+            x - ENEMY_SIZE // 2,
+            y - ENEMY_SIZE // 2,
+            ENEMY_SIZE,
+            ENEMY_SIZE,
         )
         self.direction = random.choice([UP, DOWN, LEFT, RIGHT])
         self.move_timer = 0

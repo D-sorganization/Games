@@ -25,7 +25,8 @@ class Dungeon:
         # Pre-rendered surfaces for speed and extra texture
         self.surface = pygame.Surface((GAME_AREA_WIDTH, GAME_AREA_HEIGHT))
         self.grid_overlay = pygame.Surface(
-            (GAME_AREA_WIDTH, GAME_AREA_HEIGHT), pygame.SRCALPHA
+            (GAME_AREA_WIDTH, GAME_AREA_HEIGHT),
+            pygame.SRCALPHA,
         )
         self._render_background()
 
@@ -91,11 +92,17 @@ class Dungeon:
         grid_color = (*SLATE, FLOOR_GRID_ALPHA)
         for i in range(0, GAME_AREA_HEIGHT, CELL_SIZE // 2):
             pygame.draw.line(
-                self.grid_overlay, grid_color, (0, i), (GAME_AREA_WIDTH, i)
+                self.grid_overlay,
+                grid_color,
+                (0, i),
+                (GAME_AREA_WIDTH, i),
             )
         for j in range(0, GAME_AREA_WIDTH, CELL_SIZE // 2):
             pygame.draw.line(
-                self.grid_overlay, grid_color, (j, 0), (j, GAME_AREA_HEIGHT)
+                self.grid_overlay,
+                grid_color,
+                (j, 0),
+                (j, GAME_AREA_HEIGHT),
             )
 
         # Walls with inner highlight
@@ -129,9 +136,9 @@ class Dungeon:
                         (self.cols - 4, self.rows - 4),
                     }
 
-                    if center_bias and (near_center or at_side_door):
-                        viable_cells.append((x, y))
-                    elif not center_bias and (at_side_door or corner_pad):
+                    if (center_bias and (near_center or at_side_door)) or (
+                        not center_bias and (at_side_door or corner_pad)
+                    ):
                         viable_cells.append((x, y))
         if not viable_cells:
             viable_cells = [(self.cols // 2, self.rows // 2)]

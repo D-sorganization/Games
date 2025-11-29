@@ -63,14 +63,19 @@ class Radar:
             ring_alpha = max(40, 150 - int(ring_progress * 150))
             if ring_radius > 0:
                 ring_surface = pygame.Surface(
-                    (ring_radius * 2 + 4, ring_radius * 2 + 4), pygame.SRCALPHA
+                    (ring_radius * 2 + 4, ring_radius * 2 + 4),
+                    pygame.SRCALPHA,
                 )
                 ring_center = (
                     ring_surface.get_width() // 2,
                     ring_surface.get_height() // 2,
                 )
                 pygame.draw.circle(
-                    ring_surface, (*CYAN, ring_alpha), ring_center, ring_radius, width=2
+                    ring_surface,
+                    (*CYAN, ring_alpha),
+                    ring_center,
+                    ring_radius,
+                    width=2,
                 )
                 screen.blit(
                     ring_surface,
@@ -91,7 +96,10 @@ class Radar:
             player_radar_x = self.x + (player.x - GAME_AREA_X) * scale_x
             player_radar_y = self.y + (player.y - GAME_AREA_Y) * scale_y
             pygame.draw.circle(
-                screen, GREEN, (int(player_radar_x), int(player_radar_y)), 3
+                screen,
+                GREEN,
+                (int(player_radar_x), int(player_radar_y)),
+                3,
             )
 
         # Draw enemy positions
@@ -103,5 +111,8 @@ class Radar:
                 # Use different colors for different enemy types
                 color = enemy.color if enemy.visible else GRAY
                 pygame.draw.circle(
-                    screen, color, (int(enemy_radar_x), int(enemy_radar_y)), 2
+                    screen,
+                    color,
+                    (int(enemy_radar_x), int(enemy_radar_y)),
+                    2,
                 )
