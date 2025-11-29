@@ -12,6 +12,7 @@ Color = tuple[int, int, int]
 def _draw_circle(
     surface: pygame.Surface, color: Color, position: tuple[float, float], radius: float
 ) -> None:
+    """Draw a circle on the given surface."""
     pygame.draw.circle(
         surface, color, (int(position[0]), int(position[1])), int(radius)
     )
@@ -24,10 +25,12 @@ def _draw_text(
     font: pygame.font.Font,
     color: Color,
 ) -> None:
+    """Draw text on the given surface."""
     surface.blit(font.render(text, True, color), position)
 
 
 def _build_input_state() -> InputState:
+    """Build the input state from current keyboard input."""
     keys = pygame.key.get_pressed()
     move_x = float(keys[pygame.K_d] or keys[pygame.K_RIGHT]) - float(
         keys[pygame.K_a] or keys[pygame.K_LEFT]
@@ -47,6 +50,7 @@ def _build_input_state() -> InputState:
 def _render_world(
     surface: pygame.Surface, world: GameWorld, hud_font: pygame.font.Font
 ) -> None:
+    """Render the game world and HUD."""
     surface.fill((20, 16, 28))
 
     for trap in world.traps:
@@ -89,6 +93,7 @@ def _render_world(
 
 
 def run(config: GameConfig | None = None) -> None:
+    """Run the main game loop."""
     os.environ.setdefault("SDL_VIDEO_CENTERED", "1")
     pygame.init()
     world_config = config or GameConfig()

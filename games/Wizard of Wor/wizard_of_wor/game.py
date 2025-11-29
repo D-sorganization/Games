@@ -20,6 +20,7 @@ class SoundBoard:
     """Lightweight tone generator for classic arcade-style beeps."""
 
     def __init__(self) -> None:
+        """Initialize the tone generator for arcade-style sound effects."""
         self.enabled = False
         self.sounds: dict[str, pygame.mixer.Sound] = {}
         try:
@@ -38,6 +39,7 @@ class SoundBoard:
         }
 
     def _build_tone(self, frequency: int, duration_ms: int) -> pygame.mixer.Sound:
+        """Build a tone sound effect with the given frequency and duration."""
         sample_rate = 22050
         sample_count = int(sample_rate * duration_ms / 1000)
         waveform = array("h")
@@ -47,6 +49,7 @@ class SoundBoard:
         return pygame.mixer.Sound(buffer=waveform.tobytes())
 
     def play(self, name: str) -> None:
+        """Play a sound effect by name."""
         if self.enabled and name in self.sounds:
             self.sounds[name].play()
 
