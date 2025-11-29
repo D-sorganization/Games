@@ -969,7 +969,6 @@ class Raycaster:
                 if texture_pattern < 4:  # Add texture stripes
                     darker_color = tuple(max(0, c - 20) for c in color)
                     # Vertical stripes for texture
-                    stripe_width = 1
                     for stripe_y in range(
                         int(wall_top), int(wall_top + wall_height), 4
                     ):
