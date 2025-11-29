@@ -1074,9 +1074,9 @@ class Game:
             return (base_x, base_y, angle)
         
         # Building 4 occupies 0.75 * size to 0.95 * size, so bottom-right spawn must be before 0.75 * size
+        # Calculate offset from map edge for bottom-right spawn (outside Building 4)
         building4_start = int(map_size * 0.75)
-        max_spawn_position = building4_start - SPAWN_SAFETY_MARGIN
-        bottom_right_offset = map_size - max_spawn_position
+        bottom_right_offset = map_size - building4_start + SPAWN_SAFETY_MARGIN
         
         corners = [
             (offset, offset, math.pi / 4),  # Top-left
@@ -1228,6 +1228,9 @@ class Game:
         weapon_damage = self.player.get_current_weapon_damage()
 
         # Find closest bot in crosshair
+        # "Headshot" detection: This is a precision-based mechanic.
+        # Bots are rectangles without distinct head hitboxes; a very tight angular difference
+        # between the player's crosshair and the bot's center is considered a "headshot".
         closest_bot = None
         closest_dist = float('inf')
         is_headshot = False
@@ -1268,9 +1271,6 @@ class Game:
                 if hit and distance < closest_dist:
                     closest_bot = bot
                     closest_dist = distance
-                    # "Headshot" detection: This is a precision-based mechanic.
-                    # Bots are rectangles without distinct head hitboxes; a very tight angular difference
-                    # between the player's crosshair and the bot's center is considered a "headshot".
                     is_headshot = angle_diff < HEADSHOT_THRESHOLD
 
         # Damage the closest bot in crosshair
@@ -1510,10 +1510,11 @@ class Game:
         kills_text = self.small_font.render(f"Enemies: {bots_alive}/3", True, RED)
         self.screen.blit(kills_text, (SCREEN_WIDTH - 200, hud_bottom + 30))
         
-        # Controls hint (top right) - with semi-transparent background for better readability
+        # Controls hint (top left) - with semi-transparent background for better readability
+        # Positioned on left to avoid overlapping minimap on right
         controls_hint_text = "WASD:Move | Shift:Sprint | ESC:Menu"
         controls_hint = self.tiny_font.render(controls_hint_text, True, WHITE)
-        controls_hint_rect = controls_hint.get_rect(topleft=(SCREEN_WIDTH - 250, 10))
+        controls_hint_rect = controls_hint.get_rect(topleft=(10, 10))
         bg_surface = pygame.Surface((controls_hint_rect.width + HINT_BG_PADDING_H, controls_hint_rect.height + HINT_BG_PADDING_V), pygame.SRCALPHA)
         bg_surface.fill(HINT_BG_COLOR)
         self.screen.blit(bg_surface, (controls_hint_rect.x - HINT_BG_PADDING_H // 2, controls_hint_rect.y - HINT_BG_PADDING_V // 2))
@@ -1577,6 +1578,21 @@ class Game:
                 pygame.draw.circle(self.screen, RED, (int(proj_x), int(proj_y)), int(proj_size))
                 pygame.draw.circle(self.screen, ORANGE, (int(proj_x), int(proj_y)), int(proj_size * 0.6))
 
+    def render_stats_lines(self, stats: List[Tuple[str, Tuple[int, int, int]]], start_y: int) -> None:
+        """Helper method to render stats lines with spacing
+        
+        Args:
+            stats: List of (text, color) tuples. Empty strings create spacing.
+            start_y: Starting y position for rendering
+        """
+        y = start_y
+        for line, color in stats:
+            if line:  # Skip empty lines
+                text = self.small_font.render(line, True, color)
+                text_rect = text.get_rect(center=(SCREEN_WIDTH // 2, y))
+                self.screen.blit(text, text_rect)
+            y += 40  # Always increment y to create spacing, even for empty lines
+
     def render_level_complete(self):
         """Render level complete screen"""
         self.screen.fill(BLACK)
@@ -1602,13 +1618,7 @@ class Game:
             ("Press ESC for menu", WHITE)
         ]
 
-        y = 250
-        for line, color in stats:
-            if line:  # Skip empty lines
-                text = self.small_font.render(line, True, color)
-                text_rect = text.get_rect(center=(SCREEN_WIDTH // 2, y))
-                self.screen.blit(text, text_rect)
-            y += 40  # Always increment y to create spacing, even for empty lines
+        self.render_stats_lines(stats, 250)
 
         pygame.display.flip()
 
@@ -1647,13 +1657,7 @@ class Game:
             ("Press ESC for menu", WHITE)
         ]
 
-        y = 250
-        for line, color in stats:
-            if line:  # Skip empty lines
-                text = self.small_font.render(line, True, color)
-                text_rect = text.get_rect(center=(SCREEN_WIDTH // 2, y))
-                self.screen.blit(text, text_rect)
-            y += 40  # Always increment y to create spacing, even for empty lines
+        self.render_stats_lines(stats, 250)
 
         pygame.display.flip()
 
