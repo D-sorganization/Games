@@ -198,7 +198,8 @@ class Map:
         # Use proportional minimums that scale with map size
         # to ensure buildings generate for all sizes
         building_edge_margin = max(
-            MIN_BUILDING_OFFSET, int(size * 0.1),
+            MIN_BUILDING_OFFSET,
+            int(size * 0.1),
         )  # Minimum distance from map edges where buildings can spawn
 
         # Building 1 - Large rectangular building (top-left area)
@@ -704,7 +705,10 @@ class Raycaster:
         self.game_map = game_map
 
     def cast_ray(
-        self, origin_x: float, origin_y: float, angle: float,
+        self,
+        origin_x: float,
+        origin_y: float,
+        angle: float,
     ) -> Tuple[float, int, Optional[Bot]]:
         """Cast a single ray and return distance, wall type, and hit bot"""
         sin_a = math.sin(angle)
@@ -815,7 +819,9 @@ class Raycaster:
         # Head
         head_y = sprite_y + sprite_size * 0.05
         pygame.draw.ellipse(
-            screen, base_color, (center_x - head_size / 2, head_y, head_size, head_size),
+            screen,
+            base_color,
+            (center_x - head_size / 2, head_y, head_size, head_size),
         )
 
         # Eyes
@@ -917,7 +923,11 @@ class Raycaster:
 
         for ray in range(NUM_RAYS):
             distance, wall_type, hit_bot = self.cast_ray_with_bots(
-                player.x, player.y, ray_angle, player.angle, bots,
+                player.x,
+                player.y,
+                ray_angle,
+                player.angle,
+                bots,
             )
 
             if hit_bot:
@@ -1701,7 +1711,9 @@ class Game:
 
         # Ammo
         ammo_text = self.tiny_font.render(
-            f"Ammo: {self.player.ammo[self.player.current_weapon]}", True, CYAN,
+            f"Ammo: {self.player.ammo[self.player.current_weapon]}",
+            True,
+            CYAN,
         )
         ammo_rect = ammo_text.get_rect(
             center=(weapon_x + weapon_width // 2, weapon_y + 40),
@@ -1811,7 +1823,9 @@ class Game:
                 )
 
     def render_stats_lines(
-        self, stats: List[Tuple[str, Tuple[int, int, int]]], start_y: int,
+        self,
+        stats: List[Tuple[str, Tuple[int, int, int]]],
+        start_y: int,
     ) -> None:
         """Helper method to render stats lines with spacing
 
