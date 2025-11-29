@@ -454,39 +454,6 @@ class Projectile:
         self.y = new_y
 
 
-class Projectile:
-    """Projectile shot by bots"""
-    
-    def __init__(self, x: float, y: float, angle: float, damage: int, speed: float, is_player: bool = False):
-        """Initialize projectile"""
-        self.x = x
-        self.y = y
-        self.angle = angle
-        self.damage = damage
-        self.speed = speed
-        self.is_player = is_player
-        self.alive = True
-    
-    def update(self, game_map: Map):
-        """Update projectile position"""
-        if not self.alive:
-            return
-        
-        dx = math.cos(self.angle) * self.speed
-        dy = math.sin(self.angle) * self.speed
-        
-        new_x = self.x + dx
-        new_y = self.y + dy
-        
-        # Check wall collision
-        if game_map.is_wall(new_x, new_y):
-            self.alive = False
-            return
-        
-        self.x = new_x
-        self.y = new_y
-
-
 class Bot:
     """Enemy bot with AI"""
 
@@ -495,7 +462,7 @@ class Bot:
         Args:
             x, y: Position
             level: Current level (affects stats)
-            enemy_type: Type of enemy (zombie, demon, ghoul, brute, spectre)
+            enemy_type: Type of enemy (zombie, boss, demon, dinosaur, raider)
         """
         self.x = x
         self.y = y
@@ -1404,9 +1371,6 @@ class Game:
         # Render projectiles
         self.render_projectiles()
 
-        # Render projectiles
-        self.render_projectiles()
-
         # Render rifle
         self.render_rifle()
 
@@ -1507,7 +1471,8 @@ class Game:
         self.screen.blit(level_text, (SCREEN_WIDTH - 200, hud_bottom))
 
         bots_alive = sum(1 for bot in self.bots if bot.alive)
-        kills_text = self.small_font.render(f"Enemies: {bots_alive}/3", True, RED)
+        total_enemies = (4 + (self.level - 1)) * 3  # 3 corners × enemies_per_corner
+        kills_text = self.small_font.render(f"Enemies: {bots_alive}/{total_enemies}", True, RED)
         self.screen.blit(kills_text, (SCREEN_WIDTH - 200, hud_bottom + 30))
         
         # Controls hint (top left) - with semi-transparent background for better readability
