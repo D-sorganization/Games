@@ -1180,11 +1180,11 @@ class Game:
         self.selected_map_size = DEFAULT_MAP_SIZE
 
         # Game objects
-        self.game_map: Optional["Map"] = None  # Will be created with selected size
-        self.player: Optional["Player"] = None
-        self.bots: List["Bot"] = []
+        self.game_map: Optional[Map] = None  # Will be created with selected size
+        self.player: Optional[Player] = None
+        self.bots: List[Bot] = []
         self.projectiles: List[Any] = []  # Bot projectiles
-        self.raycaster: Optional["Raycaster"] = None
+        self.raycaster: Optional[Raycaster] = None
 
         # Fonts
         self.title_font = pygame.font.Font(None, 72)
@@ -1229,7 +1229,9 @@ class Game:
 
         # Try multiple positions near each corner to find one that's not in a building
         def find_safe_spawn(
-            base_x: float, base_y: float, angle: float
+            base_x: float,
+            base_y: float,
+            angle: float,
         ) -> Tuple[float, float, float]:
             """Find a safe spawn position near the base coordinates"""
             if not self.game_map:
@@ -1262,7 +1264,8 @@ class Game:
 
                     # Check if not in building and not a wall
                     if not self.game_map.is_wall(
-                        test_x, test_y
+                        test_x,
+                        test_y,
                     ) and not self.game_map.is_inside_building(test_x, test_y):
                         return (test_x, test_y, angle)
 
@@ -1314,7 +1317,8 @@ class Game:
         player_pos = corners[0]
         # Double-check player spawn is safe
         if self.game_map.is_wall(
-            player_pos[0], player_pos[1]
+            player_pos[0],
+            player_pos[1],
         ) or self.game_map.is_inside_building(player_pos[0], player_pos[1]):
             # Find a nearby safe position
             for attempt in range(20):
@@ -1357,7 +1361,9 @@ class Game:
                     and 2 <= spawn_x < self.game_map.size - 2
                     and 2 <= spawn_y < self.game_map.size - 2
                 ):
-                    self.bots.append(Bot(spawn_x, spawn_y, self.level, enemy_type))
+                    self.bots.append(
+                        Bot(spawn_x, spawn_y, self.level, enemy_type),
+                    )
                 else:
                     # Try to find a nearby safe position
                     for attempt in range(10):
@@ -1536,11 +1542,17 @@ class Game:
         # Movement
         if keys[pygame.K_w]:
             self.player.move(
-                self.game_map, self.bots, forward=True, speed=current_speed
+                self.game_map,
+                self.bots,
+                forward=True,
+                speed=current_speed,
             )
         if keys[pygame.K_s]:
             self.player.move(
-                self.game_map, self.bots, forward=False, speed=current_speed
+                self.game_map,
+                self.bots,
+                forward=False,
+                speed=current_speed,
             )
         if keys[pygame.K_a]:
             self.player.strafe(
