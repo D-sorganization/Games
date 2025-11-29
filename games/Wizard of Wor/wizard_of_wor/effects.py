@@ -150,9 +150,9 @@ class RadarPing:
     def update(self) -> bool:
         """Update the radar ping and return whether it's still alive."""
         self.life -= 1
-        return self.life > 0
+        return bool(self.life > 0)  # type: ignore[no-any-return]
 
-    def draw(self, screen: pygame.Surface) -> None:
+    def draw(self, screen: pygame.Surface) -> None:  # type: ignore[no-any-unimported]
         """Draw the radar ping on the screen."""
         progress = 1 - (self.life / RADAR_PING_INTERVAL)
         radius = int(progress * 40)
@@ -171,7 +171,7 @@ class Vignette:
 
     layer = "overlay"
 
-    _surface_cache: ClassVar[dict[tuple[int, int], pygame.Surface]] = {}
+    _surface_cache: ClassVar[dict[tuple[int, int], pygame.Surface]] = {}  # type: ignore[no-any-unimported]
 
     def __init__(
         self,
@@ -201,6 +201,6 @@ class Vignette:
         """Update the vignette effect (always returns True as it's persistent)."""
         return True
 
-    def draw(self, screen: pygame.Surface) -> None:
+    def draw(self, screen: pygame.Surface) -> None:  # type: ignore[no-any-unimported]
         """Draw the vignette effect on the screen."""
         screen.blit(self.surface, self.top_left, special_flags=pygame.BLEND_RGBA_MULT)

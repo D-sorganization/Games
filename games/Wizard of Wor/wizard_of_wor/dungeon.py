@@ -2,10 +2,11 @@
 Dungeon/Maze generation and management for Wizard of Wor.
 """
 
+# mypy: disable-error-code=name-defined
 import random
 
 import pygame
-from constants import *  # type: ignore[name-defined]  # noqa: F403, F405
+from constants import *  # noqa: F403, F405
 
 
 class Dungeon:
