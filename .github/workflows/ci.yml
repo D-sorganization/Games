@@ -108,7 +108,7 @@ jobs:
             black --check --diff python || exit 1
           elif [ -d src ]; then
             if [ -d tests ]; then
-              black --check --diff src tests || exit 1
+              black --check --diff src tests/ || exit 1
             else
               black --check --diff src || exit 1
             fi
