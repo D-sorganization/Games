@@ -1085,7 +1085,9 @@ class TetrisGame:
                 setattr(self, entry["key"], not current)
                 if entry["key"] == "allow_rewind":
                     self.rewind_history.clear()
-            elif entry["type"] == "mapping" and self.controller_enabled and self.joystick:
+            elif (
+                entry["type"] == "mapping" and self.controller_enabled and self.joystick
+            ):
                 self.awaiting_controller_action = entry["key"]
 
     def handle_input(self) -> None:
