@@ -136,11 +136,8 @@ class Dungeon:
                         (self.cols - 4, self.rows - 4),
                     }
 
-                    if (
-                        center_bias
-                        and (near_center or at_side_door)
-                        or not center_bias
-                        and (at_side_door or corner_pad)
+                    if (center_bias and (near_center or at_side_door)) or (
+                        not center_bias and (at_side_door or corner_pad)
                     ):
                         viable_cells.append((x, y))
         if not viable_cells:

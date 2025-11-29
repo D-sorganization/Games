@@ -2,11 +2,8 @@ from __future__ import annotations
 
 import math
 import random
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from collections.abc import Iterable
 
 Vec2 = tuple[float, float]
 
@@ -407,13 +404,19 @@ class GameWorld:
         """Create a new enemy at a random edge position."""
         side = self.rng.choice(["top", "bottom", "left", "right"])
         if side == "top":
-            position = (self.rng.uniform(0, self.config.width), -10)
+            position = (self.rng.uniform(0, self.config.width), -10.0)
         elif side == "bottom":
-            position = (self.rng.uniform(0, self.config.width), self.config.height + 10)
+            position = (
+                self.rng.uniform(0, self.config.width),
+                float(self.config.height + 10),
+            )
         elif side == "left":
-            position = (-10, self.rng.uniform(0, self.config.height))
+            position = (-10.0, self.rng.uniform(0, self.config.height))
         else:
-            position = (self.config.width + 10, self.rng.uniform(0, self.config.height))
+            position = (
+                float(self.config.width + 10),
+                self.rng.uniform(0, self.config.height),
+            )
 
         archetype = self._choose_archetype()
         speed = (90 + 14 * (self.stats.wave - 1)) * archetype.speed_scale

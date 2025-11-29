@@ -1163,7 +1163,7 @@ class Game:
 
         # Game state
         self.state = "intro"  # intro, menu, playing, game_over, level_complete
-        self.intro_scroll_y = SCREEN_HEIGHT
+        self.intro_scroll_y: float = float(SCREEN_HEIGHT)
         self.intro_start_time = 0
         self.level = 1
         self.kills = 0
@@ -1988,10 +1988,8 @@ class Game:
                 self.update_game()
                 self.render_game()
             elif self.state == "level_complete":
-                self.handle_menu_events()  # Reuse menu event handler
                 self.render_level_complete()
             elif self.state == "game_over":
-                self.handle_menu_events()  # Reuse menu event handler
                 self.render_game_over()
 
             self.clock.tick(FPS)
