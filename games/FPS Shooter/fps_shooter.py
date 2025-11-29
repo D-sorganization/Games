@@ -1408,8 +1408,8 @@ class Game:
                 elif (
                     event.button == 1
                 ):  # Left-click to aim (currently no special effect)
-                    # Left-click aim functionality not yet implemented - placeholder for future feature
-                    pass  # No-op: left-click aim not implemented
+                    # No-op: Left-click aim not yet implemented
+                    pass
             elif event.type == pygame.MOUSEMOTION:
                 self.player.rotate(event.rel[0] * PLAYER_ROT_SPEED)
 
@@ -2046,7 +2046,10 @@ class Game:
 
 
 def main() -> None:
-    """Main entry point"""
+    """Entry point of the FPS Shooter application.
+    
+    Initializes the game and starts the main game loop.
+    """
     game = Game()
     game.run()
 
