@@ -928,8 +928,9 @@ class TetrisGame:
         self.screen.blit(hint, hint_rect)
 
         if self.awaiting_controller_action:
+            action_label = self.controller_action_labels[self.awaiting_controller_action]
             waiting = self.small_font.render(
-                f"Waiting for input to bind {self.controller_action_labels[self.awaiting_controller_action]}",
+                f"Waiting for input to bind {action_label}",
                 True,
                 YELLOW,
             )
@@ -1303,10 +1304,7 @@ class TetrisGame:
                     pygame.quit()
                     sys.exit()
 
-                if (
-                    event.type == pygame.JOYDEVICEADDED
-                    or event.type == pygame.JOYDEVICEREMOVED
-                ):
+                if event.type in {pygame.JOYDEVICEADDED, pygame.JOYDEVICEREMOVED}:
                     self.init_controller()
 
                 if event.type in [pygame.JOYBUTTONDOWN, pygame.JOYHATMOTION]:

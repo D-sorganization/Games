@@ -367,12 +367,12 @@ class GameWorld:
     def _tick_effects(self, dt: float) -> None:
         """Update active powerup effects and remove expired ones."""
         expired: list[str] = []
-        for name, remaining in list(self.active_effects.items()):
-            remaining -= dt
-            if remaining <= 0:
+        for name, remaining_time in list(self.active_effects.items()):
+            new_time = remaining_time - dt
+            if new_time <= 0:
                 expired.append(name)
             else:
-                self.active_effects[name] = remaining
+                self.active_effects[name] = new_time
 
         for name in expired:
             del self.active_effects[name]

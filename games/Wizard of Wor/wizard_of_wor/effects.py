@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import math
 import random
-from typing import Protocol
+from typing import ClassVar, Protocol
 
 import pygame
 from constants import (
@@ -164,7 +164,7 @@ class Vignette:
 
     layer = "overlay"
 
-    _surface_cache: dict[tuple[int, int], pygame.Surface] = {}
+    _surface_cache: ClassVar[dict[tuple[int, int], pygame.Surface]] = {}
 
     def __init__(self, size: tuple[int, int], top_left: tuple[int, int] = (0, 0)) -> None:
         """Initialize a vignette effect with the given size and position."""
