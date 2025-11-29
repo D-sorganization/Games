@@ -405,7 +405,9 @@ class WizardOfWorGame:
             bar_x = GAME_AREA_X
             bar_y = GAME_AREA_Y + GAME_AREA_HEIGHT + 16
             pygame.draw.rect(
-                self.screen, DARK_GRAY, (bar_x, bar_y, bar_width, bar_height)
+                self.screen,
+                DARK_GRAY,
+                (bar_x, bar_y, bar_width, bar_height),
             )
             pygame.draw.rect(
                 self.screen,
@@ -424,7 +426,9 @@ class WizardOfWorGame:
             bar_x = GAME_AREA_X + 220
             bar_y = GAME_AREA_Y + GAME_AREA_HEIGHT + 16
             pygame.draw.rect(
-                self.screen, DARK_GRAY, (bar_x, bar_y, bar_width, bar_height)
+                self.screen,
+                DARK_GRAY,
+                (bar_x, bar_y, bar_width, bar_height),
             )
             pygame.draw.rect(
                 self.screen,
@@ -455,7 +459,7 @@ class WizardOfWorGame:
 
         continue_text = self.font_small.render("Press ENTER to continue", True, WHITE)
         continue_rect = continue_text.get_rect(
-            center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 50)
+            center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 50),
         )
         self.screen.blit(continue_text, continue_rect)
 
@@ -470,22 +474,24 @@ class WizardOfWorGame:
         self.screen.blit(score_text, score_rect)
 
         level_text = self.font_medium.render(
-            f"Reached Level: {self.level}", True, WHITE
+            f"Reached Level: {self.level}",
+            True,
+            WHITE,
         )
         level_rect = level_text.get_rect(
-            center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 50)
+            center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 50),
         )
         self.screen.blit(level_text, level_rect)
 
         restart_text = self.font_small.render("Press ENTER to play again", True, WHITE)
         restart_rect = restart_text.get_rect(
-            center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 100)
+            center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 100),
         )
         self.screen.blit(restart_text, restart_rect)
 
         menu_text = self.font_small.render("Press ESC for menu", True, WHITE)
         menu_rect = menu_text.get_rect(
-            center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 130)
+            center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 130),
         )
         self.screen.blit(menu_text, menu_rect)
 

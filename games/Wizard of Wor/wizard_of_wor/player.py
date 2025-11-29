@@ -126,7 +126,9 @@ class Player:
 
             # Shield glow
             if self.invulnerable_timer > 0:
-                flash = 120 + 80 * math.sin(self.invulnerable_timer / PLAYER_SHIELD_FLASH)
+                flash = 120 + 80 * math.sin(
+                    self.invulnerable_timer / PLAYER_SHIELD_FLASH,
+                )
                 glow_surface = pygame.Surface(
                     (body_rect.width + 10, body_rect.height + 10),
                     pygame.SRCALPHA,
