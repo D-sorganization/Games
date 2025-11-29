@@ -85,13 +85,13 @@ jobs:
             
       - name: Run pre-commit
         run: |
-          pre-commit run --all-files --show-diff-on-failure
+          pre-commit run --all-files --show-diff-on-failure || exit 1
           
       - name: Run strict type checking
         run: |
           pip install mypy
           if find . -name "*.py" -not -path "./archive/*" -not -path "./legacy/*" | head -n1 | grep -q .; then
-            mypy . --strict --ignore-missing-imports || echo "⚠️ Type errors found"
+            mypy . --strict --ignore-missing-imports || exit 1
           else
             echo "No Python files to type check"
           fi

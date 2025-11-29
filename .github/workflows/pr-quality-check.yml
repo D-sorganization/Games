@@ -49,13 +49,13 @@ jobs:
     - name: Check for placeholders and magic numbers
       run: |
         echo "🔍 Checking for placeholders and magic numbers..."
-        # ✅ Check both possible script locations
-        if [ -f scripts/quality-check.py ]; then
-          python scripts/quality-check.py
-        elif [ -f scripts/quality_check.py ]; then
-          python scripts/quality_check.py
+        # ✅ Check both possible script locations (quality_check.py is the actual file name)
+        if [ -f scripts/quality_check.py ]; then
+          python scripts/quality_check.py || exit 1
+        elif [ -f scripts/quality-check.py ]; then
+          python scripts/quality-check.py || exit 1
         elif [ -f quality_check_script.py ]; then
-          python quality_check_script.py
+          python quality_check_script.py || exit 1
         else
           echo "⚠️ No quality check script found, skipping..."
         fi
@@ -65,10 +65,10 @@ jobs:
         echo "🔍 Running Ruff linter..."
         if [ -f ruff.toml ]; then
           # ✅ Respect config file, don't override
-          ruff check .
+          ruff check . || exit 1
         else
           # ✅ Fallback with explicit rules
-          ruff check . --select ALL
+          ruff check . --select ALL || exit 1
         fi
 
     - name: Type check with MyPy
@@ -76,22 +76,22 @@ jobs:
         echo "🔍 Running MyPy type checker..."
         if [ -f mypy.ini ]; then
           if [ -d python ]; then
-            mypy python/ --config-file mypy.ini
+            mypy python/ --config-file mypy.ini || exit 1
           else
-            mypy . --config-file mypy.ini
+            mypy . --config-file mypy.ini || exit 1
           fi
         elif [ -f pyproject.toml ] && grep -qE '^\s*\[tool\.mypy\]' pyproject.toml; then
           if [ -d python ]; then
-            mypy python/
+            mypy python/ || exit 1
           else
-            mypy .
+            mypy . || exit 1
           fi
         else
           # ✅ Non-strict fallback to avoid conflicts
           if [ -d python ]; then
-            mypy python/ --ignore-missing-imports
+            mypy python/ --ignore-missing-imports || exit 1
           else
-            mypy . --ignore-missing-imports
+            mypy . --ignore-missing-imports || exit 1
           fi
         fi
 
@@ -101,20 +101,20 @@ jobs:
         # ✅ Check source directories explicitly
         if [ -d python/src ]; then
           if [ -d python/tests ]; then
-            black --check --diff python/src python/tests
+            black --check --diff python/src python/tests || exit 1
           else
-            black --check --diff python/src
+            black --check --diff python/src || exit 1
           fi
         elif [ -d python ]; then
-          black --check --diff python
+          black --check --diff python || exit 1
         elif [ -d src ]; then
           if [ -d tests ]; then
-            black --check --diff src tests/
+            black --check --diff src tests/ || exit 1
           else
-            black --check --diff src
+            black --check --diff src || exit 1
           fi
         else
-          black --check --diff .
+          black --check --diff . || exit 1
         fi
 
     - name: Run tests
