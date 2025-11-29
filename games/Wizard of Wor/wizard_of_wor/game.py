@@ -81,7 +81,8 @@ class WizardOfWorGame:
         self.soundboard = SoundBoard()
         self.effects: list[VisualEffect] = []
         self.vignette = Vignette(
-            (GAME_AREA_WIDTH, GAME_AREA_HEIGHT), (GAME_AREA_X, GAME_AREA_Y)
+            (GAME_AREA_WIDTH, GAME_AREA_HEIGHT),
+            (GAME_AREA_X, GAME_AREA_Y),
         )
 
         # Fonts
@@ -263,7 +264,7 @@ class WizardOfWorGame:
                     if bullet in self.bullets:
                         self.bullets.remove(bullet)
                     self.effects.append(
-                        SparkleBurst((enemy.x, enemy.y), enemy.color, count=10)
+                        SparkleBurst((enemy.x, enemy.y), enemy.color, count=10),
                     )
                     break
 
@@ -279,7 +280,7 @@ class WizardOfWorGame:
                     self.bullets.remove(bullet)
                 if took_damage:
                     self.effects.append(
-                        SparkleBurst((self.player.x, self.player.y), RED, count=16)
+                        SparkleBurst((self.player.x, self.player.y), RED, count=16),
                     )
 
         # Player colliding with enemies
@@ -398,7 +399,8 @@ class WizardOfWorGame:
         # Shield indicator
         if self.player.invulnerable_timer > 0:
             shield_ratio = min(
-                1.0, self.player.invulnerable_timer / RESPAWN_SHIELD_FRAMES
+                1.0,
+                self.player.invulnerable_timer / RESPAWN_SHIELD_FRAMES,
             )
             bar_width = 140
             bar_height = 10
