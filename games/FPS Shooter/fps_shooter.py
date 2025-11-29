@@ -1408,8 +1408,7 @@ class Game:
                 elif (
                     event.button == 1
                 ):  # Left-click to aim (currently no special effect)
-                    # No-op: Left-click aim not yet implemented
-                    pass
+                    pass  # No-op: Left-click aim not yet implemented
             elif event.type == pygame.MOUSEMOTION:
                 self.player.rotate(event.rel[0] * PLAYER_ROT_SPEED)
 
