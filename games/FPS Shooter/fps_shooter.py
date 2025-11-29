@@ -743,10 +743,10 @@ class Game:
         # Use a larger safety margin to ensure spawn is well outside Building 4
         building4_start = int(map_size * 0.75)
         safety_margin = 3  # Minimum tiles away from building start
-        bottom_right_offset = min(
-            max(offset, int(map_size * 0.65)),
-            building4_start - safety_margin
-        )
+        # Calculate maximum spawn position (before Building 4 starts)
+        max_spawn_position = building4_start - safety_margin
+        # Convert position to offset from map edge: offset = map_size - position
+        bottom_right_offset = map_size - max_spawn_position
         
         return [
             (offset, offset, math.pi / 4),  # Top-left
