@@ -723,7 +723,6 @@ class Raycaster:
         cos_a = math.cos(angle)
 
         closest_bot = None
-        closest_bot_dist = float("inf")
 
         # Cast ray
         for depth in range(1, int(MAX_DEPTH * 100)):
@@ -1637,6 +1636,8 @@ class Game:
 
     def render_game(self) -> None:
         """Render gameplay"""
+        assert self.raycaster is not None
+        assert self.player is not None
         # 3D view
         self.raycaster.render_floor_ceiling(self.screen)
         self.raycaster.render_3d(self.screen, self.player, self.bots)
@@ -1746,8 +1747,11 @@ class Game:
         )
 
         # Current weapon name
-        current_weapon_data = WEAPONS[self.player.current_weapon]
-        weapon_name = self.small_font.render(current_weapon_data["name"], True, YELLOW)
+        assert self.player is not None
+        current_weapon_data: Dict[str, Any] = WEAPONS[self.player.current_weapon]
+        weapon_name = self.small_font.render(
+            str(current_weapon_data["name"]), True, YELLOW
+        )
         weapon_name_rect = weapon_name.get_rect(
             center=(weapon_x + weapon_width // 2, weapon_y + 15),
         )
@@ -1832,6 +1836,7 @@ class Game:
                 continue
 
             # Calculate projectile position relative to player
+            assert self.player is not None
             dx = projectile.x - self.player.x
             dy = projectile.y - self.player.y
             proj_dist = math.sqrt(dx**2 + dy**2)
@@ -1985,10 +1990,10 @@ class Game:
                 self.update_game()
                 self.render_game()
             elif self.state == "level_complete":
-                self.handle_level_complete_events()
+                self.handle_menu_events()  # Reuse menu event handler
                 self.render_level_complete()
             elif self.state == "game_over":
-                self.handle_game_over_events()
+                self.handle_menu_events()  # Reuse menu event handler
                 self.render_game_over()
 
             self.clock.tick(FPS)
@@ -2043,7 +2048,7 @@ class Game:
 
         elapsed = (pygame.time.get_ticks() - self.intro_start_time) / 1000.0
         scroll_speed = 50  # pixels per second
-        self.intro_scroll_y = SCREEN_HEIGHT - elapsed * scroll_speed
+        self.intro_scroll_y = float(SCREEN_HEIGHT - elapsed * scroll_speed)
 
         # Render text
         line_height = 40
