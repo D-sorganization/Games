@@ -1462,7 +1462,8 @@ class Game:
 
             # Check if bot is in front of player
             bot_angle = math.atan2(dy, dx)
-            # Normalize bot_angle to [0, 2π) range for comparison (player.angle is already normalized)
+            # Normalize bot_angle to [0, 2π) range for comparison
+            # (player.angle is already normalized)
             bot_angle_norm = bot_angle if bot_angle >= 0 else bot_angle + 2 * math.pi
             angle_diff = abs(bot_angle_norm - self.player.angle)
             if angle_diff > math.pi:
