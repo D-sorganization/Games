@@ -163,10 +163,18 @@ class Player:
                 left_leg = (self.x + leg_offset, self.y + 4)
                 right_leg = (self.x - leg_offset, self.y - 4)
             pygame.draw.line(
-                screen, self.color, left_leg, (left_leg[0], left_leg[1] + 6), 3,
+                screen,
+                self.color,
+                left_leg,
+                (left_leg[0], left_leg[1] + 6),
+                3,
             )
             pygame.draw.line(
-                screen, self.color, right_leg, (right_leg[0], right_leg[1] + 6), 3,
+                screen,
+                self.color,
+                right_leg,
+                (right_leg[0], right_leg[1] + 6),
+                3,
             )
 
             # Direction indicator

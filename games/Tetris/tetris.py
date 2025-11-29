@@ -928,7 +928,9 @@ class TetrisGame:
         self.screen.blit(hint, hint_rect)
 
         if self.awaiting_controller_action:
-            action_label = self.controller_action_labels[self.awaiting_controller_action]
+            action_label = self.controller_action_labels[
+                self.awaiting_controller_action
+            ]
             waiting = self.small_font.render(
                 f"Waiting for input to bind {action_label}",
                 True,

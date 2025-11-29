@@ -28,8 +28,8 @@ TILE_SIZE = 64
 MIN_BUILDING_OFFSET = 3  # Minimum offset from map edges for building generation
 
 # Player settings
-PLAYER_SPEED = 1   
-PLAYER_SPRINT_SPEED = 1.5  
+PLAYER_SPEED = 1
+PLAYER_SPRINT_SPEED = 1.5
 PLAYER_ROT_SPEED = 0.003
 FOV = math.pi / 3  # 60 degrees
 HALF_FOV = FOV / 2
@@ -891,7 +891,9 @@ class Raycaster:
                 screen, ORANGE, (int(flash_x), int(flash_y)), int(flash_size * 0.6)
             )
 
-    def render_3d(self, screen: pygame.Surface, player: Player, bots: List[Bot]) -> None:
+    def render_3d(
+        self, screen: pygame.Surface, player: Player, bots: List[Bot]
+    ) -> None:
         """Render 3D view using raycasting"""
         ray_angle = player.angle - HALF_FOV
 
@@ -1033,7 +1035,9 @@ class Raycaster:
         )
         pygame.draw.rect(screen, BLACK, (0, 0, SCREEN_WIDTH, SCREEN_HEIGHT // 2))
 
-    def render_minimap(self, screen: pygame.Surface, player: Player, bots: List[Bot]) -> None:
+    def render_minimap(
+        self, screen: pygame.Surface, player: Player, bots: List[Bot]
+    ) -> None:
         """Render 2D minimap"""
         minimap_size = 200
         map_size = self.game_map.size
@@ -1210,7 +1214,9 @@ class Game:
         map_size = self.game_map.size if self.game_map else self.selected_map_size
 
         # Try multiple positions near each corner to find one that's not in a building
-        def find_safe_spawn(base_x: float, base_y: float, angle: float) -> Tuple[float, float, float]:
+        def find_safe_spawn(
+            base_x: float, base_y: float, angle: float
+        ) -> Tuple[float, float, float]:
             """Find a safe spawn position near the base coordinates"""
             if not self.game_map:
                 return (base_x, base_y, angle)
@@ -2046,7 +2052,7 @@ class Game:
 
 def main() -> None:
     """Entry point of the FPS Shooter application.
-    
+
     Initializes the game and starts the main game loop.
     """
     game = Game()

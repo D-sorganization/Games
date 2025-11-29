@@ -166,7 +166,9 @@ class WorldStats:
 
 
 class GameWorld:
-    def __init__(self, config: GameConfig | None = None, seed: int | None = 1337) -> None:
+    def __init__(
+        self, config: GameConfig | None = None, seed: int | None = 1337
+    ) -> None:
         """Initialize the game world with the given configuration and random seed."""
         self.config = config or GameConfig()
         self.rng = random.Random(seed)
