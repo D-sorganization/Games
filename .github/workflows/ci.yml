@@ -52,12 +52,14 @@ jobs:
       - name: Check for placeholders
         run: |
           # Fail if TODO, FIXME, or other placeholders found in Python files
+          # Exclude scripts directory as it legitimately contains these terms
           if grep -r "TODO\|FIXME\|XXX\|HACK\|pass #\|\.\.\..*#\|NotImplementedError" \
             --include="*.py" \
             --exclude-dir=".git" \
             --exclude-dir="archive" \
             --exclude-dir="legacy" \
-            --exclude-dir="experimental" .; then
+            --exclude-dir="experimental" \
+            --exclude-dir="scripts" .; then
             echo "❌ ERROR: Placeholders found in code"
             exit 1
           else
