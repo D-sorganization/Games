@@ -28,13 +28,13 @@ TILE_SIZE = 64
 MIN_BUILDING_OFFSET = 3  # Minimum offset from map edges for building generation
 
 # Player settings
-PLAYER_SPEED = 0.2
-PLAYER_SPRINT_SPEED = 0.35
+PLAYER_SPEED = 0.4  # Doubled from 0.2
+PLAYER_SPRINT_SPEED = 0.7  # Doubled from 0.35
 PLAYER_ROT_SPEED = 0.003
 FOV = math.pi / 3  # 60 degrees
 HALF_FOV = FOV / 2
 NUM_RAYS = SCREEN_WIDTH // 2
-MAX_DEPTH = 20
+MAX_DEPTH = 50  # Increased render distance
 DELTA_ANGLE = FOV / NUM_RAYS
 
 # Weapon settings
@@ -49,8 +49,10 @@ WEAPONS = {
 BASE_BOT_HEALTH = 125  # Exactly 5 shots with rifle (25 damage each) in base case (no enemy type multipliers); e.g., brute (1.5× health = 187.5 HP) requires 8 shots, demon (1.2× health = 150 HP) requires 6 shots
 BASE_BOT_DAMAGE = 10
 BOT_SPEED = 0.05
-BOT_ATTACK_RANGE = 10
-BOT_ATTACK_COOLDOWN = 60
+BOT_ATTACK_RANGE = 12
+BOT_ATTACK_COOLDOWN = 90
+BOT_PROJECTILE_SPEED = 0.3
+BOT_PROJECTILE_DAMAGE = 15
 
 # Combat settings
 HEADSHOT_THRESHOLD = 0.05  # Angle difference in radians for headshot detection (~2.86 degrees)
@@ -81,13 +83,20 @@ CRIMSON = (220, 20, 60)
 DARK_GREEN = (0, 100, 0)
 LIME = (50, 205, 50)
 
-# Enemy types (defined after colors)
+# Enemy types (matching doom game colors and adding more variety)
+# Colors from doom games: zombie (#6b8a6f = grayish-green), boss (#8c3f3f = dark red), demon (#b52b1d = red), dinosaur (#3fa34d = green), raider (#7a5cff = purple)
+ZOMBIE_COLOR = (107, 138, 111)  # #6b8a6f
+BOSS_COLOR = (140, 63, 63)  # #8c3f3f
+DEMON_COLOR = (181, 43, 29)  # #b52b1d
+DINOSAUR_COLOR = (63, 163, 77)  # #3fa34d
+RAIDER_COLOR = (122, 92, 255)  # #7a5cff
+
 ENEMY_TYPES = {
-    'zombie': {'color': DARK_RED, 'health_mult': 1.0, 'speed_mult': 1.0, 'damage_mult': 1.0},
-    'demon': {'color': MAROON, 'health_mult': 1.2, 'speed_mult': 1.1, 'damage_mult': 1.2},
-    'ghoul': {'color': CRIMSON, 'health_mult': 0.9, 'speed_mult': 1.2, 'damage_mult': 0.9},
-    'brute': {'color': DARK_GREEN, 'health_mult': 1.5, 'speed_mult': 0.8, 'damage_mult': 1.5},
-    'spectre': {'color': PURPLE, 'health_mult': 1.1, 'speed_mult': 1.3, 'damage_mult': 1.1},
+    'zombie': {'color': ZOMBIE_COLOR, 'health_mult': 1.0, 'speed_mult': 1.0, 'damage_mult': 1.0, 'scale': 1.0},
+    'boss': {'color': BOSS_COLOR, 'health_mult': 2.0, 'speed_mult': 0.7, 'damage_mult': 1.8, 'scale': 1.5},
+    'demon': {'color': DEMON_COLOR, 'health_mult': 1.3, 'speed_mult': 1.2, 'damage_mult': 1.3, 'scale': 1.1},
+    'dinosaur': {'color': DINOSAUR_COLOR, 'health_mult': 1.4, 'speed_mult': 1.4, 'damage_mult': 1.4, 'scale': 1.2},
+    'raider': {'color': RAIDER_COLOR, 'health_mult': 1.1, 'speed_mult': 1.3, 'damage_mult': 1.2, 'scale': 1.0},
 }
 
 # Wall colors
@@ -233,6 +242,61 @@ class Map:
         if 0 <= map_x < self.size and 0 <= map_y < self.size:
             return self.grid[map_y][map_x]
         return 1
+    
+    def is_inside_building(self, x: float, y: float) -> bool:
+        """Check if position is inside a building (not just on the wall)"""
+        i = int(y)
+        j = int(x)
+        if i < 0 or i >= self.size or j < 0 or j >= self.size:
+            return False
+        
+        # Check if it's a wall (on the edge)
+        if self.grid[i][j] != 0:
+            return False
+        
+        # Check surrounding area to see if we're inside a building
+        size = self.size
+        building_edge_margin = max(MIN_BUILDING_OFFSET, int(size * 0.1))
+        
+        # Building 1 (top-left)
+        b1_start_i = max(building_edge_margin, int(size * 0.15))
+        b1_end_i = max(b1_start_i + 2, min(int(size * 0.3), size - 1))
+        b1_start_j = max(building_edge_margin, int(size * 0.15))
+        b1_end_j = max(b1_start_j + 2, min(int(size * 0.4), size - 1))
+        if b1_start_i < i < b1_end_i and b1_start_j < j < b1_end_j:
+            return True
+        
+        # Building 2 (top-right)
+        b2_start_i = max(building_edge_margin, int(size * 0.15))
+        b2_end_i = max(b2_start_i + 2, min(int(size * 0.25), size - 1))
+        b2_start_j = max(building_edge_margin, int(size * 0.7))
+        b2_end_j = max(b2_start_j + 2, min(int(size * 0.9), size - 1))
+        if b2_start_i < i < b2_end_i and b2_start_j < j < b2_end_j:
+            return True
+        
+        # Building 3 (bottom-left)
+        b3_start_i = max(building_edge_margin, int(size * 0.7))
+        b3_end_i = max(b3_start_i + 2, min(int(size * 0.95), size - 1))
+        b3_start_j = max(building_edge_margin, int(size * 0.15))
+        b3_end_j = max(b3_start_j + 2, min(int(size * 0.35), size - 1))
+        if b3_start_i < i < b3_end_i and b3_start_j < j < b3_end_j:
+            return True
+        
+        # Building 4 (bottom-right)
+        b4_start_i = int(size * 0.75)
+        b4_end_i = min(int(size * 0.95), size - 1)
+        b4_start_j = int(size * 0.75)
+        b4_end_j = min(int(size * 0.95), size - 1)
+        if b4_start_i < i < b4_end_i and b4_start_j < j < b4_end_j:
+            return True
+        
+        # Central courtyard
+        center_start = int(size * 0.45)
+        center_end = min(int(size * 0.55), size - 1)
+        if center_start < i < center_end and center_start < j < center_end:
+            return True
+        
+        return False
 
 
 class Player:
@@ -357,6 +421,72 @@ class Player:
             self.shooting = False
 
 
+class Projectile:
+    """Projectile shot by bots"""
+    
+    def __init__(self, x: float, y: float, angle: float, damage: int, speed: float, is_player: bool = False):
+        """Initialize projectile"""
+        self.x = x
+        self.y = y
+        self.angle = angle
+        self.damage = damage
+        self.speed = speed
+        self.is_player = is_player
+        self.alive = True
+    
+    def update(self, game_map: Map):
+        """Update projectile position"""
+        if not self.alive:
+            return
+        
+        dx = math.cos(self.angle) * self.speed
+        dy = math.sin(self.angle) * self.speed
+        
+        new_x = self.x + dx
+        new_y = self.y + dy
+        
+        # Check wall collision
+        if game_map.is_wall(new_x, new_y):
+            self.alive = False
+            return
+        
+        self.x = new_x
+        self.y = new_y
+
+
+class Projectile:
+    """Projectile shot by bots"""
+    
+    def __init__(self, x: float, y: float, angle: float, damage: int, speed: float, is_player: bool = False):
+        """Initialize projectile"""
+        self.x = x
+        self.y = y
+        self.angle = angle
+        self.damage = damage
+        self.speed = speed
+        self.is_player = is_player
+        self.alive = True
+    
+    def update(self, game_map: Map):
+        """Update projectile position"""
+        if not self.alive:
+            return
+        
+        dx = math.cos(self.angle) * self.speed
+        dy = math.sin(self.angle) * self.speed
+        
+        new_x = self.x + dx
+        new_y = self.y + dy
+        
+        # Check wall collision
+        if game_map.is_wall(new_x, new_y):
+            self.alive = False
+            return
+        
+        self.x = new_x
+        self.y = new_y
+
+
 class Bot:
     """Enemy bot with AI"""
 
@@ -387,11 +517,21 @@ class Bot:
         self.walk_animation = 0.0  # For walk animation
         self.last_x = x
         self.last_y = y
+        self.shoot_animation = 0.0  # For shoot animation
 
-    def update(self, game_map: Map, player: Player, other_bots: List['Bot']):
-        """Update bot AI"""
+    def update(self, game_map: Map, player: Player, other_bots: List['Bot']) -> Optional[Projectile]:
+        """Update bot AI
+        Returns:
+            Projectile if bot shoots, None otherwise
+        """
         if not self.alive:
-            return
+            return None
+
+        # Update animations
+        if self.shoot_animation > 0:
+            self.shoot_animation -= 0.1
+            if self.shoot_animation < 0:
+                self.shoot_animation = 0
 
         # Calculate distance to player
         dx = player.x - self.x
@@ -406,8 +546,16 @@ class Bot:
             if self.attack_timer <= 0:
                 # Check line of sight
                 if self.has_line_of_sight(game_map, player):
-                    player.take_damage(self.damage)
+                    # Shoot projectile instead of direct damage
+                    projectile = Projectile(
+                        self.x, self.y, self.angle,
+                        BOT_PROJECTILE_DAMAGE + self.damage,
+                        BOT_PROJECTILE_SPEED,
+                        is_player=False
+                    )
                     self.attack_timer = BOT_ATTACK_COOLDOWN
+                    self.shoot_animation = 1.0  # Start shoot animation
+                    return projectile  # Return projectile to be added to list
         else:
             # Move toward player
             move_dx = math.cos(self.angle) * self.speed
@@ -447,6 +595,8 @@ class Bot:
         # Update attack timer
         if self.attack_timer > 0:
             self.attack_timer -= 1
+        
+        return None  # No projectile shot this frame
 
     def has_line_of_sight(self, game_map: Map, player: Player) -> bool:
         """Check if bot has line of sight to player"""
@@ -463,16 +613,15 @@ class Bot:
         """Take damage
         Args:
             damage: Base damage amount
-            is_headshot: If True, instant kill
+            is_headshot: If True, do 3x damage instead of instant kill
         """
         if is_headshot:
-            self.health = 0
-            self.alive = False
+            self.health -= damage * 3  # Headshot does 3x damage, not instant kill
         else:
             self.health -= damage
-            if self.health <= 0:
-                self.health = 0
-                self.alive = False
+        if self.health <= 0:
+            self.health = 0
+            self.alive = False
 
 
 class Raycaster:
@@ -554,9 +703,130 @@ class Raycaster:
 
         return MAX_DEPTH, 0, None
 
+    def render_enemy_sprite(self, screen: pygame.Surface, bot: Bot, sprite_x: int, sprite_y: int, sprite_size: float):
+        """Render a detailed enemy sprite with head, body, legs, and arms"""
+        center_x = sprite_x + sprite_size / 2
+        body_width = sprite_size * 0.5
+        body_height = sprite_size * 0.6
+        head_size = sprite_size * 0.35
+        leg_width = sprite_size * 0.12
+        leg_height = sprite_size * 0.4
+        arm_width = sprite_size * 0.1
+        arm_height = sprite_size * 0.35
+        
+        base_color = bot.type_data['color']
+        dark_color = tuple(max(0, c - 40) for c in base_color)
+        leg_color = (30, 30, 30)
+        
+        # Walk animation
+        leg_phase = math.sin(bot.walk_animation) * 0.3
+        arm_swing = math.sin(bot.walk_animation + math.pi) * 0.2
+        
+        # Shoot animation
+        shoot_offset = bot.shoot_animation * sprite_size * 0.15
+        
+        # Head
+        head_y = sprite_y + sprite_size * 0.05
+        pygame.draw.ellipse(screen, base_color, 
+                           (center_x - head_size/2, head_y, head_size, head_size))
+        
+        # Eyes
+        eye_size = head_size * 0.15
+        eye_y = head_y + head_size * 0.3
+        eye_spacing = head_size * 0.25
+        pygame.draw.circle(screen, WHITE, 
+                          (int(center_x - eye_spacing), int(eye_y)), int(eye_size))
+        pygame.draw.circle(screen, WHITE, 
+                          (int(center_x + eye_spacing), int(eye_y)), int(eye_size))
+        pygame.draw.circle(screen, BLACK, 
+                          (int(center_x - eye_spacing), int(eye_y)), int(eye_size * 0.6))
+        pygame.draw.circle(screen, BLACK, 
+                          (int(center_x + eye_spacing), int(eye_y)), int(eye_size * 0.6))
+        
+        # Body
+        body_x = center_x - body_width / 2
+        body_y = head_y + head_size * 0.7
+        pygame.draw.rect(screen, base_color, 
+                        (body_x, body_y, body_width, body_height))
+        
+        # Arms
+        arm_y = body_y + body_height * 0.1
+        # Left arm
+        left_arm_x = body_x - arm_width + arm_swing * sprite_size
+        pygame.draw.rect(screen, dark_color, 
+                        (left_arm_x, arm_y, arm_width, arm_height))
+        # Right arm (with shoot animation)
+        right_arm_x = body_x + body_width - shoot_offset
+        right_arm_y = arm_y + shoot_offset * 0.3
+        pygame.draw.rect(screen, dark_color, 
+                        (right_arm_x, right_arm_y, arm_width, arm_height))
+        
+        # Legs
+        leg_y = body_y + body_height * 0.7
+        # Left leg
+        left_leg_x = center_x - body_width * 0.3 + leg_phase * sprite_size
+        pygame.draw.rect(screen, leg_color, 
+                        (left_leg_x, leg_y, leg_width, leg_height))
+        # Right leg
+        right_leg_x = center_x + body_width * 0.1 - leg_phase * sprite_size
+        pygame.draw.rect(screen, leg_color, 
+                        (right_leg_x, leg_y, leg_width, leg_height))
+        
+        # Muzzle flash when shooting
+        if bot.shoot_animation > 0.5:
+            flash_size = sprite_size * 0.2
+            flash_x = right_arm_x + arm_width
+            flash_y = right_arm_y + arm_height * 0.3
+            pygame.draw.circle(screen, YELLOW, 
+                              (int(flash_x), int(flash_y)), int(flash_size))
+            pygame.draw.circle(screen, ORANGE, 
+                              (int(flash_x), int(flash_y)), int(flash_size * 0.6))
+
     def render_3d(self, screen: pygame.Surface, player: Player, bots: List[Bot]):
         """Render 3D view using raycasting"""
         ray_angle = player.angle - HALF_FOV
+        
+        # Collect all bots to render as sprites
+        bots_to_render = []
+        for bot in bots:
+            if not bot.alive:
+                continue
+            
+            # Calculate bot position relative to player
+            dx = bot.x - player.x
+            dy = bot.y - player.y
+            bot_dist = math.sqrt(dx**2 + dy**2)
+            
+            if bot_dist > MAX_DEPTH:
+                continue
+            
+            # Calculate angle to bot
+            bot_angle = math.atan2(dy, dx)
+            angle_to_bot = bot_angle - player.angle
+            
+            # Normalize angle
+            while angle_to_bot > math.pi:
+                angle_to_bot -= 2 * math.pi
+            while angle_to_bot < -math.pi:
+                angle_to_bot += 2 * math.pi
+            
+            # Check if bot is in FOV
+            if abs(angle_to_bot) < HALF_FOV + 0.2:
+                # Check line of sight
+                has_los = True
+                steps = int(bot_dist * 10)
+                for i in range(1, steps):
+                    check_x = player.x + (dx * i / steps)
+                    check_y = player.y + (dy * i / steps)
+                    if self.game_map.is_wall(check_x, check_y):
+                        has_los = False
+                        break
+                
+                if has_los:
+                    bots_to_render.append((bot, bot_dist, angle_to_bot))
+        
+        # Sort bots by distance (far to near)
+        bots_to_render.sort(key=lambda x: x[1], reverse=True)
 
         for ray in range(NUM_RAYS):
             distance, wall_type, hit_bot = self.cast_ray_with_bots(
@@ -564,37 +834,70 @@ class Raycaster:
             )
 
             if hit_bot:
-                # Render bot
-                if distance > 0:
-                    sprite_height = min(SCREEN_HEIGHT, (SCREEN_HEIGHT / distance))
-                else:
-                    sprite_height = SCREEN_HEIGHT
-
-                # Bot color based on enemy type
-                base_color = hit_bot.type_data['color']
-                shade = max(0, 255 - int(distance * 25))
-                color = tuple(min(255, max(0, c * shade // 255)) for c in base_color)
-
-                sprite_top = (SCREEN_HEIGHT - sprite_height) // 2
-                # Add walk animation offset for humanoid appearance
-                walk_offset = int(math.sin(hit_bot.walk_animation) * 2)
-                pygame.draw.rect(screen, color, (ray * 2, sprite_top + walk_offset, 2, sprite_height))
+                # Skip bot rendering here - we'll render sprites separately
+                continue
 
             elif wall_type > 0:
-                # Render wall
+                # Render wall with texture
                 if distance > 0:
                     wall_height = min(SCREEN_HEIGHT, (SCREEN_HEIGHT / distance))
                 else:
                     wall_height = SCREEN_HEIGHT
 
-                color = WALL_COLORS.get(wall_type, GRAY)
+                base_color = WALL_COLORS.get(wall_type, GRAY)
                 shade = max(0, 255 - int(distance * 25))
-                color = tuple(min(255, max(0, c * shade // 255)) for c in color)
+                color = tuple(min(255, max(0, c * shade // 255)) for c in base_color)
 
                 wall_top = (SCREEN_HEIGHT - wall_height) // 2
+                
+                # Draw base wall color
                 pygame.draw.rect(screen, color, (ray * 2, wall_top, 2, wall_height))
+                
+                # Add texture pattern based on wall type and position
+                texture_pattern = (ray + int(distance * 10)) % 8
+                if texture_pattern < 4:  # Add texture stripes
+                    darker_color = tuple(max(0, c - 20) for c in color)
+                    # Vertical stripes for texture
+                    stripe_width = 1
+                    for stripe_y in range(int(wall_top), int(wall_top + wall_height), 4):
+                        pygame.draw.line(screen, darker_color, 
+                                        (ray * 2, stripe_y), 
+                                        (ray * 2, min(stripe_y + 2, int(wall_top + wall_height))), 1)
+                
+                # Add horizontal texture lines
+                if wall_type == 2 or wall_type == 3:  # Building walls get brick pattern
+                    for brick_y in range(int(wall_top), int(wall_top + wall_height), 8):
+                        darker_color = tuple(max(0, c - 15) for c in color)
+                        pygame.draw.line(screen, darker_color,
+                                        (ray * 2, brick_y),
+                                        (ray * 2 + 2, brick_y), 1)
 
             ray_angle += DELTA_ANGLE
+        
+        # Render enemy sprites (after walls, far to near)
+        for bot, bot_dist, angle_to_bot in bots_to_render:
+            # Calculate sprite size based on distance and enemy scale
+            base_sprite_size = SCREEN_HEIGHT / bot_dist if bot_dist > 0 else SCREEN_HEIGHT
+            sprite_size = base_sprite_size * bot.type_data.get('scale', 1.0)
+            
+            # Calculate sprite position on screen
+            sprite_x = SCREEN_WIDTH / 2 + (angle_to_bot / HALF_FOV) * SCREEN_WIDTH / 2 - sprite_size / 2
+            sprite_y = SCREEN_HEIGHT / 2 - sprite_size / 2
+            
+            # Apply distance shading
+            shade = max(0.4, 1.0 - bot_dist / MAX_DEPTH)
+            
+            # Create a temporary surface for the sprite
+            sprite_surface = pygame.Surface((int(sprite_size), int(sprite_size)), pygame.SRCALPHA)
+            self.render_enemy_sprite(sprite_surface, bot, 0, 0, sprite_size)
+            
+            # Apply shading by creating a dark overlay
+            shade_surface = pygame.Surface((int(sprite_size), int(sprite_size)))
+            shade_surface.fill((int(255 * shade), int(255 * shade), int(255 * shade)))
+            sprite_surface.blit(shade_surface, (0, 0), special_flags=pygame.BLEND_MULT)
+            
+            # Blit sprite to screen
+            screen.blit(sprite_surface, (int(sprite_x), int(sprite_y)))
 
     def render_floor_ceiling(self, screen: pygame.Surface):
         """Render floor and ceiling"""
@@ -696,7 +999,9 @@ class Game:
         self.running = True
 
         # Game state
-        self.state = "menu"  # menu, playing, game_over, level_complete
+        self.state = "intro"  # intro, menu, playing, game_over, level_complete
+        self.intro_scroll_y = SCREEN_HEIGHT
+        self.intro_start_time = 0
         self.level = 1
         self.kills = 0
         self.level_start_time = 0
@@ -707,6 +1012,7 @@ class Game:
         self.game_map = None  # Will be created with selected size
         self.player = None
         self.bots = []
+        self.projectiles = []  # Bot projectiles
         self.raycaster = None
 
         # Fonts
@@ -738,25 +1044,53 @@ class Game:
 
     def get_corner_positions(self) -> List[Tuple[float, float, float]]:
         """Get spawn positions for four corners (x, y, angle)
-        Ensures spawns are outside buildings, especially avoiding Building 4 in bottom-right
+        Ensures spawns are outside buildings and not inside rooms
         """
         offset = 5
         map_size = self.game_map.size if self.game_map else self.selected_map_size
         
+        # Try multiple positions near each corner to find one that's not in a building
+        def find_safe_spawn(base_x, base_y, angle):
+            """Find a safe spawn position near the base coordinates"""
+            if not self.game_map:
+                return (base_x, base_y, angle)
+            
+            for attempt in range(10):
+                # Try positions in a small radius around the corner
+                radius = attempt * 2
+                for angle_offset in [0, math.pi/4, math.pi/2, 3*math.pi/4, math.pi, 5*math.pi/4, 3*math.pi/2, 7*math.pi/4]:
+                    test_x = base_x + math.cos(angle_offset) * radius
+                    test_y = base_y + math.sin(angle_offset) * radius
+                    
+                    # Ensure within bounds
+                    if test_x < 2 or test_x >= map_size - 2 or test_y < 2 or test_y >= map_size - 2:
+                        continue
+                    
+                    # Check if not in building and not a wall
+                    if not self.game_map.is_wall(test_x, test_y) and not self.game_map.is_inside_building(test_x, test_y):
+                        return (test_x, test_y, angle)
+            
+            # Fallback to base position if all attempts fail
+            return (base_x, base_y, angle)
+        
         # Building 4 occupies 0.75 * size to 0.95 * size, so bottom-right spawn must be before 0.75 * size
-        # Use a larger safety margin to ensure spawn is well outside Building 4
         building4_start = int(map_size * 0.75)
-        # Calculate maximum spawn position (before Building 4 starts)
         max_spawn_position = building4_start - SPAWN_SAFETY_MARGIN
-        # Convert position to offset from map edge: offset = map_size - position
         bottom_right_offset = map_size - max_spawn_position
         
-        return [
+        corners = [
             (offset, offset, math.pi / 4),  # Top-left
             (offset, map_size - offset, 7 * math.pi / 4),  # Bottom-left
             (map_size - offset, offset, 3 * math.pi / 4),  # Top-right
-            (map_size - bottom_right_offset, map_size - bottom_right_offset, 5 * math.pi / 4),  # Bottom-right (outside Building 4)
+            (map_size - bottom_right_offset, map_size - bottom_right_offset, 5 * math.pi / 4),  # Bottom-right
         ]
+        
+        # Find safe spawns for each corner
+        safe_corners = []
+        for x, y, angle in corners:
+            safe_corners.append(find_safe_spawn(x, y, angle))
+        
+        return safe_corners
 
     def start_game(self):
         """Start new game"""
@@ -774,16 +1108,57 @@ class Game:
         corners = self.get_corner_positions()
         random.shuffle(corners)
 
-        # Player spawns in first corner
+        # Player spawns in first corner - ensure it's safe
         player_pos = corners[0]
+        # Double-check player spawn is safe
+        if self.game_map.is_wall(player_pos[0], player_pos[1]) or self.game_map.is_inside_building(player_pos[0], player_pos[1]):
+            # Find a nearby safe position
+            for attempt in range(20):
+                test_x = player_pos[0] + random.uniform(-3, 3)
+                test_y = player_pos[1] + random.uniform(-3, 3)
+                if (not self.game_map.is_wall(test_x, test_y) and 
+                    not self.game_map.is_inside_building(test_x, test_y) and
+                    2 <= test_x < self.game_map.size - 2 and 
+                    2 <= test_y < self.game_map.size - 2):
+                    player_pos = (test_x, test_y, player_pos[2])
+                    break
         self.player = Player(player_pos[0], player_pos[1], player_pos[2])
 
-        # Bots spawn in other three corners with random enemy types
+        # Bots spawn in other three corners - same enemy type per corner, 4-5 enemies per corner
         self.bots = []
+        self.projectiles = []  # Reset projectiles
+        enemies_per_corner = 4 + (self.level - 1)  # 4-5 enemies, increasing with level
+        
         for i in range(1, 4):
             bot_pos = corners[i]
+            # Same enemy type for all enemies in this corner
             enemy_type = random.choice(list(ENEMY_TYPES.keys()))
-            self.bots.append(Bot(bot_pos[0], bot_pos[1], self.level, enemy_type))
+            
+            # Spawn multiple enemies around this corner position
+            for j in range(enemies_per_corner):
+                # Spread enemies in a small radius around the corner
+                angle_offset = (j * 2 * math.pi / enemies_per_corner)
+                radius = 1.5 + (j % 2) * 0.5  # Alternate between close and slightly further
+                spawn_x = bot_pos[0] + math.cos(angle_offset) * radius
+                spawn_y = bot_pos[1] + math.sin(angle_offset) * radius
+                
+                # Ensure spawn is safe (not in wall, not in building, within bounds)
+                if (not self.game_map.is_wall(spawn_x, spawn_y) and 
+                    not self.game_map.is_inside_building(spawn_x, spawn_y) and
+                    2 <= spawn_x < self.game_map.size - 2 and 
+                    2 <= spawn_y < self.game_map.size - 2):
+                    self.bots.append(Bot(spawn_x, spawn_y, self.level, enemy_type))
+                else:
+                    # Try to find a nearby safe position
+                    for attempt in range(10):
+                        test_x = bot_pos[0] + random.uniform(-2, 2)
+                        test_y = bot_pos[1] + random.uniform(-2, 2)
+                        if (not self.game_map.is_wall(test_x, test_y) and 
+                            not self.game_map.is_inside_building(test_x, test_y) and
+                            2 <= test_x < self.game_map.size - 2 and 
+                            2 <= test_y < self.game_map.size - 2):
+                            self.bots.append(Bot(test_x, test_y, self.level, enemy_type))
+                            break
 
         self.state = "playing"
 
@@ -947,9 +1322,28 @@ class Game:
 
         self.player.update()
 
-        # Update bots
+        # Update bots and collect projectiles
         for bot in self.bots:
-            bot.update(self.game_map, self.player, self.bots)
+            projectile = bot.update(self.game_map, self.player, self.bots)
+            if projectile:
+                self.projectiles.append(projectile)
+        
+        # Update projectiles
+        for projectile in self.projectiles[:]:
+            projectile.update(self.game_map)
+            
+            # Check collision with player
+            if not projectile.is_player:
+                dx = projectile.x - self.player.x
+                dy = projectile.y - self.player.y
+                dist = math.sqrt(dx**2 + dy**2)
+                if dist < 0.5:  # Hit player
+                    self.player.take_damage(projectile.damage)
+                    projectile.alive = False
+            
+            # Remove dead projectiles
+            if not projectile.alive:
+                self.projectiles.remove(projectile)
 
     def render_menu(self):
         """Render main menu"""
@@ -1006,6 +1400,12 @@ class Game:
         # 3D view
         self.raycaster.render_floor_ceiling(self.screen)
         self.raycaster.render_3d(self.screen, self.player, self.bots)
+        
+        # Render projectiles
+        self.render_projectiles()
+
+        # Render projectiles
+        self.render_projectiles()
 
         # Render rifle
         self.render_rifle()
@@ -1141,6 +1541,41 @@ class Game:
         pygame.draw.circle(self.screen, YELLOW, (flash_x, flash_y), 25)
         pygame.draw.circle(self.screen, ORANGE, (flash_x, flash_y), 15)
         pygame.draw.circle(self.screen, WHITE, (flash_x, flash_y), 8)
+    
+    def render_projectiles(self):
+        """Render bot projectiles"""
+        for projectile in self.projectiles:
+            if not projectile.alive:
+                continue
+            
+            # Calculate projectile position relative to player
+            dx = projectile.x - self.player.x
+            dy = projectile.y - self.player.y
+            proj_dist = math.sqrt(dx**2 + dy**2)
+            
+            if proj_dist > MAX_DEPTH:
+                continue
+            
+            # Calculate angle to projectile
+            proj_angle = math.atan2(dy, dx)
+            angle_to_proj = proj_angle - self.player.angle
+            
+            # Normalize angle
+            while angle_to_proj > math.pi:
+                angle_to_proj -= 2 * math.pi
+            while angle_to_proj < -math.pi:
+                angle_to_proj += 2 * math.pi
+            
+            # Check if projectile is in FOV
+            if abs(angle_to_proj) < HALF_FOV:
+                # Calculate screen position
+                proj_size = max(2, 10 / proj_dist) if proj_dist > 0 else 10
+                proj_x = SCREEN_WIDTH / 2 + (angle_to_proj / HALF_FOV) * SCREEN_WIDTH / 2
+                proj_y = SCREEN_HEIGHT / 2
+                
+                # Draw projectile as a glowing circle
+                pygame.draw.circle(self.screen, RED, (int(proj_x), int(proj_y)), int(proj_size))
+                pygame.draw.circle(self.screen, ORANGE, (int(proj_x), int(proj_y)), int(proj_size * 0.6))
 
     def render_level_complete(self):
         """Render level complete screen"""
@@ -1235,7 +1670,10 @@ class Game:
     def run(self):
         """Main game loop"""
         while self.running:
-            if self.state == "menu":
+            if self.state == "intro":
+                self.handle_intro_events()
+                self.render_intro()
+            elif self.state == "menu":
                 self.handle_menu_events()
                 self.render_menu()
             elif self.state == "playing":
@@ -1243,11 +1681,94 @@ class Game:
                 self.update_game()
                 self.render_game()
             elif self.state == "level_complete":
+                self.handle_level_complete_events()
                 self.render_level_complete()
             elif self.state == "game_over":
+                self.handle_game_over_events()
                 self.render_game_over()
 
             self.clock.tick(FPS)
+    
+    def handle_intro_events(self):
+        """Handle intro screen events"""
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.running = False
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE or event.key == pygame.K_ESCAPE:
+                    self.state = "menu"
+                    self.intro_scroll_y = SCREEN_HEIGHT  # Reset for next time
+    
+    def render_intro(self):
+        """Render Star Wars style opening crawl"""
+        self.screen.fill(BLACK)
+        
+        # Star Wars style opening text
+        intro_text = [
+            "A long time ago in a galaxy",
+            "far, far away...",
+            "",
+            "",
+            "FORCE FIELD",
+            "",
+            "The arena has become a battleground",
+            "for the forces of darkness.",
+            "",
+            "Enemy hordes have invaded the",
+            "abandoned military complex,",
+            "seeking to claim it as their own.",
+            "",
+            "You are the last defender.",
+            "Armed with an arsenal of weapons,",
+            "you must fight through wave after",
+            "wave of increasingly powerful enemies.",
+            "",
+            "Each corner of the arena spawns",
+            "a different enemy type, united",
+            "in their goal to destroy you.",
+            "",
+            "Survive. Fight. Win.",
+            "",
+            "",
+            "The battle begins now..."
+        ]
+        
+        # Scroll text upward
+        if self.intro_start_time == 0:
+            self.intro_start_time = pygame.time.get_ticks()
+        
+        elapsed = (pygame.time.get_ticks() - self.intro_start_time) / 1000.0
+        scroll_speed = 50  # pixels per second
+        self.intro_scroll_y = SCREEN_HEIGHT - elapsed * scroll_speed
+        
+        # Render text
+        line_height = 40
+        start_y = self.intro_scroll_y
+        
+        for i, line in enumerate(intro_text):
+            y = start_y + i * line_height
+            
+            # Skip if off screen
+            if y < -line_height or y > SCREEN_HEIGHT + line_height:
+                continue
+            
+            if line == "FORCE FIELD":
+                # Title text - larger and yellow
+                text = self.title_font.render(line, True, YELLOW)
+                text_rect = text.get_rect(center=(SCREEN_WIDTH // 2, y))
+                self.screen.blit(text, text_rect)
+            elif line:
+                # Regular text - white
+                text = self.font.render(line, True, WHITE)
+                text_rect = text.get_rect(center=(SCREEN_WIDTH // 2, y))
+                self.screen.blit(text, text_rect)
+        
+        # Auto-advance to menu after text scrolls past
+        if self.intro_scroll_y < -len(intro_text) * line_height:
+            self.state = "menu"
+            self.intro_scroll_y = SCREEN_HEIGHT
+        
+        pygame.display.flip()
 
         pygame.quit()
         sys.exit()
