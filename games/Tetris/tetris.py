@@ -1202,7 +1202,8 @@ class TetrisGame:
                 self.current_piece.y += 1
                 self.score += 1
         elif action == "rotate" and self.valid_move(
-            self.current_piece, rotation_offset=1
+            self.current_piece,
+            rotation_offset=1,
         ):
             self.current_piece.rotate()
         elif action == "hard_drop":

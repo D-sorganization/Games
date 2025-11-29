@@ -20,7 +20,10 @@ class Bullet:
         self.is_player_bullet = is_player_bullet
         self.active = True
         self.rect = pygame.Rect(
-            x - BULLET_SIZE // 2, y - BULLET_SIZE // 2, BULLET_SIZE, BULLET_SIZE
+            x - BULLET_SIZE // 2,
+            y - BULLET_SIZE // 2,
+            BULLET_SIZE,
+            BULLET_SIZE,
         )
 
     def update(self, dungeon: Any) -> None:
@@ -37,20 +40,21 @@ class Bullet:
         self.rect.y = self.y - BULLET_SIZE // 2
 
         # Check if bullet hit wall or went out of bounds
-        if dungeon.is_wall(self.x, self.y):
-            self.active = False
-        elif self.x < GAME_AREA_X:
-            self.active = False
-        elif self.x > GAME_AREA_X + GAME_AREA_WIDTH:
-            self.active = False
-        elif self.y < GAME_AREA_Y:
-            self.active = False
-        elif self.y > GAME_AREA_Y + GAME_AREA_HEIGHT:
+        if (
+            dungeon.is_wall(self.x, self.y)
+            or self.x < GAME_AREA_X
+            or self.x > GAME_AREA_X + GAME_AREA_WIDTH
+            or self.y < GAME_AREA_Y
+            or self.y > GAME_AREA_Y + GAME_AREA_HEIGHT
+        ):
             self.active = False
 
     def draw(self, screen: pygame.Surface) -> None:
         """Draw the bullet."""
         if self.active:
             pygame.draw.circle(
-                screen, self.color, (int(self.x), int(self.y)), BULLET_SIZE // 2
+                screen,
+                self.color,
+                (int(self.x), int(self.y)),
+                BULLET_SIZE // 2,
             )
