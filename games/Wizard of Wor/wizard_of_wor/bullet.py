@@ -51,6 +51,4 @@ class Bullet:
     def draw(self, screen: pygame.Surface) -> None:
         """Draw the bullet."""
         if self.active:
-            pygame.draw.circle(
-                screen, self.color, (int(self.x), int(self.y)), BULLET_SIZE // 2
-            )
+            pygame.draw.circle(screen, self.color, (int(self.x), int(self.y)), BULLET_SIZE // 2)

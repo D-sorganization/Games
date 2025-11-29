@@ -24,9 +24,7 @@ class Dungeon:
 
         # Pre-rendered surfaces for speed and extra texture
         self.surface = pygame.Surface((GAME_AREA_WIDTH, GAME_AREA_HEIGHT))
-        self.grid_overlay = pygame.Surface(
-            (GAME_AREA_WIDTH, GAME_AREA_HEIGHT), pygame.SRCALPHA
-        )
+        self.grid_overlay = pygame.Surface((GAME_AREA_WIDTH, GAME_AREA_HEIGHT), pygame.SRCALPHA)
         self._render_background()
 
         # Pre-compute curated spawn cells reminiscent of arcade entryways
@@ -90,13 +88,9 @@ class Dungeon:
         # Floor grid to evoke arcade cabinet scanlines
         grid_color = (*SLATE, FLOOR_GRID_ALPHA)
         for i in range(0, GAME_AREA_HEIGHT, CELL_SIZE // 2):
-            pygame.draw.line(
-                self.grid_overlay, grid_color, (0, i), (GAME_AREA_WIDTH, i)
-            )
+            pygame.draw.line(self.grid_overlay, grid_color, (0, i), (GAME_AREA_WIDTH, i))
         for j in range(0, GAME_AREA_WIDTH, CELL_SIZE // 2):
-            pygame.draw.line(
-                self.grid_overlay, grid_color, (j, 0), (j, GAME_AREA_HEIGHT)
-            )
+            pygame.draw.line(self.grid_overlay, grid_color, (j, 0), (j, GAME_AREA_HEIGHT))
 
         # Walls with inner highlight
         for i in range(self.rows):
@@ -116,12 +110,8 @@ class Dungeon:
         for y in range(2, self.rows - 2):
             for x in range(2, self.cols - 2):
                 if self.grid[y][x] == 0:
-                    at_side_door = (
-                        x in (2, self.cols - 3) and abs(y - self.rows // 2) <= 2
-                    )
-                    near_center = (
-                        abs(x - self.cols // 2) <= 2 and abs(y - self.rows // 2) <= 4
-                    )
+                    at_side_door = x in (2, self.cols - 3) and abs(y - self.rows // 2) <= 2
+                    near_center = abs(x - self.cols // 2) <= 2 and abs(y - self.rows // 2) <= 4
                     corner_pad = (x, y) in {
                         (3, 3),
                         (3, self.rows - 4),
@@ -182,8 +172,7 @@ class Dungeon:
                 center = (self.cols // 2, self.rows // 2)
                 grid_x, grid_y = min(
                     empty_cells,
-                    key=lambda cell: abs(cell[0] - center[0])
-                    + abs(cell[1] - center[1]),
+                    key=lambda cell: abs(cell[0] - center[0]) + abs(cell[1] - center[1]),
                 )
             else:
                 grid_x, grid_y = self.cols // 2, self.rows // 2

@@ -13,9 +13,7 @@ def _draw_circle(
     surface: pygame.Surface, color: Color, position: tuple[float, float], radius: float
 ) -> None:
     """Draw a circle on the given surface."""
-    pygame.draw.circle(
-        surface, color, (int(position[0]), int(position[1])), int(radius)
-    )
+    pygame.draw.circle(surface, color, (int(position[0]), int(position[1])), int(radius))
 
 
 def _draw_text(
@@ -47,9 +45,7 @@ def _build_input_state() -> InputState:
     )
 
 
-def _render_world(
-    surface: pygame.Surface, world: GameWorld, hud_font: pygame.font.Font
-) -> None:
+def _render_world(surface: pygame.Surface, world: GameWorld, hud_font: pygame.font.Font) -> None:
     """Render the game world and HUD."""
     surface.fill((20, 16, 28))
 

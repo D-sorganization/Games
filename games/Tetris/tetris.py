@@ -116,9 +116,7 @@ class Particle:
 class ScorePopup:
     """Score notification popup"""
 
-    def __init__(
-        self, text: str, x: int, y: int, color: tuple[int, int, int] = GOLD
-    ) -> None:
+    def __init__(self, text: str, x: int, y: int, color: tuple[int, int, int] = GOLD) -> None:
         """Initialize score popup with text, position, and color"""
         self.text = text
         self.x = x
@@ -160,10 +158,7 @@ class Tetromino:
 
     def _rotate_clockwise(self, shape: list[list[int]]) -> list[list[int]]:
         """Rotate a shape 90 degrees clockwise"""
-        return [
-            [shape[y][x] for y in range(len(shape) - 1, -1, -1)]
-            for x in range(len(shape[0]))
-        ]
+        return [[shape[y][x] for y in range(len(shape) - 1, -1, -1)] for x in range(len(shape[0]))]
 
     def rotate(self) -> None:
         """Rotate the tetromino"""
@@ -515,9 +510,7 @@ class TetrisGame:
                 self.level = new_level
                 self.fall_speed = max(50, 500 - (self.level - 1) * 40)
                 # Level up popup
-                level_popup = ScorePopup(
-                    f"LEVEL {self.level}!", popup_x, popup_y - 40, SILVER
-                )
+                level_popup = ScorePopup(f"LEVEL {self.level}!", popup_x, popup_y - 40, SILVER)
                 self.score_popups.append(level_popup)
         else:
             # Reset combo if no lines cleared
@@ -548,9 +541,7 @@ class TetrisGame:
     def draw_grid(self) -> None:
         """Draw the game grid"""
         # Draw the play area background
-        pygame.draw.rect(
-            self.screen, DARK_GRAY, (TOP_LEFT_X, TOP_LEFT_Y, PLAY_WIDTH, PLAY_HEIGHT)
-        )
+        pygame.draw.rect(self.screen, DARK_GRAY, (TOP_LEFT_X, TOP_LEFT_Y, PLAY_WIDTH, PLAY_HEIGHT))
 
         # Draw the locked blocks
         for y in range(GRID_HEIGHT):
@@ -620,9 +611,7 @@ class TetrisGame:
 
     def draw_ghost_piece(self) -> None:
         """Draw a ghost piece showing where the current piece will land"""
-        ghost = Tetromino(
-            self.current_piece.x, self.current_piece.y, self.current_piece.shape_type
-        )
+        ghost = Tetromino(self.current_piece.x, self.current_piece.y, self.current_piece.shape_type)
         ghost.rotation = self.current_piece.rotation
 
         while self.valid_move(ghost, y_offset=1):
@@ -634,13 +623,9 @@ class TetrisGame:
                 if cell:
                     px = TOP_LEFT_X + (ghost.x + x) * GRID_SIZE
                     py = TOP_LEFT_Y + (ghost.y + y) * GRID_SIZE
-                    pygame.draw.rect(
-                        self.screen, GRAY, (px, py, GRID_SIZE - 1, GRID_SIZE - 1), 2
-                    )
+                    pygame.draw.rect(self.screen, GRAY, (px, py, GRID_SIZE - 1, GRID_SIZE - 1), 2)
 
-    def draw_mini_piece(
-        self, shape_type: str | None, x: int, y: int, size: int = 20
-    ) -> None:
+    def draw_mini_piece(self, shape_type: str | None, x: int, y: int, size: int = 20) -> None:
         """Draw a small preview piece"""
         if shape_type is None:
             return
@@ -845,9 +830,7 @@ class TetrisGame:
         self.screen.blit(settings_text, settings_rect)
 
         # Controls hint
-        hint_text = self.tiny_font.render(
-            "Use UP/DOWN arrows to select level", True, GRAY
-        )
+        hint_text = self.tiny_font.render("Use UP/DOWN arrows to select level", True, GRAY)
         hint_rect = hint_text.get_rect(center=(SCREEN_WIDTH // 2, 600))
         self.screen.blit(hint_text, hint_rect)
 
@@ -928,17 +911,13 @@ class TetrisGame:
         self.screen.blit(hint, hint_rect)
 
         if self.awaiting_controller_action:
-            action_label = self.controller_action_labels[
-                self.awaiting_controller_action
-            ]
+            action_label = self.controller_action_labels[self.awaiting_controller_action]
             waiting = self.small_font.render(
                 f"Waiting for input to bind {action_label}",
                 True,
                 YELLOW,
             )
-            waiting_rect = waiting.get_rect(
-                center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT - 100)
-            )
+            waiting_rect = waiting.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT - 100))
             self.screen.blit(waiting, waiting_rect)
 
     def draw(self) -> None:
@@ -978,13 +957,9 @@ class TetrisGame:
                         self.screen.blit(surf, (int(particle.x), int(particle.y)))
                 for popup in self.score_popups:
                     if popup.is_alive():
-                        text_surf = self.font_large.render(
-                            popup.text, True, popup.color
-                        )
+                        text_surf = self.font_large.render(popup.text, True, popup.color)
                         text_surf.set_alpha(popup.alpha)
-                        text_rect = text_surf.get_rect(
-                            center=(int(popup.x), int(popup.y))
-                        )
+                        text_rect = text_surf.get_rect(center=(int(popup.x), int(popup.y)))
                         self.screen.blit(text_surf, text_rect)
 
             if self.state == GameState.PAUSED:
@@ -995,9 +970,7 @@ class TetrisGame:
                 self.screen.blit(overlay, (0, 0))
 
                 pause_text = self.font_large.render("PAUSED", True, YELLOW)
-                pause_rect = pause_text.get_rect(
-                    center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2)
-                )
+                pause_rect = pause_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
                 self.screen.blit(pause_text, pause_rect)
 
         elif self.state == GameState.GAME_OVER:
@@ -1006,25 +979,15 @@ class TetrisGame:
             # Game over screen
             game_over_text = self.font_large.render("GAME OVER", True, RED)
             score_text = self.font.render(f"Final Score: {self.score}", True, WHITE)
-            lines_text = self.font.render(
-                f"Lines Cleared: {self.lines_cleared}", True, WHITE
-            )
+            lines_text = self.font.render(f"Lines Cleared: {self.lines_cleared}", True, WHITE)
             level_text = self.font.render(f"Final Level: {self.level}", True, WHITE)
 
             # Statistics
             stats_title = self.font.render("Line Clears:", True, GOLD)
-            single_text = self.small_font.render(
-                f"Singles: {self.total_singles}", True, WHITE
-            )
-            double_text = self.small_font.render(
-                f"Doubles: {self.total_doubles}", True, WHITE
-            )
-            triple_text = self.small_font.render(
-                f"Triples: {self.total_triples}", True, WHITE
-            )
-            tetris_text = self.small_font.render(
-                f"Tetrises: {self.total_tetrises}", True, CYAN
-            )
+            single_text = self.small_font.render(f"Singles: {self.total_singles}", True, WHITE)
+            double_text = self.small_font.render(f"Doubles: {self.total_doubles}", True, WHITE)
+            triple_text = self.small_font.render(f"Triples: {self.total_triples}", True, WHITE)
+            tetris_text = self.small_font.render(f"Tetrises: {self.total_tetrises}", True, CYAN)
 
             restart_text = self.small_font.render("Press R to Restart", True, GREEN)
 
@@ -1088,9 +1051,7 @@ class TetrisGame:
                 setattr(self, entry["key"], not current)
                 if entry["key"] == "allow_rewind":
                     self.rewind_history.clear()
-            elif (
-                entry["type"] == "mapping" and self.controller_enabled and self.joystick
-            ):
+            elif entry["type"] == "mapping" and self.controller_enabled and self.joystick:
                 self.awaiting_controller_action = entry["key"]
 
     def handle_input(self) -> None:
@@ -1130,9 +1091,7 @@ class TetrisGame:
                     pygame.time.wait(100)
 
         if move_right and move_right.get("type") == "hat":
-            if self.joystick.get_hat(int(move_right["index"])) == move_right.get(
-                "value"
-            ):
+            if self.joystick.get_hat(int(move_right["index"])) == move_right.get("value"):
                 if self.valid_move(self.current_piece, x_offset=1):
                     self.current_piece.x += 1
                     pygame.time.wait(100)
@@ -1173,11 +1132,7 @@ class TetrisGame:
     def trigger_action(self, action: str) -> None:
         """Execute an action from controller or keyboard"""
         if action == "pause" and self.state in [GameState.PLAYING, GameState.PAUSED]:
-            self.state = (
-                GameState.PAUSED
-                if self.state == GameState.PLAYING
-                else GameState.PLAYING
-            )
+            self.state = GameState.PAUSED if self.state == GameState.PLAYING else GameState.PLAYING
             return
 
         if action == "restart":
@@ -1201,9 +1156,7 @@ class TetrisGame:
             if self.valid_move(self.current_piece, y_offset=1):
                 self.current_piece.y += 1
                 self.score += 1
-        elif action == "rotate" and self.valid_move(
-            self.current_piece, rotation_offset=1
-        ):
+        elif action == "rotate" and self.valid_move(self.current_piece, rotation_offset=1):
             self.current_piece.rotate()
         elif action == "hard_drop":
             self.hard_drop()
@@ -1224,10 +1177,7 @@ class TetrisGame:
 
         if event.type == pygame.JOYBUTTONDOWN:
             for action, binding in self.controller_mapping.items():
-                if (
-                    binding.get("type") == "button"
-                    and binding.get("index") == event.button
-                ):
+                if binding.get("type") == "button" and binding.get("index") == event.button:
                     self.trigger_action(action)
         elif event.type == pygame.JOYHATMOTION:
             for action, binding in self.controller_mapping.items():
@@ -1265,11 +1215,7 @@ class TetrisGame:
             GameState.PLAYING,
             GameState.PAUSED,
         ]:
-            self.state = (
-                GameState.PAUSED
-                if self.state == GameState.PLAYING
-                else GameState.PLAYING
-            )
+            self.state = GameState.PAUSED if self.state == GameState.PLAYING else GameState.PLAYING
             return
 
         if self.state == GameState.GAME_OVER:

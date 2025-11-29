@@ -23,7 +23,7 @@ class Player:
         self.color = GREEN
         self.alive = True
         self.rect = pygame.Rect(
-            x - PLAYER_SIZE // 2, y - PLAYER_SIZE // 2, PLAYER_SIZE, PLAYER_SIZE
+            x - PLAYER_SIZE // 2, y - PLAYER_SIZE // 2, PLAYER_SIZE, PLAYER_SIZE,
         )
         self.shoot_cooldown = 0
         self.shoot_delay = 15  # Frames between shots
@@ -123,11 +123,9 @@ class Player:
 
             # Shield glow
             if self.invulnerable_timer > 0:
-                flash = 120 + 80 * math.sin(
-                    self.invulnerable_timer / PLAYER_SHIELD_FLASH
-                )
+                flash = 120 + 80 * math.sin(self.invulnerable_timer / PLAYER_SHIELD_FLASH)
                 glow_surface = pygame.Surface(
-                    (body_rect.width + 10, body_rect.height + 10), pygame.SRCALPHA
+                    (body_rect.width + 10, body_rect.height + 10), pygame.SRCALPHA,
                 )
                 pygame.draw.ellipse(
                     glow_surface,
