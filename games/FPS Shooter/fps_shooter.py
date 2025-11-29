@@ -1497,6 +1497,7 @@ class Game:
 
     def update_game(self) -> None:
         """Update game state"""
+        assert self.player is not None
         if not self.player.alive:
             self.state = "game_over"
             pygame.mouse.set_visible(True)
@@ -1651,6 +1652,7 @@ class Game:
         self.render_crosshair()
 
         # Muzzle flash
+        assert self.player is not None
         if self.player.shooting:
             self.render_muzzle_flash()
 
