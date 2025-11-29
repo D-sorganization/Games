@@ -1173,7 +1173,7 @@ class Game:
                 text = self.small_font.render(line, True, color)
                 text_rect = text.get_rect(center=(SCREEN_WIDTH // 2, y))
                 self.screen.blit(text, text_rect)
-                y += 40
+            y += 40  # Always increment y to create spacing, even for empty lines
 
         pygame.display.flip()
 
@@ -1218,7 +1218,7 @@ class Game:
                 text = self.small_font.render(line, True, color)
                 text_rect = text.get_rect(center=(SCREEN_WIDTH // 2, y))
                 self.screen.blit(text, text_rect)
-                y += 40
+            y += 40  # Always increment y to create spacing, even for empty lines
 
         pygame.display.flip()
 
