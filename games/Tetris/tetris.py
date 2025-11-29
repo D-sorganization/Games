@@ -221,7 +221,7 @@ class TetrisGame:
         }
 
         pygame.joystick.init()
-        self.joystick: pygame.joystick.Joystick | None = None
+        self.joystick: pygame.joystick.Joystick | None = None  # type: ignore[no-any-unimported]
         self.init_controller()
 
         self.restart_button = pygame.Rect(
@@ -1059,7 +1059,7 @@ class TetrisGame:
 
         pygame.display.flip()
 
-    def handle_menu_input(self, event: "pygame_event.Event") -> None:
+    def handle_menu_input(self, event: "pygame_event.Event") -> None:  # type: ignore[no-any-unimported]
         """Handle menu input"""
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_UP:
@@ -1076,7 +1076,7 @@ class TetrisGame:
             elif event.key == pygame.K_s:
                 self.state = GameState.SETTINGS
 
-    def handle_settings_input(self, event: "pygame_event.Event") -> None:
+    def handle_settings_input(self, event: "pygame_event.Event") -> None:  # type: ignore[no-any-unimported]
         """Handle settings menu input"""
         if event.type != pygame.KEYDOWN:
             return
@@ -1256,7 +1256,7 @@ class TetrisGame:
             if self.state in [GameState.PLAYING, GameState.PAUSED, GameState.GAME_OVER]:
                 self.restart_game()
 
-    def handle_keydown(self, event: "pygame_event.Event") -> None:
+    def handle_keydown(self, event: "pygame_event.Event") -> None:  # type: ignore[no-any-unimported]
         """Handle keydown events in active game states"""
         if event.key == pygame.K_r:
             self.restart_game()
@@ -1313,15 +1313,15 @@ class TetrisGame:
                     self.handle_mouse_input(event.pos)
 
                 if self.state == GameState.MENU:
-                    self.handle_menu_input(event)  # type: ignore[no-any-unimported]
+                    self.handle_menu_input(event)
                     continue
 
                 if self.state == GameState.SETTINGS:
-                    self.handle_settings_input(event)  # type: ignore[no-any-unimported]
+                    self.handle_settings_input(event)
                     continue
 
                 if event.type == pygame.KEYDOWN:
-                    self.handle_keydown(event)  # type: ignore[no-any-unimported]
+                    self.handle_keydown(event)
 
             if self.state == GameState.PLAYING:
                 self.handle_input()

@@ -5,7 +5,7 @@ Dungeon/Maze generation and management for Wizard of Wor.
 import random
 
 import pygame
-from constants import *
+from constants import *  # type: ignore[name-defined]  # noqa: F403, F405
 
 
 class Dungeon:
@@ -150,7 +150,7 @@ class Dungeon:
             return self.grid[grid_y][grid_x] == 1
         return True  # Out of bounds counts as wall
 
-    def can_move_to(self, rect: pygame.Rect) -> bool:
+    def can_move_to(self, rect: pygame.Rect) -> bool:  # type: ignore[no-any-unimported]
         """Check if a rectangle can move to a position without hitting walls."""
         # Check corners of the rectangle
         corners = [
@@ -194,7 +194,7 @@ class Dungeon:
         grid_x, grid_y = random.choice(source)
         return self._cell_to_world(grid_x, grid_y)
 
-    def draw(self, screen: pygame.Surface) -> None:
+    def draw(self, screen: pygame.Surface) -> None:  # type: ignore[no-any-unimported]
         """Draw the dungeon walls."""
         screen.blit(self.surface, (GAME_AREA_X, GAME_AREA_Y))
         screen.blit(self.grid_overlay, (GAME_AREA_X, GAME_AREA_Y))
