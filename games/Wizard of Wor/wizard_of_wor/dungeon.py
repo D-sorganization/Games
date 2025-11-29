@@ -11,7 +11,7 @@ from constants import *
 class Dungeon:
     """Manages the dungeon maze layout."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the dungeon with walls."""
         self.cols = GAME_AREA_WIDTH // CELL_SIZE
         self.rows = GAME_AREA_HEIGHT // CELL_SIZE
