@@ -404,7 +404,7 @@ class Player:
     def move(
         self,
         game_map: Map,
-        bots: List["Bot"],
+        bots: List[Bot],
         forward: bool = True,
         speed: float = PLAYER_SPEED,
     ) -> None:
@@ -442,7 +442,7 @@ class Player:
     def strafe(
         self,
         game_map: Map,
-        bots: List["Bot"],
+        bots: List[Bot],
         right: bool = True,
         speed: float = PLAYER_SPEED,
     ) -> None:
@@ -598,7 +598,7 @@ class Bot:
         self.shoot_animation = 0.0  # For shoot animation
 
     def update(
-        self, game_map: Map, player: Player, other_bots: List["Bot"]
+        self, game_map: Map, player: Player, other_bots: List[Bot]
     ) -> Optional[Projectile]:
         """Update bot AI
         Returns:
@@ -719,7 +719,7 @@ class Raycaster:
 
     def cast_ray(
         self, origin_x: float, origin_y: float, angle: float
-    ) -> Tuple[float, int, Optional["Bot"]]:
+    ) -> Tuple[float, int, Optional[Bot]]:
         """Cast a single ray and return distance, wall type, and hit bot"""
         sin_a = math.sin(angle)
         cos_a = math.cos(angle)
@@ -950,7 +950,7 @@ class Raycaster:
                 # Skip bot rendering here - we'll render sprites separately
                 continue
 
-            elif wall_type > 0:
+            if wall_type > 0:
                 # Render wall with texture
                 if distance > 0:
                     wall_height = min(SCREEN_HEIGHT, (SCREEN_HEIGHT / distance))
