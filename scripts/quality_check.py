@@ -12,9 +12,13 @@ BANNED_PATTERNS = [
     (re.compile(r"\bFIXME\b"), "FIXME placeholder found"),
     (re.compile(r"^\s*\.\.\.\s*$"), "Ellipsis placeholder"),
     (re.compile(r"NotImplementedError"), "NotImplementedError placeholder"),
-    # Match angle bracket placeholders like <description> but not comparison operators
-    # Require word characters or spaces inside, and not preceded/followed by space
-    (re.compile(r"<[A-Za-z_][A-Za-z0-9_\s]*>"), "Angle bracket placeholder"),
+    # Match angle bracket placeholders like <DESCRIPTION> or <your_value_here>
+    # Require uppercase letter or specific words to avoid matching comparison operators
+    # Examples: <TODO>, <FIXME>, <YOUR_NAME>, <insert_value_here>
+    (
+        re.compile(r"<(?:[A-Z_][A-Z0-9_]*|[a-z_]+_(?:here|value|name|description))>"),
+        "Angle bracket placeholder",
+    ),
     (re.compile(r"your.*here", re.IGNORECASE), "Template placeholder"),
     (re.compile(r"insert.*here", re.IGNORECASE), "Template placeholder"),
 ]
