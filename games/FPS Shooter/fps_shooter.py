@@ -1261,7 +1261,8 @@ class Game:
             # Fallback to base position if all attempts fail
             return (base_x, base_y, angle)
 
-        # Building 4 occupies 0.75 * size to 0.95 * size, so bottom-right spawn must be before 0.75 * size
+        # Building 4 occupies 0.75 * size to 0.95 * size,
+        # so bottom-right spawn must be before 0.75 * size
         # Calculate offset from map edge for bottom-right spawn (outside Building 4)
         building4_start = int(map_size * 0.75)
         bottom_right_offset = map_size - building4_start + SPAWN_SAFETY_MARGIN
