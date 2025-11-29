@@ -473,12 +473,14 @@ class GameWorld:
         """Apply a powerup effect to the player."""
         if powerup.kind == "sugar_rush":
             self.active_effects["sugar_rush"] = max(
-                powerup.duration, self.active_effects.get("sugar_rush", 0.0)
+                powerup.duration,
+                self.active_effects.get("sugar_rush", 0.0),
             )
             self.player.speed = self.base_player_speed * 1.25
         elif powerup.kind == "sticky_gloves":
             self.active_effects["sticky_gloves"] = max(
-                powerup.duration, self.active_effects.get("sticky_gloves", 0.0)
+                powerup.duration,
+                self.active_effects.get("sticky_gloves", 0.0),
             )
             self.config.swing_radius = self.base_swing_radius + 12
         elif powerup.kind == "free_shockwave":
@@ -544,7 +546,7 @@ class GameWorld:
                 reward=reward,
                 radius=radius,
                 kind=kind,
-            )
+            ),
         )
 
     @property

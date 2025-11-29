@@ -117,7 +117,11 @@ class ScorePopup:
     """Score notification popup"""
 
     def __init__(
-        self, text: str, x: int, y: int, color: tuple[int, int, int] = GOLD
+        self,
+        text: str,
+        x: int,
+        y: int,
+        color: tuple[int, int, int] = GOLD,
     ) -> None:
         """Initialize score popup with text, position, and color"""
         self.text = text
@@ -516,7 +520,10 @@ class TetrisGame:
                 self.fall_speed = max(50, 500 - (self.level - 1) * 40)
                 # Level up popup
                 level_popup = ScorePopup(
-                    f"LEVEL {self.level}!", popup_x, popup_y - 40, SILVER
+                    f"LEVEL {self.level}!",
+                    popup_x,
+                    popup_y - 40,
+                    SILVER,
                 )
                 self.score_popups.append(level_popup)
         else:
@@ -549,7 +556,9 @@ class TetrisGame:
         """Draw the game grid"""
         # Draw the play area background
         pygame.draw.rect(
-            self.screen, DARK_GRAY, (TOP_LEFT_X, TOP_LEFT_Y, PLAY_WIDTH, PLAY_HEIGHT)
+            self.screen,
+            DARK_GRAY,
+            (TOP_LEFT_X, TOP_LEFT_Y, PLAY_WIDTH, PLAY_HEIGHT),
         )
 
         # Draw the locked blocks
