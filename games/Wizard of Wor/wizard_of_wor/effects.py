@@ -36,7 +36,9 @@ class Footstep:
     layer = "floor"
 
     def __init__(
-        self, position: tuple[float, float], color: tuple[int, int, int]
+        self,
+        position: tuple[float, float],
+        color: tuple[int, int, int],
     ) -> None:
         """Initialize a footstep effect at the given position with the given color."""
         self.position = pygame.math.Vector2(position)
@@ -127,7 +129,10 @@ class MuzzleFlash:
         surface = pygame.Surface((radius * 2, radius * 2), pygame.SRCALPHA)
         pygame.draw.circle(surface, (255, 255, 170, alpha), (radius, radius), radius)
         pygame.draw.circle(
-            surface, (255, 255, 255, alpha), (radius, radius), radius // 2
+            surface,
+            (255, 255, 255, alpha),
+            (radius, radius),
+            radius // 2,
         )
         screen.blit(surface, (self.position.x - radius, self.position.y - radius))
 
@@ -169,7 +174,9 @@ class Vignette:
     _surface_cache: ClassVar[dict[tuple[int, int], pygame.Surface]] = {}
 
     def __init__(
-        self, size: tuple[int, int], top_left: tuple[int, int] = (0, 0)
+        self,
+        size: tuple[int, int],
+        top_left: tuple[int, int] = (0, 0),
     ) -> None:
         """Initialize a vignette effect with the given size and position."""
         self.top_left = top_left
