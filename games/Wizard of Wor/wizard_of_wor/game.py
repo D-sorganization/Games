@@ -290,7 +290,7 @@ class WizardOfWorGame:
                     took_damage = self.player.take_damage()
                     if took_damage:
                         self.effects.append(
-                            SparkleBurst((self.player.x, self.player.y), RED, count=16)
+                            SparkleBurst((self.player.x, self.player.y), RED, count=16),
                         )
                     break
 
