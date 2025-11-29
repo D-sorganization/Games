@@ -28,8 +28,8 @@ TILE_SIZE = 64
 MIN_BUILDING_OFFSET = 3  # Minimum offset from map edges for building generation
 
 # Player settings
-PLAYER_SPEED = 0.4  # Doubled from 0.2
-PLAYER_SPRINT_SPEED = 0.7  # Doubled from 0.35
+PLAYER_SPEED = 1   
+PLAYER_SPRINT_SPEED = 1.5  
 PLAYER_ROT_SPEED = 0.003
 FOV = math.pi / 3  # 60 degrees
 HALF_FOV = FOV / 2
@@ -84,7 +84,7 @@ BOT_PROJECTILE_DAMAGE = 15
 
 # Combat settings
 HEADSHOT_THRESHOLD = (
-    0.05  # Angle difference in radians for headshot detection (~2.86 degrees)
+    0.05  # Angle difference in radians for headshot detection (2.86 degrees)
 )
 SPAWN_SAFETY_MARGIN = 3  # Minimum tiles away from building start for spawn positions
 
