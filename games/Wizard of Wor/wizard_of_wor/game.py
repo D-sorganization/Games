@@ -37,11 +37,9 @@ from constants import (
 )
 from dungeon import Dungeon
 from effects import RadarPing, SparkleBurst, Vignette, VisualEffect
-from enemy import Burwor, Garwor, Thorwor, Wizard, Worluk
+from enemy import Burwor, Enemy, Garwor, Thorwor, Wizard, Worluk
 from player import Player
 from radar import Radar
-from bullet import Bullet
-from enemy import Enemy
 
 
 class SoundBoard:
@@ -101,8 +99,8 @@ class WizardOfWorGame:
         # Game objects
         self.dungeon = Dungeon()
         self.player: Player | None = None  # type: ignore[no-any-unimported]
-        self.enemies: list["Enemy"] = []  # type: ignore[no-any-unimported]
-        self.bullets: list["Bullet"] = []  # type: ignore[no-any-unimported]
+        self.enemies: list[Enemy] = []  # type: ignore[no-any-unimported]
+        self.bullets: list["Bullet"] = []  # type: ignore[name-defined]  # noqa: F821, UP037
         self.radar = Radar()
         self.wizard_spawned = False
         self.soundboard = SoundBoard()
@@ -192,11 +190,11 @@ class WizardOfWorGame:
                     if event.key == pygame.K_SPACE:
                         if self.player is not None:
                             bullet, muzzle = self.player.shoot()
-                        if bullet:
-                            self.bullets.append(bullet)
-                            if muzzle:
-                                self.effects.append(muzzle)
-                            self.soundboard.play("shot")
+                            if bullet:
+                                self.bullets.append(bullet)
+                                if muzzle:
+                                    self.effects.append(muzzle)
+                                self.soundboard.play("shot")
                     elif event.key == pygame.K_ESCAPE:
                         self.state = "menu"
 
