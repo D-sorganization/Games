@@ -63,7 +63,7 @@ class SoundBoard:
             "wizard": self._build_tone(300, 200),
         }
 
-    def _build_tone(self, frequency: int, duration_ms: int) -> pygame.mixer.Sound:
+    def _build_tone(self, frequency: int, duration_ms: int) -> pygame.mixer.Sound:  # type: ignore[no-any-unimported]
         """Build a tone sound effect with the given frequency and duration."""
         sample_rate = 22050
         sample_count = int(sample_rate * duration_ms / 1000)
@@ -119,7 +119,7 @@ class WizardOfWorGame:
         """Start a new level."""
         self.state = "playing"
         self.dungeon = Dungeon()
-        self.bullets= []
+        self.bullets = []
         self.wizard_spawned = False
         self.effects = []
 
@@ -130,7 +130,7 @@ class WizardOfWorGame:
         self.effects.append(SparkleBurst(player_pos, GREEN, count=14))
 
         # Spawn enemies based on level
-        self.enemies= []
+        self.enemies = []
         level_config = ENEMIES_PER_LEVEL.get(min(self.level, 5), ENEMIES_PER_LEVEL[5])
 
         for _ in range(level_config["burwor"]):
@@ -433,8 +433,8 @@ class WizardOfWorGame:
         if self.player is not None:
             if self.player.invulnerable_timer > 0:
                 shield_ratio = min(
-                1.0,
-                self.player.invulnerable_timer / RESPAWN_SHIELD_FRAMES,
+                    1.0,
+                    self.player.invulnerable_timer / RESPAWN_SHIELD_FRAMES,
                 )
             bar_width = 140
             bar_height = 10

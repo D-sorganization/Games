@@ -12,6 +12,7 @@ from bullet import Bullet
 from constants import *
 
 
+
 class Enemy:
     """Base enemy class."""
 
@@ -124,7 +125,7 @@ class Enemy:
         if self.spawn_flash > 0:
             self.spawn_flash -= 1
 
-    def try_shoot(self) -> Bullet | None:  # type: ignore[no-any-unimported]
+    def try_shoot(self) -> Bullet | None:
         """Try to shoot a bullet."""
         if self.can_shoot and self.shoot_timer <= 0 and self.alive:
             self.shoot_timer = random.randint(90, 240)
@@ -138,7 +139,7 @@ class Enemy:
         self.alive = False
         return int(self.points)
 
-    def draw(self, screen: pygame.Surface) -> None:
+    def draw(self, screen: pygame.Surface) -> None:  # type: ignore[no-any-unimported]
         """Draw the enemy."""
         if self.alive and self.visible:
             body_rect = pygame.Rect(self.rect)
@@ -252,7 +253,7 @@ class Wizard(Enemy):
             else:
                 self.direction = DOWN if dy > 0 else UP
 
-    def draw(self, screen: pygame.Surface) -> None:
+    def draw(self, screen: pygame.Surface) -> None:  # type: ignore[no-any-unimported]
         """Draw the wizard (only after appearance timer)."""
         if self.appearance_timer <= 0:
             super().draw(screen)
