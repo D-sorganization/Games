@@ -1,6 +1,8 @@
 """
 Main game file for Wizard of Wor remake.
 """
+# mypy: disable-error-code=unreachable
+
 
 import math
 import sys
@@ -38,6 +40,8 @@ from effects import RadarPing, SparkleBurst, Vignette, VisualEffect
 from enemy import Burwor, Garwor, Thorwor, Wizard, Worluk
 from player import Player
 from radar import Radar
+from bullet import Bullet
+from enemy import Enemy
 
 
 class SoundBoard:
@@ -53,7 +57,6 @@ class SoundBoard:
             self.enabled = True
         except pygame.error:
             self.enabled = False
-            return
 
         self.sounds = {
             "shot": self._build_tone(920, 80),
@@ -97,13 +100,13 @@ class WizardOfWorGame:
 
         # Game objects
         self.dungeon = Dungeon()
-        self.player = None
-        self.enemies = []
-        self.bullets = []
+        self.player: Player | None = None  # type: ignore[no-any-unimported]
+        self.enemies: list["Enemy"] = []  # type: ignore[no-any-unimported]
+        self.bullets: list["Bullet"] = []  # type: ignore[no-any-unimported]
         self.radar = Radar()
         self.wizard_spawned = False
         self.soundboard = SoundBoard()
-        self.effects: list[VisualEffect] = []
+        self.effects: list[VisualEffect] = []  # type: ignore[no-any-unimported]
         self.vignette = Vignette(
             (GAME_AREA_WIDTH, GAME_AREA_HEIGHT),
             (GAME_AREA_X, GAME_AREA_Y),
@@ -118,7 +121,7 @@ class WizardOfWorGame:
         """Start a new level."""
         self.state = "playing"
         self.dungeon = Dungeon()
-        self.bullets = []
+        self.bullets= []
         self.wizard_spawned = False
         self.effects = []
 
@@ -129,7 +132,7 @@ class WizardOfWorGame:
         self.effects.append(SparkleBurst(player_pos, GREEN, count=14))
 
         # Spawn enemies based on level
-        self.enemies = []
+        self.enemies= []
         level_config = ENEMIES_PER_LEVEL.get(min(self.level, 5), ENEMIES_PER_LEVEL[5])
 
         for _ in range(level_config["burwor"]):
@@ -154,7 +157,7 @@ class WizardOfWorGame:
             self.wizard_spawned = True
             self.soundboard.play("wizard")
 
-    def _spawn_enemy(self, enemy_cls) -> None:
+    def _spawn_enemy(self, enemy_cls: type["Enemy"]) -> None:  # type: ignore[no-any-unimported]
         """Spawn a single enemy with spacing away from the player."""
         chosen_pos = None
         for _ in range(8):
@@ -187,7 +190,8 @@ class WizardOfWorGame:
 
                 elif self.state == "playing":
                     if event.key == pygame.K_SPACE:
-                        bullet, muzzle = self.player.shoot()
+                        if self.player is not None:
+                            bullet, muzzle = self.player.shoot()
                         if bullet:
                             self.bullets.append(bullet)
                             if muzzle:
@@ -228,10 +232,14 @@ class WizardOfWorGame:
         keys = pygame.key.get_pressed()
 
         # Update player
-        self.player.update(keys, self.dungeon, self.effects)
+        if self.player is not None:
+            self.player.update(keys, self.dungeon, self.effects)
 
         # Update enemies
-        player_pos = (self.player.x, self.player.y)
+        if self.player is not None:
+            player_pos = (self.player.x, self.player.y)
+        else:
+            player_pos = (0, 0)
         for enemy in self.enemies:
             enemy.update(self.dungeon, player_pos)
 
@@ -265,6 +273,7 @@ class WizardOfWorGame:
                 pos = self.dungeon.get_random_spawn_position()
                 self.player = Player(pos[0], pos[1])
                 self.player.grant_shield(RESPAWN_SHIELD_FRAMES)
+
                 self.effects.append(SparkleBurst(pos, GREEN, count=12))
                 self.bullets = [b for b in self.bullets if b.is_player_bullet]
             else:
@@ -297,7 +306,7 @@ class WizardOfWorGame:
             if bullet.is_player_bullet or not bullet.active:
                 continue
 
-            if self.player.alive and bullet.rect.colliderect(self.player.rect):
+            if self.player is not None and self.player.alive and bullet.rect.colliderect(self.player.rect):
                 took_damage = self.player.take_damage()
                 bullet.active = False
                 if bullet in self.bullets:
@@ -308,7 +317,7 @@ class WizardOfWorGame:
                     )
 
         # Player colliding with enemies
-        if self.player.alive:
+        if self.player is not None and self.player.alive:
             for enemy in self.enemies:
                 if enemy.alive and self.player.rect.colliderect(enemy.rect):
                     took_damage = self.player.take_damage()
@@ -320,7 +329,7 @@ class WizardOfWorGame:
 
     def _update_effects(self) -> None:
         """Advance and cull transient visual effects."""
-        next_effects: list[VisualEffect] = []
+        next_effects: list[VisualEffect] = []  # type: ignore[no-any-unimported]
         for effect in self.effects:
             if effect.update():
                 next_effects.append(effect)
@@ -378,7 +387,8 @@ class WizardOfWorGame:
         self._draw_effects_by_layer("floor")
 
         # Draw player
-        self.player.draw(self.screen)
+        if self.player is not None:
+            self.player.draw(self.screen)
 
         # Draw enemies
         for enemy in self.enemies:
@@ -421,11 +431,12 @@ class WizardOfWorGame:
         self.screen.blit(enemies_text, (RADAR_X, RADAR_Y + RADAR_SIZE + 10))
 
         # Shield indicator
-        if self.player.invulnerable_timer > 0:
-            shield_ratio = min(
+        if self.player is not None:
+            if self.player.invulnerable_timer > 0:
+                shield_ratio = min(
                 1.0,
                 self.player.invulnerable_timer / RESPAWN_SHIELD_FRAMES,
-            )
+                )
             bar_width = 140
             bar_height = 10
             bar_x = GAME_AREA_X

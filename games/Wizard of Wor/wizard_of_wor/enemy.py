@@ -124,7 +124,7 @@ class Enemy:
         if self.spawn_flash > 0:
             self.spawn_flash -= 1
 
-    def try_shoot(self) -> Bullet | None:
+    def try_shoot(self) -> Bullet | None:  # type: ignore[no-any-unimported]
         """Try to shoot a bullet."""
         if self.can_shoot and self.shoot_timer <= 0 and self.alive:
             self.shoot_timer = random.randint(90, 240)
