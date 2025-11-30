@@ -48,7 +48,7 @@ class Footstep:
     def update(self) -> bool:
         """Update the footstep effect and return whether it's still alive."""
         self.life -= 1
-        return bool(self.life > 0)  # type: ignore[no-any-return]
+        return bool(self.life > 0)
 
     def draw(self, screen: pygame.Surface) -> None:  # type: ignore[no-any-unimported]
         """Draw the footstep effect on the screen."""
@@ -95,7 +95,7 @@ class SparkleBurst:
             position += velocity
             velocity *= decay
             self.particles[idx] = (position, velocity)
-        return bool(self.life > 0)  # type: ignore[no-any-return]
+        return bool(self.life > 0)
 
     def draw(self, screen: pygame.Surface) -> None:  # type: ignore[no-any-unimported]
         """Draw the sparkle burst particles on the screen."""
@@ -120,7 +120,7 @@ class MuzzleFlash:
     def update(self) -> bool:
         """Update the muzzle flash and return whether it's still alive."""
         self.life -= 1
-        return bool(self.life > 0)  # type: ignore[no-any-return]
+        return bool(self.life > 0)
 
     def draw(self, screen: pygame.Surface) -> None:  # type: ignore[no-any-unimported]
         """Draw the muzzle flash on the screen."""

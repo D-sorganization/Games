@@ -6,7 +6,7 @@ Dungeon/Maze generation and management for Wizard of Wor.
 import random
 
 import pygame
-from constants import *  # noqa: F403, F405
+from constants import *
 
 
 class Dungeon:

@@ -8,7 +8,31 @@ from array import array
 from typing import NoReturn
 
 import pygame
-from constants import *
+from constants import (
+    BLACK,
+    CELL_SIZE,
+    CYAN,
+    DARK_GRAY,
+    ENEMIES_PER_LEVEL,
+    FPS,
+    GAME_AREA_HEIGHT,
+    GAME_AREA_WIDTH,
+    GAME_AREA_X,
+    GAME_AREA_Y,
+    GREEN,
+    ORANGE,
+    PALE_YELLOW,
+    PLAYER_LIVES,
+    RADAR_SIZE,
+    RADAR_X,
+    RADAR_Y,
+    RED,
+    RESPAWN_SHIELD_FRAMES,
+    SCREEN_HEIGHT,
+    SCREEN_WIDTH,
+    WHITE,
+    YELLOW,
+)
 from dungeon import Dungeon
 from effects import RadarPing, SparkleBurst, Vignette, VisualEffect
 from enemy import Burwor, Garwor, Thorwor, Wizard, Worluk
@@ -57,7 +81,7 @@ class SoundBoard:
 class WizardOfWorGame:
     """Main game class."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the game."""
         pygame.init()
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))

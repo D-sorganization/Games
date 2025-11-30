@@ -9,13 +9,21 @@ from typing import Any
 
 import pygame
 from bullet import Bullet
-from constants import *  # noqa: F403, F405
+from constants import *
 
 
 class Enemy:
     """Base enemy class."""
 
-    def __init__(self, x, y, speed, color, points, enemy_type):
+    def __init__(
+        self,
+        x: float,
+        y: float,
+        speed: float,
+        color: tuple[int, int, int],
+        points: int,
+        enemy_type: str,
+    ) -> None:
         """Initialize enemy."""
         self.x = x
         self.y = y
@@ -128,7 +136,7 @@ class Enemy:
     def take_damage(self) -> int:
         """Enemy takes damage."""
         self.alive = False
-        return int(self.points)  # type: ignore[no-any-return]
+        return int(self.points)
 
     def draw(self, screen: pygame.Surface) -> None:  # type: ignore[no-any-unimported]
         """Draw the enemy."""
