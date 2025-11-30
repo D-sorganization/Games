@@ -236,10 +236,7 @@ class WizardOfWorGame:
             self.player.update(keys, self.dungeon, self.effects)
 
         # Update enemies
-        if self.player is not None:
-            player_pos = (self.player.x, self.player.y)
-        else:
-            player_pos = (0, 0)
+        player_pos = (self.player.x, self.player.y) if self.player is not None else (0, 0)
         for enemy in self.enemies:
             enemy.update(self.dungeon, player_pos)
 
@@ -306,7 +303,11 @@ class WizardOfWorGame:
             if bullet.is_player_bullet or not bullet.active:
                 continue
 
-            if self.player is not None and self.player.alive and bullet.rect.colliderect(self.player.rect):
+            if (
+                self.player is not None
+                and self.player.alive
+                and bullet.rect.colliderect(self.player.rect)
+            ):
                 took_damage = self.player.take_damage()
                 bullet.active = False
                 if bullet in self.bullets:
