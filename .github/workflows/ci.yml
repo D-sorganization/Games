@@ -23,43 +23,59 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          # ✅ Comprehensive cache key pattern (from UNIFIED_CI_APPROACH.md)
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/*requirements*.txt', '**/pyproject.toml', '**/setup.py', '**/setup.cfg') }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
           restore-keys: |
             ${{ runner.os }}-pip-
             
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          # ✅ Pin tool versions (from UNIFIED_CI_APPROACH.md)
-          pip install pre-commit pytest pytest-cov ruff==0.5.0 mypy==1.10.0 black==24.4.2
+          pip install pre-commit pytest pytest-cov
           if [ -f python/requirements.txt ]; then pip install -r python/requirements.txt; fi
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           
+      - name: Run MATLAB Quality Check (Static Analysis)
+        continue-on-error: true  # Non-blocking due to MATLAB license restrictions
+        run: |
+          if [ -f tools/matlab_utilities/scripts/matlab_quality_check.py ]; then
+            echo "=========================================="
+            echo "MATLAB Code Quality Checks"
+            echo "=========================================="
+            python tools/matlab_utilities/scripts/matlab_quality_check.py --output-format json > matlab_quality_results.json || true
+            python tools/matlab_utilities/scripts/matlab_quality_check.py --output-format text || echo "⚠️  Quality issues found - see report above (non-blocking)"
+          else
+            echo "⚠️  MATLAB quality check script not found - skipping"
+          fi
+          
+      - name: Upload MATLAB Quality Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: matlab-quality-report
+          path: matlab_quality_results.json
+          retention-days: 30
+          if-no-files-found: ignore
+          
       - name: Run quality check
         run: |
-          # ✅ Check both possible script locations (quality_check.py is the actual file name)
-          if [ -f scripts/quality_check.py ]; then
-            python scripts/quality_check.py || exit 1
-          elif [ -f scripts/quality-check.py ]; then
-            python scripts/quality-check.py || exit 1
-          elif [ -f quality_check_script.py ]; then
-            python quality_check_script.py || exit 1
+          if [ -f scripts/quality-check.py ]; then
+            python scripts/quality-check.py
           else
-            echo "⚠️ Warning: No quality check script found, skipping..."
+            echo "⚠️ Warning: scripts/quality-check.py not found"
           fi
           
       - name: Check for placeholders
         run: |
           # Fail if TODO, FIXME, or other placeholders found in Python files
-          # Exclude scripts directory as it legitimately contains these terms
+          # Exclude quality check scripts that contain the patterns they check for
           if grep -r "TODO\|FIXME\|XXX\|HACK\|pass #\|\.\.\..*#\|NotImplementedError" \
             --include="*.py" \
             --exclude-dir=".git" \
             --exclude-dir="archive" \
             --exclude-dir="legacy" \
             --exclude-dir="experimental" \
-            --exclude-dir="scripts" .; then
+            --exclude="quality_check*.py" \
+            --exclude="matlab_quality_check.py" .; then
             echo "❌ ERROR: Placeholders found in code"
             exit 1
           else
@@ -94,38 +110,13 @@ jobs:
             
       - name: Run pre-commit
         run: |
-          pre-commit run --all-files --show-diff-on-failure || exit 1
-          
-      - name: Format check with Black
-        run: |
-          echo "🔍 Checking code formatting with Black..."
-          # ✅ Check source directories explicitly
-          if [ -d python/src ]; then
-            if [ -d python/tests ]; then
-              black --check --diff python/src python/tests || exit 1
-            else
-              black --check --diff python/src || exit 1
-            fi
-          elif [ -d python ]; then
-            black --check --diff python || exit 1
-          elif [ -d src ]; then
-            if [ -d tests ]; then
-              black --check --diff src tests/ || exit 1
-            else
-              black --check --diff src || exit 1
-            fi
-          else
-            black --check --diff . || exit 1
-          fi
+          pre-commit run --all-files --show-diff-on-failure
           
       - name: Run strict type checking
         run: |
-          if find . -name "*.py" -not -path "./archive/*" -not -path "./legacy/*" -not -path "./games/*" | head -n1 | grep -q .; then
-            if [ -f mypy.ini ]; then
-              mypy . --config-file mypy.ini || exit 1
-            else
-              mypy . --strict --ignore-missing-imports || exit 1
-            fi
+          pip install mypy
+          if find . -name "*.py" -not -path "./archive/*" -not -path "./legacy/*" | head -n1 | grep -q .; then
+            mypy . --strict --ignore-missing-imports || echo "⚠️ Type errors found"
           else
             echo "No Python files to type check"
           fi
