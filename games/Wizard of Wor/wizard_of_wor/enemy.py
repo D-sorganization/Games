@@ -2,6 +2,7 @@
 Enemy characters for Wizard of Wor.
 """
 
+# mypy: disable-error-code=name-defined
 import math
 import random
 from typing import Any
@@ -14,7 +15,15 @@ from constants import *
 class Enemy:
     """Base enemy class."""
 
-    def __init__(self, x, y, speed, color, points, enemy_type):
+    def __init__(
+        self,
+        x: float,
+        y: float,
+        speed: float,
+        color: tuple[int, int, int],
+        points: int,
+        enemy_type: str,
+    ) -> None:
         """Initialize enemy."""
         self.x = x
         self.y = y
@@ -115,7 +124,7 @@ class Enemy:
         if self.spawn_flash > 0:
             self.spawn_flash -= 1
 
-    def try_shoot(self) -> Bullet | None:
+    def try_shoot(self) -> Bullet | None:  # type: ignore[no-any-unimported]
         """Try to shoot a bullet."""
         if self.can_shoot and self.shoot_timer <= 0 and self.alive:
             self.shoot_timer = random.randint(90, 240)
@@ -127,9 +136,9 @@ class Enemy:
     def take_damage(self) -> int:
         """Enemy takes damage."""
         self.alive = False
-        return self.points
+        return int(self.points)
 
-    def draw(self, screen: pygame.Surface) -> None:
+    def draw(self, screen: pygame.Surface) -> None:  # type: ignore[no-any-unimported]
         """Draw the enemy."""
         if self.alive and self.visible:
             body_rect = pygame.Rect(self.rect)
@@ -243,7 +252,7 @@ class Wizard(Enemy):
             else:
                 self.direction = DOWN if dy > 0 else UP
 
-    def draw(self, screen: pygame.Surface) -> None:
+    def draw(self, screen: pygame.Surface) -> None:  # type: ignore[no-any-unimported]
         """Draw the wizard (only after appearance timer)."""
         if self.appearance_timer <= 0:
             super().draw(screen)

@@ -5,13 +5,29 @@ Radar system for Wizard of Wor.
 from typing import Any
 
 import pygame
-from constants import *
+from constants import (
+    BLACK,
+    CYAN,
+    GAME_AREA_HEIGHT,
+    GAME_AREA_WIDTH,
+    GAME_AREA_X,
+    GAME_AREA_Y,
+    GRAY,
+    GREEN,
+    RADAR_PING_INTERVAL,
+    RADAR_SIZE,
+    RADAR_SWEEP_SPEED,
+    RADAR_X,
+    RADAR_Y,
+    SLATE,
+    WHITE,
+)
 
 
 class Radar:
     """Displays enemy positions on a mini-map."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize radar."""
         self.x = RADAR_X
         self.y = RADAR_Y
@@ -26,7 +42,7 @@ class Radar:
         if self.ping_timer <= 0:
             self.ping_timer = RADAR_PING_INTERVAL
 
-    def draw(self, screen: pygame.Surface, enemies: list[Any], player: Any) -> None:
+    def draw(self, screen: pygame.Surface, enemies: list[Any], player: Any) -> None:  # type: ignore[no-any-unimported]
         """Draw the radar with enemy positions."""
         # Draw radar background with cross hairs
         background = pygame.Rect(self.x, self.y, self.size, self.size)

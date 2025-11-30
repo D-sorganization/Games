@@ -163,9 +163,7 @@ class WorldStats:
 
 
 class GameWorld:
-    def __init__(
-        self, config: GameConfig | None = None, seed: int | None = 1337
-    ) -> None:
+    def __init__(self, config: GameConfig | None = None, seed: int | None = 1337) -> None:
         """Initialize the game world with the given configuration and random seed."""
         self.config = config or GameConfig()
         self.rng = random.Random(seed)
@@ -215,9 +213,7 @@ class GameWorld:
         if self.wave_timer <= 0 and self.stats.wave < self.config.max_wave:
             self.stats.wave += 1
             self.wave_timer = self.config.wave_duration
-            self.spawn_timer = max(
-                0.6, self.spawn_timer * (1 - self.config.spawn_acceleration)
-            )
+            self.spawn_timer = max(0.6, self.spawn_timer * (1 - self.config.spawn_acceleration))
 
     def _tick_cooldowns(self, dt: float) -> None:
         """Update all player ability cooldowns."""
@@ -230,9 +226,7 @@ class GameWorld:
     def _update_player(self, dt: float, input_state: InputState) -> None:
         """Update player position and handle ability usage."""
         direction = _normalize(input_state.move)
-        speed = (
-            self.config.dash_speed if self.player.dash_time > 0 else self.player.speed
-        )
+        speed = self.config.dash_speed if self.player.dash_time > 0 else self.player.speed
         self.player.position = self._clamped_position(
             _add(self.player.position, _scale(direction, speed * dt))
         )
@@ -278,10 +272,7 @@ class GameWorld:
         """Detonate a shockwave that damages all nearby enemies."""
         defeated: list[Enemy] = []
         for enemy in list(self.enemies):
-            if (
-                _distance(self.player.position, enemy.position)
-                <= self.config.shockwave_radius
-            ):
+            if _distance(self.player.position, enemy.position) <= self.config.shockwave_radius:
                 defeated.append(enemy)
                 self._register_kill(enemy)
         self._remove_enemies(defeated)
@@ -290,9 +281,7 @@ class GameWorld:
         """Move all enemies towards their primary targets."""
         for enemy in self.enemies:
             target = self._primary_target(enemy)
-            direction = _normalize(
-                (target[0] - enemy.position[0], target[1] - enemy.position[1])
-            )
+            direction = _normalize((target[0] - enemy.position[0], target[1] - enemy.position[1]))
             speed = enemy.speed * self._trap_slowdown(enemy)
             enemy.position = self._clamped_position(
                 _add(enemy.position, _scale(direction, speed * dt))
@@ -302,9 +291,7 @@ class GameWorld:
         """Determine the primary target for an enemy (nearest sandwich or player)."""
         living = [s for s in self.sandwiches if s.alive]
         if living:
-            return min(
-                living, key=lambda s: _distance(s.position, enemy.position)
-            ).position
+            return min(living, key=lambda s: _distance(s.position, enemy.position)).position
         return self.player.position
 
     def _trap_slowdown(self, enemy: Enemy) -> float:
@@ -327,23 +314,17 @@ class GameWorld:
             else:
                 self.player.health = max(0, self.player.health - enemy.damage)
         self.enemies = surviving_enemies
-        self.stats.sandwiches_saved = sum(
-            1 for sandwich in self.sandwiches if sandwich.alive
-        )
+        self.stats.sandwiches_saved = sum(1 for sandwich in self.sandwiches if sandwich.alive)
 
     def _find_hit_target(self, enemy: Enemy) -> Sandwich | Player | None:
         """Find the target that an enemy would hit (sandwich or player)."""
         for sandwich in self.sandwiches:
             if (
                 sandwich.alive
-                and _distance(sandwich.position, enemy.position)
-                <= sandwich.radius + enemy.radius
+                and _distance(sandwich.position, enemy.position) <= sandwich.radius + enemy.radius
             ):
                 return sandwich
-        if (
-            _distance(self.player.position, enemy.position)
-            <= self.player.radius + enemy.radius
-        ):
+        if _distance(self.player.position, enemy.position) <= self.player.radius + enemy.radius:
             return self.player
         return None
 
@@ -457,9 +438,7 @@ class GameWorld:
         self.stats.combo_timer = self.config.combo_window
         multiplier = 1 + (self.stats.combo - 1) * self.config.combo_bonus
         self.stats.score += int(enemy.reward * multiplier)
-        self.stats.sandwiches_saved = sum(
-            1 for sandwich in self.sandwiches if sandwich.alive
-        )
+        self.stats.sandwiches_saved = sum(1 for sandwich in self.sandwiches if sandwich.alive)
         if self.rng.random() <= self.config.powerup_chance:
             self._drop_powerup(enemy.position)
 
@@ -473,12 +452,14 @@ class GameWorld:
         """Apply a powerup effect to the player."""
         if powerup.kind == "sugar_rush":
             self.active_effects["sugar_rush"] = max(
-                powerup.duration, self.active_effects.get("sugar_rush", 0.0)
+                powerup.duration,
+                self.active_effects.get("sugar_rush", 0.0),
             )
             self.player.speed = self.base_player_speed * 1.25
         elif powerup.kind == "sticky_gloves":
             self.active_effects["sticky_gloves"] = max(
-                powerup.duration, self.active_effects.get("sticky_gloves", 0.0)
+                powerup.duration,
+                self.active_effects.get("sticky_gloves", 0.0),
             )
             self.config.swing_radius = self.base_swing_radius + 12
         elif powerup.kind == "free_shockwave":
@@ -487,9 +468,7 @@ class GameWorld:
     def _remove_enemies(self, defeated: Iterable[Enemy]) -> None:
         """Remove defeated enemies from the enemy list."""
         defeated_ids = {id(enemy) for enemy in defeated}
-        self.enemies = [
-            enemy for enemy in self.enemies if id(enemy) not in defeated_ids
-        ]
+        self.enemies = [enemy for enemy in self.enemies if id(enemy) not in defeated_ids]
 
     def _clamped_position(self, position: Vec2) -> Vec2:
         """Clamp a position to stay within the game world bounds."""
@@ -544,7 +523,7 @@ class GameWorld:
                 reward=reward,
                 radius=radius,
                 kind=kind,
-            )
+            ),
         )
 
     @property

@@ -26,7 +26,7 @@ class VisualEffect(Protocol):
     def update(self) -> bool:
         """Return True while the effect should stay alive."""
 
-    def draw(self, screen: pygame.Surface) -> None:
+    def draw(self, screen: pygame.Surface) -> None:  # type: ignore[no-any-unimported]
         """Render the effect on screen."""
 
 
@@ -48,9 +48,9 @@ class Footstep:
     def update(self) -> bool:
         """Update the footstep effect and return whether it's still alive."""
         self.life -= 1
-        return self.life > 0
+        return bool(self.life > 0)
 
-    def draw(self, screen: pygame.Surface) -> None:
+    def draw(self, screen: pygame.Surface) -> None:  # type: ignore[no-any-unimported]
         """Draw the footstep effect on the screen."""
         alpha = max(40, int(180 * (self.life / FOOTSTEP_INTERVAL)))
         radius = 6
@@ -77,7 +77,7 @@ class SparkleBurst:
         """Initialize a sparkle burst effect at the given position."""
         self.color = color
         self.life = SPARKLE_LIFETIME
-        self.particles: list[tuple[pygame.math.Vector2, pygame.math.Vector2]] = []
+        self.particles: list[tuple[pygame.math.Vector2, pygame.math.Vector2]] = []  # type: ignore[no-any-unimported]
         center = pygame.math.Vector2(position)
 
         for _ in range(count):
@@ -95,9 +95,9 @@ class SparkleBurst:
             position += velocity
             velocity *= decay
             self.particles[idx] = (position, velocity)
-        return self.life > 0
+        return bool(self.life > 0)
 
-    def draw(self, screen: pygame.Surface) -> None:
+    def draw(self, screen: pygame.Surface) -> None:  # type: ignore[no-any-unimported]
         """Draw the sparkle burst particles on the screen."""
         alpha = max(60, int(255 * (self.life / SPARKLE_LIFETIME)))
         radius = 2
@@ -120,9 +120,9 @@ class MuzzleFlash:
     def update(self) -> bool:
         """Update the muzzle flash and return whether it's still alive."""
         self.life -= 1
-        return self.life > 0
+        return bool(self.life > 0)
 
-    def draw(self, screen: pygame.Surface) -> None:
+    def draw(self, screen: pygame.Surface) -> None:  # type: ignore[no-any-unimported]
         """Draw the muzzle flash on the screen."""
         alpha = max(100, int(255 * (self.life / MUZZLE_FLASH_TIME)))
         radius = 8
@@ -150,9 +150,9 @@ class RadarPing:
     def update(self) -> bool:
         """Update the radar ping and return whether it's still alive."""
         self.life -= 1
-        return self.life > 0
+        return bool(self.life > 0)
 
-    def draw(self, screen: pygame.Surface) -> None:
+    def draw(self, screen: pygame.Surface) -> None:  # type: ignore[no-any-unimported]
         """Draw the radar ping on the screen."""
         progress = 1 - (self.life / RADAR_PING_INTERVAL)
         radius = int(progress * 40)
@@ -171,7 +171,7 @@ class Vignette:
 
     layer = "overlay"
 
-    _surface_cache: ClassVar[dict[tuple[int, int], pygame.Surface]] = {}
+    _surface_cache: ClassVar[dict[tuple[int, int], pygame.Surface]] = {}  # type: ignore[no-any-unimported]
 
     def __init__(
         self,
@@ -201,6 +201,6 @@ class Vignette:
         """Update the vignette effect (always returns True as it's persistent)."""
         return True
 
-    def draw(self, screen: pygame.Surface) -> None:
+    def draw(self, screen: pygame.Surface) -> None:  # type: ignore[no-any-unimported]
         """Draw the vignette effect on the screen."""
         screen.blit(self.surface, self.top_left, special_flags=pygame.BLEND_RGBA_MULT)

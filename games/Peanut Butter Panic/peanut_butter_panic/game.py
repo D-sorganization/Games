@@ -9,16 +9,22 @@ from .core import GameConfig, GameWorld, InputState
 Color = tuple[int, int, int]
 
 
-def _draw_circle(
-    surface: pygame.Surface, color: Color, position: tuple[float, float], radius: float
+def _draw_circle(  # type: ignore[no-any-unimported]
+    surface: pygame.Surface,
+    color: Color,
+    position: tuple[float, float],
+    radius: float,
 ) -> None:
     """Draw a circle on the given surface."""
     pygame.draw.circle(
-        surface, color, (int(position[0]), int(position[1])), int(radius)
+        surface,
+        color,
+        (int(position[0]), int(position[1])),
+        int(radius),
     )
 
 
-def _draw_text(
+def _draw_text(  # type: ignore[no-any-unimported]
     surface: pygame.Surface,
     text: str,
     position: tuple[int, int],
@@ -33,10 +39,10 @@ def _build_input_state() -> InputState:
     """Build the input state from current keyboard input."""
     keys = pygame.key.get_pressed()
     move_x = float(keys[pygame.K_d] or keys[pygame.K_RIGHT]) - float(
-        keys[pygame.K_a] or keys[pygame.K_LEFT]
+        keys[pygame.K_a] or keys[pygame.K_LEFT],
     )
     move_y = float(keys[pygame.K_s] or keys[pygame.K_DOWN]) - float(
-        keys[pygame.K_w] or keys[pygame.K_UP]
+        keys[pygame.K_w] or keys[pygame.K_UP],
     )
     return InputState(
         move=(move_x, move_y),
@@ -47,8 +53,10 @@ def _build_input_state() -> InputState:
     )
 
 
-def _render_world(
-    surface: pygame.Surface, world: GameWorld, hud_font: pygame.font.Font
+def _render_world(  # type: ignore[no-any-unimported]
+    surface: pygame.Surface,
+    world: GameWorld,
+    hud_font: pygame.font.Font,
 ) -> None:
     """Render the game world and HUD."""
     surface.fill((20, 16, 28))

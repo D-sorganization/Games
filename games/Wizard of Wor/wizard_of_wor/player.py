@@ -7,14 +7,29 @@ from typing import Any
 
 import pygame
 from bullet import Bullet
-from constants import *
+from constants import (
+    BLACK,
+    DOWN,
+    FOOTSTEP_INTERVAL,
+    GREEN,
+    LEFT,
+    PALE_YELLOW,
+    PLAYER_ANIMATION_SPEED,
+    PLAYER_SHIELD_FLASH,
+    PLAYER_SIZE,
+    PLAYER_SPEED,
+    RIGHT,
+    UP,
+    WHITE,
+    YELLOW,
+)
 from effects import Footstep, MuzzleFlash
 
 
 class Player:
     """Player character that can move and shoot."""
 
-    def __init__(self, x, y):
+    def __init__(self, x: float, y: float) -> None:
         """Initialize player at position."""
         self.x = x
         self.y = y
@@ -96,7 +111,7 @@ class Player:
         if self.invulnerable_timer > 0:
             self.invulnerable_timer -= 1
 
-    def shoot(self) -> tuple[Bullet, MuzzleFlash] | tuple[None, None]:
+    def shoot(self) -> tuple[Bullet, MuzzleFlash] | tuple[None, None]:  # type: ignore[no-any-unimported]
         """Create a bullet if cooldown allows."""
         if self.shoot_cooldown == 0 and self.alive:
             self.shoot_cooldown = self.shoot_delay
@@ -118,7 +133,7 @@ class Player:
         """Grant temporary invulnerability."""
         self.invulnerable_timer = max(self.invulnerable_timer, frames)
 
-    def draw(self, screen: pygame.Surface) -> None:
+    def draw(self, screen: pygame.Surface) -> None:  # type: ignore[no-any-unimported]
         """Draw the player."""
         if self.alive:
             body_rect = pygame.Rect(self.rect)

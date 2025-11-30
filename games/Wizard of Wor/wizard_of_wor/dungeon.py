@@ -2,6 +2,7 @@
 Dungeon/Maze generation and management for Wizard of Wor.
 """
 
+# mypy: disable-error-code=name-defined
 import random
 
 import pygame
@@ -11,7 +12,7 @@ from constants import *
 class Dungeon:
     """Manages the dungeon maze layout."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the dungeon with walls."""
         self.cols = GAME_AREA_WIDTH // CELL_SIZE
         self.rows = GAME_AREA_HEIGHT // CELL_SIZE
@@ -123,12 +124,8 @@ class Dungeon:
         for y in range(2, self.rows - 2):
             for x in range(2, self.cols - 2):
                 if self.grid[y][x] == 0:
-                    at_side_door = (
-                        x in (2, self.cols - 3) and abs(y - self.rows // 2) <= 2
-                    )
-                    near_center = (
-                        abs(x - self.cols // 2) <= 2 and abs(y - self.rows // 2) <= 4
-                    )
+                    at_side_door = x in (2, self.cols - 3) and abs(y - self.rows // 2) <= 2
+                    near_center = abs(x - self.cols // 2) <= 2 and abs(y - self.rows // 2) <= 4
                     corner_pad = (x, y) in {
                         (3, 3),
                         (3, self.rows - 4),
@@ -154,7 +151,7 @@ class Dungeon:
             return self.grid[grid_y][grid_x] == 1
         return True  # Out of bounds counts as wall
 
-    def can_move_to(self, rect: pygame.Rect) -> bool:
+    def can_move_to(self, rect: pygame.Rect) -> bool:  # type: ignore[no-any-unimported]
         """Check if a rectangle can move to a position without hitting walls."""
         # Check corners of the rectangle
         corners = [
@@ -189,8 +186,7 @@ class Dungeon:
                 center = (self.cols // 2, self.rows // 2)
                 grid_x, grid_y = min(
                     empty_cells,
-                    key=lambda cell: abs(cell[0] - center[0])
-                    + abs(cell[1] - center[1]),
+                    key=lambda cell: abs(cell[0] - center[0]) + abs(cell[1] - center[1]),
                 )
             else:
                 grid_x, grid_y = self.cols // 2, self.rows // 2
@@ -199,7 +195,7 @@ class Dungeon:
         grid_x, grid_y = random.choice(source)
         return self._cell_to_world(grid_x, grid_y)
 
-    def draw(self, screen: pygame.Surface) -> None:
+    def draw(self, screen: pygame.Surface) -> None:  # type: ignore[no-any-unimported]
         """Draw the dungeon walls."""
         screen.blit(self.surface, (GAME_AREA_X, GAME_AREA_Y))
         screen.blit(self.grid_overlay, (GAME_AREA_X, GAME_AREA_Y))
