@@ -217,9 +217,7 @@ def main() -> None:
         ".ipynb_checkpoints",  # Add checkpoint files to exclusion
         ".Trash",  # Add trash files to exclusion
     }
-    python_files = [
-        f for f in python_files if not any(part in exclude_dirs for part in f.parts)
-    ]
+    python_files = [f for f in python_files if not any(part in exclude_dirs for part in f.parts)]
 
     # Exclude quality check scripts themselves (they contain the patterns they check for)
     # Match exact filenames (with both underscore and hyphen variants)
@@ -230,10 +228,7 @@ def main() -> None:
         "quality-check-script.py",
         "matlab_quality_check.py",  # Checks for placeholders, contains patterns it checks for
     ]
-    python_files = [
-        f for f in python_files
-        if f.name not in excluded_script_names
-    ]
+    python_files = [f for f in python_files if f.name not in excluded_script_names]
 
     all_issues = []
     for filepath in python_files:
