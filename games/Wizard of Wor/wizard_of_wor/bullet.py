@@ -5,13 +5,21 @@ Bullet/Projectile system for Wizard of Wor.
 from typing import Any
 
 import pygame
-from constants import *
+from constants import (
+    BULLET_SIZE,
+    BULLET_SPEED,
+    GAME_AREA_HEIGHT,
+    GAME_AREA_WIDTH,
+    GAME_AREA_X,
+    GAME_AREA_Y,
+    YELLOW,
+)
 
 
 class Bullet:
     """Represents a bullet shot by player or enemy."""
 
-    def __init__(self, x, y, direction, color=YELLOW, is_player_bullet=True):
+    def __init__(self, x: float, y: float, direction: tuple[float, float], color: tuple[int, int, int] = YELLOW, is_player_bullet: bool = True) -> None:
         """Initialize bullet at position with direction."""
         self.x = x
         self.y = y
@@ -49,7 +57,7 @@ class Bullet:
         ):
             self.active = False
 
-    def draw(self, screen: pygame.Surface) -> None:
+    def draw(self, screen: pygame.Surface) -> None:  # type: ignore[no-any-unimported]
         """Draw the bullet."""
         if self.active:
             pygame.draw.circle(
