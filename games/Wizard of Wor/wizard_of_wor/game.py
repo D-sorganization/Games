@@ -1,6 +1,7 @@
 """
 Main game file for Wizard of Wor remake.
 """
+
 # mypy: disable-error-code=unreachable
 
 
@@ -48,7 +49,7 @@ class SoundBoard:
     def __init__(self) -> None:
         """Initialize the tone generator for arcade-style sound effects."""
         self.enabled = False
-        self.sounds: dict[str, pygame.mixer.Sound] = {}
+        self.sounds: dict[str, pygame.mixer.Sound] = {}  # type: ignore[no-any-unimported]
         try:
             if not pygame.mixer.get_init():
                 pygame.mixer.init(frequency=22050, size=-16, channels=1)
