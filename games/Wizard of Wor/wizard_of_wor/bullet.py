@@ -19,7 +19,14 @@ from constants import (
 class Bullet:
     """Represents a bullet shot by player or enemy."""
 
-    def __init__(self, x: float, y: float, direction: tuple[float, float], color: tuple[int, int, int] = YELLOW, is_player_bullet: bool = True) -> None:
+    def __init__(
+        self,
+        x: float,
+        y: float,
+        direction: tuple[float, float],
+        color: tuple[int, int, int] = YELLOW,
+        is_player_bullet: bool = True,
+    ) -> None:
         """Initialize bullet at position with direction."""
         self.x = x
         self.y = y
