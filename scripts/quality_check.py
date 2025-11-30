@@ -12,13 +12,7 @@ BANNED_PATTERNS = [
     (re.compile(r"\bFIXME\b"), "FIXME placeholder found"),
     (re.compile(r"^\s*\.\.\.\s*$"), "Ellipsis placeholder"),
     (re.compile(r"NotImplementedError"), "NotImplementedError placeholder"),
-    # Match angle bracket placeholders like <DESCRIPTION> or <your_value_here>
-    # Require uppercase letter or specific words to avoid matching comparison operators
-    # Examples: <TODO>, <FIXME>, <YOUR_NAME>, <insert_value_here>
-    (
-        re.compile(r"<(?:[A-Z_][A-Z0-9_]*|[a-z_]+_(?:here|value|name|description))>"),
-        "Angle bracket placeholder",
-    ),
+    (re.compile(r"<.*>"), "Angle bracket placeholder"),
     (re.compile(r"your.*here", re.IGNORECASE), "Template placeholder"),
     (re.compile(r"insert.*here", re.IGNORECASE), "Template placeholder"),
 ]
@@ -110,7 +104,15 @@ def check_banned_patterns(
     """Check for banned patterns in lines."""
     issues: list[tuple[int, str, str]] = []
     # Skip checking this file for its own patterns
-    if filepath.name in ["quality_check_script.py", "quality_check.py"]:
+    # Match exact filenames (with both underscore and hyphen variants)
+    excluded_names = [
+        "quality_check_script.py",
+        "quality_check.py",
+        "quality-check.py",
+        "quality-check-script.py",
+        "matlab_quality_check.py",  # Checks for placeholders, contains patterns it checks for
+    ]
+    if filepath.name in excluded_names:
         return issues
 
     for line_num, line in enumerate(lines, 1):
@@ -139,7 +141,15 @@ def check_magic_numbers(lines: list[str], filepath: Path) -> list[tuple[int, str
     """Check for magic numbers in lines."""
     issues: list[tuple[int, str, str]] = []
     # Skip checking this file for magic numbers
-    if filepath.name in ["quality_check_script.py", "quality_check.py"]:
+    # Match exact filenames (with both underscore and hyphen variants)
+    excluded_names = [
+        "quality_check_script.py",
+        "quality_check.py",
+        "quality-check.py",
+        "quality-check-script.py",
+        "matlab_quality_check.py",  # Checks for placeholders, contains patterns it checks for
+    ]
+    if filepath.name in excluded_names:
         return issues
     for line_num, line in enumerate(lines, 1):
         line_content = line[: line.index("#")] if "#" in line else line
@@ -207,7 +217,23 @@ def main() -> None:
         ".ipynb_checkpoints",  # Add checkpoint files to exclusion
         ".Trash",  # Add trash files to exclusion
     }
-    python_files = [f for f in python_files if not any(part in exclude_dirs for part in f.parts)]
+    python_files = [
+        f for f in python_files if not any(part in exclude_dirs for part in f.parts)
+    ]
+
+    # Exclude quality check scripts themselves (they contain the patterns they check for)
+    # Match exact filenames (with both underscore and hyphen variants)
+    excluded_script_names = [
+        "quality_check.py",
+        "quality_check_script.py",
+        "quality-check.py",
+        "quality-check-script.py",
+        "matlab_quality_check.py",  # Checks for placeholders, contains patterns it checks for
+    ]
+    python_files = [
+        f for f in python_files
+        if f.name not in excluded_script_names
+    ]
 
     all_issues = []
     for filepath in python_files:
