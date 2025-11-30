@@ -124,7 +124,7 @@ class Enemy:
         if self.spawn_flash > 0:
             self.spawn_flash -= 1
 
-    def try_shoot(self) -> Bullet | None:  # type: ignore[no-any-unimported]
+    def try_shoot(self) -> Bullet | None:
         """Try to shoot a bullet."""
         if self.can_shoot and self.shoot_timer <= 0 and self.alive:
             self.shoot_timer = random.randint(90, 240)
@@ -138,7 +138,7 @@ class Enemy:
         self.alive = False
         return int(self.points)
 
-    def draw(self, screen: pygame.Surface) -> None:  # type: ignore[no-any-unimported]
+    def draw(self, screen: pygame.Surface) -> None:
         """Draw the enemy."""
         if self.alive and self.visible:
             body_rect = pygame.Rect(self.rect)
@@ -190,7 +190,7 @@ class Burwor(Enemy):
 
     def __init__(self, x: float, y: float) -> None:
         """Initialize Burwor enemy at position"""
-        super().__init__(x, y, BURWOR_SPEED, PURPLE, BURWOR_POINTS, "burwor")  # type: ignore[no-untyped-call]
+        super().__init__(x, y, BURWOR_SPEED, PURPLE, BURWOR_POINTS, "burwor")
         self.can_shoot = False  # Burwors don't shoot
 
 
@@ -199,7 +199,7 @@ class Garwor(Enemy):
 
     def __init__(self, x: float, y: float) -> None:
         """Initialize Garwor enemy at position"""
-        super().__init__(x, y, GARWOR_SPEED, ORANGE, GARWOR_POINTS, "garwor")  # type: ignore[no-untyped-call]
+        super().__init__(x, y, GARWOR_SPEED, ORANGE, GARWOR_POINTS, "garwor")
 
 
 class Thorwor(Enemy):
@@ -207,7 +207,7 @@ class Thorwor(Enemy):
 
     def __init__(self, x: float, y: float) -> None:
         """Initialize Thorwor enemy at position"""
-        super().__init__(x, y, THORWOR_SPEED, RED, THORWOR_POINTS, "thorwor")  # type: ignore[no-untyped-call]
+        super().__init__(x, y, THORWOR_SPEED, RED, THORWOR_POINTS, "thorwor")
 
 
 class Worluk(Enemy):
@@ -215,7 +215,7 @@ class Worluk(Enemy):
 
     def __init__(self, x: float, y: float) -> None:
         """Initialize Worluk enemy at position"""
-        super().__init__(x, y, WORLUK_SPEED, CYAN, WORLUK_POINTS, "worluk")  # type: ignore[no-untyped-call]
+        super().__init__(x, y, WORLUK_SPEED, CYAN, WORLUK_POINTS, "worluk")
         self.visible = False
         self.can_shoot = False
         self.invisibility_cooldown = INVISIBILITY_INTERVAL // 2
@@ -231,7 +231,7 @@ class Wizard(Enemy):
 
     def __init__(self, x: float, y: float) -> None:
         """Initialize Wizard enemy at position"""
-        super().__init__(x, y, WIZARD_SPEED, YELLOW, WIZARD_POINTS, "wizard")  # type: ignore[no-untyped-call]
+        super().__init__(x, y, WIZARD_SPEED, YELLOW, WIZARD_POINTS, "wizard")
         self.appearance_timer = 300  # Frames before appearing
 
     def update(self, dungeon: Any, player_pos: tuple[float, float]) -> None:
@@ -252,7 +252,7 @@ class Wizard(Enemy):
             else:
                 self.direction = DOWN if dy > 0 else UP
 
-    def draw(self, screen: pygame.Surface) -> None:  # type: ignore[no-any-unimported]
+    def draw(self, screen: pygame.Surface) -> None:
         """Draw the wizard (only after appearance timer)."""
         if self.appearance_timer <= 0:
             super().draw(screen)

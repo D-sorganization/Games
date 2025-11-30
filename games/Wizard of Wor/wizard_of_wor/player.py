@@ -7,7 +7,22 @@ from typing import Any
 
 import pygame
 from bullet import Bullet
-from constants import *
+from constants import (
+    BLACK,
+    DOWN,
+    FOOTSTEP_INTERVAL,
+    GREEN,
+    LEFT,
+    PALE_YELLOW,
+    PLAYER_ANIMATION_SPEED,
+    PLAYER_SHIELD_FLASH,
+    PLAYER_SIZE,
+    PLAYER_SPEED,
+    RIGHT,
+    UP,
+    WHITE,
+    YELLOW,
+)
 from effects import Footstep, MuzzleFlash
 
 
