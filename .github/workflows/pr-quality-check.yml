@@ -47,7 +47,32 @@ jobs:
         if [ -f python/requirements.txt ]; then pip install -r python/requirements.txt; fi
         if [ -f pyproject.toml ]; then pip install -e .; fi
         # ✅ Pin tool versions
-        pip install ruff==0.5.0 mypy==1.10.0 black==24.4.2 pytest==8.3.3 pytest-cov==6.0.0
+        pip install ruff==0.5.0 mypy==1.10.0 black==24.4.2 pytest==8.3.3 pytest-cov==6.0.0 pre-commit
+
+    - name: Run MATLAB Quality Check (Static Analysis)
+      id: matlab-quality
+      continue-on-error: true  # Non-blocking, but will show results
+      run: |
+        if [ -f tools/matlab_utilities/scripts/matlab_quality_check.py ]; then
+          echo "=========================================="
+          echo "MATLAB Code Quality Checks"
+          echo "=========================================="
+          python tools/matlab_utilities/scripts/matlab_quality_check.py --output-format json > matlab_quality_results.json || true
+          python tools/matlab_utilities/scripts/matlab_quality_check.py --output-format text || echo "⚠️  Quality issues found - see report above (non-blocking)"
+        elif [ -d matlab ] || [ -d matlab_optimized ]; then
+          echo "⚠️  MATLAB code found but quality check script not found - skipping"
+        else
+          echo "ℹ️  No MATLAB code found - skipping MATLAB checks"
+        fi
+
+    - name: Upload MATLAB Quality Report
+      if: always() && steps.matlab-quality.outcome != 'skipped'
+      uses: actions/upload-artifact@v4
+      with:
+        name: matlab-quality-report-py${{ matrix.python-version }}
+        path: matlab_quality_results.json
+        retention-days: 30
+        if-no-files-found: ignore
 
     - name: Run MATLAB Quality Check (Static Analysis)
       continue-on-error: true  # Non-blocking due to MATLAB license restrictions
@@ -72,11 +97,17 @@ jobs:
         if-no-files-found: ignore
 
     - name: Check for placeholders and magic numbers
+      id: quality-check
       run: |
         echo "🔍 Checking for placeholders and magic numbers..."
         # ✅ Check both possible script locations
         if [ -f scripts/quality-check.py ]; then
           python scripts/quality-check.py
+<<<<<<< Updated upstream
+=======
+        elif [ -f scripts/quality_check.py ]; then
+          python scripts/quality_check.py
+>>>>>>> Stashed changes
         elif [ -f quality_check_script.py ]; then
           python quality_check_script.py
         else
@@ -84,6 +115,7 @@ jobs:
         fi
 
     - name: Lint with Ruff
+      id: ruff
       run: |
         echo "🔍 Running Ruff linter..."
         if [ -f ruff.toml ]; then
@@ -95,18 +127,41 @@ jobs:
         fi
 
     - name: Type check with MyPy
+      id: mypy
       run: |
         echo "🔍 Running MyPy type checker..."
         if [ -f mypy.ini ]; then
+<<<<<<< Updated upstream
           mypy . --config-file mypy.ini
         elif [ -f pyproject.toml ] && grep -q "\[tool.mypy\]" pyproject.toml; then
           mypy .
         else
           # ✅ Non-strict fallback to avoid conflicts
           mypy . --ignore-missing-imports
+=======
+          if [ -d python ]; then
+            mypy python/ --config-file mypy.ini
+          else
+            mypy . --config-file mypy.ini
+          fi
+        elif [ -f pyproject.toml ] && grep -qE '^\s*\[tool\.mypy\]' pyproject.toml; then
+          if [ -d python ]; then
+            mypy python/
+          else
+            mypy .
+          fi
+        else
+          # ✅ Non-strict fallback to avoid conflicts
+          if [ -d python ]; then
+            mypy python/ --ignore-missing-imports
+          else
+            mypy . --ignore-missing-imports
+          fi
+>>>>>>> Stashed changes
         fi
 
     - name: Format check with Black
+      id: black
       run: |
         echo "🔍 Checking code formatting with Black..."
         # ✅ Check source directories explicitly
@@ -117,18 +172,28 @@ jobs:
             black --check --diff python/src
           fi
         elif [ -d python ]; then
+<<<<<<< Updated upstream
           black --check --diff python/
         elif [ -d src ]; then
           if [ -d tests ]; then
             black --check --diff src/ tests/
           else
             black --check --diff src/
+=======
+          black --check --diff python
+        elif [ -d src ]; then
+          if [ -d tests ]; then
+            black --check --diff src tests/
+          else
+            black --check --diff src
+>>>>>>> Stashed changes
           fi
         else
           black --check --diff .
         fi
 
     - name: Run tests
+      id: tests
       run: |
         echo "🧪 Running tests..."
         # ✅ Detect source directory for accurate coverage
@@ -197,10 +262,17 @@ jobs:
       run: |
         pip install bandit==1.7.7
         # ✅ Exclude test directories, target source code only
+        # Note: Bandit exclusion patterns are relative to the scanned directory
         if [ -d python/src ]; then
+<<<<<<< Updated upstream
           bandit -r python/src -x python/tests -f json -o bandit-report.json
         elif [ -d python ]; then
           bandit -r python -x python/tests -f json -o bandit-report.json
+=======
+          bandit -r python/src -x ../tests -f json -o bandit-report.json
+        elif [ -d python ]; then
+          bandit -r python -x tests -f json -o bandit-report.json
+>>>>>>> Stashed changes
         elif [ -d src ]; then
           bandit -r src -x tests -f json -o bandit-report.json
         else
