@@ -106,7 +106,7 @@ class MATLABQualityChecker:
                 return self._static_matlab_analysis()
 
         except (OSError, ValueError) as e:
-            logger.exception("Error running MATLAB quality checks: %s", e)
+            logger.exception("Error running MATLAB quality checks")
             return {"error": str(e)}
 
     def _run_matlab_script(self, script_path: Path) -> dict[str, object]:
@@ -134,8 +134,9 @@ class MATLABQualityChecker:
 
             for cmd in commands:
                 try:
-                    logger.info(f"Trying command: {' '.join(cmd)}")
-                    result = subprocess.run(
+                    logger.info("Trying command: %s", " ".join(cmd))
+                    # S603: cmd is from a predefined list, not user input
+                    result = subprocess.run(  # noqa: S603
                         cmd,
                         capture_output=True,
                         text=True,
@@ -152,11 +153,12 @@ class MATLABQualityChecker:
                             "method": "matlab_script",
                         }
                     logger.warning(
-                        f"Command failed with return code {result.returncode}",
+                        "Command failed with return code %s",
+                        result.returncode,
                     )
-                    logger.debug(f"stderr: {result.stderr}")
+                    logger.debug("stderr: %s", result.stderr)
 
-                except (subprocess.TimeoutExpired, FileNotFoundError):
+                except (subprocess.TimeoutExpired, FileNotFoundError):  # noqa: PERF203
                     continue
 
             # If all commands fail, fall back to static analysis
@@ -164,7 +166,7 @@ class MATLABQualityChecker:
             return self._static_matlab_analysis()
 
         except Exception as e:
-            logger.exception(f"Error running MATLAB script: {e}")
+            logger.exception("Error running MATLAB script")
             return {"error": str(e)}
 
     def _static_matlab_analysis(self) -> dict[str, object]:
@@ -450,7 +452,7 @@ class MATLABQualityChecker:
                         "Avoid addpath in functions - manage paths externally",
                     )
 
-        except Exception as e:
+        except (OSError, ValueError, UnicodeDecodeError) as e:
             issues.append(f"{file_path.name}: Could not analyze file - {e!s}")
 
         return issues
