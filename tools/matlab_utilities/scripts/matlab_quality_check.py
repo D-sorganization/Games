@@ -480,10 +480,10 @@ class MATLABQualityChecker:
         if "error" in matlab_results:
             self.results["passed"] = False
             self.results["summary"] = f"MATLAB quality checks failed: {matlab_results['error']}"
-            checks = cast(dict[str, Any], self.results["checks"])
+            checks = cast("dict[str, Any]", self.results["checks"])
             checks["matlab"] = matlab_results
         else:
-            checks = cast(dict[str, Any], self.results["checks"])
+            checks = cast("dict[str, Any]", self.results["checks"])
             checks["matlab"] = matlab_results
             if matlab_results.get("passed", False):
                 self.results["summary"] = (
@@ -545,7 +545,7 @@ def main() -> None:
 
         issues = results.get("issues")
         if issues:
-            issues_list = cast(list[str], issues)
+            issues_list = cast("list[str]", issues)
             print(f"\nIssues Found ({len(issues_list)}):")
             for i, issue in enumerate(issues_list, 1):
                 print(f"  {i}. {issue}")
