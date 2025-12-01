@@ -4,11 +4,6 @@ on:
   pull_request:
   push:
     branches: [ main, master ]
-<<<<<<< Updated upstream
-    # Add replicant branches if they exist:
-    # branches: [ main, master, claude/RepositoryName_Replicants ]
-=======
->>>>>>> Stashed changes
 
 # Minimal permissions for security
 permissions:
@@ -42,41 +37,11 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-<<<<<<< Updated upstream
-          # Install from python/ subdirectory
-          if [ -f python/requirements.txt ]; then pip install -r python/requirements.txt; fi
-          if [ -f pyproject.toml ]; then pip install -e .; fi
-          # ✅ Pin tool versions
-          pip install ruff==0.5.0 mypy==1.10.0 black==24.4.2 pytest==8.3.3 pytest-cov==6.0.0 pre-commit
-          
-      - name: Run MATLAB Quality Check (Static Analysis)
-        continue-on-error: true  # Non-blocking due to MATLAB license restrictions
-        run: |
-          if [ -f tools/matlab_utilities/scripts/matlab_quality_check.py ]; then
-            echo "=========================================="
-            echo "MATLAB Code Quality Checks"
-            echo "=========================================="
-            python tools/matlab_utilities/scripts/matlab_quality_check.py --output-format json > matlab_quality_results.json || true
-            python tools/matlab_utilities/scripts/matlab_quality_check.py --output-format text || echo "⚠️  Quality issues found - see report above (non-blocking)"
-          else
-            echo "⚠️  MATLAB quality check script not found - skipping"
-          fi
-          
-      - name: Upload MATLAB Quality Report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: matlab-quality-report
-          path: matlab_quality_results.json
-          retention-days: 30
-          if-no-files-found: ignore
-=======
           if [ -f python/requirements.txt ]; then pip install -r python/requirements.txt; fi
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           if [ -f pyproject.toml ]; then pip install -e .; fi
-          # ✅ Pin tool versions (from UNIFIED_CI_APPROACH.md)
-          pip install ruff==0.5.0 mypy==1.10.0 black==24.4.2 pytest==8.3.3 pytest-cov==6.0.0 pre-commit
->>>>>>> Stashed changes
+          # ✅ Pin tool versions
+          pip install ruff==0.5.0 mypy==1.10.0 black==24.4.2 pytest==8.3.3 pytest-cov==6.0.0 pre-commit==3.7.0
           
       - name: Run MATLAB Quality Check (Static Analysis)
         id: matlab-quality
@@ -104,18 +69,12 @@ jobs:
       - name: Run quality check
         id: quality-check
         run: |
-<<<<<<< Updated upstream
           echo "🔍 Checking for placeholders and magic numbers..."
           # ✅ Check both possible script locations
           if [ -f scripts/quality-check.py ]; then
             python scripts/quality-check.py
-=======
-          # ✅ Check both possible script locations (quality_check.py is the actual file name)
-          if [ -f scripts/quality-check.py ]; then
-            python scripts/quality-check.py
           elif [ -f scripts/quality_check.py ]; then
             python scripts/quality_check.py
->>>>>>> Stashed changes
           elif [ -f quality_check_script.py ]; then
             python quality_check_script.py
           else
@@ -159,10 +118,8 @@ jobs:
         id: approximations
         run: |
           # Fail if "approximately" or similar found (exclude tests and allow scientific notation)
-<<<<<<< Updated upstream
-=======
-          # Filter out valid scientific notation patterns (e.g., Re~1000, Ma~0.5 for Reynolds/Mach numbers)
->>>>>>> Stashed changes
+          # Filter out valid scientific notation patterns:
+          # Re~ = Reynolds number, Ma~ = Mach number, Cd~ = Drag coefficient, Cl~ = Lift coefficient
           if grep -ri "approximately\|roughly" \
             --include="*.py" --include="*.m" \
             --exclude-dir=".git" \
@@ -179,8 +136,9 @@ jobs:
           else
             echo "✅ No approximations found"
           fi
-<<<<<<< Updated upstream
+            
       - name: Lint with Ruff
+        id: ruff
         run: |
           echo "🔍 Running Ruff linter..."
           if [ -f ruff.toml ]; then
@@ -191,24 +149,10 @@ jobs:
             ruff check . --select ALL
           fi
           
-      - name: Type check with MyPy
-        run: |
-          echo "🔍 Running MyPy type checker..."
-          if [ -f mypy.ini ]; then
-            mypy . --config-file mypy.ini
-          elif [ -f pyproject.toml ] && grep -q "\[tool.mypy\]" pyproject.toml; then
-            mypy .
-          else
-            # ✅ Non-strict fallback to avoid conflicts
-            mypy . --ignore-missing-imports
-          fi
-=======
-            
       - name: Run pre-commit
         id: pre-commit
         run: |
-          pre-commit run --all-files --show-diff-on-failure
->>>>>>> Stashed changes
+          pre-commit run --all-files --show-diff-on-failure || exit 1
           
       - name: Format check with Black
         id: black
@@ -222,31 +166,17 @@ jobs:
               black --check --diff python/src
             fi
           elif [ -d python ]; then
-<<<<<<< Updated upstream
-            black --check --diff python/
-          elif [ -d src ]; then
-            if [ -d tests ]; then
-              black --check --diff src/ tests/
-            else
-              black --check --diff src/
-=======
             black --check --diff python
           elif [ -d src ]; then
             if [ -d tests ]; then
               black --check --diff src tests/
             else
               black --check --diff src
->>>>>>> Stashed changes
             fi
           else
             black --check --diff .
           fi
           
-<<<<<<< Updated upstream
-      - name: Run pre-commit
-        run: |
-          pre-commit run --all-files --show-diff-on-failure || echo "⚠️ Pre-commit checks failed (non-blocking)"
-=======
       - name: Run strict type checking
         id: mypy
         run: |
@@ -255,19 +185,17 @@ jobs:
             if [ -f mypy.ini ]; then
               mypy . --config-file mypy.ini
             elif [ -f pyproject.toml ] && grep -qE '^\s*\[tool\.mypy\]' pyproject.toml; then
-              mypy .
+              mypy . 
             else
               mypy . --strict --ignore-missing-imports
             fi
           else
             echo "No Python files to type check"
           fi
->>>>>>> Stashed changes
           
       - name: Run tests with coverage
         id: tests
         run: |
-<<<<<<< Updated upstream
           echo "🧪 Running tests..."
           # ✅ Detect source directory for accurate coverage
           if [ -d python/src ]; then
@@ -276,18 +204,10 @@ jobs:
             COV_TARGET="python"
           elif [ -d src ]; then
             COV_TARGET="src"
-=======
-          if [ -d python/tests ] || [ -d tests ]; then
-            pytest -xvs --cov=python --cov-report=xml --cov-report=term-missing --cov-fail-under=60 || {
-              echo "❌ Tests failed or coverage below 60%"
-              exit 1
-            }
->>>>>>> Stashed changes
           else
             COV_TARGET="."
           fi
 
-<<<<<<< Updated upstream
           if [ -f pytest.ini ]; then
             pytest --cov="$COV_TARGET" --cov-report=xml --cov-report=term-missing
           elif [ -d python/tests ]; then
@@ -307,15 +227,8 @@ jobs:
       - name: Check for coverage file
         id: coverage-check
         run: |
-          # ✅ Check multiple possible locations
-          if [ -f coverage.xml ] || [ -f python/coverage.xml ]; then
-=======
-      - name: Check for coverage file
-        id: coverage-check
-        run: |
           # ✅ Check for coverage.xml anywhere in the repository (matches upload pattern)
           if find . -name 'coverage.xml' -type f | grep -q .; then
->>>>>>> Stashed changes
             echo "exists=true" >> $GITHUB_OUTPUT
           else
             echo "exists=false" >> $GITHUB_OUTPUT
@@ -326,18 +239,11 @@ jobs:
         uses: codecov/codecov-action@v4
         with:
           # ✅ Wildcard pattern for flexibility
-<<<<<<< Updated upstream
-          files: '**/coverage.xml'
-          flags: unittests
-          name: codecov-umbrella
-          fail_ci_if_error: false
-          # ✅ Always include token
-=======
           files: "**/coverage.xml"
           flags: unittests
           name: codecov-umbrella
           fail_ci_if_error: false
->>>>>>> Stashed changes
+          # ✅ Always include token
           token: ${{ secrets.CODECOV_TOKEN }}
           
       - name: Verify reproducibility
@@ -371,33 +277,19 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
-<<<<<<< Updated upstream
-          echo "| MATLAB Quality Check | ✅ |" >> $GITHUB_STEP_SUMMARY
-          echo "| Quality Check | ✅ |" >> $GITHUB_STEP_SUMMARY
-          echo "| No Placeholders | ✅ |" >> $GITHUB_STEP_SUMMARY
-          echo "| No Magic Numbers | ✅ |" >> $GITHUB_STEP_SUMMARY
-          echo "| No Approximations | ✅ |" >> $GITHUB_STEP_SUMMARY
-          echo "| Ruff Linting | ✅ |" >> $GITHUB_STEP_SUMMARY
-          echo "| MyPy Type Checking | ✅ |" >> $GITHUB_STEP_SUMMARY
-          echo "| Black Formatting | ✅ |" >> $GITHUB_STEP_SUMMARY
-          echo "| Pre-commit | ✅ |" >> $GITHUB_STEP_SUMMARY
-          echo "| Tests + Coverage | ✅ |" >> $GITHUB_STEP_SUMMARY
-
-  security-check:
-    name: Security Check
-=======
           echo "| MATLAB Quality Check | ${{ steps.matlab-quality.outcome == 'success' && '✅' || steps.matlab-quality.outcome == 'failure' && '❌' || '⏭️' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Quality Check | ${{ steps.quality-check.outcome == 'success' && '✅' || steps.quality-check.outcome == 'failure' && '❌' || '⏭️' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| No Placeholders | ${{ steps.placeholders.outcome == 'success' && '✅' || steps.placeholders.outcome == 'failure' && '❌' || '⏭️' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| No Magic Numbers | ${{ steps.magic-numbers.outcome == 'success' && '✅' || steps.magic-numbers.outcome == 'failure' && '❌' || '⏭️' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| No Approximations | ${{ steps.approximations.outcome == 'success' && '✅' || steps.approximations.outcome == 'failure' && '❌' || '⏭️' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Ruff Linting | ${{ steps.ruff.outcome == 'success' && '✅' || steps.ruff.outcome == 'failure' && '❌' || '⏭️' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Black Formatting | ${{ steps.black.outcome == 'success' && '✅' || steps.black.outcome == 'failure' && '❌' || '⏭️' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Pre-commit | ${{ steps.pre-commit.outcome == 'success' && '✅' || steps.pre-commit.outcome == 'failure' && '❌' || '⏭️' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| MyPy Type Checking | ${{ steps.mypy.outcome == 'success' && '✅' || steps.mypy.outcome == 'failure' && '❌' || '⏭️' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Tests + Coverage | ${{ steps.tests.outcome == 'success' && '✅' || steps.tests.outcome == 'failure' && '❌' || '⏭️' }} |" >> $GITHUB_STEP_SUMMARY
           
-  matlab-analysis:
->>>>>>> Stashed changes
+  security-check:
+    name: Security Check
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -414,10 +306,11 @@ jobs:
       run: |
         pip install bandit==1.7.7
         # ✅ Exclude test directories, target source code only
+        # Note: Bandit exclusion paths are relative to the scanned directory
         if [ -d python/src ]; then
-          bandit -r python/src -x python/tests -f json -o bandit-report.json
+          bandit -r python/src -x ../tests -f json -o bandit-report.json
         elif [ -d python ]; then
-          bandit -r python -x python/tests -f json -o bandit-report.json
+          bandit -r python -x tests -f json -o bandit-report.json
         elif [ -d src ]; then
           bandit -r src -x tests -f json -o bandit-report.json
         else

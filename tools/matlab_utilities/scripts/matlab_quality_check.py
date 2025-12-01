@@ -1,14 +1,4 @@
 #!/usr/bin/env python3
-<<<<<<< Updated upstream
-r"""MATLAB Quality Check Script (Unified Version).
-
-This script runs comprehensive quality checks on MATLAB code following the
-project's .cursorrules.md requirements. It can be run from the command line and
-integrates with the project's quality control system.
-
-This is the unified version combining the best features from all repository
-implementations.
-=======
 """
 MATLAB Quality Check Script (Unified Version)
 
@@ -17,7 +7,6 @@ This script runs comprehensive quality checks on MATLAB code following the proje
 with the project's quality control system.
 
 This is the unified version combining the best features from all repository implementations.
->>>>>>> Stashed changes
 
 Usage:
     python tools/matlab_utilities/scripts/matlab_quality_check.py \\
@@ -32,29 +21,12 @@ import logging
 import re
 import subprocess
 import sys
-<<<<<<< Updated upstream
-from datetime import datetime, timezone
-from pathlib import Path
-from typing import Any, Final
-
-# Constants
-# [s] Timeout for MATLAB script execution - 5 minutes allows for large codebase
-MATLAB_SCRIPT_TIMEOUT_SECONDS: Final[int] = 300
-# [chars] Minimum comment length to qualify as docstring (excludes '%' prefix)
-MIN_DOCSTRING_LENGTH: Final[int] = 3
-# [lines] Maximum lines to search ahead for function docstring
-DOCSTRING_LOOKAHEAD_LINES: Final[int] = 5
-# [lines] Maximum lines to search ahead for arguments validation block
-ARGUMENTS_LOOKAHEAD_LINES: Final[int] = 15
-=======
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, cast
 
 # Constants
 MATLAB_SCRIPT_TIMEOUT_SECONDS: int = 300  # 5 minutes - allows time for large codebases
-ARGUMENTS_LOOKAHEAD_LINES: int = 15  # Look ahead this many lines for arguments block
->>>>>>> Stashed changes
 
 # Set up logging
 logging.basicConfig(
@@ -67,20 +39,6 @@ logger = logging.getLogger(__name__)
 class MATLABQualityChecker:
     """Comprehensive MATLAB code quality checker."""
 
-<<<<<<< Updated upstream
-    def __init__(self, project_root: Path):
-        """Initialize the MATLAB quality checker.
-
-        Args:
-        ----
-            project_root: Path to the project root directory
-
-        """
-        self.project_root = project_root
-        self.matlab_dir = project_root / "matlab"
-        self.results: dict[str, Any] = {
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-=======
     def __init__(self, project_root: Path) -> None:
         """Initialize the MATLAB quality checker.
 
@@ -91,7 +49,6 @@ class MATLABQualityChecker:
         self.matlab_dir = project_root / "matlab"
         self.results = {
             "timestamp": datetime.now(UTC).isoformat(),
->>>>>>> Stashed changes
             "total_files": 0,
             "issues": [],
             "passed": True,
@@ -102,15 +59,8 @@ class MATLABQualityChecker:
     def check_matlab_files_exist(self) -> bool:
         """Check if MATLAB files exist in the project.
 
-<<<<<<< Updated upstream
-        Returns
-        -------
-            True if MATLAB files are found, False otherwise
-
-=======
         Returns:
             True if MATLAB files are found, False otherwise
->>>>>>> Stashed changes
         """
         if not self.matlab_dir.exists():
             logger.info(
@@ -126,25 +76,14 @@ class MATLABQualityChecker:
             logger.info("No MATLAB files found (skipping MATLAB checks)")
             return False
 
-<<<<<<< Updated upstream
-        logger.info(f"Found {len(m_files)} MATLAB files")
-=======
         logger.info("Found %d MATLAB files", len(m_files))
->>>>>>> Stashed changes
         return True
 
-    def run_matlab_quality_checks(self) -> dict[str, object]:
+    def run_matlab_quality_checks(self) -> dict[str, object]:  # noqa: PLR0911
         """Run MATLAB quality checks using the MATLAB script.
 
-<<<<<<< Updated upstream
-        Returns
-        -------
-            Dictionary containing quality check results
-
-=======
         Returns:
             Dictionary containing quality check results
->>>>>>> Stashed changes
         """
         try:
             # Check if we can run MATLAB from command line
@@ -160,17 +99,6 @@ class MATLABQualityChecker:
             # Note: This requires MATLAB to be installed and accessible from command line
             try:
                 # First, try to run the MATLAB script directly if possible
-<<<<<<< Updated upstream
-                result = self._run_matlab_script(matlab_script)
-                return result
-            except Exception as e:
-                logger.warning(f"Could not run MATLAB script directly: {e}")
-                # Fall back to static analysis
-                return self._static_matlab_analysis()
-
-        except Exception as e:
-            logger.error(f"Error running MATLAB quality checks: {e}")
-=======
                 return self._run_matlab_script(matlab_script)
             except (subprocess.TimeoutExpired, FileNotFoundError, OSError) as e:
                 logger.warning("Could not run MATLAB script directly: %s", e)
@@ -178,28 +106,17 @@ class MATLABQualityChecker:
                 return self._static_matlab_analysis()
 
         except (OSError, ValueError) as e:
-            logger.exception("Error running MATLAB quality checks")
->>>>>>> Stashed changes
+            logger.error("Error running MATLAB quality checks: %s", e)
             return {"error": str(e)}
 
     def _run_matlab_script(self, script_path: Path) -> dict[str, object]:
         """Attempt to run MATLAB script from command line.
 
         Args:
-<<<<<<< Updated upstream
-        ----
-            script_path: Path to the MATLAB script
-
-        Returns:
-        -------
-            Dictionary containing script results
-
-=======
             script_path: Path to the MATLAB script
 
         Returns:
             Dictionary containing script results
->>>>>>> Stashed changes
         """
         try:
             # Try different ways to run MATLAB
@@ -217,14 +134,8 @@ class MATLABQualityChecker:
 
             for cmd in commands:
                 try:
-<<<<<<< Updated upstream
                     logger.info(f"Trying command: {' '.join(cmd)}")
                     result = subprocess.run(
-=======
-                    logger.info("Trying command: %s", " ".join(cmd))
-                    # S603: cmd is from a predefined list, not user input
-                    result = subprocess.run(  # noqa: S603
->>>>>>> Stashed changes
                         cmd,
                         capture_output=True,
                         text=True,
@@ -240,23 +151,12 @@ class MATLABQualityChecker:
                             "output": result.stdout,
                             "method": "matlab_script",
                         }
-<<<<<<< Updated upstream
-                    else:
-                        logger.warning(
-                            f"Command failed with return code {result.returncode}",
-                        )
-                        logger.debug(f"stderr: {result.stderr}")
+                    logger.warning(
+                        f"Command failed with return code {result.returncode}",
+                    )
+                    logger.debug(f"stderr: {result.stderr}")
 
                 except (subprocess.TimeoutExpired, FileNotFoundError):
-=======
-                    logger.warning(
-                        "Command failed with return code %s",
-                        result.returncode,
-                    )
-                    logger.debug("stderr: %s", result.stderr)
-
-                except (subprocess.TimeoutExpired, FileNotFoundError):  # noqa: PERF203
->>>>>>> Stashed changes
                     continue
 
             # If all commands fail, fall back to static analysis
@@ -264,25 +164,14 @@ class MATLABQualityChecker:
             return self._static_matlab_analysis()
 
         except Exception as e:
-<<<<<<< Updated upstream
             logger.error(f"Error running MATLAB script: {e}")
-=======
-            logger.exception("Error running MATLAB script")
->>>>>>> Stashed changes
             return {"error": str(e)}
 
     def _static_matlab_analysis(self) -> dict[str, object]:
         """Perform static analysis of MATLAB files without running MATLAB.
 
-<<<<<<< Updated upstream
-        Returns
-        -------
-            Dictionary containing static analysis results
-
-=======
         Returns:
             Dictionary containing static analysis results
->>>>>>> Stashed changes
         """
         logger.info("Performing static MATLAB file analysis")
 
@@ -311,20 +200,10 @@ class MATLABQualityChecker:
         """Analyze a single MATLAB file for quality issues.
 
         Args:
-<<<<<<< Updated upstream
-        ----
-            file_path: Path to the MATLAB file
-
-        Returns:
-        -------
-            List of quality issues found
-
-=======
             file_path: Path to the MATLAB file
 
         Returns:
             List of quality issues found
->>>>>>> Stashed changes
         """
         issues = []
 
@@ -352,17 +231,9 @@ class MATLABQualityChecker:
                 # Track function scope by monitoring nesting level
                 if not is_comment:
                     # Check for keywords that increase nesting
-<<<<<<< Updated upstream
                     # Note: arguments, properties, methods, events also have 'end'
                     if re.match(
                         r"\b(function|if|for|while|switch|try|parfor|classdef|arguments|properties|methods|events)\b",
-=======
-                    # Note: Only control flow keywords affect executable scope
-                    # Declaration blocks (arguments, properties, methods, events) don't create
-                    # executable scope, so they shouldn't increment nesting level
-                    if re.match(
-                        r"\b(function|if|for|while|switch|try|parfor|classdef)\b",
->>>>>>> Stashed changes
                         line_stripped,
                     ):
                         if line_stripped.startswith("function"):
@@ -380,22 +251,11 @@ class MATLABQualityChecker:
                 if line_stripped.startswith("function") and not is_comment:
                     # Check if next non-empty line has docstring
                     has_docstring = False
-<<<<<<< Updated upstream
-                    for j in range(i, min(i + DOCSTRING_LOOKAHEAD_LINES, len(lines))):
-                        next_line = lines[j].strip()
-                        if next_line and not next_line.startswith("%"):
-                            break
-                        if (
-                            next_line.startswith("%")
-                            and len(next_line) > MIN_DOCSTRING_LENGTH
-                        ):
-=======
                     for j in range(i, min(i + 5, len(lines))):
                         next_line = lines[j].strip()
                         if next_line and not next_line.startswith("%"):
                             break
                         if next_line.startswith("%") and len(next_line) > 3:
->>>>>>> Stashed changes
                             has_docstring = True
                             break
 
@@ -404,25 +264,15 @@ class MATLABQualityChecker:
                             f"{file_path.name} (line {i}): Missing function docstring",
                         )
 
-<<<<<<< Updated upstream
                     # Check for arguments validation block
                     # Skip comment lines to avoid false positives
-=======
-                    # Look for lines starting with 'arguments'
-                    # (skip comment lines to avoid false positives)
->>>>>>> Stashed changes
                     has_arguments = False
-                    for j in range(i, min(i + ARGUMENTS_LOOKAHEAD_LINES, len(lines))):
+                    for j in range(i, min(i + 15, len(lines))):
                         line_check = lines[j].strip()
                         # Skip comment lines
                         if line_check.startswith("%"):
                             continue
-<<<<<<< Updated upstream
-                        if re.match(r"arguments\b", line_check):
-=======
-                        # Use re.match to ensure arguments is at the start of the line
-                        if re.match(r"^arguments\b", line_check):
->>>>>>> Stashed changes
+                        if re.search(r"\barguments\b", line_check):
                             has_arguments = True
                             break
 
@@ -452,77 +302,46 @@ class MATLABQualityChecker:
                 # Check for common MATLAB anti-patterns
                 if re.search(r"\beval\s*\(", line_stripped):
                     issues.append(
-<<<<<<< Updated upstream
-                        f"{file_path.name} (line {i}): Avoid using eval() - potential security risk and performance issue",
-=======
                         f"{file_path.name} (line {i}): "
                         "Avoid using eval() - potential security risk and performance issue",
->>>>>>> Stashed changes
                     )
 
                 if re.search(r"\bassignin\s*\(", line_stripped):
                     issues.append(
-<<<<<<< Updated upstream
-                        f"{file_path.name} (line {i}): Avoid using assignin() - violates encapsulation",
-=======
                         f"{file_path.name} (line {i}): "
                         "Avoid using assignin() - violates encapsulation",
->>>>>>> Stashed changes
                     )
 
                 if re.search(r"\bevalin\s*\(", line_stripped):
                     issues.append(
-<<<<<<< Updated upstream
-                        f"{file_path.name} (line {i}): Avoid using evalin() - violates encapsulation",
-=======
                         f"{file_path.name} (line {i}): "
                         "Avoid using evalin() - violates encapsulation",
->>>>>>> Stashed changes
                     )
 
                 # Check for global variables (often code smell)
                 if re.search(r"\bglobal\s+\w+", line_stripped):
                     issues.append(
-<<<<<<< Updated upstream
-                        f"{file_path.name} (line {i}): Global variable usage - consider passing as argument",
-=======
                         f"{file_path.name} (line {i}): "
                         "Global variable usage - consider passing as argument",
->>>>>>> Stashed changes
                     )
 
                 # Check for load without output (loads into workspace)
                 # Match both command syntax (load file.mat) and function syntax (load('file.mat'))
-<<<<<<< Updated upstream
                 if (
                     re.search(r"^\s*load\s+\w+", line_stripped)
                     or re.search(r"^\s*load\s*\([^)]+\)", line_stripped)
                 ) and "=" not in line_stripped:
                     issues.append(
-                        f"{file_path.name} (line {i}): load without output variable - use 'data = load(...)' instead",
-=======
-                # Note: line_stripped is already stripped, so ^\s* is redundant
-                if (
-                    re.search(r"load\s+\w+", line_stripped)
-                    or re.search(r"load\s*\([^)]+\)", line_stripped)
-                ) and "=" not in line_stripped:
-                    issues.append(
                         f"{file_path.name} (line {i}): "
                         "load without output variable - use 'data = load(...)' instead",
->>>>>>> Stashed changes
                     )
 
                 # Check for magic numbers (but allow common values and known constants)
                 # Matches both integer and floating-point literals (e.g., 3.14, 42, 0.5)
                 # that are not part of scientific notation, array indices, or embedded in words.
-<<<<<<< Updated upstream
-                # Uses lookbehind/lookahead to avoid matching numbers adjacent to dots or word characters.
-                # This helps flag "magic numbers" in code while avoiding false positives from common patterns.
-=======
                 # Uses lookbehind/lookahead to avoid matching numbers adjacent to dots or
                 # word characters. This helps flag "magic numbers" in code while avoiding
                 # false positives from common patterns.
->>>>>>> Stashed changes
                 magic_number_pattern = r"(?<![.\w])(?:\d+\.\d+|\d+)(?![.\w])"
                 magic_numbers = re.findall(magic_number_pattern, line_stripped)
 
@@ -572,12 +391,8 @@ class MATLABQualityChecker:
                     # Check if it's a known constant
                     if num in known_constants:
                         issues.append(
-<<<<<<< Updated upstream
-                            f"{file_path.name} (line {i}): Magic number {num} ({known_constants[num]}) - define as named constant",
-=======
                             f"{file_path.name} (line {i}): Magic number {num} "
                             f"({known_constants[num]}) - define as named constant",
->>>>>>> Stashed changes
                         )
                     elif num not in acceptable_numbers:
                         # Check if the number appears before a comment on same line
@@ -587,48 +402,25 @@ class MATLABQualityChecker:
                             num_idx != -1 and num_idx < comment_idx
                         ):
                             issues.append(
-<<<<<<< Updated upstream
-                                f"{file_path.name} (line {i}): Magic number {num} should be defined as constant with units and source",
-=======
                                 f"{file_path.name} (line {i}): Magic number {num} "
                                 "should be defined as constant with units and source",
->>>>>>> Stashed changes
                             )
 
                 # Check for clear/clc/close all in functions (bad practice)
                 if in_function:
-<<<<<<< Updated upstream
-                    # Check for clear without variable (dangerous) or clear all/global (very dangerous)
-=======
                     # Check for clear without variable (dangerous) or
                     # clear all/global (very dangerous)
->>>>>>> Stashed changes
                     if re.search(
                         r"\bclear\s+(all|global)\b",
                         line_stripped,
                         re.IGNORECASE,
                     ):
                         issues.append(
-<<<<<<< Updated upstream
-                            f"{file_path.name} (line {i}): Avoid 'clear all' or 'clear global' in functions - clears all variables, functions, and MEX links",
-                        )
-                    elif re.search(r"\bclear\b(?!\s+\w+)", line_stripped):
-                        issues.append(
-                            f"{file_path.name} (line {i}): Avoid 'clear' in functions - can clear function variables",
-                        )
-                    if re.search(r"\bclc\b", line_stripped):
-                        issues.append(
-                            f"{file_path.name} (line {i}): Avoid 'clc' in functions - affects user's workspace",
-                        )
-                    if re.search(r"\bclose\s+all\b", line_stripped):
-                        issues.append(
-                            f"{file_path.name} (line {i}): Avoid 'close all' in functions - closes user's figures",
-=======
                             f"{file_path.name} (line {i}): "
                             "Avoid 'clear all' or 'clear global' in functions - "
                             "clears all variables, functions, and MEX links",
                         )
-                    elif re.search(r"\bclear\b(?!\s+\w)", line_stripped):
+                    elif re.search(r"\bclear\b(?!\s+\w+)", line_stripped):
                         issues.append(
                             f"{file_path.name} (line {i}): "
                             "Avoid 'clear' in functions - can clear function variables",
@@ -642,35 +434,23 @@ class MATLABQualityChecker:
                         issues.append(
                             f"{file_path.name} (line {i}): "
                             "Avoid 'close all' in functions - closes user's figures",
->>>>>>> Stashed changes
                         )
 
                 # Check for exist() usage (often code smell, prefer try/catch or validation)
                 if re.search(r"\bexist\s*\(", line_stripped):
                     issues.append(
-<<<<<<< Updated upstream
-                        f"{file_path.name} (line {i}): Consider using validation or try/catch instead of exist()",
-=======
                         f"{file_path.name} (line {i}): "
                         "Consider using validation or try/catch instead of exist()",
->>>>>>> Stashed changes
                     )
 
                 # Check for addpath in functions (should be in startup.m or managed externally)
                 if in_function and re.search(r"\baddpath\s*\(", line_stripped):
                     issues.append(
-<<<<<<< Updated upstream
-                        f"{file_path.name} (line {i}): Avoid addpath in functions - manage paths externally",
-                    )
-
-        except Exception as e:
-=======
                         f"{file_path.name} (line {i}): "
                         "Avoid addpath in functions - manage paths externally",
                     )
 
-        except (OSError, ValueError, UnicodeDecodeError) as e:
->>>>>>> Stashed changes
+        except Exception as e:
             issues.append(f"{file_path.name}: Could not analyze file - {e!s}")
 
         return issues
@@ -678,15 +458,8 @@ class MATLABQualityChecker:
     def run_all_checks(self) -> dict[str, object]:
         """Run all MATLAB quality checks.
 
-<<<<<<< Updated upstream
-        Returns
-        -------
-            Dictionary containing all quality check results
-
-=======
         Returns:
             Dictionary containing all quality check results
->>>>>>> Stashed changes
         """
         logger.info("Starting MATLAB quality checks")
 
@@ -699,24 +472,15 @@ class MATLABQualityChecker:
         # Run MATLAB quality checks
         matlab_results = self.run_matlab_quality_checks()
 
-<<<<<<< Updated upstream
-        checks: dict[str, Any] = self.results.get("checks", {})
-=======
->>>>>>> Stashed changes
         if "error" in matlab_results:
             self.results["passed"] = False
             self.results["summary"] = (
                 f"MATLAB quality checks failed: {matlab_results['error']}"
             )
-<<<<<<< Updated upstream
-            checks["matlab"] = matlab_results
-        else:
-=======
             checks = cast("dict[str, Any]", self.results["checks"])
             checks["matlab"] = matlab_results
         else:
             checks = cast("dict[str, Any]", self.results["checks"])
->>>>>>> Stashed changes
             checks["matlab"] = matlab_results
             if matlab_results.get("passed", False):
                 self.results["summary"] = (
@@ -729,20 +493,12 @@ class MATLABQualityChecker:
                     f"[FAIL] MATLAB quality checks FAILED "
                     f"({self.results['total_files']} files checked)"
                 )
-<<<<<<< Updated upstream
-        self.results["checks"] = checks
-=======
->>>>>>> Stashed changes
 
         return self.results
 
 
 def main() -> None:
-<<<<<<< Updated upstream
-    """Run the MATLAB quality check script."""
-=======
     """Main entry point for the MATLAB quality check script."""
->>>>>>> Stashed changes
     parser = argparse.ArgumentParser(description="MATLAB Code Quality Checker")
     parser.add_argument("--strict", action="store_true", help="Enable strict mode")
     parser.add_argument(
@@ -772,7 +528,6 @@ def main() -> None:
 
     # Output results
     if args.output_format == "json":
-<<<<<<< Updated upstream
         print(json.dumps(results, indent=2, default=str))  # noqa: T201
     else:
         print("\n" + "=" * 60)  # noqa: T201
@@ -785,9 +540,9 @@ def main() -> None:
         )
         print(f"Summary: {results.get('summary', 'N/A')}")  # noqa: T201
 
-        issues = results.get("issues", [])
+        issues = results.get("issues")
         if issues:
-            issues_list: list[str] = issues if isinstance(issues, list) else []
+            issues_list = cast("list[str]", issues)
             print(f"\nIssues Found ({len(issues_list)}):")  # noqa: T201
             for i, issue in enumerate(issues_list, 1):
                 print(f"  {i}. {issue}")  # noqa: T201
@@ -795,58 +550,18 @@ def main() -> None:
         print("\n" + "=" * 60)  # noqa: T201
 
     # Exit with appropriate code
-    # In strict mode, fail if any issues are found;
-    # otherwise fail only if checks didn't pass
-    passed = results.get("passed", False)
-    has_issues = bool(results.get("issues"))
-
-    if args.strict:
-        # Strict mode: fail if any issues found
-        exit_code = 0 if (passed and not has_issues) else 1
-    else:
-        # Normal mode: fail only if checks didn't pass
-        exit_code = 0 if passed else 1
-=======
-        print(json.dumps(results, indent=2, default=str))
-    else:
-        print("\n" + "=" * 60)
-        print("MATLAB QUALITY CHECK RESULTS")
-        print("=" * 60)
-        print(f"Timestamp: {results.get('timestamp', 'N/A')}")
-        print(f"Total Files: {results.get('total_files', 0)}")
-        print(
-            f"Status: {'PASSED' if results.get('passed', False) else 'FAILED'}",
-        )
-        print(f"Summary: {results.get('summary', 'N/A')}")
-
-        issues = results.get("issues")
-        if issues:
-            issues_list = cast("list[str]", issues)
-            print(f"\nIssues Found ({len(issues_list)}):")
-            for i, issue in enumerate(issues_list, 1):
-                print(f"  {i}. {issue}")
-
-        print("\n" + "=" * 60)
-
-    # Exit with appropriate code
     # In strict mode, fail if any issues are found; otherwise fail only if checks didn't pass
     passed = results.get("passed", False)
     has_issues = bool(results.get("issues"))
 
-    # Use ternary operator as suggested by SIM108
     exit_code = (
         (0 if (passed and not has_issues) else 1)
         if args.strict
         else (0 if passed else 1)
     )
->>>>>>> Stashed changes
 
     sys.exit(exit_code)
 
 
 if __name__ == "__main__":
     main()
-<<<<<<< Updated upstream
-=======
-
->>>>>>> Stashed changes
