@@ -218,6 +218,16 @@ class MATLABQualityChecker:
             in_function = False
             nesting_level = 0
 
+            # Banned patterns to check (defined once outside loop for efficiency)
+            banned_patterns = [
+                (r"\bTODO\b", "TODO placeholder found"),
+                (r"\bFIXME\b", "FIXME placeholder found"),
+                (r"\bHACK\b", "HACK comment found"),
+                (r"\bXXX\b", "XXX comment found"),
+                (r"<[A-Z_][A-Z0-9_]*>", "Angle bracket placeholder found"),
+                (r"\{\{.*?\}\}", "Template placeholder found"),
+            ]
+
             # Check for basic quality issues
             for i, line in enumerate(lines, 1):
                 line_stripped = line.strip()
@@ -250,10 +260,10 @@ class MATLABQualityChecker:
                             nesting_level = 0  # Prevent negative nesting
 
                 # Check for function definition (for docstring and arguments validation)
-                if line_stripped.startswith("function") and not is_comment:
+                if re.match(r"\bfunction\b", line_stripped) and not is_comment:
                     # Check if next non-empty line has docstring
                     has_docstring = False
-                    for j in range(i, min(i + 5, len(lines))):
+                    for j in range(i + 1, min(i + 1 + 5, len(lines))):
                         next_line = lines[j].strip()
                         if next_line and not next_line.startswith("%"):
                             break
@@ -267,31 +277,23 @@ class MATLABQualityChecker:
                         )
 
                     # Check for arguments validation block
-                    # Skip comment lines to avoid false positives
+                    # Look for lines starting with 'arguments' (skip comment lines to avoid false positives)
                     has_arguments = False
-                    for j in range(i, min(i + 15, len(lines))):
+                    for j in range(i + 1, min(i + 1 + 15, len(lines))):
                         line_check = lines[j].strip()
                         # Skip comment lines
                         if line_check.startswith("%"):
                             continue
-                        if re.search(r"\barguments\b", line_check):
-                            has_arguments = True
+                        # Break on non-empty, non-comment code lines (arguments must come before executable code)
+                        if line_check and not line_check.startswith("%"):
+                            if re.match(r"^arguments\b", line_check):
+                                has_arguments = True
                             break
 
                     if not has_arguments:
                         issues.append(
                             f"{file_path.name} (line {i}): Missing arguments validation block",
                         )
-
-                # Check for banned patterns (in comments and code)
-                banned_patterns = [
-                    (r"\bTODO\b", "TODO placeholder found"),
-                    (r"\bFIXME\b", "FIXME placeholder found"),
-                    (r"\bHACK\b", "HACK comment found"),
-                    (r"\bXXX\b", "XXX comment found"),
-                    (r"<[A-Z_][A-Z0-9_]*>", "Angle bracket placeholder found"),
-                    (r"\{\{.*?\}\}", "Template placeholder found"),
-                ]
 
                 for pattern, message in banned_patterns:
                     if re.search(pattern, line_stripped):
@@ -475,10 +477,10 @@ class MATLABQualityChecker:
         if "error" in matlab_results:
             self.results["passed"] = False
             self.results["summary"] = f"MATLAB quality checks failed: {matlab_results['error']}"
-            checks = cast("dict[str, Any]", self.results["checks"])
+            checks = cast(dict[str, Any], self.results["checks"])
             checks["matlab"] = matlab_results
         else:
-            checks = cast("dict[str, Any]", self.results["checks"])
+            checks = cast(dict[str, Any], self.results["checks"])
             checks["matlab"] = matlab_results
             if matlab_results.get("passed", False):
                 self.results["summary"] = (
@@ -540,7 +542,7 @@ def main() -> None:
 
         issues = results.get("issues")
         if issues:
-            issues_list = cast("list[str]", issues)
+            issues_list = cast(list[str], issues)
             print(f"\nIssues Found ({len(issues_list)}):")
             for i, issue in enumerate(issues_list, 1):
                 print(f"  {i}. {issue}")
