@@ -218,6 +218,9 @@ class MATLABQualityChecker:
             # Track if we're in a function and nesting level
             in_function = False
             nesting_level = 0
+            # Track declaration block nesting separately (arguments, properties, methods, events)
+            # These don't create executable scope but have their own 'end' keywords
+            declaration_nesting_level = 0
 
             # Banned patterns to check (defined once outside loop for efficiency)
             banned_patterns = [
@@ -243,10 +246,21 @@ class MATLABQualityChecker:
 
                 # Track function scope by monitoring nesting level
                 if not is_comment:
-                    # Check for keywords that increase nesting
-                    # Note: arguments, properties, methods, events also have 'end'
+                    # Check for declaration block keywords (arguments, properties, methods, events)
+                    # These create their own scope but don't affect executable nesting level
                     if re.match(
-                        r"\b(function|if|for|while|switch|try|parfor|classdef|arguments|properties|methods|events)\b",
+                        r"\b(arguments|properties|methods|events)\b",
+                        line_stripped,
+                    ):
+                        # Track declaration block nesting separately
+                        declaration_nesting_level += 1
+
+                    # Check for keywords that increase nesting
+                    # Note: Only control flow keywords affect executable scope
+                    # Declaration blocks (arguments, properties, methods, events) don't create
+                    # executable scope, so they shouldn't increment nesting level
+                    if re.match(
+                        r"\b(function|if|for|while|switch|try|parfor|classdef)\b",
                         line_stripped,
                     ):
                         if line_stripped.startswith("function"):
@@ -254,17 +268,22 @@ class MATLABQualityChecker:
                         nesting_level += 1
 
                     # Check for 'end' keyword that decreases nesting
-                    if re.match(r"\bend\b", line_stripped):
-                        nesting_level -= 1
-                        if nesting_level <= 0:
-                            in_function = False
-                            nesting_level = 0  # Prevent negative nesting
+                    if re.match(r"^end\b", line_stripped):
+                        # First check if this 'end' closes a declaration block
+                        if declaration_nesting_level > 0:
+                            declaration_nesting_level -= 1
+                        else:
+                            # This 'end' closes an executable scope block
+                            nesting_level -= 1
+                            if nesting_level <= 0:
+                                in_function = False
+                                nesting_level = 0  # Prevent negative nesting
 
                 # Check for function definition (for docstring and arguments validation)
                 if re.match(r"\bfunction\b", line_stripped) and not is_comment:
                     # Check if next non-empty line has docstring
                     has_docstring = False
-                    for j in range(i + 1, min(i + 1 + 5, len(lines))):
+                    for j in range(i, min(i + 5, len(lines))):
                         next_line = lines[j].strip()
                         if next_line and not next_line.startswith("%"):
                             break
@@ -281,7 +300,7 @@ class MATLABQualityChecker:
                     # Look for lines starting with 'arguments'
                     # (skip comment lines to avoid false positives)
                     has_arguments = False
-                    for j in range(i + 1, min(i + 1 + 15, len(lines))):
+                    for j in range(i, min(i + 15, len(lines))):
                         line_check = lines[j].strip()
                         # Skip comment lines
                         if line_check.startswith("%"):
