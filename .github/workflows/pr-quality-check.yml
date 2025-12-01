@@ -128,12 +128,12 @@ jobs:
           fi
         elif [ -d python ]; then
           black --check --diff python
-          elif [ -d src ]; then
-            if [ -d tests ]; then
-              black --check --diff src tests
-            else
-              black --check --diff src
-            fi
+        elif [ -d src ]; then
+          if [ -d tests ]; then
+            black --check --diff src tests
+          else
+            black --check --diff src
+          fi
         else
           black --check --diff .
         fi

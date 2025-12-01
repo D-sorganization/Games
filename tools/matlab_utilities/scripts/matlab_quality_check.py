@@ -149,6 +149,7 @@ class MATLABQualityChecker:
                         logger.info("MATLAB quality checks completed successfully")
                         return {
                             "success": True,
+                            "passed": True,
                             "output": result.stdout,
                             "method": "matlab_script",
                         }
@@ -277,14 +278,16 @@ class MATLABQualityChecker:
                         )
 
                     # Check for arguments validation block
-                    # Look for lines starting with 'arguments' (skip comment lines to avoid false positives)
+                    # Look for lines starting with 'arguments'
+                    # (skip comment lines to avoid false positives)
                     has_arguments = False
                     for j in range(i + 1, min(i + 1 + 15, len(lines))):
                         line_check = lines[j].strip()
                         # Skip comment lines
                         if line_check.startswith("%"):
                             continue
-                        # Break on non-empty, non-comment code lines (arguments must come before executable code)
+                        # Break on non-empty, non-comment code lines
+                        # (arguments must come before executable code)
                         if line_check and not line_check.startswith("%"):
                             if re.match(r"^arguments\b", line_check):
                                 has_arguments = True
