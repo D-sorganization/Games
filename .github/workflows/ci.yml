@@ -309,11 +309,13 @@ jobs:
       run: |
         pip install bandit==1.7.7
         # ✅ Exclude test directories, target source code only
-        # Note: Bandit exclusion paths are relative to the scanned directory
+        # Note: Bandit exclusion paths are relative to the current working directory (repo root)
         if [ -d python/src ]; then
+          # When scanning python/src, tests are at python/tests (sibling directory)
           bandit -r python/src -x python/tests -f json -o bandit-report.json
         elif [ -d python ]; then
-          bandit -r python -x tests -f json -o bandit-report.json
+          # When scanning python, tests are a subdirectory
+          bandit -r python -x python/tests -f json -o bandit-report.json
         elif [ -d src ]; then
           bandit -r src -x tests -f json -o bandit-report.json
         else

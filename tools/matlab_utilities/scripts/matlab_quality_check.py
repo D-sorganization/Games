@@ -557,7 +557,16 @@ def main() -> None:
     passed = results.get("passed", False)
     has_issues = bool(results.get("issues"))
 
-    exit_code = (0 if (passed and not has_issues) else 1) if args.strict else (0 if passed else 1)
+    if args.strict:
+        if passed and not has_issues:
+            exit_code = 0
+        else:
+            exit_code = 1
+    else:
+        if passed:
+            exit_code = 0
+        else:
+            exit_code = 1
 
     sys.exit(exit_code)
 
