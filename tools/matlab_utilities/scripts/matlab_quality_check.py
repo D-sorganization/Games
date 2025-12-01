@@ -79,7 +79,7 @@ class MATLABQualityChecker:
         logger.info("Found %d MATLAB files", len(m_files))
         return True
 
-    def run_matlab_quality_checks(self) -> dict[str, object]:  # noqa: PLR0911
+    def run_matlab_quality_checks(self) -> dict[str, object]:
         """Run MATLAB quality checks using the MATLAB script.
 
         Returns:
@@ -106,7 +106,7 @@ class MATLABQualityChecker:
                 return self._static_matlab_analysis()
 
         except (OSError, ValueError) as e:
-            logger.error("Error running MATLAB quality checks: %s", e)
+            logger.exception("Error running MATLAB quality checks: %s", e)
             return {"error": str(e)}
 
     def _run_matlab_script(self, script_path: Path) -> dict[str, object]:
@@ -164,7 +164,7 @@ class MATLABQualityChecker:
             return self._static_matlab_analysis()
 
         except Exception as e:
-            logger.error(f"Error running MATLAB script: {e}")
+            logger.exception(f"Error running MATLAB script: {e}")
             return {"error": str(e)}
 
     def _static_matlab_analysis(self) -> dict[str, object]:
@@ -528,26 +528,26 @@ def main() -> None:
 
     # Output results
     if args.output_format == "json":
-        print(json.dumps(results, indent=2, default=str))  # noqa: T201
+        print(json.dumps(results, indent=2, default=str))
     else:
-        print("\n" + "=" * 60)  # noqa: T201
-        print("MATLAB QUALITY CHECK RESULTS")  # noqa: T201
-        print("=" * 60)  # noqa: T201
-        print(f"Timestamp: {results.get('timestamp', 'N/A')}")  # noqa: T201
-        print(f"Total Files: {results.get('total_files', 0)}")  # noqa: T201
-        print(  # noqa: T201
+        print("\n" + "=" * 60)
+        print("MATLAB QUALITY CHECK RESULTS")
+        print("=" * 60)
+        print(f"Timestamp: {results.get('timestamp', 'N/A')}")
+        print(f"Total Files: {results.get('total_files', 0)}")
+        print(
             f"Status: {'PASSED' if results.get('passed', False) else 'FAILED'}",
         )
-        print(f"Summary: {results.get('summary', 'N/A')}")  # noqa: T201
+        print(f"Summary: {results.get('summary', 'N/A')}")
 
         issues = results.get("issues")
         if issues:
             issues_list = cast("list[str]", issues)
-            print(f"\nIssues Found ({len(issues_list)}):")  # noqa: T201
+            print(f"\nIssues Found ({len(issues_list)}):")
             for i, issue in enumerate(issues_list, 1):
-                print(f"  {i}. {issue}")  # noqa: T201
+                print(f"  {i}. {issue}")
 
-        print("\n" + "=" * 60)  # noqa: T201
+        print("\n" + "=" * 60)
 
     # Exit with appropriate code
     # In strict mode, fail if any issues are found; otherwise fail only if checks didn't pass
