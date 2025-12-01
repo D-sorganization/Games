@@ -558,15 +558,11 @@ def main() -> None:
     has_issues = bool(results.get("issues"))
 
     if args.strict:
-        if passed and not has_issues:
-            exit_code = 0
-        else:
-            exit_code = 1
+        exit_code = 0 if passed and not has_issues else 1
+    elif passed:
+        exit_code = 0
     else:
-        if passed:
-            exit_code = 0
-        else:
-            exit_code = 1
+        exit_code = 1
 
     sys.exit(exit_code)
 
