@@ -2023,9 +2023,6 @@ class Game:
 
         pygame.display.flip()
 
-        pygame.quit()
-        sys.exit()
-
 
 def main() -> None:
     """Entry point of the FPS Shooter application.
@@ -2034,6 +2031,8 @@ def main() -> None:
     """
     game = Game()
     game.run()
+    pygame.quit()
+    sys.exit()
 
 
 if __name__ == "__main__":
