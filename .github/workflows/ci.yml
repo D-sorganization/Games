@@ -59,7 +59,7 @@ jobs:
               exit $MATLAB_EXIT_CODE
             fi
           else
-            echo "⚠️  MATLAB quality check script not found - skipping"
+            echo "ℹ️  MATLAB quality check script not found - skipping"
           fi
 
       - name: Upload MATLAB Quality Report
