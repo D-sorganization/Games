@@ -279,6 +279,7 @@ class Game:
                     if self.player.shoot():
                         self.check_shot_hit()
                 elif event.button == 1:  # Left-click to aim
+                    # Aiming logic to be implemented
                     pass
             elif event.type == pygame.MOUSEMOTION:
                 assert self.player is not None

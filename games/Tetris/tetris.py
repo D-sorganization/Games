@@ -50,16 +50,19 @@ class TetrisGame:
             C.BUTTON_HEIGHT,
         )
 
-    def toggle_pause(self):
+    def toggle_pause(self) -> None:
+        """Toggle game pause state"""
         if self.state in [C.GameState.PLAYING, C.GameState.PAUSED]:
             self.state = C.GameState.PAUSED if self.state == C.GameState.PLAYING else C.GameState.PLAYING
 
-    def restart_game(self):
+    def restart_game(self) -> None:
+        """Restart the current game"""
         if self.state in [C.GameState.PLAYING, C.GameState.PAUSED, C.GameState.GAME_OVER]:
             self.logic.reset_game()
             self.state = C.GameState.PLAYING
 
-    def handle_menu_input(self, event):
+    def handle_menu_input(self, event: pygame.event.Event) -> None:
+        """Handle input events in the main menu"""
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_UP:
                 levels = [1, 5, 10, 15, 20]
@@ -102,7 +105,8 @@ class TetrisGame:
 
         return entries
 
-    def handle_settings_input(self, event):
+    def handle_settings_input(self, event: pygame.event.Event) -> None:
+        """Handle input events in the settings menu"""
         if event.type != pygame.KEYDOWN:
             return
 
@@ -222,6 +226,7 @@ class TetrisGame:
                     if self.input_handler.awaiting_controller_action:
                         if event.type in [pygame.JOYBUTTONDOWN, pygame.JOYHATMOTION]:
                              if self.input_handler.apply_controller_binding(event):
+                                 # Binding applied, no specific action needed
                                  pass
 
             # Process events for input handler

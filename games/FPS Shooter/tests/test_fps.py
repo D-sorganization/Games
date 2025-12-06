@@ -12,14 +12,16 @@ from src.raycaster import Raycaster
 from src.player import Player
 
 class TestFPS(unittest.TestCase):
-    def test_map_creation(self):
+    def test_map_creation(self) -> None:
+        """Test map initialization and bounds"""
         m = Map(30)
         self.assertEqual(m.size, 30)
         # Check borders are walls
         self.assertEqual(m.grid[0][0], 1)
         self.assertEqual(m.grid[29][0], 1)
 
-    def test_wall_collision(self):
+    def test_wall_collision(self) -> None:
+        """Test wall collision detection"""
         m = Map(30)
         self.assertTrue(m.is_wall(0, 0))
         # Find a non-wall
@@ -32,7 +34,8 @@ class TestFPS(unittest.TestCase):
             if found: break
         self.assertTrue(found)
 
-    def test_player_movement(self):
+    def test_player_movement(self) -> None:
+        """Test basic player movement"""
         # Mock map
         m = Map(30)
         # Clear a safe spot
