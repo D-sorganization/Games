@@ -7,7 +7,8 @@ from .particles import Particle, ScorePopup
 class TetrisLogic:
     """Handles the game logic, state, and rules"""
 
-    def __init__(self):
+    def __init__(self) -> None:
+        """Initialize the game logic and state"""
         self.starting_level = 1
         self.allow_rewind = False
         self.reset_game()
@@ -302,6 +303,7 @@ class TetrisLogic:
         self.lock_piece()
 
     def update_particles(self) -> None:
+        """Update state of all active particles"""
         for particle in self.particles[:]:
             if particle.is_alive():
                 particle.update()
@@ -309,6 +311,7 @@ class TetrisLogic:
                 self.particles.remove(particle)
 
     def update_popups(self) -> None:
+        """Update state of all score popups"""
         for popup in self.score_popups[:]:
             if popup.is_alive():
                 popup.update()

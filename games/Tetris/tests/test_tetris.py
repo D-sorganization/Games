@@ -10,7 +10,8 @@ from src.game_logic import TetrisLogic
 from src.constants import *
 
 class TestTetris(unittest.TestCase):
-    def test_tetromino_rotation(self):
+    def test_tetromino_rotation(self) -> None:
+        """Test tetromino rotation logic"""
         # T shape
         t = Tetromino(0, 0, "T")
         # Default: [[0, 1, 0], [1, 1, 1]]
@@ -29,7 +30,8 @@ class TestTetris(unittest.TestCase):
         # x=2: y=1 -> 1, y=0 -> 0 => [1, 0]
         self.assertEqual(rotated, [[1, 0], [1, 1], [1, 0]])
 
-    def test_line_clearing(self):
+    def test_line_clearing(self) -> None:
+        """Test line clearing mechanics and scoring"""
         logic = TetrisLogic()
         # Fill a line
         for x in range(GRID_WIDTH):
@@ -43,7 +45,8 @@ class TestTetris(unittest.TestCase):
         # Score calculation: 100 * level (1) = 100.
         self.assertEqual(logic.score, 100)
 
-    def test_game_over(self):
+    def test_game_over(self) -> None:
+        """Test game over condition detection"""
         logic = TetrisLogic()
         # Place a piece at spawn
         piece = logic.new_piece()

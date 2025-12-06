@@ -16,7 +16,8 @@ from player import Player
 from constants import *
 
 class TestWoW(unittest.TestCase):
-    def test_player_init(self):
+    def test_player_init(self) -> None:
+        """Test player initialization"""
         # Player init signature: (x, y)
         p = Player(100, 100)
         self.assertEqual(p.x, 100)

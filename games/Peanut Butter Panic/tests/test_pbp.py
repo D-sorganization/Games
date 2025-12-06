@@ -7,14 +7,16 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from peanut_butter_panic.core import GameWorld, InputState, PowerUp
 
 class TestPBP(unittest.TestCase):
-    def test_initial_state(self):
+    def test_initial_state(self) -> None:
+        """Test the initial state of the game world"""
         world = GameWorld()
         self.assertEqual(len(world.sandwiches), 2)
         # Config defaults: player_health=3
         self.assertEqual(world.player.health, 3)
         self.assertEqual(world.stats.score, 0)
 
-    def test_movement(self):
+    def test_movement(self) -> None:
+        """Test player movement mechanics"""
         world = GameWorld()
         initial_pos = world.player.position
         # Move right
@@ -25,7 +27,8 @@ class TestPBP(unittest.TestCase):
         self.assertGreater(world.player.position[0], initial_pos[0])
         self.assertAlmostEqual(world.player.position[1], initial_pos[1])
 
-    def test_golden_bread(self):
+    def test_golden_bread(self) -> None:
+        """Test golden bread powerup effect"""
         world = GameWorld()
         # Damage a sandwich
         world.sandwiches[0].health = 1

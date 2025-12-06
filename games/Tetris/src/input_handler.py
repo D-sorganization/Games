@@ -5,7 +5,8 @@ from .constants import GameState
 class InputHandler:
     """Handles keyboard and controller input"""
 
-    def __init__(self):
+    def __init__(self) -> None:
+        """Initialize input handler"""
         self.controller_enabled = True
         self.awaiting_controller_action = None
         self.controller_mapping = {
@@ -103,7 +104,8 @@ class InputHandler:
         elif action == "hold":
             logic.hold_piece()
 
-    def process_events(self, events, logic: TetrisLogic, game_state_manager) -> None:
+    def process_events(self, events: list[pygame.event.Event], logic: TetrisLogic, game_state_manager) -> None:
+        """Process all input events"""
         for event in events:
             if event.type in {pygame.JOYDEVICEADDED, pygame.JOYDEVICEREMOVED}:
                 self.init_controller()
@@ -114,7 +116,8 @@ class InputHandler:
             if event.type == pygame.KEYDOWN:
                  self.handle_keydown(event, logic, game_state_manager)
 
-    def handle_keydown(self, event, logic, game_state_manager):
+    def handle_keydown(self, event: pygame.event.Event, logic: TetrisLogic, game_state_manager) -> None:
+        """Handle key press events"""
         if event.key == pygame.K_r:
             game_state_manager.restart_game()
             return
@@ -141,7 +144,8 @@ class InputHandler:
         elif event.key == pygame.K_b:
             logic.rewind()
 
-    def handle_controller_event(self, event, logic, game_state_manager):
+    def handle_controller_event(self, event: pygame.event.Event, logic: TetrisLogic, game_state_manager) -> None:
+        """Handle controller input events"""
         if self.joystick is None:
             return
 

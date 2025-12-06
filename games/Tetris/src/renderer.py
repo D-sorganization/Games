@@ -4,7 +4,8 @@ from .game_logic import TetrisLogic
 from .tetromino import Tetromino
 
 class TetrisRenderer:
-    def __init__(self, screen: pygame.Surface):
+    def __init__(self, screen: pygame.Surface) -> None:
+        """Initialize the renderer with target screen"""
         self.screen = screen
         self.font_large = pygame.font.Font(None, 48)
         self.font = pygame.font.Font(None, 36)

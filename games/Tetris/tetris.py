@@ -135,7 +135,8 @@ class TetrisGame:
             elif entry["type"] == "mapping" and self.input_handler.controller_enabled and self.input_handler.joystick:
                 self.input_handler.awaiting_controller_action = entry["key"]
 
-    def draw_settings(self):
+    def draw_settings(self) -> None:
+        """Render the settings menu"""
         # Implementing draw_settings here as it was missing from renderer and needs state access
         self.screen.fill(C.BLACK)
         title = self.renderer.font_large.render("Settings", True, C.CYAN)
@@ -189,7 +190,8 @@ class TetrisGame:
             waiting_rect = waiting.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT - 100))
             self.screen.blit(waiting, waiting_rect)
 
-    def handle_mouse_input(self, pos):
+    def handle_mouse_input(self, pos: tuple[int, int]) -> None:
+        """Handle mouse clicks on UI buttons"""
         if self.controls_toggle_rect.collidepoint(pos):
             if self.state in [C.GameState.PLAYING, C.GameState.PAUSED]:
                 self.show_controls_panel = not self.show_controls_panel
