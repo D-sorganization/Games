@@ -227,7 +227,7 @@ class TetrisGame:
                         if event.type in [pygame.JOYBUTTONDOWN, pygame.JOYHATMOTION]:
                              if self.input_handler.apply_controller_binding(event):
                                  # Binding applied, no specific action needed
-                                 pass
+                                 ...
 
             # Process events for input handler
             self.input_handler.process_events(events, self.logic, self)
@@ -278,7 +278,8 @@ class TetrisGame:
                     self.renderer.draw_score_popups(self.logic)
                 else:
                     # Draw static particles when paused
-                    pass
+                    self.renderer.draw_particles(self.logic)
+                    self.renderer.draw_score_popups(self.logic)
 
                 if self.state == C.GameState.PAUSED:
                     overlay = pygame.Surface((C.SCREEN_WIDTH, C.SCREEN_HEIGHT))
