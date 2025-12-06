@@ -1,7 +1,9 @@
 import pygame
+
 from .constants import *
 from .game_logic import TetrisLogic
 from .tetromino import Tetromino
+
 
 class TetrisRenderer:
     def __init__(self, screen: pygame.Surface) -> None:
@@ -96,7 +98,11 @@ class TetrisRenderer:
 
     def draw_ghost_piece(self, logic: TetrisLogic) -> None:
         """Draw a ghost piece showing where the current piece will land"""
-        ghost = Tetromino(logic.current_piece.x, logic.current_piece.y, logic.current_piece.shape_type)
+        ghost = Tetromino(
+            logic.current_piece.x,
+            logic.current_piece.y,
+            logic.current_piece.shape_type,
+        )
         ghost.rotation = logic.current_piece.rotation
 
         while logic.valid_move(ghost, y_offset=1):

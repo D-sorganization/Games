@@ -6,11 +6,12 @@ Refactored into modules.
 """
 
 import sys
+
 import pygame
-import src.constants as C
+import src.constants as C  # noqa: N812
 from src.game_logic import TetrisLogic
-from src.renderer import TetrisRenderer
 from src.input_handler import InputHandler
+from src.renderer import TetrisRenderer
 
 # Initialize Pygame
 pygame.init()
@@ -53,7 +54,11 @@ class TetrisGame:
     def toggle_pause(self) -> None:
         """Toggle game pause state"""
         if self.state in [C.GameState.PLAYING, C.GameState.PAUSED]:
-            self.state = C.GameState.PAUSED if self.state == C.GameState.PLAYING else C.GameState.PLAYING
+            self.state = (
+                C.GameState.PAUSED
+                if self.state == C.GameState.PLAYING
+                else C.GameState.PLAYING
+            )
 
     def restart_game(self) -> None:
         """Restart the current game"""
@@ -136,7 +141,11 @@ class TetrisGame:
                     if key == "allow_rewind":
                         self.logic.rewind_history.clear()
 
-            elif entry["type"] == "mapping" and self.input_handler.controller_enabled and self.input_handler.joystick:
+            elif (
+                entry["type"] == "mapping"
+                and self.input_handler.controller_enabled
+                and self.input_handler.joystick
+            ):
                 self.input_handler.awaiting_controller_action = entry["key"]
 
     def draw_settings(self) -> None:
@@ -185,7 +194,9 @@ class TetrisGame:
         self.screen.blit(hint, hint_rect)
 
         if self.input_handler.awaiting_controller_action:
-            action_label = self.input_handler.controller_action_labels[self.input_handler.awaiting_controller_action]
+            action_label = self.input_handler.controller_action_labels[
+                self.input_handler.awaiting_controller_action
+            ]
             waiting = self.renderer.small_font.render(
                 f"Waiting for input to bind {action_label}",
                 True,
@@ -235,10 +246,14 @@ class TetrisGame:
             # Polling for continuous movement
             keys = pygame.key.get_pressed()
             if self.state == C.GameState.PLAYING:
-                 if keys[pygame.K_LEFT] and self.logic.valid_move(self.logic.current_piece, x_offset=-1):
+                 if keys[pygame.K_LEFT] and self.logic.valid_move(
+                     self.logic.current_piece, x_offset=-1
+                 ):
                     self.logic.current_piece.x -= 1
                     pygame.time.wait(100)
-                 if keys[pygame.K_RIGHT] and self.logic.valid_move(self.logic.current_piece, x_offset=1):
+                 if keys[pygame.K_RIGHT] and self.logic.valid_move(
+                     self.logic.current_piece, x_offset=1
+                 ):
                     self.logic.current_piece.x += 1
                     pygame.time.wait(100)
                  if keys[pygame.K_DOWN]:
@@ -287,7 +302,9 @@ class TetrisGame:
                     overlay.set_alpha(128)
                     self.screen.blit(overlay, (0, 0))
                     pause_text = self.renderer.font_large.render("PAUSED", True, C.YELLOW)
-                    pause_rect = pause_text.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2))
+                    pause_rect = pause_text.get_rect(
+                        center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2)
+                    )
                     self.screen.blit(pause_text, pause_rect)
 
             elif self.state == C.GameState.GAME_OVER:

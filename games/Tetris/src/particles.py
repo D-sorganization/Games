@@ -1,4 +1,5 @@
-from .constants import GOLD, SILVER
+from .constants import GOLD
+
 
 class Particle:
     """Visual particle effect"""

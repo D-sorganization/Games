@@ -1,5 +1,6 @@
 from .constants import DEFAULT_MAP_SIZE, MIN_BUILDING_OFFSET
 
+
 class Map:
     """Game map with walls and buildings"""
 

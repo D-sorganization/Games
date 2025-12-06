@@ -1,8 +1,12 @@
+from __future__ import annotations
+
 import random
-from typing import Optional, List, Dict, Any
+from typing import Any, Dict, List
+
 from .constants import *
-from .tetromino import Tetromino
 from .particles import Particle, ScorePopup
+from .tetromino import Tetromino
+
 
 class TetrisLogic:
     """Handles the game logic, state, and rules"""
@@ -18,7 +22,7 @@ class TetrisLogic:
         self.grid = [[BLACK for _ in range(GRID_WIDTH)] for _ in range(GRID_HEIGHT)]
         self.current_piece = self.new_piece()
         self.next_piece = self.new_piece()
-        self.held_piece: Optional[str] = None
+        self.held_piece: str | None = None
         self.can_hold = True
         self.game_over = False
         self.score = 0
@@ -108,7 +112,8 @@ class TetrisLogic:
         self.rewind_history = self.rewind_history[:-REWIND_STEP]
         self.restore_snapshot(snapshot)
         self.game_over = False
-        # State change should be handled by the controller/main loop, logic just updates internal state
+        # State change should be handled by the controller/main loop,
+        # logic just updates internal state
 
     def valid_move(
         self,

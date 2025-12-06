@@ -1,29 +1,26 @@
-import unittest
-import math
-import sys
 import os
+import sys
+import unittest
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))  # noqa: PTH100
 
 from src.map import Map
-# Raycaster needs pygame to init? No, it just takes map.
-# But it imports pygame. So we rely on system pygame.
-from src.raycaster import Raycaster
 from src.player import Player
+
 
 class TestFPS(unittest.TestCase):
     def test_map_creation(self) -> None:
         """Test map initialization and bounds"""
         m = Map(30)
-        self.assertEqual(m.size, 30)
+        assert m.size == 30
         # Check borders are walls
-        self.assertEqual(m.grid[0][0], 1)
-        self.assertEqual(m.grid[29][0], 1)
+        assert m.grid[0][0] == 1
+        assert m.grid[29][0] == 1
 
     def test_wall_collision(self) -> None:
         """Test wall collision detection"""
         m = Map(30)
-        self.assertTrue(m.is_wall(0, 0))
+        assert m.is_wall(0, 0)
         # Find a non-wall
         found = False
         for y in range(30):
@@ -31,8 +28,9 @@ class TestFPS(unittest.TestCase):
                 if not m.is_wall(x, y):
                     found = True
                     break
-            if found: break
-        self.assertTrue(found)
+            if found:
+                break
+        assert found
 
     def test_player_movement(self) -> None:
         """Test basic player movement"""
@@ -56,8 +54,8 @@ class TestFPS(unittest.TestCase):
         # Move forward
         # Speed 1.0
         p.move(m, [], forward=True, speed=1.0)
-        self.assertAlmostEqual(p.x, 6.0)
-        self.assertAlmostEqual(p.y, 5.0)
+        assert abs(p.x - 6.0) < 1e-7
+        assert abs(p.y - 5.0) < 1e-7
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

@@ -1,19 +1,20 @@
-import unittest
-import sys
 import os
+import sys
+import unittest
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))  # noqa: PTH100
 
 from peanut_butter_panic.core import GameWorld, InputState, PowerUp
+
 
 class TestPBP(unittest.TestCase):
     def test_initial_state(self) -> None:
         """Test the initial state of the game world"""
         world = GameWorld()
-        self.assertEqual(len(world.sandwiches), 2)
+        assert len(world.sandwiches) == 2
         # Config defaults: player_health=3
-        self.assertEqual(world.player.health, 3)
-        self.assertEqual(world.stats.score, 0)
+        assert world.player.health == 3
+        assert world.stats.score == 0
 
     def test_movement(self) -> None:
         """Test player movement mechanics"""
@@ -24,8 +25,8 @@ class TestPBP(unittest.TestCase):
         # Update for 0.1 seconds
         world.update(0.1, input_state)
 
-        self.assertGreater(world.player.position[0], initial_pos[0])
-        self.assertAlmostEqual(world.player.position[1], initial_pos[1])
+        assert world.player.position[0] > initial_pos[0]
+        assert abs(world.player.position[1] - initial_pos[1]) < 1e-7
 
     def test_golden_bread(self) -> None:
         """Test golden bread powerup effect"""
@@ -35,10 +36,10 @@ class TestPBP(unittest.TestCase):
 
         # Apply golden bread
         p = PowerUp(position=(0,0), kind="golden_bread", duration=0.0)
-        world._apply_powerup(p)
+        world._apply_powerup(p)  # noqa: SLF001
 
         # Should heal by 2 (up to max 5)
-        self.assertEqual(world.sandwiches[0].health, 3)
+        assert world.sandwiches[0].health == 3
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

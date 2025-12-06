@@ -1,10 +1,13 @@
+from __future__ import annotations
+
 import math
-from typing import TYPE_CHECKING, Dict, Any, List
-from . import constants as C
+from typing import TYPE_CHECKING, Any, Dict, List
+
+from . import constants as C  # noqa: N812
 
 if TYPE_CHECKING:
-    from .map import Map
     from .bot import Bot
+    from .map import Map
 
 class Player:
     """Player with position, rotation, and shooting capabilities"""
@@ -16,8 +19,12 @@ class Player:
         self.angle = angle
         self.health = 100
         self.max_health = 100
-        weapon_ammo: Dict[str, Any] = {weapon: C.WEAPONS[weapon].get("ammo", 0) for weapon in C.WEAPONS}
-        self.ammo: Dict[str, int] = {weapon: int(weapon_ammo[weapon]) for weapon in C.WEAPONS}
+        weapon_ammo: Dict[str, Any] = {
+            weapon: C.WEAPONS[weapon].get("ammo", 0) for weapon in C.WEAPONS
+        }
+        self.ammo: Dict[str, int] = {
+            weapon: int(weapon_ammo[weapon]) for weapon in C.WEAPONS
+        }
         self.current_weapon = "rifle"
         self.shooting = False
         self.shoot_timer = 0
@@ -25,8 +32,8 @@ class Player:
 
     def move(
         self,
-        game_map: "Map",
-        bots: List["Bot"],
+        game_map: Map,
+        bots: List[Bot],
         forward: bool = True,
         speed: float = C.PLAYER_SPEED,
     ) -> None:
@@ -63,8 +70,8 @@ class Player:
 
     def strafe(
         self,
-        game_map: "Map",
-        bots: List["Bot"],
+        game_map: Map,
+        bots: List[Bot],
         right: bool = True,
         speed: float = C.PLAYER_SPEED,
     ) -> None:

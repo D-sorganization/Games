@@ -1,18 +1,22 @@
+from __future__ import annotations
+
 import math
+from typing import TYPE_CHECKING, Any, Dict, List, Tuple
+
 import pygame
-from typing import TYPE_CHECKING, Tuple, Optional, List, Dict, Any
-from . import constants as C
+
+from . import constants as C  # noqa: N812
 
 if TYPE_CHECKING:
+    from .bot import Bot
     from .map import Map
     from .player import Player
-    from .bot import Bot
     from .projectile import Projectile
 
 class Raycaster:
     """Raycasting engine for 3D rendering"""
 
-    def __init__(self, game_map: "Map"):
+    def __init__(self, game_map: Map):
         """Initialize raycaster"""
         self.game_map = game_map
 
@@ -21,7 +25,7 @@ class Raycaster:
         origin_x: float,
         origin_y: float,
         angle: float,
-    ) -> Tuple[float, int, Optional["Bot"]]:
+    ) -> Tuple[float, int, Bot | None]:
         """Cast a single ray and return distance, wall type, and hit bot"""
         sin_a = math.sin(angle)
         cos_a = math.cos(angle)
@@ -46,8 +50,8 @@ class Raycaster:
         origin_y: float,
         angle: float,
         player_angle: float,
-        bots: List["Bot"],
-    ) -> Tuple[float, int, Optional["Bot"]]:
+        bots: List[Bot],
+    ) -> Tuple[float, int, Bot | None]:
         """Cast ray and detect bots"""
         sin_a = math.sin(angle)
         cos_a = math.cos(angle)
@@ -101,7 +105,7 @@ class Raycaster:
     def render_enemy_sprite(
         self,
         screen: pygame.Surface,
-        bot: "Bot",
+        bot: Bot,
         sprite_x: int,
         sprite_y: int,
         sprite_size: float,
@@ -140,8 +144,12 @@ class Raycaster:
         eye_size = head_size * 0.15
         eye_y = head_y + head_size * 0.3
         eye_spacing = head_size * 0.25
-        pygame.draw.circle(screen, C.WHITE, (int(center_x - eye_spacing), int(eye_y)), int(eye_size))
-        pygame.draw.circle(screen, C.WHITE, (int(center_x + eye_spacing), int(eye_y)), int(eye_size))
+        pygame.draw.circle(
+            screen, C.WHITE, (int(center_x - eye_spacing), int(eye_y)), int(eye_size)
+        )
+        pygame.draw.circle(
+            screen, C.WHITE, (int(center_x + eye_spacing), int(eye_y)), int(eye_size)
+        )
         pygame.draw.circle(
             screen,
             C.BLACK,
@@ -185,9 +193,11 @@ class Raycaster:
             flash_x = right_arm_x + arm_width
             flash_y = right_arm_y + arm_height * 0.3
             pygame.draw.circle(screen, C.YELLOW, (int(flash_x), int(flash_y)), int(flash_size))
-            pygame.draw.circle(screen, C.ORANGE, (int(flash_x), int(flash_y)), int(flash_size * 0.6))
+            pygame.draw.circle(
+                screen, C.ORANGE, (int(flash_x), int(flash_y)), int(flash_size * 0.6)
+            )
 
-    def render_3d(self, screen: pygame.Surface, player: "Player", bots: List["Bot"]) -> None:
+    def render_3d(self, screen: pygame.Surface, player: Player, bots: List[Bot]) -> None:
         """Render 3D view using raycasting"""
         ray_angle = player.angle - C.HALF_FOV
 
@@ -299,7 +309,9 @@ class Raycaster:
 
             # Calculate sprite position on screen
             sprite_x = (
-                C.SCREEN_WIDTH / 2 + (angle_to_bot / C.HALF_FOV) * C.SCREEN_WIDTH / 2 - sprite_size / 2
+                C.SCREEN_WIDTH / 2
+                + (angle_to_bot / C.HALF_FOV) * C.SCREEN_WIDTH / 2
+                - sprite_size / 2
             )
             sprite_y = C.SCREEN_HEIGHT / 2 - sprite_size / 2
 
@@ -339,8 +351,8 @@ class Raycaster:
     def render_minimap(
         self,
         screen: pygame.Surface,
-        player: "Player",
-        bots: List["Bot"],
+        player: Player,
+        bots: List[Bot],
     ) -> None:
         """Render 2D minimap"""
         minimap_size = 200
@@ -391,7 +403,9 @@ class Raycaster:
         dir_y = player_y + math.sin(player.angle) * 10
         pygame.draw.line(screen, C.GREEN, (player_x, player_y), (dir_x, dir_y), 2)
 
-    def render_projectiles(self, screen: pygame.Surface, player: "Player", projectiles: List["Projectile"]) -> None:
+    def render_projectiles(
+        self, screen: pygame.Surface, player: Player, projectiles: List[Projectile]
+    ) -> None:
         """Render bot projectiles"""
         for projectile in projectiles:
             if not projectile.alive:

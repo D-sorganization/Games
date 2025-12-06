@@ -1,16 +1,21 @@
-import sys
-import random
-import math
-import pygame
-from typing import List, Tuple, Optional, Dict, Any
+from __future__ import annotations
 
-from . import constants as C
+import math
+import random
+from typing import TYPE_CHECKING, Any, Dict, List, Tuple
+
+import pygame
+
+from . import constants as C  # noqa: N812
+from .bot import Bot
 from .map import Map
 from .player import Player
-from .bot import Bot
 from .raycaster import Raycaster
 from .ui import Button
-from .projectile import Projectile
+
+if TYPE_CHECKING:
+    from .projectile import Projectile
+
 
 class Game:
     """Main game class"""
@@ -33,11 +38,11 @@ class Game:
         self.selected_map_size = C.DEFAULT_MAP_SIZE
 
         # Game objects
-        self.game_map: Optional[Map] = None  # Will be created with selected size
-        self.player: Optional[Player] = None
+        self.game_map: Map | None = None  # Will be created with selected size
+        self.player: Player | None = None
         self.bots: List[Bot] = []
         self.projectiles: List[Projectile] = []  # Bot projectiles
-        self.raycaster: Optional[Raycaster] = None
+        self.raycaster: Raycaster | None = None
 
         # Fonts
         self.title_font = pygame.font.Font(None, 72)
@@ -503,11 +508,17 @@ class Game:
         health_x = 20
         health_y = hud_bottom
 
-        pygame.draw.rect(self.screen, C.DARK_GRAY, (health_x, health_y, health_width, health_height))
+        pygame.draw.rect(
+            self.screen, C.DARK_GRAY, (health_x, health_y, health_width, health_height)
+        )
         assert self.player is not None
         health_percent = max(0, self.player.health / self.player.max_health)
         fill_width = int(health_width * health_percent)
-        health_color = C.GREEN if health_percent > 0.5 else (C.ORANGE if health_percent > 0.25 else C.RED)
+        health_color = (
+            C.GREEN
+            if health_percent > 0.5
+            else (C.ORANGE if health_percent > 0.25 else C.RED)
+        )
         pygame.draw.rect(self.screen, health_color, (health_x, health_y, fill_width, health_height))
         pygame.draw.rect(self.screen, C.WHITE, (health_x, health_y, health_width, health_height), 2)
         health_text = self.tiny_font.render(f"HP: {self.player.health}", True, C.WHITE)
@@ -518,7 +529,9 @@ class Game:
         weapon_width = 200
         weapon_height = 70
 
-        pygame.draw.rect(self.screen, C.DARK_GRAY, (weapon_x, weapon_y, weapon_width, weapon_height))
+        pygame.draw.rect(
+            self.screen, C.DARK_GRAY, (weapon_x, weapon_y, weapon_width, weapon_height)
+        )
         pygame.draw.rect(self.screen, C.WHITE, (weapon_x, weapon_y, weapon_width, weapon_height), 2)
 
         current_weapon_data: Dict[str, Any] = C.WEAPONS[self.player.current_weapon]
@@ -656,7 +669,11 @@ class Game:
             ),
             (f"Total Kills: {self.kills}", C.WHITE),
             (f"Total Time: {total_time:.1f}s", C.GREEN),
-            ((f"Average Time/Level: {avg_time:.1f}s", C.GREEN) if self.level_times else ("", C.WHITE)),
+            (
+                (f"Average Time/Level: {avg_time:.1f}s", C.GREEN)
+                if self.level_times
+                else ("", C.WHITE)
+            ),
             ("", C.WHITE),
             ("Press SPACE to restart", C.WHITE),
             ("Press ESC for menu", C.WHITE),

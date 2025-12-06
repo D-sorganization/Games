@@ -1,4 +1,5 @@
-from .constants import SHAPES, SHAPE_COLORS
+from .constants import SHAPE_COLORS, SHAPES
+
 
 class Tetromino:
     """Represents a Tetris piece"""

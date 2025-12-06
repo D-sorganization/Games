@@ -1,7 +1,10 @@
+from __future__ import annotations
+
 import math
 import random
-from typing import TYPE_CHECKING, List, Optional, Any, Dict
-from . import constants as C
+from typing import TYPE_CHECKING, Any, Dict, List
+
+from . import constants as C  # noqa: N812
 from .projectile import Projectile
 
 if TYPE_CHECKING:
@@ -41,7 +44,7 @@ class Bot:
         self.last_y = y
         self.shoot_animation = 0.0  # For shoot animation
 
-    def update(self, game_map: "Map", player: "Player", other_bots: List["Bot"]) -> Optional[Projectile]:
+    def update(self, game_map: Map, player: Player, other_bots: List[Bot]) -> Projectile | None:
         """Update bot AI
         Returns:
             Projectile if bot shoots, None otherwise
@@ -52,8 +55,7 @@ class Bot:
         # Update animations
         if self.shoot_animation > 0:
             self.shoot_animation -= 0.1
-            if self.shoot_animation < 0:
-                self.shoot_animation = 0
+            self.shoot_animation = max(self.shoot_animation, 0)
 
         # Calculate distance to player
         dx = player.x - self.x
@@ -122,7 +124,7 @@ class Bot:
 
         return None  # No projectile shot this frame
 
-    def has_line_of_sight(self, game_map: "Map", player: "Player") -> bool:
+    def has_line_of_sight(self, game_map: Map, player: Player) -> bool:
         """Check if bot has line of sight to player"""
         steps = 50
         for i in range(1, steps):

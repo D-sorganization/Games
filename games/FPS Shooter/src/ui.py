@@ -1,6 +1,11 @@
-import pygame
+from __future__ import annotations
+
 from typing import Tuple
-from . import constants as C
+
+import pygame
+
+from . import constants as C  # noqa: N812
+
 
 class Button:
     """UI Button"""
