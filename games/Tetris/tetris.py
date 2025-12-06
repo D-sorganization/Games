@@ -226,8 +226,8 @@ class TetrisGame:
                     if self.input_handler.awaiting_controller_action:
                         if event.type in [pygame.JOYBUTTONDOWN, pygame.JOYHATMOTION]:
                              if self.input_handler.apply_controller_binding(event):
-                                 # Binding applied, no specific action needed
-                                 ...
+                                 # Binding applied
+                                 continue
 
             # Process events for input handler
             self.input_handler.process_events(events, self.logic, self)

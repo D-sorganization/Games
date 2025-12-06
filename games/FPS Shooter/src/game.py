@@ -280,7 +280,7 @@ class Game:
                         self.check_shot_hit()
                 elif event.button == 1:  # Left-click to aim
                     # Aiming logic to be implemented
-                    ...
+                    print("Aiming not implemented yet")
             elif event.type == pygame.MOUSEMOTION:
                 assert self.player is not None
                 self.player.rotate(event.rel[0] * C.PLAYER_ROT_SPEED)
