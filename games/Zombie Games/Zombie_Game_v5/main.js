@@ -81,20 +81,32 @@ document.addEventListener('mouseup', (e) => {
 
 function init() {
   scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x111111);
+  scene.background = new THREE.Color(0x050505); // Darker background
+  scene.fog = new THREE.FogExp2(0x050505, 0.015); // Add fog
 
   camera = new THREE.PerspectiveCamera(BASE_FOV, window.innerWidth / window.innerHeight, 0.1, 1000);
   camera.position.set(0, PLAYER_HEIGHT, 0);
 
   renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.shadowMap.enabled = true; // Enable shadows
   document.body.appendChild(renderer.domElement);
 
   controls = new PointerLockControls(camera, renderer.domElement);
   renderer.domElement.addEventListener('click', () => controls.lock());
 
-  const light = new THREE.HemisphereLight(0xffffff, 0x444444, 1.1);
-  scene.add(light);
+  // Ambient light (dim)
+  const ambientLight = new THREE.HemisphereLight(0x202020, 0x000000, 0.5);
+  scene.add(ambientLight);
+
+  // Flashlight attached to camera
+  const flashlight = new THREE.SpotLight(0xffffff, 2.0, 40, Math.PI / 5, 0.5, 1);
+  flashlight.position.set(0.2, -0.2, 0); // Offset slightly
+  flashlight.target.position.set(0, 0, -1);
+  flashlight.castShadow = true;
+  camera.add(flashlight);
+  camera.add(flashlight.target);
+  scene.add(camera);
 
   buildCorridor();
   spawnEnemies();
@@ -104,27 +116,35 @@ function init() {
 
 function buildCorridor() {
   const floorGeom = new THREE.BoxGeometry(6, 0.5, 200);
-  const floor = new THREE.Mesh(floorGeom, new THREE.MeshStandardMaterial({ color: 0x202020 }));
+  const floorMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.8 });
+  const floor = new THREE.Mesh(floorGeom, floorMat);
   floor.position.set(0, -0.25, 0);
   floor.receiveShadow = true;
   scene.add(floor);
   worldBoxes.push(floorGeom.boundingBox || new THREE.Box3().setFromObject(floor));
 
-  const wallMat = new THREE.MeshStandardMaterial({ color: 0x303030 });
+  const wallMat = new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: 0.9 });
   const leftWall = new THREE.Mesh(new THREE.BoxGeometry(0.5, 6, 200), wallMat);
   leftWall.position.set(-3.25, 2.5, 0);
+  leftWall.receiveShadow = true;
+  leftWall.castShadow = true;
+
   const rightWall = leftWall.clone();
   rightWall.position.x = 3.25;
-  const ceiling = new THREE.Mesh(new THREE.BoxGeometry(6, 0.5, 200), new THREE.MeshStandardMaterial({ color: 0x222222 }));
+
+  const ceiling = new THREE.Mesh(new THREE.BoxGeometry(6, 0.5, 200), new THREE.MeshStandardMaterial({ color: 0x111111 }));
   ceiling.position.set(0, 5.75, 0);
+
   scene.add(leftWall, rightWall, ceiling);
   [leftWall, rightWall, ceiling].forEach(mesh => worldBoxes.push(new THREE.Box3().setFromObject(mesh)));
 
   // Add cover buildings along the corridor
-  const coverMat = new THREE.MeshStandardMaterial({ color: 0x555555 });
+  const coverMat = new THREE.MeshStandardMaterial({ color: 0x444444 });
   for (let i = 0; i < 6; i++) {
     const cover = new THREE.Mesh(new THREE.BoxGeometry(2, 3, 4), coverMat);
     cover.position.set((i % 2 === 0 ? -1.5 : 1.5), 1.5, 25 + i * 25);
+    cover.castShadow = true;
+    cover.receiveShadow = true;
     scene.add(cover);
     worldBoxes.push(new THREE.Box3().setFromObject(cover));
   }
@@ -144,7 +164,8 @@ function spawnEnemies() {
 
 function createEnemy(isBoss) {
   const bodyGeom = new THREE.CapsuleGeometry(isBoss ? 0.6 : 0.45, isBoss ? 1.6 : 1.2, 6, 12);
-  const body = new THREE.Mesh(bodyGeom, new THREE.MeshStandardMaterial({ color: isBoss ? 0x8c3f3f : 0x6b8a6f }));
+  const body = new THREE.Mesh(bodyGeom, new THREE.MeshStandardMaterial({ color: isBoss ? 0x8c3f3f : 0x6b8a6f, roughness: 0.5 }));
+  body.castShadow = true;
   const health = isBoss ? BOSS_HEALTH : ZOMBIE_HEALTH;
   const group = new THREE.Group();
   group.add(body);
@@ -174,6 +195,8 @@ function updateHealthBars() {
     const ratio = Math.max(enemy.health, 0) / enemy.maxHealth;
     enemy.bar.scale.x = ratio;
     enemy.bar.position.x = (ratio - 1) * 0.6;
+    // Billboarding for health bar
+    enemy.group.children[1].lookAt(camera.position);
   });
 }
 

@@ -6,13 +6,33 @@ const FOV = Math.PI / 3; // 60 degrees
 const MAX_DEPTH = 40;
 const NUM_RAYS = SCREEN_WIDTH / 2;
 
-const PLAYER_PISTOL_DAMAGE = 10;
 const ZOMBIE_DAMAGE = 10;
 const ZOMBIE_HEALTH = 80;
 const ATTACK_RANGE = 70;
 const FIREBALL_DAMAGE = 15;
 const FIREBALL_SPEED = 2.4;
 const FIREBALL_COOLDOWN = 2200;
+
+// Weapon Definitions
+const WEAPONS = {
+    pistol: {
+        name: 'PISTOL',
+        damage: 15,
+        cooldown: 400,
+        color: '#444',
+        type: 'hitscan'
+    },
+    shotgun: {
+        name: 'SHOTGUN',
+        damage: 12, // per pellet
+        cooldown: 1000,
+        color: '#333',
+        type: 'hitscan',
+        pellets: 6,
+        spread: 0.15,
+        ammoCost: 1
+    }
+};
 
 // Game map (1 = wall, 0 = empty, 2 = door, 3 = exit)
 const mapLayout = [
@@ -106,11 +126,12 @@ const keys = {};
 
 // Weapon state
 const weapon = {
+    current: 'pistol',
+    inventory: ['pistol', 'shotgun'],
     bobOffset: 0,
     shootAnimOffset: 0,
     isShooting: false,
     lastShot: 0,
-    shootCooldown: 300,
     isHolstered: false,
     aiming: false
 };
@@ -150,6 +171,13 @@ document.addEventListener('keydown', (e) => {
 
     if (key === 'm') {
         minimapVisible = !minimapVisible;
+    }
+
+    if (key === '1') {
+        if (weapon.inventory.includes('pistol')) weapon.current = 'pistol';
+    }
+    if (key === '2') {
+        if (weapon.inventory.includes('shotgun')) weapon.current = 'shotgun';
     }
 });
 
@@ -236,14 +264,24 @@ function hasLineOfSight(originX, originY, targetX, targetY) {
     return ray.distance >= distanceToTarget - 0.1;
 }
 
-function drawWalls() {
-    // Sky
-    ctx.fillStyle = '#2a2a3e';
+function drawFloorCeiling() {
+    // Ceiling gradient
+    const ceilingGrad = ctx.createLinearGradient(0, 0, 0, SCREEN_HEIGHT / 2);
+    ceilingGrad.addColorStop(0, '#1a1a2e');
+    ceilingGrad.addColorStop(1, '#2a2a3e');
+    ctx.fillStyle = ceilingGrad;
     ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT / 2);
 
-    // Floor
-    ctx.fillStyle = '#3d3d3d';
+    // Floor gradient
+    const floorGrad = ctx.createLinearGradient(0, SCREEN_HEIGHT / 2, 0, SCREEN_HEIGHT);
+    floorGrad.addColorStop(0, '#2d2d2d');
+    floorGrad.addColorStop(1, '#3d3d3d');
+    ctx.fillStyle = floorGrad;
     ctx.fillRect(0, SCREEN_HEIGHT / 2, SCREEN_WIDTH, SCREEN_HEIGHT / 2);
+}
+
+function drawWalls() {
+    drawFloorCeiling();
 
     // Cast rays
     for (let x = 0; x < NUM_RAYS; x++) {
@@ -462,20 +500,42 @@ function drawWeapon() {
         SCREEN_HEIGHT - 200 + Math.sin(weapon.bobOffset) * 10 + weapon.shootAnimOffset - aimLift;
     const weaponX = SCREEN_WIDTH / 2 - 50 + (weapon.aiming ? 8 : 0);
 
-    // Draw simple gun
-    ctx.fillStyle = '#444';
-    ctx.fillRect(weaponX, weaponY, 100, 200);
+    if (weapon.current === 'pistol') {
+        // Draw simple gun
+        ctx.fillStyle = '#444';
+        ctx.fillRect(weaponX, weaponY, 100, 200);
 
-    ctx.fillStyle = '#666';
-    ctx.fillRect(weaponX + 20, weaponY, 60, 150);
+        ctx.fillStyle = '#666';
+        ctx.fillRect(weaponX + 20, weaponY, 60, 150);
 
-    ctx.fillStyle = '#222';
-    ctx.fillRect(weaponX + 35, weaponY, 30, 80);
+        ctx.fillStyle = '#222';
+        ctx.fillRect(weaponX + 35, weaponY, 30, 80);
 
-    // Muzzle flash
-    if (weapon.shootAnimOffset < 0) {
-        ctx.fillStyle = '#ffff00';
-        ctx.fillRect(weaponX + 25, weaponY - 20, 50, 20);
+        // Muzzle flash
+        if (weapon.shootAnimOffset < 0) {
+            ctx.fillStyle = '#ffff00';
+            ctx.fillRect(weaponX + 25, weaponY - 20, 50, 20);
+        }
+    } else if (weapon.current === 'shotgun') {
+        // Shotgun visualization
+        // Dual barrels
+        const barrelColor = '#111';
+        const stockColor = '#5c4033';
+        const offset = weapon.aiming ? 0 : 20;
+
+        ctx.fillStyle = barrelColor;
+        ctx.fillRect(weaponX - 20 - offset, weaponY + 50, 40, 150);
+        ctx.fillRect(weaponX + 30 + offset, weaponY + 50, 40, 150);
+
+        // Stock
+        ctx.fillStyle = stockColor;
+        ctx.fillRect(weaponX - 30 - offset, weaponY + 180, 110, 60);
+
+        // Flash
+        if (weapon.shootAnimOffset < 0) {
+            ctx.fillStyle = '#ffff00';
+            ctx.fillRect(weaponX - 30 - offset, weaponY + 10, 120, 60);
+        }
     }
 }
 
@@ -494,9 +554,10 @@ function drawHUD() {
     ctx.fillText(`KILLS: ${player.kills}/${enemies.length}`, 20, 90);
 
     // Weapon state
+    const currentWep = WEAPONS[weapon.current];
     ctx.fillStyle = weapon.isHolstered ? '#ffaa00' : '#00ff00';
-    const holsterText = weapon.isHolstered ? 'HOLSTERED' : 'READY';
-    ctx.fillText(`GUN: ${holsterText}`, 20, 120);
+    const holsterText = weapon.isHolstered ? 'HOLSTERED' : currentWep.name;
+    ctx.fillText(`WEAPON: ${holsterText} (1,2)`, 20, 120);
 
     // Crosshair
     ctx.strokeStyle = '#00ff00';
@@ -508,6 +569,15 @@ function drawHUD() {
     ctx.moveTo(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 - crosshairSize);
     ctx.lineTo(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + crosshairSize);
     ctx.stroke();
+
+    // Shotgun spread indicator if aiming
+    if (weapon.current === 'shotgun' && weapon.aiming) {
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = 'rgba(0, 255, 0, 0.3)';
+        ctx.beginPath();
+        ctx.arc(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, 40, 0, Math.PI * 2);
+        ctx.stroke();
+    }
 }
 
 function updatePlayer(deltaTime) {
@@ -658,19 +728,8 @@ function updateProjectiles(deltaTime) {
     }
 }
 
-function shoot() {
-    const currentTime = Date.now();
-
-    if (weapon.isHolstered) return;
-    if (currentTime - weapon.lastShot < weapon.shootCooldown) return;
-    if (player.ammo <= 0) return;
-
-    player.ammo--;
-    weapon.lastShot = currentTime;
-    weapon.shootAnimOffset = -30;
-
-    // Check if we hit an enemy
-    const centerRay = castRay(player.angle);
+function fireRay(angleOffset, damage) {
+    const centerRay = castRay(player.angle + angleOffset);
 
     enemies.forEach(enemy => {
         if (enemy.health <= 0) return;
@@ -680,7 +739,7 @@ function shoot() {
         const distance = Math.sqrt(dx * dx + dy * dy) / TILE_SIZE;
         const angle = Math.atan2(dy, dx);
 
-        let angleDiff = angle - player.angle;
+        let angleDiff = angle - (player.angle + angleOffset);
         while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
         while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
 
@@ -693,13 +752,35 @@ function shoot() {
             distance < centerRay.distance &&
             hasLineOfSight(player.x, player.y, enemy.x, enemy.y)
         ) {
-            enemy.health -= PLAYER_PISTOL_DAMAGE;
+            enemy.health -= damage;
 
             if (enemy.health <= 0) {
                 player.kills++;
             }
         }
     });
+}
+
+function shoot() {
+    const currentTime = Date.now();
+    const weaponType = WEAPONS[weapon.current];
+
+    if (weapon.isHolstered) return;
+    if (currentTime - weapon.lastShot < weaponType.cooldown) return;
+    if (player.ammo <= 0) return;
+
+    player.ammo -= (weaponType.ammoCost || 1);
+    weapon.lastShot = currentTime;
+    weapon.shootAnimOffset = -30;
+
+    if (weapon.current === 'pistol') {
+        fireRay(0, weaponType.damage);
+    } else if (weapon.current === 'shotgun') {
+        for (let i = 0; i < weaponType.pellets; i++) {
+            const spread = (Math.random() - 0.5) * weaponType.spread;
+            fireRay(spread, weaponType.damage);
+        }
+    }
 }
 
 function openDoor() {
