@@ -86,7 +86,8 @@ def _render_world(  # type: ignore[no-any-unimported]
         _draw_circle(surface, color, enemy.position, enemy.radius)
 
     for powerup in world.powerups:
-        _draw_circle(surface, (255, 180, 60), powerup.position, powerup.radius)
+        color = (255, 215, 0) if powerup.kind == "golden_bread" else (255, 180, 60)
+        _draw_circle(surface, color, powerup.position, powerup.radius)
 
     hud_lines = [
         f"Score: {world.stats.score}",

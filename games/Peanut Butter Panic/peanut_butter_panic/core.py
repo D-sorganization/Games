@@ -444,8 +444,8 @@ class GameWorld:
 
     def _drop_powerup(self, position: Vec2) -> None:
         """Drop a random powerup at the given position."""
-        kind = self.rng.choice(["sugar_rush", "sticky_gloves", "free_shockwave"])
-        duration = 7.0 if kind != "free_shockwave" else 0.0
+        kind = self.rng.choice(["sugar_rush", "sticky_gloves", "free_shockwave", "golden_bread"])
+        duration = 7.0 if kind not in ["free_shockwave", "golden_bread"] else 0.0
         self.powerups.append(PowerUp(position=position, kind=kind, duration=duration))
 
     def _apply_powerup(self, powerup: PowerUp) -> None:
@@ -464,6 +464,10 @@ class GameWorld:
             self.config.swing_radius = self.base_swing_radius + 12
         elif powerup.kind == "free_shockwave":
             self.player.shockwave_cooldown = 0.0
+        elif powerup.kind == "golden_bread":
+            for sandwich in self.sandwiches:
+                if sandwich.alive:
+                    sandwich.health = min(self.config.sandwich_health, sandwich.health + 2)
 
     def _remove_enemies(self, defeated: Iterable[Enemy]) -> None:
         """Remove defeated enemies from the enemy list."""
