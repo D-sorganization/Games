@@ -28,27 +28,46 @@ class Game:
         self.running = True
 
         # Game state
-        self.state = "intro"  # intro, menu, playing, game_over, level_complete
-        self.intro_scroll_y: float = float(C.SCREEN_HEIGHT)
-        self.intro_start_time = 0
+        # Game state
+        self.state = "intro"
+        self.intro_step = 0
+        self.intro_timer = 0
+        self.intro_alpha = 0
+        
+        # Gameplay state
         self.level = 1
         self.kills = 0
         self.level_start_time = 0
-        self.level_times: List[float] = []  # Track time for each level
+        self.level_times: List[float] = []
         self.selected_map_size = C.DEFAULT_MAP_SIZE
+        self.paused = False
+        self.show_damage = True
+        
+        # Visual effects
+        self.particles: List[Dict[str, Any]] = []
+        self.damage_texts: List[Dict[str, Any]] = []
 
         # Game objects
-        self.game_map: Map | None = None  # Will be created with selected size
+        self.game_map: Map | None = None
         self.player: Player | None = None
         self.bots: List[Bot] = []
-        self.projectiles: List[Projectile] = []  # Bot projectiles
+        self.projectiles: List[Projectile] = []
         self.raycaster: Raycaster | None = None
 
-        # Fonts
-        self.title_font = pygame.font.Font(None, 72)
-        self.font = pygame.font.Font(None, 48)
-        self.small_font = pygame.font.Font(None, 32)
-        self.tiny_font = pygame.font.Font(None, 24)
+        # Fonts - Modern and Stylistic
+        try:
+            self.title_font = pygame.font.SysFont("impact", 80)
+            self.font = pygame.font.SysFont("arial", 48)
+            self.small_font = pygame.font.SysFont("arial", 32)
+            self.tiny_font = pygame.font.SysFont("arial", 24)
+            self.hand_font = pygame.font.SysFont("comicsansms", 40) # For Jasper's notes
+        except:
+            # Fallback
+            self.title_font = pygame.font.Font(None, 80)
+            self.font = pygame.font.Font(None, 48)
+            self.small_font = pygame.font.Font(None, 32)
+            self.tiny_font = pygame.font.Font(None, 24)
+            self.hand_font = pygame.font.Font(None, 40)
 
         # Cache static UI strings
         self.weapon_hints = " ".join(
@@ -61,8 +80,8 @@ class Game:
             C.SCREEN_HEIGHT // 2 + 50,
             300,
             60,
-            "START GAME",
-            C.GREEN,
+            "ENTER BATTLE",
+            C.BLUE_BLOOD,
         )
         self.map_size_buttons = []
         map_sizes = [30, 40, 50, 60, 70]
@@ -183,47 +202,36 @@ class Game:
                     break
         self.player = Player(player_pos[0], player_pos[1], player_pos[2])
 
-        # Bots spawn in other three corners
+        # Bots spawn in other three corners with varied types
         self.bots = []
-        self.projectiles = []  # Reset projectiles
-        enemies_per_corner = 4 + (self.level - 1)  # 4-5 enemies, increasing with level
-
+        self.projectiles = []
+        enemies_per_corner = 4 + (self.level - 1)
+        
+        available_types = list(C.ENEMY_TYPES.keys())
+        random.shuffle(available_types)
+        
         for i in range(1, 4):
             bot_pos = corners[i]
-            # Same enemy type for all enemies in this corner
-            enemy_type = random.choice(list(C.ENEMY_TYPES.keys()))
-
-            # Spawn multiple enemies around this corner position
+            # Use a different enemy type for each corner (cycling if we run out)
+            enemy_type = available_types[(i-1) % len(available_types)]
+            
+            # Spawn enemies around corner
             for j in range(enemies_per_corner):
-                # Spread enemies in a small radius around the corner
                 angle_offset = j * 2 * math.pi / enemies_per_corner
-                radius = 1.5 + (j % 2) * 0.5  # Alternate between close and slightly further
+                radius = 1.5 + (j % 2) * 0.5
                 spawn_x = bot_pos[0] + math.cos(angle_offset) * radius
                 spawn_y = bot_pos[1] + math.sin(angle_offset) * radius
-
-                # Ensure spawn is safe (not in wall, not in building, within bounds)
+                
                 if (
                     not self.game_map.is_wall(spawn_x, spawn_y)
                     and not self.game_map.is_inside_building(spawn_x, spawn_y)
                     and 2 <= spawn_x < self.game_map.size - 2
                     and 2 <= spawn_y < self.game_map.size - 2
                 ):
-                    self.bots.append(
-                        Bot(spawn_x, spawn_y, self.level, enemy_type),
-                    )
+                    self.bots.append(Bot(spawn_x, spawn_y, self.level, enemy_type))
                 else:
-                    # Try to find a nearby safe position
-                    for attempt in range(10):
-                        test_x = bot_pos[0] + random.uniform(-2, 2)
-                        test_y = bot_pos[1] + random.uniform(-2, 2)
-                        if (
-                            not self.game_map.is_wall(test_x, test_y)
-                            and not self.game_map.is_inside_building(test_x, test_y)
-                            and 2 <= test_x < self.game_map.size - 2
-                            and 2 <= test_y < self.game_map.size - 2
-                        ):
-                            self.bots.append(Bot(test_x, test_y, self.level, enemy_type))
-                            break
+                    # Retry nearby
+                    self.bots.append(Bot(bot_pos[0], bot_pos[1], self.level, enemy_type))
 
         self.state = "playing"
 
@@ -265,6 +273,11 @@ class Game:
                     self.state = "menu"
                     pygame.mouse.set_visible(True)
                     pygame.event.set_grab(False)
+                elif event.key == pygame.K_p:
+                    self.paused = not self.paused
+                    pygame.mouse.set_visible(self.paused)
+                    pygame.event.set_grab(not self.paused)
+                # Weapon switching
                 # Weapon switching
                 elif event.key == pygame.K_1:
                     assert self.player is not None
@@ -338,12 +351,46 @@ class Game:
                     is_headshot = angle_diff < C.HEADSHOT_THRESHOLD
 
         if closest_bot:
+            # Calculate hit position for blood
+            hit_x = closest_bot.x
+            hit_y = closest_bot.y
+            
+            damage_dealt = weapon_damage * 3 if is_headshot else weapon_damage
             closest_bot.take_damage(weapon_damage, is_headshot=is_headshot)
+            
+            # Spawn damage text
+            if self.show_damage:
+                self.damage_texts.append({
+                    "x": C.SCREEN_WIDTH // 2 + random.randint(-20, 20),
+                    "y": C.SCREEN_HEIGHT // 2 - 50,
+                    "text": str(damage_dealt) + ("!" if is_headshot else ""),
+                    "color": C.RED if is_headshot else C.DAMAGE_TEXT_COLOR,
+                    "timer": 60,
+                    "vy": -1.0
+                })
+            
+            # Spawn Blue Blood
+            for _ in range(10):
+                self.particles.append({
+                    "x": C.SCREEN_WIDTH // 2,
+                    "y": C.SCREEN_HEIGHT // 2,
+                    "dx": random.uniform(-5, 5),
+                    "dy": random.uniform(-5, 5),
+                    "color": C.BLUE_BLOOD,
+                    "timer": 30,
+                    "size": random.randint(2, 5)
+                })
+
             if not closest_bot.alive:
                 self.kills += 1
 
     def update_game(self) -> None:
         """Update game state"""
+        if self.paused:
+            mouse_pos = pygame.mouse.get_pos()
+            # Simple pause menu handling could go here
+            return
+
         assert self.player is not None
         if not self.player.alive:
             self.state = "game_over"
@@ -353,6 +400,7 @@ class Game:
 
         all_dead = all(not bot.alive for bot in self.bots)
         if all_dead:
+            # Only add time if we haven't already for this level
             level_time = (pygame.time.get_ticks() - self.level_start_time) / 1000.0
             self.level_times.append(level_time)
             self.state = "level_complete"
@@ -364,23 +412,32 @@ class Game:
         assert self.game_map is not None
         keys = pygame.key.get_pressed()
 
+        # Shield Logic
+        self.player.shield_active = keys[pygame.K_SPACE]
+
+        # Particles update
+        for p in self.particles[:]:
+            p["x"] += p["dx"]
+            p["y"] += p["dy"]
+            p["timer"] -= 1
+            if p["timer"] <= 0:
+                self.particles.remove(p)
+
+        # Damage text update
+        for t in self.damage_texts[:]:
+            t["y"] += t["vy"]
+            t["timer"] -= 1
+            if t["timer"] <= 0:
+                self.damage_texts.remove(t)
+
         is_sprinting = keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]
         current_speed = C.PLAYER_SPRINT_SPEED if is_sprinting else C.PLAYER_SPEED
 
+        # Movement (move method checks for shield)
         if keys[pygame.K_w]:
-            self.player.move(
-                self.game_map,
-                self.bots,
-                forward=True,
-                speed=current_speed,
-            )
+            self.player.move(self.game_map, self.bots, forward=True, speed=current_speed)
         if keys[pygame.K_s]:
-            self.player.move(
-                self.game_map,
-                self.bots,
-                forward=False,
-                speed=current_speed,
-            )
+            self.player.move(self.game_map, self.bots, forward=False, speed=current_speed)
         if keys[pygame.K_a]:
             self.player.strafe(self.game_map, self.bots, right=False, speed=current_speed)
         if keys[pygame.K_d]:
@@ -423,12 +480,12 @@ class Game:
         title_y = 120
         title_text = "FORCE FIELD"
         for offset_x, offset_y in [(-2, -2), (-2, 2), (2, -2), (2, 2)]:
-            title_outline = self.title_font.render(title_text, True, C.DARK_RED)
+            title_outline = self.title_font.render(title_text, True, C.BLUE)
             title_rect_outline = title_outline.get_rect(
                 center=(C.SCREEN_WIDTH // 2 + offset_x, title_y + offset_y),
             )
             self.screen.blit(title_outline, title_rect_outline)
-        title = self.title_font.render(title_text, True, C.RED)
+        title = self.title_font.render(title_text, True, C.CYAN)
         title_rect = title.get_rect(center=(C.SCREEN_WIDTH // 2, title_y))
         self.screen.blit(title, title_rect)
 
@@ -468,19 +525,79 @@ class Game:
         assert self.raycaster is not None
         assert self.player is not None
 
-        self.raycaster.render_floor_ceiling(self.screen)
+        # Pass player angle for parallax stars
+        self.raycaster.render_floor_ceiling(self.screen, self.player.angle)
         self.raycaster.render_3d(self.screen, self.player, self.bots)
 
         # Render projectiles via raycaster
         self.raycaster.render_projectiles(self.screen, self.player, self.projectiles)
+        
+        # Render particles
+        for p in self.particles:
+            alpha = int(255 * (p["timer"] / 30))
+            surf = pygame.Surface((p["size"]*2, p["size"]*2), pygame.SRCALPHA)
+            pygame.draw.circle(surf, (*p["color"], alpha), (p["size"], p["size"]), p["size"])
+            self.screen.blit(surf, (p["x"] - p["size"], p["y"] - p["size"]))
+
+        # Render damage texts
+        for t in self.damage_texts:
+            surf = self.title_font.render(t["text"], True, t["color"]) # Use larger font for impact
+            # Scale down slightly based on distance look
+            scale = 0.5
+            w = int(surf.get_width() * scale)
+            h = int(surf.get_height() * scale)
+            scaled_surf = pygame.transform.scale(surf, (w, h))
+            self.screen.blit(scaled_surf, (t["x"] - w//2, t["y"] - h//2))
 
         self.render_rifle()
         self.raycaster.render_minimap(self.screen, self.player, self.bots)
         self.render_hud()
+        
+        # Shield effect
+        if self.player.shield_active:
+            overlay = pygame.Surface((C.SCREEN_WIDTH, C.SCREEN_HEIGHT), pygame.SRCALPHA)
+            overlay.fill((*C.SHIELD_COLOR, 30)) # Transparent cyan
+            # Add hexagon pattern or grid? Simple border for now
+            pygame.draw.rect(overlay, C.SHIELD_COLOR, (0, 0, C.SCREEN_WIDTH, C.SCREEN_HEIGHT), 10)
+            self.screen.blit(overlay, (0, 0))
+            
+            shield_text = self.title_font.render("SHIELD ACTIVE", True, C.SHIELD_COLOR)
+            self.screen.blit(shield_text, (C.SCREEN_WIDTH//2 - shield_text.get_width()//2, 100))
+
         self.render_crosshair()
 
         if self.player.shooting:
             self.render_muzzle_flash()
+            
+        # Pause Menu
+        if self.paused:
+            overlay = pygame.Surface((C.SCREEN_WIDTH, C.SCREEN_HEIGHT), pygame.SRCALPHA)
+            overlay.fill((0, 0, 0, 200))
+            self.screen.blit(overlay, (0, 0))
+            
+            menu_items = ["RESUME", "SAVE GAME", "QUIT TO MENU"]
+            mouse_pos = pygame.mouse.get_pos()
+            
+            for i, item in enumerate(menu_items):
+                color = C.WHITE
+                rect = pygame.Rect(C.SCREEN_WIDTH//2 - 100, C.SCREEN_HEIGHT//2 - 50 + i*60, 200, 50)
+                
+                if rect.collidepoint(mouse_pos):
+                    color = C.YELLOW
+                    if pygame.mouse.get_pressed()[0]:
+                        if item == "RESUME":
+                            self.paused = False
+                        elif item == "SAVE GAME":
+                            # Dummy save implementation
+                            with open("savegame.txt", "w") as f:
+                                f.write(f"{self.level}")
+                            self.paused = False
+                        elif item == "QUIT TO MENU":
+                            self.state = "menu"
+                            self.paused = False
+                
+                text = self.font.render(item, True, color)
+                self.screen.blit(text, (C.SCREEN_WIDTH//2 - text.get_width()//2, rect.y + 10))
 
         pygame.display.flip()
 
@@ -617,7 +734,7 @@ class Game:
     def render_level_complete(self) -> None:
         """Render level complete screen"""
         self.screen.fill(C.BLACK)
-        title = self.title_font.render("LEVEL COMPLETE!", True, C.GREEN)
+        title = self.title_font.render("SECTOR CLEARED", True, C.GREEN)
         title_rect = title.get_rect(center=(C.SCREEN_WIDTH // 2, 150))
         self.screen.blit(title, title_rect)
 
@@ -651,13 +768,17 @@ class Game:
     def render_game_over(self) -> None:
         """Render game over screen"""
         self.screen.fill(C.BLACK)
-        title = self.title_font.render("GAME OVER", True, C.RED)
+        title = self.title_font.render("SYSTEM FAILURE", True, C.RED)
         title_rect = title.get_rect(center=(C.SCREEN_WIDTH // 2, 200))
         self.screen.blit(title, title_rect)
 
         completed_levels = max(0, self.level - 1)
         total_time = sum(self.level_times)
-        avg_time = total_time / len(self.level_times) if self.level_times else 0
+        # Add time from current failed level
+        current_level_time = (pygame.time.get_ticks() - self.level_start_time) / 1000.0
+        total_time += current_level_time
+        
+        avg_time = total_time / self.level if self.level > 0 else 0
         stats = [
             (
                 f"You survived {completed_levels} level{'s' if completed_levels != 1 else ''}",
@@ -715,67 +836,47 @@ class Game:
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE or event.key == pygame.K_ESCAPE:
                     self.state = "menu"
-                    self.intro_scroll_y = float(C.SCREEN_HEIGHT)
 
     def render_intro(self) -> None:
-        """Render Star Wars style opening crawl"""
+        """Render Max Payne style graphic novel intro"""
         self.screen.fill(C.BLACK)
-
-        intro_text = [
-            "A long time ago in a galaxy",
-            "far, far away...",
-            "",
-            "",
-            "FORCE FIELD",
-            "",
-            "The arena has become a battleground",
-            "for the forces of darkness.",
-            "",
-            "Enemy hordes have invaded the",
-            "abandoned military complex,",
-            "seeking to claim it as their own.",
-            "",
-            "You are the last defender.",
-            "Armed with an arsenal of weapons,",
-            "you must fight through wave after",
-            "wave of increasingly powerful enemies.",
-            "",
-            "Each corner of the arena spawns",
-            "a different enemy type, united",
-            "in their goal to destroy you.",
-            "",
-            "Survive. Fight. Win.",
-            "",
-            "",
-            "The battle begins now...",
-        ]
-
+        current_time = pygame.time.get_ticks()
+        
         if self.intro_start_time == 0:
-            self.intro_start_time = pygame.time.get_ticks()
-
-        elapsed = (pygame.time.get_ticks() - self.intro_start_time) / 1000.0
-        scroll_speed = 50
-        self.intro_scroll_y = float(C.SCREEN_HEIGHT - elapsed * scroll_speed)
-
-        line_height = 40
-        start_y = self.intro_scroll_y
-
-        for i, line in enumerate(intro_text):
-            y = start_y + i * line_height
-            if y < -line_height or y > C.SCREEN_HEIGHT + line_height:
-                continue
-
-            if line == "FORCE FIELD":
-                text = self.title_font.render(line, True, C.YELLOW)
-                text_rect = text.get_rect(center=(C.SCREEN_WIDTH // 2, y))
-                self.screen.blit(text, text_rect)
-            elif line:
-                text = self.font.render(line, True, C.WHITE)
-                text_rect = text.get_rect(center=(C.SCREEN_WIDTH // 2, y))
-                self.screen.blit(text, text_rect)
-
-        if self.intro_scroll_y < -len(intro_text) * line_height:
+            self.intro_start_time = current_time
+            
+        elapsed = current_time - self.intro_start_time
+        
+        # Intro slides
+        slides = [
+            ("FROM THE DEMENTED MIND", "OF JASPER", 3000),
+            ("THEY TOOK MY TOYS", "NOW I TAKE THEIR LIVES", 4000),
+            ("FORCE FIELD", "THE ARENA AWAITS", 4000)
+        ]
+        
+        if self.intro_step < len(slides):
+            line1, line2, duration = slides[self.intro_step]
+            
+            # Fade in/out logic
+            alpha = min(255, max(0, 255 - abs(elapsed - duration/2) * (510/duration)))
+            
+            line1_surf = self.title_font.render(line1, True, (255, 255, 255))
+            line2_surf = self.hand_font.render(line2, True, (255, 0, 0)) # Jasper's line in red
+            
+            # Apply alpha approx (by set_alpha on blit or color) - simplistic here:
+            line1_surf.set_alpha(int(alpha))
+            line2_surf.set_alpha(int(alpha))
+            
+            rect1 = line1_surf.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 - 40))
+            rect2 = line2_surf.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 40))
+            
+            self.screen.blit(line1_surf, rect1)
+            self.screen.blit(line2_surf, rect2)
+            
+            if elapsed > duration:
+                self.intro_step += 1
+                self.intro_start_time = 0 # Reset for next slide
+        else:
             self.state = "menu"
-            self.intro_scroll_y = float(C.SCREEN_HEIGHT)
-
+            
         pygame.display.flip()
