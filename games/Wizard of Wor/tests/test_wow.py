@@ -1,6 +1,6 @@
-import os
 import sys
 import unittest
+from pathlib import Path
 
 import pygame
 
@@ -9,10 +9,8 @@ pygame.init()
 pygame.display.set_mode((1, 1))  # Dummy display
 
 # Add wizard_of_wor directory to path to support "from bullet import Bullet" style imports
-sys.path.append(
-    os.path.abspath(os.path.join(os.path.dirname(__file__), "../wizard_of_wor"))
-)  # noqa: PTH100
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))  # noqa: PTH100
+sys.path.append(str((Path(__file__).parent / "../wizard_of_wor").resolve()))
+sys.path.append(str((Path(__file__).parent / "..").resolve()))
 
 # Now we can import
 from constants import *  # noqa: E402
