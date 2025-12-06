@@ -16,6 +16,7 @@ from src.renderer import TetrisRenderer
 # Initialize Pygame
 pygame.init()
 
+
 class TetrisGame:
     """Main Tetris game class"""
 
@@ -55,9 +56,7 @@ class TetrisGame:
         """Toggle game pause state"""
         if self.state in [C.GameState.PLAYING, C.GameState.PAUSED]:
             self.state = (
-                C.GameState.PAUSED
-                if self.state == C.GameState.PLAYING
-                else C.GameState.PLAYING
+                C.GameState.PAUSED if self.state == C.GameState.PLAYING else C.GameState.PLAYING
             )
 
     def restart_game(self) -> None:
@@ -236,9 +235,9 @@ class TetrisGame:
                     # Input handler binding logic
                     if self.input_handler.awaiting_controller_action:
                         if event.type in [pygame.JOYBUTTONDOWN, pygame.JOYHATMOTION]:
-                             if self.input_handler.apply_controller_binding(event):
-                                 # Binding applied
-                                 continue
+                            if self.input_handler.apply_controller_binding(event):
+                                # Binding applied
+                                continue
 
             # Process events for input handler
             self.input_handler.process_events(events, self.logic, self)
@@ -246,24 +245,24 @@ class TetrisGame:
             # Polling for continuous movement
             keys = pygame.key.get_pressed()
             if self.state == C.GameState.PLAYING:
-                 if keys[pygame.K_LEFT] and self.logic.valid_move(
-                     self.logic.current_piece, x_offset=-1
-                 ):
+                if keys[pygame.K_LEFT] and self.logic.valid_move(
+                    self.logic.current_piece, x_offset=-1
+                ):
                     self.logic.current_piece.x -= 1
                     pygame.time.wait(100)
-                 if keys[pygame.K_RIGHT] and self.logic.valid_move(
-                     self.logic.current_piece, x_offset=1
-                 ):
+                if keys[pygame.K_RIGHT] and self.logic.valid_move(
+                    self.logic.current_piece, x_offset=1
+                ):
                     self.logic.current_piece.x += 1
                     pygame.time.wait(100)
-                 if keys[pygame.K_DOWN]:
+                if keys[pygame.K_DOWN]:
                     if self.logic.valid_move(self.logic.current_piece, y_offset=1):
                         self.logic.current_piece.y += 1
                         self.logic.score += 1
                     pygame.time.wait(50)
 
-                 self.input_handler.handle_controller_state(self.logic)
-                 self.logic.update(dt)
+                self.input_handler.handle_controller_state(self.logic)
+                self.logic.update(dt)
 
             # Drawing
             if self.state == C.GameState.MENU:
@@ -311,6 +310,7 @@ class TetrisGame:
                 self.renderer.draw_game_over(self.logic)
 
             pygame.display.flip()
+
 
 if __name__ == "__main__":
     game = TetrisGame()

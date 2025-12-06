@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from .map import Map
     from .player import Player
 
+
 class Bot:
     """Enemy bot with AI"""
 

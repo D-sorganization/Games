@@ -118,7 +118,7 @@ class InputHandler:
                 self.handle_controller_event(event, logic, game_state_manager)
 
             if event.type == pygame.KEYDOWN:
-                 self.handle_keydown(event, logic, game_state_manager)
+                self.handle_keydown(event, logic, game_state_manager)
 
     def handle_keydown(
         self, event: pygame.event.Event, logic: TetrisLogic, game_state_manager
@@ -129,8 +129,8 @@ class InputHandler:
             return
 
         if event.key == pygame.K_p:
-             game_state_manager.toggle_pause()
-             return
+            game_state_manager.toggle_pause()
+            return
 
         if game_state_manager.state == GameState.GAME_OVER:
             if event.key == pygame.K_RETURN:

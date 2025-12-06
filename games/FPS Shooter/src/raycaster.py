@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from .player import Player
     from .projectile import Projectile
 
+
 class Raycaster:
     """Raycasting engine for 3D rendering"""
 

@@ -44,18 +44,19 @@ class TestFPS(unittest.TestCase):
         start_x, start_y = 5.0, 5.0
         # Force clear path
         m.grid[int(start_y)][int(start_x)] = 0
-        m.grid[int(start_y)][int(start_x)+1] = 0 # Forward space
-        m.grid[int(start_y)][int(start_x)-1] = 0
-        m.grid[int(start_y)+1][int(start_x)] = 0
-        m.grid[int(start_y)-1][int(start_x)] = 0
+        m.grid[int(start_y)][int(start_x) + 1] = 0  # Forward space
+        m.grid[int(start_y)][int(start_x) - 1] = 0
+        m.grid[int(start_y) + 1][int(start_x)] = 0
+        m.grid[int(start_y) - 1][int(start_x)] = 0
 
-        p = Player(start_x, start_y, 0) # Facing East (0 rad)
+        p = Player(start_x, start_y, 0)  # Facing East (0 rad)
 
         # Move forward
         # Speed 1.0
         p.move(m, [], forward=True, speed=1.0)
         assert abs(p.x - 6.0) < 1e-7
         assert abs(p.y - 5.0) < 1e-7
+
 
 if __name__ == "__main__":
     unittest.main()

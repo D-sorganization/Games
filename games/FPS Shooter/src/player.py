@@ -9,6 +9,7 @@ if TYPE_CHECKING:
     from .bot import Bot
     from .map import Map
 
+
 class Player:
     """Player with position, rotation, and shooting capabilities"""
 
@@ -22,9 +23,7 @@ class Player:
         weapon_ammo: Dict[str, Any] = {
             weapon: C.WEAPONS[weapon].get("ammo", 0) for weapon in C.WEAPONS
         }
-        self.ammo: Dict[str, int] = {
-            weapon: int(weapon_ammo[weapon]) for weapon in C.WEAPONS
-        }
+        self.ammo: Dict[str, int] = {weapon: int(weapon_ammo[weapon]) for weapon in C.WEAPONS}
         self.current_weapon = "rifle"
         self.shooting = False
         self.shoot_timer = 0

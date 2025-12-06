@@ -35,11 +35,12 @@ class TestPBP(unittest.TestCase):
         world.sandwiches[0].health = 1
 
         # Apply golden bread
-        p = PowerUp(position=(0,0), kind="golden_bread", duration=0.0)
+        p = PowerUp(position=(0, 0), kind="golden_bread", duration=0.0)
         world._apply_powerup(p)  # noqa: SLF001
 
         # Should heal by 2 (up to max 5)
         assert world.sandwiches[0].health == 3
+
 
 if __name__ == "__main__":
     unittest.main()

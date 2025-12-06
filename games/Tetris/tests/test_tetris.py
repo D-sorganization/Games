@@ -16,7 +16,6 @@ class TestTetris(unittest.TestCase):
         # T shape
         t = Tetromino(0, 0, "T")
 
-
         rotated = t.get_rotated_shape()
         # First rotation (0): default
         assert rotated == [[0, 1, 0], [1, 1, 1]]
@@ -60,6 +59,7 @@ class TestTetris(unittest.TestCase):
         # Check valid move for new piece
         # logic.new_piece() spawns at y=0.
         assert not logic.valid_move(piece)
+
 
 if __name__ == "__main__":
     unittest.main()

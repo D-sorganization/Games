@@ -6,10 +6,12 @@ import pygame
 
 # Initialize pygame for sprite classes
 pygame.init()
-pygame.display.set_mode((1, 1)) # Dummy display
+pygame.display.set_mode((1, 1))  # Dummy display
 
 # Add wizard_of_wor directory to path to support "from bullet import Bullet" style imports
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../wizard_of_wor")))  # noqa: PTH100
+sys.path.append(
+    os.path.abspath(os.path.join(os.path.dirname(__file__), "../wizard_of_wor"))
+)  # noqa: PTH100
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))  # noqa: PTH100
 
 # Now we can import
@@ -25,6 +27,7 @@ class TestWoW(unittest.TestCase):
         assert p.x == 100
         assert p.y == 100
         assert p.alive
+
 
 if __name__ == "__main__":
     unittest.main()

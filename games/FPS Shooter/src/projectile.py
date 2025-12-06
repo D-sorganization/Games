@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .map import Map
 
+
 class Projectile:
     """Projectile shot by bots or player"""
 

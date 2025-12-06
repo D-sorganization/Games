@@ -52,8 +52,10 @@ SHAPE_COLORS = {
     "L": ORANGE,
 }
 
+
 class GameState(Enum):
     """Game states"""
+
     MENU = 1
     PLAYING = 2
     PAUSED = 3

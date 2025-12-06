@@ -353,9 +353,7 @@ class Game:
 
         all_dead = all(not bot.alive for bot in self.bots)
         if all_dead:
-            level_time = (
-                pygame.time.get_ticks() - self.level_start_time
-            ) / 1000.0
+            level_time = (pygame.time.get_ticks() - self.level_start_time) / 1000.0
             self.level_times.append(level_time)
             self.state = "level_complete"
             pygame.mouse.set_visible(True)
@@ -515,9 +513,7 @@ class Game:
         health_percent = max(0, self.player.health / self.player.max_health)
         fill_width = int(health_width * health_percent)
         health_color = (
-            C.GREEN
-            if health_percent > 0.5
-            else (C.ORANGE if health_percent > 0.25 else C.RED)
+            C.GREEN if health_percent > 0.5 else (C.ORANGE if health_percent > 0.25 else C.RED)
         )
         pygame.draw.rect(self.screen, health_color, (health_x, health_y, fill_width, health_height))
         pygame.draw.rect(self.screen, C.WHITE, (health_x, health_y, health_width, health_height), 2)
