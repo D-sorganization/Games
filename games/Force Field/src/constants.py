@@ -11,7 +11,7 @@ TILE_SIZE = 64
 MIN_BUILDING_OFFSET = 3  # Minimum offset from map edges for building generation
 
 # Player settings
-# Player settings
+
 PLAYER_SPEED = 0.75
 PLAYER_SPRINT_SPEED = 1.15
 PLAYER_ROT_SPEED = 0.003

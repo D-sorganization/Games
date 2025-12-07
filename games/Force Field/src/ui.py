@@ -93,7 +93,8 @@ class BloodButton(Button):
                     "max_length": random.randint(15, 40),
                     "speed": random.uniform(0.2, 0.5),
                     "width": random.randint(6, 12),
-                    "timer": random.uniform(0, math.pi * 2) # For sine wave length
+                    "timer": random.uniform(0, math.pi * 2)  # Phase offset for sine wave animation (not a countdown timer)
+
                 })
 
     def update(self, mouse_pos: Tuple[int, int]) -> None:

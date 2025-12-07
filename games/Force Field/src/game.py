@@ -781,7 +781,7 @@ class Game:
                 accuracy_factor = max(0.5, 1.0 - (angle_diff / 0.15))
 
                 final_damage = int(weapon_damage * range_factor * accuracy_factor)
-                final_damage = int(weapon_damage * range_factor * accuracy_factor)
+
 
 
                 if is_headshot:
@@ -936,15 +936,8 @@ class Game:
                 pygame.event.set_grab(False)
                 return
             
-            # Portal visuals (swirling particles)
-            if random.random() < 0.3:
-                self.particles.append({
-                     "x": self.player.x, # Wait, rendered in 3D? No, 2D particle system.
-                     # We need 3D particles or just render portal in 3D. 
-                     # For now, let's keep portal logic simple. 
-                     # Visuals handled in render.
-                     "dx": 0, "dy": 0, "color": C.CYAN, "timer": 0, "size": 0
-                })
+            # Portal visuals handled in render_game projection
+            pass
 
         assert self.player is not None
         assert self.game_map is not None
@@ -953,7 +946,6 @@ class Game:
         # Shield Logic
         self.player.set_shield(keys[pygame.K_SPACE])
 
-        # Particles update
         # Particles update
         for p in self.particles[:]:
             if "dx" in p and "dy" in p:
@@ -1623,6 +1615,9 @@ class Game:
         """Handle intro screen events"""
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                if self.intro_video:
+                    self.intro_video.release()
+                    self.intro_video = None
                 self.running = False
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE or event.key == pygame.K_ESCAPE:
