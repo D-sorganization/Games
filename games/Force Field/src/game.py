@@ -172,6 +172,26 @@ class Game:
         # Optimization: Shared surface for alpha effects
         self.effects_surface = pygame.Surface((C.SCREEN_WIDTH, C.SCREEN_HEIGHT), pygame.SRCALPHA)
 
+    def add_message(self, text: str, color: tuple) -> None:
+        """Add a temporary message to the center of the screen"""
+        self.damage_texts.append(
+            {
+                "x": C.SCREEN_WIDTH // 2,
+                "y": C.SCREEN_HEIGHT // 2 - 50,
+                "text": text,
+                "color": color,
+                "timer": 60,
+                "vy": -0.5,
+            }
+        )
+
+    def switch_weapon_with_message(self, weapon_name: str) -> None:
+        """Switch weapon and show a message if successful"""
+        assert self.player is not None
+        if self.player.current_weapon != weapon_name:
+            self.player.switch_weapon(weapon_name)
+            self.add_message(f"SWITCHED TO {weapon_name.upper()}", C.YELLOW)
+
     def spawn_portal(self) -> None:
         """Spawn exit portal"""
         # Find a spot far from player? Or center?
@@ -593,17 +613,13 @@ class Game:
                 # Weapon switching
                 elif not self.paused:
                     if event.key == pygame.K_1:
-                        assert self.player is not None
-                        self.player.switch_weapon("pistol")
+                        self.switch_weapon_with_message("pistol")
                     elif event.key == pygame.K_2:
-                        assert self.player is not None
-                        self.player.switch_weapon("rifle")
+                        self.switch_weapon_with_message("rifle")
                     elif event.key == pygame.K_3:
-                        assert self.player is not None
-                        self.player.switch_weapon("shotgun")
+                        self.switch_weapon_with_message("shotgun")
                     elif event.key == pygame.K_4:
-                        assert self.player is not None
-                        self.player.switch_weapon("plasma")
+                        self.switch_weapon_with_message("plasma")
                     elif event.key == pygame.K_f:
                         assert self.player is not None
                         if self.player.activate_bomb():
@@ -858,6 +874,7 @@ class Game:
                     self.kills += 1
 
         # Screen shake or feedback
+        self.sound_manager.play_sound("bomb")
         self.damage_texts.append(
             {
                 "x": C.SCREEN_WIDTH // 2,
@@ -917,7 +934,7 @@ class Game:
             dist = math.sqrt(
                 (self.portal["x"] - self.player.x) ** 2 + (self.portal["y"] - self.player.y) ** 2
             )
-            if dist < 1.0:
+            if dist < 1.5:
                 # Level Complete
                 level_time = (
                     pygame.time.get_ticks() - self.level_start_time - self.total_paused_time
@@ -1107,7 +1124,7 @@ class Game:
             "CLICK SETTINGS TO CHANGE",
             "",
             "WASD: Move | Shift: Sprint | Mouse: Look | 1-4: Weapons",
-            "Click: Shoot | Z: Zoom | F: Bomb",
+            "Click: Shoot | Z: Zoom | F: Bomb | Space: Shield",
         ]
 
         y = C.SCREEN_HEIGHT - 260  # Moved up to avoid overlap with button
@@ -1713,7 +1730,7 @@ class Game:
             r1 = t1.get_rect(center=(C.SCREEN_WIDTH // 2, 80))
             self.screen.blit(t1, r1)
 
-            # Hacker Font logic (fallback to consolas/system)
+            # Matrix-style Font logic (fallback to consolas/system)
             hacker_font = pygame.font.SysFont("consolas", 60)
             t2 = hacker_font.render("UPSTREAM DRIFT", True, (0, 255, 0))  # Matrix Green
             r2 = t2.get_rect(center=(C.SCREEN_WIDTH // 2, 140))

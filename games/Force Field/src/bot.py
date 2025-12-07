@@ -15,7 +15,14 @@ if TYPE_CHECKING:
 class Bot:
     """Enemy bot with AI"""
 
-    def __init__(self, x: float, y: float, level: int, enemy_type: str | None = None, difficulty: str = "NORMAL"):
+    def __init__(
+        self,
+        x: float,
+        y: float,
+        level: int,
+        enemy_type: str | None = None,
+        difficulty: str = "NORMAL",
+    ):
         """Initialize bot
         Args:
             x, y: Position
@@ -28,7 +35,7 @@ class Bot:
         self.angle: float = 0.0
         self.enemy_type = enemy_type if enemy_type else random.choice(list(C.ENEMY_TYPES.keys()))
         self.type_data = C.ENEMY_TYPES[self.enemy_type]
-        
+
         diff_stats = C.DIFFICULTIES.get(difficulty, C.DIFFICULTIES["NORMAL"])
 
         type_data: Dict[str, Any] = self.type_data
@@ -50,6 +57,12 @@ class Bot:
         self.last_y = y
         self.shoot_animation = 0.0  # For shoot animation
 
+        # Visuals (Doom style)
+        self.mouth_open = False
+        self.mouth_timer = 0
+        self.eye_rotation = 0.0
+        self.drool_offset = 0.0
+
     def update(self, game_map: Map, player: Player, other_bots: List[Bot]) -> Projectile | None:
         """Update bot AI
         Returns:
@@ -62,6 +75,15 @@ class Bot:
         if self.shoot_animation > 0:
             self.shoot_animation -= 0.1
             self.shoot_animation = max(self.shoot_animation, 0)
+
+        # Update visual animations
+        self.eye_rotation += 0.1
+        self.eye_rotation %= 2 * math.pi
+        self.drool_offset += 0.2
+        self.mouth_timer += 1
+        if self.mouth_timer > 30:
+            self.mouth_open = not self.mouth_open
+            self.mouth_timer = 0
 
         if self.enemy_type == "health_pack":
             return None

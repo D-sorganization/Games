@@ -46,7 +46,28 @@ def generate_sound_assets(sound_dir: str) -> None:
             data.append(struct.pack("<h", sample))
         f.writeframes(b"".join(data))
 
-    # 3. Spooky Musical Soundtrack
+    # 4. Bomb Explosion
+    bomb_path = os.path.join(sound_dir, "bomb.wav")
+    print(f"Generating {bomb_path}...")
+    with wave.open(bomb_path, "w") as f:
+        f.setnchannels(1)
+        f.setsampwidth(2)
+        f.setframerate(44100)
+        data = []
+        duration = 1.0
+        base_rumble_freq = 50  # Hz, base frequency for rumble
+        for i in range(int(44100 * duration)):
+            env = 1.0 - (i / (44100 * duration))
+            # Low rumble + noise
+            sweep_pos = i / 44100
+            rumble_freq = base_rumble_freq * (1.0 - sweep_pos)
+            rumble = math.sin(2 * math.pi * rumble_freq * sweep_pos)
+            noise = random.uniform(-1, 1)
+            sample_val = (rumble * 0.5 + noise * 0.5) * env * 32767 * 0.8
+            data.append(struct.pack("<h", int(sample_val)))
+        f.writeframes(b"".join(data))
+
+    # 3. Spooky Musical Soundtrack (Enhanced)
     music_path = os.path.join(sound_dir, "spooky_ambient.wav")
     print(f"Generating {music_path}...")
     with wave.open(music_path, "w") as f:
@@ -57,61 +78,67 @@ def generate_sound_assets(sound_dir: str) -> None:
         # Composition parameters
         tempo = 100  # BPM
         beat_dur = 60.0 / tempo
-        total_beats = 32  # 8 bars of 4/4
+        total_beats = 64  # Extended loop
         duration = total_beats * beat_dur
         samples = int(44100 * duration)
 
-        # Melody scale (E Minor / Diminished vibes)
-        # E2, G2, A#2, B2, D3, E3
-        scale = [82.41, 98.00, 116.54, 123.47, 146.83, 164.81]
+        # Melodies
+        # Bass: E minor drone
+        # Lead: High E minor arpeggios
+        high_scale = [329.63, 392.00, 493.88, 587.33, 659.25]
 
         data = []
 
-        # Generate Note Sequence
-        melody_notes = []
-        for i in range(total_beats * 4):  # 16th notes
-            if i % 4 == 0 or random.random() > 0.6:
-                note = random.choice(scale)
-                melody_notes.append(note)
+        # Pre-generate melody sequence
+        lead_melody = []
+        for i in range(total_beats * 4):
+            if i % 8 == 0 or (i % 8 > 4 and random.random() > 0.5):
+                lead_melody.append(random.choice(high_scale))
             else:
-                melody_notes.append(0)  # Rest
+                lead_melody.append(0)
 
         for i in range(samples):
             t = i / 44100.0
 
-            # 1. Bass Drone (Low E)
-            # AM synthesis for pulsing
-            lfo = 0.5 + 0.5 * math.sin(2 * math.pi * 0.5 * t)
-            bass = math.sin(2 * math.pi * 41.20 * t) * 0.4 * lfo
-            # Add some harmonics
-            bass += math.sin(2 * math.pi * 41.20 * 3 * t) * 0.1
+            # 1. Bass Drone (Darker)
+            bass = math.sin(2 * math.pi * 41.20 * t) * 0.4
 
-            # 2. Weird Melody
+            # 2. Rhythm (Drums)
+            beat_t = t % beat_dur
+            beat_idx = int(t / beat_dur)
+            kick = 0.0
+            snare = 0.0
+            hihat = 0.0
+
+            # Kick on 1
+            if beat_idx % 4 == 0 and beat_t < 0.2:
+                kick_freq = 150 * (1.0 - beat_t / 0.2)
+                kick = math.sin(2 * math.pi * kick_freq * beat_t) * (1.0 - beat_t / 0.2)
+
+            # Snare on 3
+            if beat_idx % 4 == 2 and beat_t < 0.2:
+                snare = random.uniform(-0.5, 0.5) * (1.0 - beat_t / 0.2)
+
+            # Hihat every beat
+            if beat_t < 0.05:
+                hihat = random.uniform(-0.3, 0.3)
+
+            drums = kick * 0.8 + snare * 0.6 + hihat * 0.3
+
+            # 3. Lead Melody (The "more melody" request)
             current_16th = int((t / beat_dur) * 4)
-            freq = melody_notes[current_16th % len(melody_notes)]
-            melody = 0.0
-            if freq > 0:
-                # Envelope for each 16th note
-                local_t = t % (beat_dur / 4)
-                env = max(0, 1.0 - (local_t * 6))  # Quick decay
-                # FM Synthesis for "weird" tone
-                mod = math.sin(2 * math.pi * freq * 2.5 * t) * 100 * env
-                melody = math.sin(2 * math.pi * (freq + mod) * t) * 0.3 * env
+            lead_freq = lead_melody[current_16th % len(lead_melody)]
+            lead = 0.0
+            if lead_freq > 0:
+                note_t = t % (beat_dur / 4)
+                env = max(0, 1.0 - note_t * 8)
+                # Square waveish
+                lead = (math.sin(2 * math.pi * lead_freq * t) > 0) * 0.2 * env
 
-            # 3. Rhythm (Metallic Clank on standard beats)
-            rhythm = 0.0
-            beat_pos = t % beat_dur
-            if beat_pos < 0.1:
-                # Noise burst
-                rhythm = (random.random() * 2 - 1) * 0.3 * (1.0 - beat_pos * 10)
+            final_val = bass + drums + lead
+            final_val = max(min(final_val, 1.0), -1.0)
 
-            # Mix
-            final_val = bass + melody + rhythm
-            # Clip
-            final_val = min(final_val, 1.0)
-            final_val = max(final_val, -1.0)
-
-            sample = int(final_val * 32767 * 0.6)
+            sample = int(final_val * 32767 * 0.5)
             data.append(struct.pack("<h", sample))
 
         f.writeframes(b"".join(data))

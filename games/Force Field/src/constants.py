@@ -33,7 +33,7 @@ DIFFICULTIES = {
     "EASY": {"damage_mult": 0.5, "health_mult": 0.7, "score_mult": 0.5},
     "NORMAL": {"damage_mult": 1.0, "health_mult": 1.0, "score_mult": 1.0},
     "HARD": {"damage_mult": 1.5, "health_mult": 1.5, "score_mult": 2.0},
-    "NIGHTMARE": {"damage_mult": 2.5, "health_mult": 2.0, "score_mult": 4.0}
+    "NIGHTMARE": {"damage_mult": 2.5, "health_mult": 2.0, "score_mult": 4.0},
 }
 
 # Weapon Ranges

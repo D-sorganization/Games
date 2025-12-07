@@ -51,6 +51,7 @@ class SoundManager:
             "shoot": "shoot.wav",
             "enemy_shoot": "enemy_shoot.wav",
             "ambient": "spooky_ambient.wav",
+            "bomb": "bomb.wav",
         }
 
         for name, filename in sound_files.items():
