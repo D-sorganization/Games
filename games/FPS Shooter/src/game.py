@@ -312,6 +312,7 @@ class Game:
                                 except IOError as e:
                                     print(f"Save failed: {e}")
                                 self.paused = False
+                                self.total_paused_time += pygame.time.get_ticks() - self.pause_start_time
                                 pygame.mouse.set_visible(False)
                                 pygame.event.set_grab(True)
                             elif item == "QUIT TO MENU":
