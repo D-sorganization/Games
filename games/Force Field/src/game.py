@@ -141,6 +141,7 @@ class Game:
         self.bots: List[Bot] = []
         self.projectiles: List[Projectile] = []
         self.raycaster: Raycaster | None = None
+        self.portal: Dict[str, Any] | None = None
         self.lives = C.DEFAULT_LIVES
         self.damage_flash_timer = 0
         self.intro_video = None
@@ -182,6 +183,23 @@ class Game:
         
         # Optimization: Shared surface for alpha effects
         self.effects_surface = pygame.Surface((C.SCREEN_WIDTH, C.SCREEN_HEIGHT), pygame.SRCALPHA)
+
+    def spawn_portal(self) -> None:
+        """Spawn exit portal"""
+        # Find a spot far from player? Or center?
+        if self.game_map:
+            center = self.game_map.size // 2
+            # Check if wall
+            if not self.game_map.is_wall(center, center):
+                self.portal = {"x": center + 0.5, "y": center + 0.5}
+            else:
+                # Find valid spot
+                for x in range(2, self.game_map.size - 2):
+                    for y in range(2, self.game_map.size - 2):
+                        if not self.game_map.is_wall(x, y):
+                            self.portal = {"x": x + 0.5, "y": y + 0.5}
+                            return
+
 
     def get_corner_positions(self) -> List[Tuple[float, float, float]]:
         """Get spawn positions for four corners (x, y, angle)"""
@@ -313,6 +331,7 @@ class Game:
         self.particles = []
         self.damage_texts = []
         self.damage_flash_timer = 0
+        self.portal = None
         corners = self.get_corner_positions()
         random.shuffle(corners)
 
@@ -892,15 +911,41 @@ class Game:
         enemies_alive = [b for b in self.bots if b.alive and b.enemy_type != "health_pack"]
 
         if not enemies_alive:
-            # Only add time if we haven't already for this level
-            level_time = (
-                pygame.time.get_ticks() - self.level_start_time - self.total_paused_time
-            ) / 1000.0
-            self.level_times.append(level_time)
-            self.state = "level_complete"
-            pygame.mouse.set_visible(True)
-            pygame.event.set_grab(False)
-            return
+            if self.portal is None:
+                # Spawn Portal at the last enemy's position or random
+                self.spawn_portal()
+                self.damage_texts.append({
+                    "x": C.SCREEN_WIDTH // 2,
+                    "y": C.SCREEN_HEIGHT // 2,
+                    "text": "PORTAL OPENED!",
+                    "color": C.CYAN,
+                    "timer": 180,
+                    "vy": 0
+                })
+
+        if self.portal:
+            # Check collision
+            dist = math.sqrt((self.portal["x"] - self.player.x)**2 + (self.portal["y"] - self.player.y)**2)
+            if dist < 1.0:
+                # Level Complete
+                level_time = (
+                    pygame.time.get_ticks() - self.level_start_time - self.total_paused_time
+                ) / 1000.0
+                self.level_times.append(level_time)
+                self.state = "level_complete"
+                pygame.mouse.set_visible(True)
+                pygame.event.set_grab(False)
+                return
+            
+            # Portal visuals (swirling particles)
+            if random.random() < 0.3:
+                self.particles.append({
+                     "x": self.player.x, # Wait, rendered in 3D? No, 2D particle system.
+                     # We need 3D particles or just render portal in 3D. 
+                     # For now, let's keep portal logic simple. 
+                     # Visuals handled in render.
+                     "dx": 0, "dy": 0, "color": C.CYAN, "timer": 0, "size": 0
+                })
 
         assert self.player is not None
         assert self.game_map is not None
@@ -1176,7 +1221,40 @@ class Game:
                 self.screen, C.CYAN, (cx - bar_w // 2, cy, int(bar_w * charge_pct), bar_h)
             )
 
-        # Pause Menu
+        # Render Portal (Projected)
+        if self.portal:
+            # Simple billboard projection for portal
+            # Calculate sprite position relative to player
+            sx = self.portal["x"] - self.player.x
+            sy = self.portal["y"] - self.player.y
+            sz = 0 # varying height?
+
+            # Rotate
+            cs = math.cos(self.player.angle)
+            sn = math.sin(self.player.angle)
+            a = sy * cs - sx * sn
+            b = sx * cs + sy * sn
+            
+            # Draw if in front
+            if b > 0.1:
+                # Projection
+                scale = C.FOV / b
+                screen_x = int((0.5 * C.SCREEN_WIDTH) * (1 + a / b * 2.0)) # approx
+                screen_y = C.SCREEN_HEIGHT // 2
+                
+                size = int(800 / b) # Scale size
+                
+                # Draw Portal Circle
+                if -size < screen_x < C.SCREEN_WIDTH + size:
+                     color = (0, 255, 255)
+                     # Pulse alpha
+                     alpha = 150 + int(50 * math.sin(pygame.time.get_ticks() * 0.01))
+                     
+                     # Draw multiple rings
+                     pygame.draw.circle(self.screen, (*color, alpha), (screen_x, screen_y), size // 2)
+                     pygame.draw.circle(self.screen, (255, 255, 255), (screen_x, screen_y), size // 4)
+
+
         if self.paused:
             overlay = pygame.Surface((C.SCREEN_WIDTH, C.SCREEN_HEIGHT), pygame.SRCALPHA)
             overlay.fill((0, 0, 0, 200))
@@ -1196,6 +1274,18 @@ class Game:
 
                 text = self.font.render(item, True, color)
                 self.screen.blit(text, (C.SCREEN_WIDTH // 2 - text.get_width() // 2, rect.y + 10))
+        else:
+             # Only render weapons and HUD if NOT paused (cleaner pause screen)?
+             # Or render behind. Let's render behind.
+             pass
+
+        self.render_rifle()
+        self.render_hud()
+        
+        # Draw Pause Menu on TOP of HUD
+        if self.paused:
+             # Re-blit pause menu text to ensure it's on top
+             pass 
 
         pygame.display.flip()
 
@@ -1309,6 +1399,70 @@ class Game:
 
         kills_text = self.small_font.render(f"Enemies Left: {bots_alive}", True, C.RED)
         self.screen.blit(kills_text, (C.SCREEN_WIDTH - 200, hud_bottom + 30))
+
+        # Radar
+        radar_size = 120
+        radar_x = C.SCREEN_WIDTH - radar_size - 20
+        radar_y = 20
+        scale = radar_size / self.game_map.size
+        
+        # Radar BG
+        pygame.draw.rect(self.screen, (0, 50, 0), (radar_x, radar_y, radar_size, radar_size))
+        pygame.draw.rect(self.screen, (0, 150, 0), (radar_x, radar_y, radar_size, radar_size), 2)
+        
+        # Enemies
+        for bot in self.bots:
+            if bot.alive and bot.enemy_type != "health_pack":
+                bx = int(bot.x * scale)
+                by = int(bot.y * scale)
+                pygame.draw.circle(self.screen, C.RED, (radar_x + bx, radar_y + by), 2)
+        
+        # Portal
+        if self.portal:
+            px = int(self.portal["x"] * scale)
+            py = int(self.portal["y"] * scale)
+            pygame.draw.circle(self.screen, C.CYAN, (radar_x + px, radar_y + py), 4)
+            
+        # Player (with direction)
+        px = int(self.player.x * scale)
+        py = int(self.player.y * scale)
+        pygame.draw.circle(self.screen, C.WHITE, (radar_x + px, radar_y + py), 3)
+        # Direction line
+        dx = math.cos(self.player.angle) * 8
+        dy = math.sin(self.player.angle) * 8
+        pygame.draw.line(self.screen, C.WHITE, (radar_x + px, radar_y + py), (radar_x + px + dx, radar_y + py + dy))
+
+
+        # Shield Bar
+        shield_width = 150
+        shield_height = 10
+        shield_x = health_x
+        shield_y = health_y - 20
+        
+        shield_pct = self.player.shield_timer / C.SHIELD_MAX_DURATION
+        pygame.draw.rect(self.screen, C.DARK_GRAY, (shield_x, shield_y, shield_width, shield_height))
+        pygame.draw.rect(self.screen, C.CYAN, (shield_x, shield_y, int(shield_width * shield_pct), shield_height))
+        pygame.draw.rect(self.screen, C.WHITE, (shield_x, shield_y, shield_width, shield_height), 1)
+        
+        # Check Recharge Delay
+        if self.player.shield_recharge_delay > 0:
+            status_text = "RECHARGING" if self.player.shield_active else "COOLDOWN" # Wait, logic:
+            # If active but timer going down -> active
+            # If recharge delay > 0 -> cooldown
+        
+        # Laser Charge
+        laser_y = shield_y - 15
+        laser_pct = 1.0 - (self.player.secondary_cooldown / C.SECONDARY_COOLDOWN)
+        if laser_pct < 0: laser_pct = 0
+        if laser_pct > 1: laser_pct = 1
+        
+        pygame.draw.rect(self.screen, C.DARK_GRAY, (shield_x, laser_y, shield_width, shield_height))
+        pygame.draw.rect(self.screen, (255, 0, 255), (shield_x, laser_y, int(shield_width * laser_pct), shield_height)) # Purple/Magenta
+        pygame.draw.rect(self.screen, C.WHITE, (shield_x, laser_y, shield_width, shield_height), 1)
+        
+        laser_txt = self.tiny_font.render("LASER", True, C.WHITE)
+        self.screen.blit(laser_txt, (shield_x + shield_width + 5, laser_y - 2))
+
 
         if self.player.zoomed:
             zoom_text = self.tiny_font.render("ZOOM ACTIVE", True, C.CYAN)
