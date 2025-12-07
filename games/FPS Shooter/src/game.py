@@ -63,14 +63,14 @@ class Game:
             self.font = pygame.font.SysFont("arial", 48)
             self.small_font = pygame.font.SysFont("arial", 32)
             self.tiny_font = pygame.font.SysFont("arial", 24)
-            self.hand_font = pygame.font.SysFont("comicsansms", 40) # For Jasper's notes
+            self.subtitle_font = pygame.font.SysFont("comicsansms", 40) # For narrative text
         except:
             # Fallback
             self.title_font = pygame.font.Font(None, 80)
             self.font = pygame.font.Font(None, 48)
             self.small_font = pygame.font.Font(None, 32)
             self.tiny_font = pygame.font.Font(None, 24)
-            self.hand_font = pygame.font.Font(None, 40)
+            self.subtitle_font = pygame.font.Font(None, 40)
 
         # Cache static UI strings
         self.weapon_hints = " ".join(
@@ -185,6 +185,8 @@ class Game:
         assert self.game_map is not None
         self.level_start_time = pygame.time.get_ticks()
         self.total_paused_time = 0
+        self.particles = []
+        self.damage_texts = []
         corners = self.get_corner_positions()
         random.shuffle(corners)
 
@@ -253,10 +255,10 @@ class Game:
                              break
                     
                     if not found_pos:
-                         # Last resort: spawn at corner if safe, otherwise skip ONE bot (safety)
-                         if (not self.game_map.is_wall(bot_pos[0], bot_pos[1]) 
-                             and not self.game_map.is_inside_building(bot_pos[0], bot_pos[1])):
-                             self.bots.append(Bot(bot_pos[0], bot_pos[1], self.level, enemy_type))
+                        # Last resort: spawn at corner if safe, otherwise skip ONE bot (safety)
+                        if (not self.game_map.is_wall(bot_pos[0], bot_pos[1]) 
+                            and not self.game_map.is_inside_building(bot_pos[0], bot_pos[1])):
+                            self.bots.append(Bot(bot_pos[0], bot_pos[1], self.level, enemy_type))
 
         self.state = "playing"
 
@@ -311,6 +313,14 @@ class Game:
                                         f.write(f"{self.level}")
                                 except IOError as e:
                                     print(f"Save failed: {e}")
+                                    self.damage_texts.append({
+                                        "x": C.SCREEN_WIDTH // 2,
+                                        "y": C.SCREEN_HEIGHT // 2,
+                                        "text": "SAVE FAILED!",
+                                        "color": C.RED,
+                                        "timer": 60,
+                                        "vy": -0.5
+                                    })
                                 self.paused = False
                                 self.total_paused_time += pygame.time.get_ticks() - self.pause_start_time
                                 pygame.mouse.set_visible(False)
@@ -355,7 +365,6 @@ class Game:
                     if self.player.shoot():
                         self.check_shot_hit()
                 elif event.button == 1:  # Left-click to aim
-                    # Aiming not implemented yet
                     pass
             elif event.type == pygame.MOUSEMOTION and not self.paused:
                 assert self.player is not None
@@ -909,7 +918,7 @@ class Game:
             alpha = min(255, max(0, 255 - abs(elapsed - duration/2) * (510/duration)))
             
             line1_surf = self.title_font.render(line1, True, (255, 255, 255))
-            line2_surf = self.hand_font.render(line2, True, (255, 0, 0)) # Jasper's line in red
+            line2_surf = self.subtitle_font.render(line2, True, (255, 0, 0)) # Subtitle line in red
             
             # Apply alpha approx (by set_alpha on blit or color) - simplistic here:
             line1_surf.set_alpha(int(alpha))
