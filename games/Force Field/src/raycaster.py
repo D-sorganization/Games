@@ -202,7 +202,7 @@ class Raycaster:
         sprite_y: int,
         sprite_size: float,
     ) -> None:
-        """Render a detailed enemy sprite with shape relative to type"""
+        """Render a detailed enemy sprite with shape relative to type (Doom Style)"""
         center_x = sprite_x + sprite_size / 2
 
         type_data: Dict[str, Any] = bot.type_data
@@ -224,107 +224,112 @@ class Raycaster:
             )
             return
 
-        dark_color = tuple(max(0, c - 40) for c in base_color)
+        # Doom-style Procedural Drawing parameters
+        body_width = sprite_size * 0.6
+        body_height = sprite_size
+        head_size = sprite_size * 0.4
+        
+        body_x = center_x - body_width / 2
+        body_y = sprite_y + sprite_size * 0.05
 
-        # Dimensions based on type to give different shapes
-        width_scale = 1.0
-        if bot.enemy_type == "boss":
-            width_scale = 1.4
-        elif bot.enemy_type == "demon":
-            width_scale = 0.8  # skinny
-
-        body_width = sprite_size * 0.5 * width_scale
-        body_height = sprite_size * 0.6
-        head_size = sprite_size * 0.35 * (1.2 if bot.enemy_type == "boss" else 1.0)
-
-        # Animation
-        leg_phase = math.sin(bot.walk_animation) * 0.3
-
-        # Draw legs first (behind body)
-        leg_width = body_width * 0.3
-        leg_height = sprite_size * 0.35
-        leg_y = sprite_y + sprite_size * 0.65
-
-        left_leg_x = center_x - body_width * 0.3 + leg_phase * sprite_size * 0.5
-        right_leg_x = center_x + body_width * 0.3 - leg_phase * sprite_size * 0.5
-
+        # 1. Body
+        # Main torso
         pygame.draw.rect(
-            screen, (40, 40, 40), (left_leg_x - leg_width / 2, leg_y, leg_width, leg_height)
-        )
-        pygame.draw.rect(
-            screen, (40, 40, 40), (right_leg_x - leg_width / 2, leg_y, leg_width, leg_height)
+            screen,
+            base_color,
+            (body_x, body_y + head_size * 0.8, body_width, body_height * 0.6)
         )
 
-        # Body - shape variation
-        body_y = sprite_y + sprite_size * 0.25
-        if bot.enemy_type == "dinosaur":
-            # T-Rex shapeish
-            points = [
-                (center_x, body_y - 20),
-                (center_x + body_width, body_y + body_height * 0.5),
-                (center_x, body_y + body_height),
-                (center_x - body_width, body_y + body_height * 0.5),
-            ]
-            pygame.draw.polygon(screen, base_color, points)
-        else:
-            # Humanoid / Blocky
-            pygame.draw.rect(
-                screen, base_color, (center_x - body_width / 2, body_y, body_width, body_height)
-            )
-            # Armor / chest detail
-            pygame.draw.rect(
-                screen,
-                dark_color,
-                (
-                    center_x - body_width / 3,
-                    body_y + body_height * 0.2,
-                    body_width * 0.66,
-                    body_height * 0.4,
-                ),
-            )
-
-        # Head
-        head_y = body_y - head_size * 0.8
-        head_x = center_x - head_size / 2
-
-        if bot.enemy_type == "demon":
-            # Horns
-            pygame.draw.polygon(
-                screen,
-                C.RED,
-                [
-                    (center_x - head_size * 0.4, head_y),
-                    (center_x - head_size * 0.6, head_y - 15),
-                    (center_x - head_size * 0.2, head_y + 10),
-                ],
-            )
-            pygame.draw.polygon(
-                screen,
-                C.RED,
-                [
-                    (center_x + head_size * 0.4, head_y),
-                    (center_x + head_size * 0.6, head_y - 15),
-                    (center_x + head_size * 0.2, head_y + 10),
-                ],
-            )
-
+        # Pants/Belt (Dark Brown/Black)
         pygame.draw.rect(
-            screen, base_color, (head_x, head_y, head_size, head_size), border_radius=5
+            screen,
+            (42, 28, 28), 
+            (body_x, body_y + body_height * 0.65, body_width, body_height * 0.1)
         )
 
-        # Scary Eyes (Glowing)
-        eye_y = head_y + head_size * 0.3
-        eye_size = head_size * 0.2
-        eye_color = C.RED if bot.enemy_type in ["boss", "demon"] else C.YELLOW
+        # 2. Head (Gray Box)
+        pygame.draw.rect(
+            screen,
+            (217, 217, 217),
+            (center_x - head_size / 2, body_y, head_size, head_size)
+        )
 
+        # 3. Eyes with spinning pupils
+        eye_radius = head_size * 0.12
+        pupil_radius = eye_radius * 0.6
+        eye_y_offset = head_size * 0.25
+        eye_spacing = head_size * 0.18
+        
+        # Sclera (White)
         pygame.draw.circle(
-            screen, eye_color, (int(center_x - head_size * 0.2), int(eye_y)), int(eye_size)
+            screen, (255, 255, 255),
+            (int(center_x - eye_spacing), int(body_y + eye_y_offset)),
+            int(eye_radius)
         )
         pygame.draw.circle(
-            screen, eye_color, (int(center_x + head_size * 0.2), int(eye_y)), int(eye_size)
+            screen, (255, 255, 255),
+            (int(center_x + eye_spacing), int(body_y + eye_y_offset)),
+            int(eye_radius)
         )
 
-        # Weapon / Arm
+        # Pupils (Spinning)
+        pupil_angle = bot.eye_rotation
+        pupil_offset = eye_radius * 0.4
+        pupil_x_off = math.cos(pupil_angle) * pupil_offset
+        pupil_y_off = math.sin(pupil_angle) * pupil_offset
+
+        pygame.draw.circle(
+            screen, (34, 34, 34),
+            (int(center_x - eye_spacing + pupil_x_off), int(body_y + eye_y_offset + pupil_y_off)),
+            int(pupil_radius)
+        )
+        pygame.draw.circle(
+            screen, (34, 34, 34),
+            (int(center_x + eye_spacing + pupil_x_off), int(body_y + eye_y_offset + pupil_y_off)),
+            int(pupil_radius)
+        )
+
+        # 4. Mouth Animation
+        mouth_width = head_size * 0.7
+        mouth_height = head_size * 0.3 if bot.mouth_open else head_size * 0.12
+        mouth_x = center_x - mouth_width / 2
+        mouth_y = body_y + head_size * 0.65
+
+        # Mouth Interior (Red)
+        pygame.draw.rect(
+            screen, (180, 42, 42),
+            (mouth_x, mouth_y, mouth_width, mouth_height)
+        )
+
+        # Teeth (White)
+        tooth_width = mouth_width / 6
+        tooth_height = mouth_height * 0.6
+        for i in range(6):
+            pygame.draw.rect(
+                screen, (238, 238, 238),
+                (mouth_x + i * tooth_width, mouth_y, tooth_width * 0.6, tooth_height)
+            )
+
+        # 5. Drool (Blue Lines)
+        drool_color = (126, 214, 255)
+        drool_len = mouth_height * 1.2 + (bot.drool_offset % 10)
+        
+        # Left Drool
+        pygame.draw.line(
+            screen, drool_color,
+            (mouth_x + mouth_width * 0.1, mouth_y + mouth_height),
+            (mouth_x + mouth_width * 0.1, mouth_y + mouth_height + drool_len),
+            max(2, int(sprite_size * 0.01))
+        )
+        # Right Drool
+        pygame.draw.line(
+            screen, drool_color,
+            (mouth_x + mouth_width * 0.9, mouth_y + mouth_height),
+            (mouth_x + mouth_width * 0.9, mouth_y + mouth_height + drool_len * 0.8),
+            max(2, int(sprite_size * 0.01))
+        )
+
+        # Weapon / Arm (Preserved from original logic but adjusted)
         arm_y = body_y + body_height * 0.2
         shoot_offset = bot.shoot_animation * 10
         pygame.draw.rect(
