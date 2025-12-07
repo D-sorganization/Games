@@ -357,10 +357,6 @@ class Raycaster:
             size = (i % 3) + 1
             color = (200, 200, 255) if i % 2 == 0 else (255, 255, 255)
             pygame.draw.circle(screen, color, (x, y), size)
-            
-            # Wrap around for seamless rotation
-            if x < C.SCREEN_WIDTH:
-                pygame.draw.circle(screen, color, (x + C.SCREEN_WIDTH, y), size)
 
         # Draw Moon
         moon_x = (C.SCREEN_WIDTH - 200 - int(player_angle * 100)) % (C.SCREEN_WIDTH * 2) - C.SCREEN_WIDTH // 2

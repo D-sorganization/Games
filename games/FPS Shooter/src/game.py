@@ -33,6 +33,7 @@ class Game:
         self.intro_step = 0
         self.intro_timer = 0
         self.intro_alpha = 0
+        self.intro_start_time = 0
         
         # Gameplay state
         self.level = 1
@@ -616,7 +617,7 @@ class Game:
         # Shield effect
         if self.player.shield_active:
             overlay = pygame.Surface((C.SCREEN_WIDTH, C.SCREEN_HEIGHT), pygame.SRCALPHA)
-            overlay.fill((*C.SHIELD_COLOR, 30)) # Transparent cyan
+            overlay.fill((*C.SHIELD_COLOR, 30)) # Semi-transparent cyan overlay
             # Add hexagon pattern or grid? Simple border for now
             pygame.draw.rect(overlay, C.SHIELD_COLOR, (0, 0, C.SCREEN_WIDTH, C.SCREEN_HEIGHT), 10)
             self.screen.blit(overlay, (0, 0))
@@ -824,7 +825,7 @@ class Game:
         completed_levels = max(0, self.level - 1)
         total_time = sum(self.level_times)
         
-        avg_time = total_time / self.level if self.level > 0 else 0
+        avg_time = total_time / len(self.level_times) if self.level_times else 0
         stats = [
             (
                 f"You survived {completed_levels} level{'s' if completed_levels != 1 else ''}",
