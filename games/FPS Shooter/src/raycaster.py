@@ -348,7 +348,7 @@ class Raycaster:
         # Draw stars
         # Use player angle to offset stars for parallax effect
         star_offset = int(player_angle * 200) % C.SCREEN_WIDTH
-        
+
         # Simple procedural stars
         for i in range(50):
             # Deterministic star positions
@@ -359,10 +359,12 @@ class Raycaster:
             pygame.draw.circle(screen, color, (x, y), size)
 
         # Draw Moon
-        moon_x = (C.SCREEN_WIDTH - 200 - int(player_angle * 100)) % (C.SCREEN_WIDTH * 2) - C.SCREEN_WIDTH // 2
+        moon_x = (C.SCREEN_WIDTH - 200 - int(player_angle * 100)) % (
+            C.SCREEN_WIDTH * 2
+        ) - C.SCREEN_WIDTH // 2
         if -100 < moon_x < C.SCREEN_WIDTH + 100:
             pygame.draw.circle(screen, (220, 220, 200), (int(moon_x), 100), 40)
-            pygame.draw.circle(screen, C.SKY_COLOR, (int(moon_x) - 10, 100), 40) # Crescent
+            pygame.draw.circle(screen, C.SKY_COLOR, (int(moon_x) - 10, 100), 40)  # Crescent
 
         # Floor
         pygame.draw.rect(

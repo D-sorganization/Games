@@ -34,7 +34,7 @@ class Game:
         self.intro_timer = 0
         self.intro_alpha = 0
         self.intro_start_time = 0
-        
+
         # Gameplay state
         self.level = 1
         self.kills = 0
@@ -45,7 +45,7 @@ class Game:
         self.pause_start_time = 0
         self.total_paused_time = 0
         self.show_damage = True
-        
+
         # Visual effects
         self.particles: List[Dict[str, Any]] = []
         self.damage_texts: List[Dict[str, Any]] = []
@@ -63,7 +63,7 @@ class Game:
             self.font = pygame.font.SysFont("arial", 48)
             self.small_font = pygame.font.SysFont("arial", 32)
             self.tiny_font = pygame.font.SysFont("arial", 24)
-            self.subtitle_font = pygame.font.SysFont("comicsansms", 40) # For narrative text
+            self.subtitle_font = pygame.font.SysFont("comicsansms", 40)  # For narrative text
         except:
             # Fallback
             self.title_font = pygame.font.Font(None, 80)
@@ -215,22 +215,22 @@ class Game:
         self.bots = []
         self.projectiles = []
         enemies_per_corner = 4 + (self.level - 1)
-        
+
         available_types = list(C.ENEMY_TYPES.keys())
         random.shuffle(available_types)
-        
+
         for i in range(1, 4):
             bot_pos = corners[i]
             # Use a different enemy type for each corner (cycling if we run out)
-            enemy_type = available_types[(i-1) % len(available_types)]
-            
+            enemy_type = available_types[(i - 1) % len(available_types)]
+
             # Spawn enemies around corner
             for j in range(enemies_per_corner):
                 angle_offset = j * 2 * math.pi / enemies_per_corner
                 radius = 1.5 + (j % 2) * 0.5
                 spawn_x = bot_pos[0] + math.cos(angle_offset) * radius
                 spawn_y = bot_pos[1] + math.sin(angle_offset) * radius
-                
+
                 if (
                     not self.game_map.is_wall(spawn_x, spawn_y)
                     and not self.game_map.is_inside_building(spawn_x, spawn_y)
@@ -242,22 +242,27 @@ class Game:
                     # Retry nearby
                     found_pos = False
                     for attempt in range(15):
-                        test_x = bot_pos[0] + random.uniform(-C.SPAWN_RETRY_RADIUS, C.SPAWN_RETRY_RADIUS)
-                        test_y = bot_pos[1] + random.uniform(-C.SPAWN_RETRY_RADIUS, C.SPAWN_RETRY_RADIUS)
+                        test_x = bot_pos[0] + random.uniform(
+                            -C.SPAWN_RETRY_RADIUS, C.SPAWN_RETRY_RADIUS
+                        )
+                        test_y = bot_pos[1] + random.uniform(
+                            -C.SPAWN_RETRY_RADIUS, C.SPAWN_RETRY_RADIUS
+                        )
                         if (
                             not self.game_map.is_wall(test_x, test_y)
                             and not self.game_map.is_inside_building(test_x, test_y)
                             and 2 <= test_x < self.game_map.size - 2
                             and 2 <= test_y < self.game_map.size - 2
                         ):
-                             self.bots.append(Bot(test_x, test_y, self.level, enemy_type))
-                             found_pos = True
-                             break
-                    
+                            self.bots.append(Bot(test_x, test_y, self.level, enemy_type))
+                            found_pos = True
+                            break
+
                     if not found_pos:
                         # Last resort: spawn at corner if safe, otherwise skip ONE bot (safety)
-                        if (not self.game_map.is_wall(bot_pos[0], bot_pos[1]) 
-                            and not self.game_map.is_inside_building(bot_pos[0], bot_pos[1])):
+                        if not self.game_map.is_wall(
+                            bot_pos[0], bot_pos[1]
+                        ) and not self.game_map.is_inside_building(bot_pos[0], bot_pos[1]):
                             self.bots.append(Bot(bot_pos[0], bot_pos[1], self.level, enemy_type))
 
         self.state = "playing"
@@ -300,29 +305,37 @@ class Game:
                     mouse_pos = pygame.mouse.get_pos()
                     menu_items = ["RESUME", "SAVE GAME", "QUIT TO MENU"]
                     for i, item in enumerate(menu_items):
-                        rect = pygame.Rect(C.SCREEN_WIDTH//2 - 100, C.SCREEN_HEIGHT//2 - 50 + i*60, 200, 50)
+                        rect = pygame.Rect(
+                            C.SCREEN_WIDTH // 2 - 100, C.SCREEN_HEIGHT // 2 - 50 + i * 60, 200, 50
+                        )
                         if rect.collidepoint(mouse_pos):
                             if item == "RESUME":
                                 self.paused = False
-                                self.total_paused_time += pygame.time.get_ticks() - self.pause_start_time
+                                self.total_paused_time += (
+                                    pygame.time.get_ticks() - self.pause_start_time
+                                )
                                 pygame.mouse.set_visible(False)
                                 pygame.event.set_grab(True)
                             elif item == "SAVE GAME":
                                 try:
                                     with open(C.SAVE_FILE_PATH, "w") as f:
                                         f.write(f"{self.level}")
-                                except IOError as e:
+                                except OSError as e:
                                     print(f"Save failed: {e}")
-                                    self.damage_texts.append({
-                                        "x": C.SCREEN_WIDTH // 2,
-                                        "y": C.SCREEN_HEIGHT // 2,
-                                        "text": "SAVE FAILED!",
-                                        "color": C.RED,
-                                        "timer": 60,
-                                        "vy": -0.5
-                                    })
+                                    self.damage_texts.append(
+                                        {
+                                            "x": C.SCREEN_WIDTH // 2,
+                                            "y": C.SCREEN_HEIGHT // 2,
+                                            "text": "SAVE FAILED!",
+                                            "color": C.RED,
+                                            "timer": 60,
+                                            "vy": -0.5,
+                                        }
+                                    )
                                 self.paused = False
-                                self.total_paused_time += pygame.time.get_ticks() - self.pause_start_time
+                                self.total_paused_time += (
+                                    pygame.time.get_ticks() - self.pause_start_time
+                                )
                                 pygame.mouse.set_visible(False)
                                 pygame.event.set_grab(True)
                             elif item == "QUIT TO MENU":
@@ -330,8 +343,8 @@ class Game:
                                 self.paused = False
                                 pygame.mouse.set_visible(True)
                                 pygame.event.set_grab(False)
-                            break # Handle one click
-                            
+                            break  # Handle one click
+
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     self.state = "menu"
@@ -417,38 +430,40 @@ class Game:
 
         if closest_bot:
             # Calculate hit position for blood
-            hit_x = closest_bot.x
-            hit_y = closest_bot.y
-            
+
             # Display calculated damage (includes headshot multiplier)
             # Note: Bot.take_damage() handles the actual health reduction logic internally,
             # using the base weapon_damage and is_headshot flag.
             # We calculate damage_dealt here purely for the visual text.
             damage_dealt = weapon_damage * 3 if is_headshot else weapon_damage
             closest_bot.take_damage(weapon_damage, is_headshot=is_headshot)
-            
+
             # Spawn damage text
             if self.show_damage:
-                self.damage_texts.append({
-                    "x": C.SCREEN_WIDTH // 2 + random.randint(-20, 20),
-                    "y": C.SCREEN_HEIGHT // 2 - 50,
-                    "text": str(damage_dealt) + ("!" if is_headshot else ""),
-                    "color": C.RED if is_headshot else C.DAMAGE_TEXT_COLOR,
-                    "timer": 60,
-                    "vy": -1.0
-                })
-            
+                self.damage_texts.append(
+                    {
+                        "x": C.SCREEN_WIDTH // 2 + random.randint(-20, 20),
+                        "y": C.SCREEN_HEIGHT // 2 - 50,
+                        "text": str(damage_dealt) + ("!" if is_headshot else ""),
+                        "color": C.RED if is_headshot else C.DAMAGE_TEXT_COLOR,
+                        "timer": 60,
+                        "vy": -1.0,
+                    }
+                )
+
             # Spawn Blue Blood
             for _ in range(10):
-                self.particles.append({
-                    "x": C.SCREEN_WIDTH // 2,
-                    "y": C.SCREEN_HEIGHT // 2,
-                    "dx": random.uniform(-5, 5),
-                    "dy": random.uniform(-5, 5),
-                    "color": C.BLUE_BLOOD,
-                    "timer": C.PARTICLE_LIFETIME,
-                    "size": random.randint(2, 5)
-                })
+                self.particles.append(
+                    {
+                        "x": C.SCREEN_WIDTH // 2,
+                        "y": C.SCREEN_HEIGHT // 2,
+                        "dx": random.uniform(-5, 5),
+                        "dy": random.uniform(-5, 5),
+                        "color": C.BLUE_BLOOD,
+                        "timer": C.PARTICLE_LIFETIME,
+                        "size": random.randint(2, 5),
+                    }
+                )
 
             if not closest_bot.alive:
                 self.kills += 1
@@ -456,16 +471,18 @@ class Game:
     def update_game(self) -> None:
         """Update game state"""
         if self.paused:
-            mouse_pos = pygame.mouse.get_pos()
+            pygame.mouse.get_pos()
             # Simple pause menu handling could go here
             return
 
         assert self.player is not None
         if not self.player.alive:
             # Capture final time for the failed level
-            level_time = (pygame.time.get_ticks() - self.level_start_time - self.total_paused_time) / 1000.0
+            level_time = (
+                pygame.time.get_ticks() - self.level_start_time - self.total_paused_time
+            ) / 1000.0
             self.level_times.append(level_time)
-            
+
             self.state = "game_over"
             pygame.mouse.set_visible(True)
             pygame.event.set_grab(False)
@@ -474,7 +491,9 @@ class Game:
         all_dead = all(not bot.alive for bot in self.bots)
         if all_dead:
             # Only add time if we haven't already for this level
-            level_time = (pygame.time.get_ticks() - self.level_start_time - self.total_paused_time) / 1000.0
+            level_time = (
+                pygame.time.get_ticks() - self.level_start_time - self.total_paused_time
+            ) / 1000.0
             self.level_times.append(level_time)
             self.state = "level_complete"
             pygame.mouse.set_visible(True)
@@ -604,62 +623,64 @@ class Game:
 
         # Render projectiles via raycaster
         self.raycaster.render_projectiles(self.screen, self.player, self.projectiles)
-        
+
         # Render particles
         for p in self.particles:
             alpha = int(255 * (p["timer"] / C.PARTICLE_LIFETIME))
-            surf = pygame.Surface((p["size"]*2, p["size"]*2), pygame.SRCALPHA)
+            surf = pygame.Surface((p["size"] * 2, p["size"] * 2), pygame.SRCALPHA)
             pygame.draw.circle(surf, (*p["color"], alpha), (p["size"], p["size"]), p["size"])
             self.screen.blit(surf, (p["x"] - p["size"], p["y"] - p["size"]))
 
         # Render damage texts
         for t in self.damage_texts:
-            surf = self.title_font.render(t["text"], True, t["color"]) # Use larger font for impact
+            surf = self.title_font.render(t["text"], True, t["color"])  # Use larger font for impact
             # Scale down slightly based on distance look
             scale = 0.5
             w = int(surf.get_width() * scale)
             h = int(surf.get_height() * scale)
             scaled_surf = pygame.transform.scale(surf, (w, h))
-            self.screen.blit(scaled_surf, (t["x"] - w//2, t["y"] - h//2))
+            self.screen.blit(scaled_surf, (t["x"] - w // 2, t["y"] - h // 2))
 
         self.render_rifle()
         self.raycaster.render_minimap(self.screen, self.player, self.bots)
         self.render_hud()
-        
+
         # Shield effect
         if self.player.shield_active:
             overlay = pygame.Surface((C.SCREEN_WIDTH, C.SCREEN_HEIGHT), pygame.SRCALPHA)
-            overlay.fill((*C.SHIELD_COLOR, C.SHIELD_ALPHA)) # Semi-transparent cyan overlay
+            overlay.fill((*C.SHIELD_COLOR, C.SHIELD_ALPHA))  # Semi-transparent cyan overlay
             # Add hexagon pattern or grid? Simple border for now
             pygame.draw.rect(overlay, C.SHIELD_COLOR, (0, 0, C.SCREEN_WIDTH, C.SCREEN_HEIGHT), 10)
             self.screen.blit(overlay, (0, 0))
-            
+
             shield_text = self.title_font.render("SHIELD ACTIVE", True, C.SHIELD_COLOR)
-            self.screen.blit(shield_text, (C.SCREEN_WIDTH//2 - shield_text.get_width()//2, 100))
+            self.screen.blit(shield_text, (C.SCREEN_WIDTH // 2 - shield_text.get_width() // 2, 100))
 
         self.render_crosshair()
 
         if self.player.shooting:
             self.render_muzzle_flash()
-            
+
         # Pause Menu
         if self.paused:
             overlay = pygame.Surface((C.SCREEN_WIDTH, C.SCREEN_HEIGHT), pygame.SRCALPHA)
             overlay.fill((0, 0, 0, 200))
             self.screen.blit(overlay, (0, 0))
-            
+
             menu_items = ["RESUME", "SAVE GAME", "QUIT TO MENU"]
             mouse_pos = pygame.mouse.get_pos()
-            
+
             for i, item in enumerate(menu_items):
                 color = C.WHITE
-                rect = pygame.Rect(C.SCREEN_WIDTH//2 - 100, C.SCREEN_HEIGHT//2 - 50 + i*60, 200, 50)
-                
+                rect = pygame.Rect(
+                    C.SCREEN_WIDTH // 2 - 100, C.SCREEN_HEIGHT // 2 - 50 + i * 60, 200, 50
+                )
+
                 if rect.collidepoint(mouse_pos):
                     color = C.YELLOW
-                
+
                 text = self.font.render(item, True, color)
-                self.screen.blit(text, (C.SCREEN_WIDTH//2 - text.get_width()//2, rect.y + 10))
+                self.screen.blit(text, (C.SCREEN_WIDTH // 2 - text.get_width() // 2, rect.y + 10))
 
         pygame.display.flip()
 
@@ -836,7 +857,7 @@ class Game:
 
         completed_levels = max(0, self.level - 1)
         total_time = sum(self.level_times)
-        
+
         avg_time = total_time / len(self.level_times) if self.level_times else 0
         stats = [
             (
@@ -900,42 +921,49 @@ class Game:
         """Render Max Payne style graphic novel intro"""
         self.screen.fill(C.BLACK)
         current_time = pygame.time.get_ticks()
-        
+
         if self.intro_start_time == 0:
             self.intro_start_time = current_time
-            
+
         elapsed = current_time - self.intro_start_time
-        
+
         # Intro slides
         slides = [
             ("FROM THE DEMENTED MIND", "OF JASPER", 3000),
             ("THEY TOOK MY TOYS", "NOW I TAKE THEIR LIVES", 4000),
-            ("FORCE FIELD", "THE ARENA AWAITS", 4000)
+            ("FORCE FIELD", "THE ARENA AWAITS", 4000),
         ]
-        
+
         if self.intro_step < len(slides):
             line1, line2, duration = slides[self.intro_step]
-            
+
             # Fade in/out logic
-            alpha = min(C.INTRO_FADE_MAX, max(0, C.INTRO_FADE_MAX - abs(elapsed - duration/2) * (C.INTRO_FADE_SCALE/duration)))
-            
+            alpha = min(
+                C.INTRO_FADE_MAX,
+                max(
+                    0,
+                    C.INTRO_FADE_MAX
+                    - abs(elapsed - duration / 2) * (C.INTRO_FADE_SCALE / duration),
+                ),
+            )
+
             line1_surf = self.title_font.render(line1, True, (255, 255, 255))
-            line2_surf = self.subtitle_font.render(line2, True, (255, 0, 0)) # Subtitle line in red
-            
+            line2_surf = self.subtitle_font.render(line2, True, (255, 0, 0))  # Subtitle line in red
+
             # Apply alpha approx (by set_alpha on blit or color) - simplistic here:
             line1_surf.set_alpha(int(alpha))
             line2_surf.set_alpha(int(alpha))
-            
+
             rect1 = line1_surf.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 - 40))
             rect2 = line2_surf.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 40))
-            
+
             self.screen.blit(line1_surf, rect1)
             self.screen.blit(line2_surf, rect2)
-            
+
             if elapsed > duration:
                 self.intro_step += 1
-                self.intro_start_time = 0 # Reset for next slide
+                self.intro_start_time = 0  # Reset for next slide
         else:
             self.state = "menu"
-            
+
         pygame.display.flip()
