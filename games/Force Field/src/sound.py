@@ -17,7 +17,15 @@ class SoundManager:
         if self.initialized:
             return
             
+        # Re-initialize mixer with lower buffer to reduce latency
+        try:
+            pygame.mixer.quit()
+        except:
+            pass
+        pygame.mixer.pre_init(44100, -16, 2, 512)
         pygame.mixer.init()
+        pygame.mixer.set_num_channels(32)
+        
         self.sounds: Dict[str, pygame.mixer.Sound] = {}
         self.music_channel = None
         self.sound_enabled = True

@@ -579,6 +579,54 @@ class Game:
         closest_dist = float("inf")
         is_headshot = False
 
+        # Optimize: Find strict distance to wall in aiming direction first
+        # Simple Raycast (DDA)
+        sin_a = math.sin(self.player.angle)
+        cos_a = math.cos(self.player.angle)
+        
+        # Ray start
+        rx, ry = self.player.x, self.player.y
+        map_x, map_y = int(rx), int(ry)
+        
+        # Delta Dist
+        delta_dist_x = abs(1 / cos_a) if cos_a != 0 else 1e30
+        delta_dist_y = abs(1 / sin_a) if sin_a != 0 else 1e30
+        
+        # Step and side dist
+        if cos_a < 0:
+            step_x = -1
+            side_dist_x = (rx - map_x) * delta_dist_x
+        else:
+            step_x = 1
+            side_dist_x = (map_x + 1.0 - rx) * delta_dist_x
+            
+        if sin_a < 0:
+            step_y = -1
+            side_dist_y = (ry - map_y) * delta_dist_y
+        else:
+            step_y = 1
+            side_dist_y = (map_y + 1.0 - ry) * delta_dist_y
+            
+        # DDA
+        wall_dist = weapon_range # Max limit
+        hit_wall = False
+        while not hit_wall:
+            if side_dist_x < side_dist_y:
+                side_dist_x += delta_dist_x
+                map_x += step_x
+                dist = side_dist_x - delta_dist_x
+            else:
+                side_dist_y += delta_dist_y
+                map_y += step_y
+                dist = side_dist_y - delta_dist_y
+                
+            if dist > weapon_range:
+                break
+                
+            if self.game_map.is_wall(map_x, map_y):
+                wall_dist = dist
+                hit_wall = True
+
         for bot in self.bots:
             if not bot.alive:
                 continue
@@ -589,7 +637,7 @@ class Game:
             dy = bot.y - self.player.y
             distance = math.sqrt(dx**2 + dy**2)
 
-            if distance > weapon_range:
+            if distance > wall_dist: # Blotched by wall
                 continue
 
             # Check if bot is in front of player
@@ -597,17 +645,8 @@ class Game:
             bot_angle_norm = bot_angle if bot_angle >= 0 else bot_angle + 2 * math.pi
 
             # Add Aiming Randomness (Spread)
-            # Higher spread if moving, lower if zoomed?
-            # User request: "Add a bit of randomness to the aiming"
-            # We simulate this by perturbing the angle_diff check effectively, or the player angle
-            # But here we are checking hitscan.
             current_spread = C.SPREAD_ZOOM if self.player.zoomed else C.SPREAD_BASE
             spread_offset = random.uniform(-current_spread, current_spread)
-
-            # Effective angle diff (how close to center of crosshair)
-            # angle_diff is absolute difference.
-            # We want signed difference to add spread?
-            # Or just add spread to player angle.
 
             aim_angle = self.player.angle + spread_offset
             aim_angle %= 2 * math.pi
@@ -618,35 +657,12 @@ class Game:
 
             # Hit threshold (cone of fire)
             if angle_diff < 0.15:  # roughly 8 degrees
-                hit = True
-                steps = int(distance * 10)
-                for i in range(1, steps):
-                    t = i / steps
-                    check_x = self.player.x + dx * t
-                    check_y = self.player.y + dy * t
-                    if self.game_map.is_wall(check_x, check_y):
-                        hit = False
-                        break
-
-                if hit and distance < closest_dist:
+                if distance < closest_dist:
                     closest_bot = bot
                     closest_dist = distance
                     # Headshot is tighter threshold
                     is_headshot = angle_diff < C.HEADSHOT_THRESHOLD
 
-                    # Damage Falloff Calculation
-                    # "damage with range to enemy as well as with centeredness"
-
-                    # Range factor: 1.0 at 0 dist, dropping to 0.5 at max range?
-                    range_factor = max(0.2, 1.0 - (distance / weapon_range))
-
-                    # Accuracy factor (centeredness): 1.0 at 0 angle diff, 0.5 at edge
-                    accuracy_factor = max(0.5, 1.0 - (angle_diff / 0.15))
-
-                    # Store these factors on the bot temporary or return them?
-                    # We just modify the applied damage later?
-                    # Let's modifying weapon_damage locally
-                    # logic continued below
 
         if closest_bot:
             # Calculate hit position for blood
