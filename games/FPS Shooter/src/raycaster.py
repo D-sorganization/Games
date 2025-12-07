@@ -365,8 +365,8 @@ class Raycaster:
         # Draw Moon
         moon_x = (C.SCREEN_WIDTH - 200 - int(player_angle * 100)) % (C.SCREEN_WIDTH * 2) - C.SCREEN_WIDTH // 2
         if -100 < moon_x < C.SCREEN_WIDTH + 100:
-             pygame.draw.circle(screen, (220, 220, 200), (int(moon_x), 100), 40)
-             pygame.draw.circle(screen, C.SKY_COLOR, (int(moon_x) - 10, 100), 40) # Crescent
+            pygame.draw.circle(screen, (220, 220, 200), (int(moon_x), 100), 40)
+            pygame.draw.circle(screen, C.SKY_COLOR, (int(moon_x) - 10, 100), 40) # Crescent
 
         # Floor
         pygame.draw.rect(
