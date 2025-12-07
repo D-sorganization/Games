@@ -617,10 +617,11 @@ class Game:
     def check_shot_hit(self, is_secondary: bool = False) -> None:
         """Check if player's shot hit a bot"""
         assert self.player is not None
-        # Cast ray in player's view direction
-        weapon_range = self.player.get_current_weapon_range()
-        if is_secondary:
-            weapon_range *= 2  # Longer range for laser
+        try:
+            # Cast ray in player's view direction
+            weapon_range = self.player.get_current_weapon_range()
+            if is_secondary:
+                weapon_range *= 2  # Longer range for laser
 
         weapon_damage = self.player.get_current_weapon_damage()
         if is_secondary:
@@ -662,7 +663,7 @@ class Game:
         wall_dist = weapon_range # Max limit
         hit_wall = False
         steps = 0
-        MAX_STEPS = 100
+        MAX_STEPS = 500 # Increased for better range but kept constrained
         
         while not hit_wall and steps < MAX_STEPS:
             steps += 1
@@ -813,6 +814,11 @@ class Game:
             )
         else:
             # Muzzle flash only for primary (rendered elsewhere, but logic could be here)
+            pass
+
+        except Exception as e:
+            # Prevent gameplay crash from targeting logic
+            print(f"Error in check_shot_hit: {e}")
             pass
 
     def handle_bomb_explosion(self) -> None:
