@@ -141,6 +141,9 @@ class Game:
         self.bots: List[Bot] = []
         self.projectiles: List[Projectile] = []
         self.raycaster: Raycaster | None = None
+        self.lives = C.DEFAULT_LIVES
+        self.damage_flash_timer = 0
+        self.intro_video = None
 
         # Fonts - Modern and Stylistic
         try:
@@ -353,7 +356,7 @@ class Game:
         self.projectiles = []
         enemies_per_corner = 4 + (self.level - 1)
 
-        available_types = list(C.ENEMY_TYPES.keys())
+        available_types = [t for t in C.ENEMY_TYPES.keys() if t != "health_pack"]
         random.shuffle(available_types)
 
         for i in range(1, 4):
@@ -623,198 +626,198 @@ class Game:
             if is_secondary:
                 weapon_range *= 2  # Longer range for laser
 
-        weapon_damage = self.player.get_current_weapon_damage()
-        if is_secondary:
-            weapon_damage = int(weapon_damage * C.SECONDARY_DAMAGE_MULT)
-
-        closest_bot = None
-        closest_dist = float("inf")
-        is_headshot = False
-
-        # Optimize: Find strict distance to wall in aiming direction first
-        # Simple Raycast (DDA)
-        sin_a = math.sin(self.player.angle)
-        cos_a = math.cos(self.player.angle)
-        
-        # Ray start
-        rx, ry = self.player.x, self.player.y
-        map_x, map_y = int(rx), int(ry)
-        
-        # Delta Dist
-        delta_dist_x = abs(1 / cos_a) if cos_a != 0 else 1e30
-        delta_dist_y = abs(1 / sin_a) if sin_a != 0 else 1e30
-        
-        # Step and side dist
-        if cos_a < 0:
-            step_x = -1
-            side_dist_x = (rx - map_x) * delta_dist_x
-        else:
-            step_x = 1
-            side_dist_x = (map_x + 1.0 - rx) * delta_dist_x
-            
-        if sin_a < 0:
-            step_y = -1
-            side_dist_y = (ry - map_y) * delta_dist_y
-        else:
-            step_y = 1
-            side_dist_y = (map_y + 1.0 - ry) * delta_dist_y
-            
-        # DDA
-        wall_dist = weapon_range # Max limit
-        hit_wall = False
-        steps = 0
-        MAX_STEPS = 500 # Increased for better range but kept constrained
-        
-        while not hit_wall and steps < MAX_STEPS:
-            steps += 1
-            if side_dist_x < side_dist_y:
-                side_dist_x += delta_dist_x
-                map_x += step_x
-                dist = side_dist_x - delta_dist_x
-            else:
-                side_dist_y += delta_dist_y
-                map_y += step_y
-                dist = side_dist_y - delta_dist_y
-                
-            if dist > weapon_range:
-                break
-                
-            # Bounds check to prevent infinite or OOB errors
-            if map_x < 0 or map_x >= self.game_map.size or map_y < 0 or map_y >= self.game_map.size:
-                hit_wall = True
-                wall_dist = dist
-                break
-
-            if self.game_map.is_wall(map_x, map_y):
-                wall_dist = dist
-                hit_wall = True
-
-        for bot in self.bots:
-            if not bot.alive:
-                continue
-
-            # Calculate bot position relative to player
-            assert self.player is not None
-            dx = bot.x - self.player.x
-            dy = bot.y - self.player.y
-            distance = math.sqrt(dx**2 + dy**2)
-
-            if distance > wall_dist: # Blotched by wall
-                continue
-
-            # Check if bot is in front of player
-            bot_angle = math.atan2(dy, dx)
-            bot_angle_norm = bot_angle if bot_angle >= 0 else bot_angle + 2 * math.pi
-
-            # Add Aiming Randomness (Spread)
-            current_spread = C.SPREAD_ZOOM if self.player.zoomed else C.SPREAD_BASE
-            spread_offset = random.uniform(-current_spread, current_spread)
-
-            aim_angle = self.player.angle + spread_offset
-            aim_angle %= 2 * math.pi
-
-            angle_diff = abs(bot_angle_norm - aim_angle)
-            if angle_diff > math.pi:
-                angle_diff = 2 * math.pi - angle_diff
-
-            # Hit threshold (cone of fire)
-            if angle_diff < 0.15:  # roughly 8 degrees
-                if distance < closest_dist:
-                    closest_bot = bot
-                    closest_dist = distance
-                    # Headshot is tighter threshold
-                    is_headshot = angle_diff < C.HEADSHOT_THRESHOLD
-
-
-        if closest_bot:
-            # Calculate hit position for blood
-
-            # Display calculated damage (includes headshot multiplier)
-            # Apply calculated factors
-            # Recalculate range/accuracy factor for THE closest bot
-            # (Ideally we stored this loop above, but re-calc is cheap)
-
-            # ... Wait, I can't access locals from loop above easily unless I stored them.
-            # Simplified approach: Use basic factors here since we have closest_bot and closest_dist
-
-            range_factor = max(0.3, 1.0 - (closest_dist / weapon_range))  # Damage drops with range
-
-            # Centeredness
-            dx = closest_bot.x - self.player.x
-            dy = closest_bot.y - self.player.y
-            bot_angle = math.atan2(dy, dx)
-            bot_angle_norm = bot_angle if bot_angle >= 0 else bot_angle + 2 * math.pi
-            # Use original player angle for center calculation (spread applied to hit check,
-            # but damage based on true accuracy usually feels fair...
-            # Actually user said "aiming randomness", so spread determines IF you hit.
-            # "centeredness of contact" implies how close to center of crosshair.
-
-            angle_diff = abs(bot_angle_norm - self.player.angle)
-            if angle_diff > math.pi:
-                angle_diff = 2 * math.pi - angle_diff
-
-            accuracy_factor = max(0.5, 1.0 - (angle_diff / 0.15))
-
-            final_damage = int(weapon_damage * range_factor * accuracy_factor)
+            weapon_damage = self.player.get_current_weapon_damage()
             if is_secondary:
-                # Secondary ignores some falloff? Or just huge base damage makes up for it.
-                # Keep same logic.
-                pass
+                weapon_damage = int(weapon_damage * C.SECONDARY_DAMAGE_MULT)
 
-            if is_headshot:
-                final_damage *= 3
+            closest_bot = None
+            closest_dist = float("inf")
+            is_headshot = False
 
-            closest_bot.take_damage(final_damage, is_headshot=is_headshot)
+            # Optimize: Find strict distance to wall in aiming direction first
+            # Simple Raycast (DDA)
+            sin_a = math.sin(self.player.angle)
+            cos_a = math.cos(self.player.angle)
+            
+            # Ray start
+            rx, ry = self.player.x, self.player.y
+            map_x, map_y = int(rx), int(ry)
+            
+            # Delta Dist
+            delta_dist_x = abs(1 / cos_a) if cos_a != 0 else 1e30
+            delta_dist_y = abs(1 / sin_a) if sin_a != 0 else 1e30
+            
+            # Step and side dist
+            if cos_a < 0:
+                step_x = -1
+                side_dist_x = (rx - map_x) * delta_dist_x
+            else:
+                step_x = 1
+                side_dist_x = (map_x + 1.0 - rx) * delta_dist_x
+                
+            if sin_a < 0:
+                step_y = -1
+                side_dist_y = (ry - map_y) * delta_dist_y
+            else:
+                step_y = 1
+                side_dist_y = (map_y + 1.0 - ry) * delta_dist_y
+                
+            # DDA
+            wall_dist = weapon_range # Max limit
+            hit_wall = False
+            steps = 0
+            MAX_STEPS = 500 # Increased for better range but kept constrained
+            
+            while not hit_wall and steps < MAX_STEPS:
+                steps += 1
+                if side_dist_x < side_dist_y:
+                    side_dist_x += delta_dist_x
+                    map_x += step_x
+                    dist = side_dist_x - delta_dist_x
+                else:
+                    side_dist_y += delta_dist_y
+                    map_y += step_y
+                    dist = side_dist_y - delta_dist_y
+                    
+                if dist > weapon_range:
+                    break
+                    
+                # Bounds check to prevent infinite or OOB errors
+                if map_x < 0 or map_x >= self.game_map.size or map_y < 0 or map_y >= self.game_map.size:
+                    hit_wall = True
+                    wall_dist = dist
+                    break
 
-            damage_dealt = final_damage  # Update for text
+                if self.game_map.is_wall(map_x, map_y):
+                    wall_dist = dist
+                    hit_wall = True
 
-            # Spawn damage text
-            if self.show_damage:
-                self.damage_texts.append(
-                    {
-                        "x": C.SCREEN_WIDTH // 2 + random.randint(-20, 20),
-                        "y": C.SCREEN_HEIGHT // 2 - 50,
-                        "text": str(damage_dealt) + ("!" if is_headshot else ""),
-                        "color": C.RED if is_headshot else C.DAMAGE_TEXT_COLOR,
-                        "timer": 60,
-                        "vy": -1.0,
-                    }
-                )
+            for bot in self.bots:
+                if not bot.alive:
+                    continue
 
-            # Spawn Blue Blood
-            for _ in range(10):
+                # Calculate bot position relative to player
+                assert self.player is not None
+                dx = bot.x - self.player.x
+                dy = bot.y - self.player.y
+                distance = math.sqrt(dx**2 + dy**2)
+
+                if distance > wall_dist: # Blotched by wall
+                    continue
+
+                # Check if bot is in front of player
+                bot_angle = math.atan2(dy, dx)
+                bot_angle_norm = bot_angle if bot_angle >= 0 else bot_angle + 2 * math.pi
+
+                # Add Aiming Randomness (Spread)
+                current_spread = C.SPREAD_ZOOM if self.player.zoomed else C.SPREAD_BASE
+                spread_offset = random.uniform(-current_spread, current_spread)
+
+                aim_angle = self.player.angle + spread_offset
+                aim_angle %= 2 * math.pi
+
+                angle_diff = abs(bot_angle_norm - aim_angle)
+                if angle_diff > math.pi:
+                    angle_diff = 2 * math.pi - angle_diff
+
+                # Hit threshold (cone of fire)
+                if angle_diff < 0.15:  # roughly 8 degrees
+                    if distance < closest_dist:
+                        closest_bot = bot
+                        closest_dist = distance
+                        # Headshot is tighter threshold
+                        is_headshot = angle_diff < C.HEADSHOT_THRESHOLD
+
+
+            if closest_bot:
+                # Calculate hit position for blood
+
+                # Display calculated damage (includes headshot multiplier)
+                # Apply calculated factors
+                # Recalculate range/accuracy factor for THE closest bot
+                # (Ideally we stored this loop above, but re-calc is cheap)
+
+                # ... Wait, I can't access locals from loop above easily unless I stored them.
+                # Simplified approach: Use basic factors here since we have closest_bot and closest_dist
+
+                range_factor = max(0.3, 1.0 - (closest_dist / weapon_range))  # Damage drops with range
+
+                # Centeredness
+                dx = closest_bot.x - self.player.x
+                dy = closest_bot.y - self.player.y
+                bot_angle = math.atan2(dy, dx)
+                bot_angle_norm = bot_angle if bot_angle >= 0 else bot_angle + 2 * math.pi
+                # Use original player angle for center calculation (spread applied to hit check,
+                # but damage based on true accuracy usually feels fair...
+                # Actually user said "aiming randomness", so spread determines IF you hit.
+                # "centeredness of contact" implies how close to center of crosshair.
+
+                angle_diff = abs(bot_angle_norm - self.player.angle)
+                if angle_diff > math.pi:
+                    angle_diff = 2 * math.pi - angle_diff
+
+                accuracy_factor = max(0.5, 1.0 - (angle_diff / 0.15))
+
+                final_damage = int(weapon_damage * range_factor * accuracy_factor)
+                if is_secondary:
+                    # Secondary ignores some falloff? Or just huge base damage makes up for it.
+                    # Keep same logic.
+                    pass
+
+                if is_headshot:
+                    final_damage *= 3
+
+                closest_bot.take_damage(final_damage, is_headshot=is_headshot)
+
+                damage_dealt = final_damage  # Update for text
+
+                # Spawn damage text
+                if self.show_damage:
+                    self.damage_texts.append(
+                        {
+                            "x": C.SCREEN_WIDTH // 2 + random.randint(-20, 20),
+                            "y": C.SCREEN_HEIGHT // 2 - 50,
+                            "text": str(damage_dealt) + ("!" if is_headshot else ""),
+                            "color": C.RED if is_headshot else C.DAMAGE_TEXT_COLOR,
+                            "timer": 60,
+                            "vy": -1.0,
+                        }
+                    )
+
+                # Spawn Blue Blood
+                for _ in range(10):
+                    self.particles.append(
+                        {
+                            "x": C.SCREEN_WIDTH // 2,
+                            "y": C.SCREEN_HEIGHT // 2,
+                            "dx": random.uniform(-5, 5),
+                            "dy": random.uniform(-5, 5),
+                            "color": C.BLUE_BLOOD,
+                            "timer": C.PARTICLE_LIFETIME,
+                            "size": random.randint(2, 5),
+                        }
+                    )
+
+                if not closest_bot.alive:
+                    self.kills += 1
+
+            # Visuals
+            if is_secondary:
+                # Add laser effect
+                # For a raycaster, drawing 2D line from weapon to center is best approximation
                 self.particles.append(
                     {
-                        "x": C.SCREEN_WIDTH // 2,
-                        "y": C.SCREEN_HEIGHT // 2,
-                        "dx": random.uniform(-5, 5),
-                        "dy": random.uniform(-5, 5),
-                        "color": C.BLUE_BLOOD,
-                        "timer": C.PARTICLE_LIFETIME,
-                        "size": random.randint(2, 5),
+                        "type": "laser",
+                        "start": (C.SCREEN_WIDTH - 200, C.SCREEN_HEIGHT - 180),  # Approx gun muzzle
+                        "end": (C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2),  # Crosshair
+                        "color": (0, 255, 255),
+                        "timer": C.LASER_DURATION,
+                        "width": C.LASER_WIDTH,
                     }
                 )
-
-            if not closest_bot.alive:
-                self.kills += 1
-
-        # Visuals
-        if is_secondary:
-            # Add laser effect
-            # For a raycaster, drawing 2D line from weapon to center is best approximation
-            self.particles.append(
-                {
-                    "type": "laser",
-                    "start": (C.SCREEN_WIDTH - 200, C.SCREEN_HEIGHT - 180),  # Approx gun muzzle
-                    "end": (C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2),  # Crosshair
-                    "color": (0, 255, 255),
-                    "timer": C.LASER_DURATION,
-                    "width": C.LASER_WIDTH,
-                }
-            )
-        else:
-            # Muzzle flash only for primary (rendered elsewhere, but logic could be here)
-            pass
+            else:
+                # Muzzle flash only for primary (rendered elsewhere, but logic could be here)
+                pass
 
         except Exception as e:
             # Prevent gameplay crash from targeting logic
@@ -943,24 +946,7 @@ class Game:
 
         self.player.update()
 
-    def update_game(self) -> None:
-        """Update game state"""
-        if self.paused:
-            # Simple pause menu handling could go here
-            return
-
-        assert self.player is not None
-        if not self.player.alive:
-            # check lives logic (omitted)...
-            pass
-            
-        # ... (rest of logic)
-        # We need to find where enemies shoot. 
-        # Ah, enemies shoot in `bot.update`. But `bot.update` returns a projectile.
-        # We can check if a projectile was added.
-
-        # ...
-        
+        # Update Projectiles and Enemy Shooting (Merged from duplicate method)
         for bot in self.bots:
             projectile = bot.update(self.game_map, self.player, self.bots)
             if projectile:
@@ -1001,17 +987,14 @@ class Game:
                     self.player.take_damage(projectile.damage)
                     if self.player.health < old_health:
                          # Hit flash
-                         damage_flash = pygame.Surface((C.SCREEN_WIDTH, C.SCREEN_HEIGHT), pygame.SRCALPHA)
-                         damage_flash.fill((255, 0, 0, 100))
-                         self.screen.blit(damage_flash, (0,0))
-                         pygame.display.flip() # Force immediate update or just let render loop handle it?
-                         # Better: add to a persistent flash timer/alpha
                          self.damage_flash_timer = 10
                          
                     projectile.alive = False
 
             if not projectile.alive:
-                self.projectiles.remove(projectile)
+                self.projectiles.remove(projectile) 
+            
+
 
     def render_menu(self) -> None:
         """Render main menu (Title Screen)"""
@@ -1043,8 +1026,6 @@ class Game:
         credit = self.tiny_font.render("A Jasper Production", True, C.DARK_GRAY)
         credit_rect = credit.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT - 50))
         self.screen.blit(credit, credit_rect)
-
-        pygame.display.flip()
 
         pygame.display.flip()
 
@@ -1498,6 +1479,9 @@ class Game:
                 self.running = False
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE or event.key == pygame.K_ESCAPE:
+                    if self.intro_video:
+                        self.intro_video.release()
+                        self.intro_video = None
                     self.state = "menu"
 
     def render_intro(self) -> None:
@@ -1557,26 +1541,18 @@ class Game:
                 if ret:
                     # Convert CV2 frame (BGR) to Pygame (RGB)
                     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                    # Rotate if needed (cv2 images are [y, x])
-                    frame = frame.swapaxes(0, 1) # Pygame needs column-major? No, wait.
-                    # Pygame image from buffer
-                    # Actually standard: frame is (H, W, 3). pygame.image.frombuffer takes bytes.
-                    # We need to ensure orientation. CV2 is Row-Major.
-                    # pygame.surfarray.make_surface expects exact alignment.
                     
-                    # Simpler:
-                    frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR) # Wait we just did opposite. 
-                    # Reset: Original was BGR. Frame is now RGB.
-                    # Correct way:
-                    frame = numpy.rot90(frame) if 'numpy' in globals() else frame # Need numpy?
-                    # Without numpy, manual byte swap?
-                    # Let's hope basic rotation is correct or use transform.
+                    # Flip (optional, but CV2 loaded images might be flipped relative to surface)
+                    # Often needed: frame = cv2.flip(frame, 1) or rotate. 
+                    # Assuming standard landscape video, direct conversion is usually fine.
+                    # Transpose to match surface if needed (width, height, 3)
+                    # frame = numpy.rot90(frame) # Requires numpy
                     
-                    # Safer:
-                    # frame = cv2.flip(frame, 1) ?
-                    # Let's just create surface and see.
-                    surf = pygame.image.frombuffer(frame.tobytes(), frame.shape[1::-1], "RGB")
+                    # Create surface
+                    frame = frame.swapaxes(0, 1) # Simple rotation attempt if needed
                     
+                    surf = pygame.surfarray.make_surface(frame)
+
                     # Scale to fit
                     target_h = 400
                     scale = target_h / surf.get_height()
@@ -1598,8 +1574,9 @@ class Game:
             if elapsed > duration:
                 self.intro_phase = 2
                 self.intro_start_time = 0
-                if self.intro_video:
+        if self.intro_video:
                     self.intro_video.release()
+                    self.intro_video = None
 
         # Phase 2: Graphic Novel Slides
         elif self.intro_phase == 2:

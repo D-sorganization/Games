@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List, Tuple
+from typing import List, Tuple, Dict, Union
 import random
 import math
 
@@ -73,7 +73,7 @@ class BloodButton(Button):
         color: Tuple[int, int, int] = (139, 0, 0),  # Dark Red default
     ):
         super().__init__(x, y, width, height, text, color)
-        self.drips: List[Dict[str, float]] = []
+        self.drips: List[Dict[str, Union[float, int]]] = []
         self._generate_drips()
         self.pulse_timer = 0.0
 

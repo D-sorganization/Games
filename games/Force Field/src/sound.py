@@ -20,7 +20,7 @@ class SoundManager:
         # Re-initialize mixer with lower buffer to reduce latency
         try:
             pygame.mixer.quit()
-        except:
+        except Exception:
             pass
         pygame.mixer.pre_init(44100, -16, 2, 512)
         pygame.mixer.init()
