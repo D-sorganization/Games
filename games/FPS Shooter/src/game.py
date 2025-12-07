@@ -41,6 +41,8 @@ class Game:
         self.level_times: List[float] = []
         self.selected_map_size = C.DEFAULT_MAP_SIZE
         self.paused = False
+        self.pause_start_time = 0
+        self.total_paused_time = 0
         self.show_damage = True
         
         # Visual effects
@@ -170,6 +172,8 @@ class Game:
         self.kills = 0
         self.level_times = []
         self.paused = False
+        self.particles = []
+        self.damage_texts = []
         # Create map with selected size
         self.game_map = Map(self.selected_map_size)
         self.raycaster = Raycaster(self.game_map)
@@ -179,6 +183,7 @@ class Game:
         """Start a new level"""
         assert self.game_map is not None
         self.level_start_time = pygame.time.get_ticks()
+        self.total_paused_time = 0
         corners = self.get_corner_positions()
         random.shuffle(corners)
 
@@ -296,6 +301,7 @@ class Game:
                         if rect.collidepoint(mouse_pos):
                             if item == "RESUME":
                                 self.paused = False
+                                self.total_paused_time += pygame.time.get_ticks() - self.pause_start_time
                                 pygame.mouse.set_visible(False)
                                 pygame.event.set_grab(True)
                             elif item == "SAVE GAME":
@@ -321,6 +327,10 @@ class Game:
                     pygame.event.set_grab(False)
                 elif event.key == pygame.K_p:
                     self.paused = not self.paused
+                    if self.paused:
+                        self.pause_start_time = pygame.time.get_ticks()
+                    else:
+                        self.total_paused_time += pygame.time.get_ticks() - self.pause_start_time
                     pygame.mouse.set_visible(self.paused)
                     pygame.event.set_grab(not self.paused)
                 # Weapon switching
@@ -343,6 +353,7 @@ class Game:
                     if self.player.shoot():
                         self.check_shot_hit()
                 elif event.button == 1:  # Left-click to aim
+                    # Aiming not implemented yet
                     pass
             elif event.type == pygame.MOUSEMOTION and not self.paused:
                 assert self.player is not None
@@ -439,7 +450,7 @@ class Game:
         assert self.player is not None
         if not self.player.alive:
             # Capture final time for the failed level
-            level_time = (pygame.time.get_ticks() - self.level_start_time) / 1000.0
+            level_time = (pygame.time.get_ticks() - self.level_start_time - self.total_paused_time) / 1000.0
             self.level_times.append(level_time)
             
             self.state = "game_over"
@@ -450,7 +461,7 @@ class Game:
         all_dead = all(not bot.alive for bot in self.bots)
         if all_dead:
             # Only add time if we haven't already for this level
-            level_time = (pygame.time.get_ticks() - self.level_start_time) / 1000.0
+            level_time = (pygame.time.get_ticks() - self.level_start_time - self.total_paused_time) / 1000.0
             self.level_times.append(level_time)
             self.state = "level_complete"
             pygame.mouse.set_visible(True)
