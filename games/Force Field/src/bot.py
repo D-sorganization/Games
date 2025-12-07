@@ -15,26 +15,31 @@ if TYPE_CHECKING:
 class Bot:
     """Enemy bot with AI"""
 
-    def __init__(self, x: float, y: float, level: int, enemy_type: str | None = None):
+    def __init__(self, x: float, y: float, level: int, enemy_type: str | None = None, difficulty: str = "NORMAL"):
         """Initialize bot
         Args:
             x, y: Position
             level: Current level (affects stats)
             enemy_type: Type of enemy (zombie, boss, demon, dinosaur, raider)
+            difficulty: EASY, NORMAL, HARD, NIGHTMARE
         """
         self.x = x
         self.y = y
         self.angle: float = 0.0
         self.enemy_type = enemy_type if enemy_type else random.choice(list(C.ENEMY_TYPES.keys()))
         self.type_data = C.ENEMY_TYPES[self.enemy_type]
+        
+        diff_stats = C.DIFFICULTIES.get(difficulty, C.DIFFICULTIES["NORMAL"])
 
         type_data: Dict[str, Any] = self.type_data
         base_health = int(C.BASE_BOT_HEALTH * float(type_data["health_mult"]))
-        self.health = base_health + (level - 1) * 3
+        # Apply difficulty to health
+        self.health = int((base_health + (level - 1) * 3) * diff_stats["health_mult"])
         self.max_health = self.health
 
         base_damage = int(C.BASE_BOT_DAMAGE * float(type_data["damage_mult"]))
-        self.damage = base_damage + (level - 1) * 2
+        # Apply difficulty to damage
+        self.damage = int((base_damage + (level - 1) * 2) * diff_stats["damage_mult"])
 
         self.speed = float(C.BOT_SPEED * float(type_data["speed_mult"]))
         self.alive = True
@@ -57,6 +62,9 @@ class Bot:
         if self.shoot_animation > 0:
             self.shoot_animation -= 0.1
             self.shoot_animation = max(self.shoot_animation, 0)
+
+        if self.enemy_type == "health_pack":
+            return None
 
         # Calculate distance to player
         dx = player.x - self.x
