@@ -47,6 +47,8 @@ class Game:
             willy_path = os.path.join(pics_dir, "WillyWonk.JPG")
             if os.path.exists(willy_path):
                 img = pygame.image.load(willy_path)
+                # Rotate clockwise 90 degrees
+                img = pygame.transform.rotate(img, -90)
                 scale = min(500 / img.get_height(), 800 / img.get_width())
                 if scale < 1:
                     new_size = (int(img.get_width() * scale), int(img.get_height() * scale))
@@ -1013,7 +1015,7 @@ class Game:
             "Click: Shoot | Z: Zoom | F: Bomb",
         ]
 
-        y = C.SCREEN_HEIGHT - 200
+        y = C.SCREEN_HEIGHT - 260 # Moved up to avoid overlap with button
         for line in instructions:
             text = self.tiny_font.render(line, True, C.RED)
             text_rect = text.get_rect(center=(C.SCREEN_WIDTH // 2, y))
@@ -1462,7 +1464,7 @@ class Game:
 
         # Phase 1: Upstream Drift Studios
         elif self.intro_phase == 1:
-            duration = 3000
+            duration = 10000 # 10 seconds for GIF
             
             # Text
             t1 = self.small_font.render("in association with", True, C.GRAY)
@@ -1474,10 +1476,15 @@ class Game:
             self.screen.blit(t2, r2)
             
             # Image
+            # Image
             if "deadfish" in self.intro_images:
+                # Note: Pygame does not support animated GIFs natively.
+                # Showing static frame for now. To animate, we'd need to split frames.
                 img = self.intro_images["deadfish"]
                 img_rect = img.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 50))
                 self.screen.blit(img, img_rect)
+            
+            # TODO: Animated GIF support requires splitting frames or external library
 
             if elapsed > duration:
                 self.intro_phase = 2
