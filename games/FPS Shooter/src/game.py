@@ -364,8 +364,6 @@ class Game:
                 if event.button == 3:  # Right-click to fire
                     if self.player.shoot():
                         self.check_shot_hit()
-                elif event.button == 1:  # Left-click to aim
-                    pass
             elif event.type == pygame.MOUSEMOTION and not self.paused:
                 assert self.player is not None
                 self.player.rotate(event.rel[0] * C.PLAYER_ROT_SPEED)
