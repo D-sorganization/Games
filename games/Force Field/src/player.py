@@ -192,7 +192,7 @@ class Player:
         elif self.shield_recharge_delay > 0:
             self.shield_recharge_delay -= 1
         elif self.shield_timer < C.SHIELD_MAX_DURATION:
-            self.shield_timer += 2  # Recharge rate (0 to 600 in 300 frames = 5s? No, fast recharge)
+            self.shield_timer += 2  # Recharge rate: +2 per frame; 0 to 600 in 300 frames (5 seconds at 60 FPS)
             self.shield_timer = min(self.shield_timer, C.SHIELD_MAX_DURATION)
 
     def can_secondary_fire(self) -> bool:

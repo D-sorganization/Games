@@ -93,8 +93,7 @@ class BloodButton(Button):
                     "max_length": random.randint(15, 40),
                     "speed": random.uniform(0.2, 0.5),
                     "width": random.randint(6, 12),
-                    "timer": random.uniform(0, math.pi * 2)  # Phase offset for sine wave animation (not a countdown timer)
-
+                    "phase_offset": random.uniform(0, math.pi * 2)  # Phase offset for sine wave animation
                 })
 
     def update(self, mouse_pos: Tuple[int, int]) -> None:
@@ -105,7 +104,7 @@ class BloodButton(Button):
         # Animate drips
         for drip in self.drips:
             # Oscillate length
-            drip["length"] = drip["max_length"] * (0.7 + 0.3 * math.sin(self.pulse_timer * drip["speed"] + drip["timer"]))
+            drip["length"] = drip["max_length"] * (0.7 + 0.3 * math.sin(self.pulse_timer * drip["speed"] + drip["phase_offset"]))
 
     def draw(self, screen: pygame.Surface, font: pygame.font.Font) -> None:
         """Draw blood button"""

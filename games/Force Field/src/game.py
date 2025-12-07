@@ -77,25 +77,9 @@ class Game:
                 # Simple loop for gradient (slow on init only)
                 # Or just draw a big radial gradient?
                 # Faster: Just rect border fade?
-                # Let's do a simple elliptical fade
-                for x in range(w):
-                    for y in range(h):
-                        dist = math.sqrt((x - center[0])**2 + (y - center[1])**2)
-                        norm_dist = dist / max_radius
-                        if norm_dist > 0.8:
-                            alpha = int(255 * (1.0 - (norm_dist - 0.8) * 5))
-                            alpha = max(0, min(255, alpha))
-                            # Set alpha of pixel... slow in python loop.
-                            # Better: just blit a 'vignette' overlay.
-                            # Better: just blit a 'vignette' overlay.
-                            # pass
-                            continue
-
                 # Pre-prepared vignette image is better but we construct one.
-                # Optimized: Blit a "frame" of semi-transparent pixels?
-                # Let's just standard rect alpha for now to satisfy "blend into background"
-                # Doing per-pixel in python is too slow for 500px image.
                 # We will skip complex per-pixel and just rely on the black background.
+
                 
                 self.intro_images["willy"] = img
             
@@ -688,9 +672,9 @@ class Game:
             wall_dist = weapon_range # Max limit
             hit_wall = False
             steps = 0
-            MAX_STEPS = 500 # Increased for better range but kept constrained
+            max_raycast_steps = C.MAX_RAYCAST_STEPS  # Maximum steps for raycasting
             
-            while not hit_wall and steps < MAX_STEPS:
+            while not hit_wall and steps < max_raycast_steps:
                 steps += 1
                 if side_dist_x < side_dist_y:
                     side_dist_x += delta_dist_x
@@ -743,7 +727,7 @@ class Game:
                     angle_diff = 2 * math.pi - angle_diff
 
                 # Hit threshold (cone of fire)
-                if angle_diff < 0.15:  # roughly 8 degrees
+                if angle_diff < 0.15:  # Small angle threshold
                     if distance < closest_dist:
                         closest_bot = bot
                         closest_dist = distance
