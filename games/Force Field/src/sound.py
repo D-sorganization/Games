@@ -7,13 +7,15 @@ class SoundManager:
     
     _instance = None
     
-    def __new__(cls):
+    def __new__(cls) -> "SoundManager":
+        """Create singleton instance"""
         if cls._instance is None:
             cls._instance = super(SoundManager, cls).__new__(cls)
             cls._instance.initialized = False
         return cls._instance
 
-    def __init__(self):
+    def __init__(self) -> None:
+        """Initialize SoundManager"""
         if self.initialized:
             return
             
@@ -34,7 +36,7 @@ class SoundManager:
         self.load_assets()
         self.initialized = True
 
-    def load_assets(self):
+    def load_assets(self) -> None:
         """Load all sound files"""
         base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         sound_dir = os.path.join(base_path, "assets", "sounds")
@@ -59,7 +61,7 @@ class SoundManager:
             else:
                 print(f"Sound file not found: {path}")
 
-    def play_sound(self, name: str):
+    def play_sound(self, name: str) -> None:
         """Play a sound effect"""
         if not self.sound_enabled:
             return
@@ -67,7 +69,7 @@ class SoundManager:
         if name in self.sounds:
             self.sounds[name].play()
 
-    def start_music(self):
+    def start_music(self) -> None:
         """Start ambient music loop"""
         if not self.sound_enabled:
             return
@@ -76,7 +78,7 @@ class SoundManager:
             # -1 means loop indefinitely
             self.sounds["ambient"].play(loops=-1)
 
-    def stop_music(self):
+    def stop_music(self) -> None:
         """Stop music"""
         if "ambient" in self.sounds:
             self.sounds["ambient"].stop()

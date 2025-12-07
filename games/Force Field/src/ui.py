@@ -72,6 +72,7 @@ class BloodButton(Button):
         text: str,
         color: Tuple[int, int, int] = (139, 0, 0),  # Dark Red default
     ):
+        """Initialize BloodButton"""
         super().__init__(x, y, width, height, text, color)
         self.drips: List[Dict[str, Union[float, int]]] = []
         self._generate_drips()

@@ -4,7 +4,7 @@ import struct
 import math
 import os
 
-def generate_sound_assets(sound_dir: str):
+def generate_sound_assets(sound_dir: str) -> None:
     """Generate procedural placeholders for sounds if they don't exist"""
     if not os.path.exists(sound_dir):
         os.makedirs(sound_dir)

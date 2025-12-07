@@ -87,7 +87,9 @@ class Game:
                             alpha = max(0, min(255, alpha))
                             # Set alpha of pixel... slow in python loop.
                             # Better: just blit a 'vignette' overlay.
-                            pass
+                            # Better: just blit a 'vignette' overlay.
+                            # pass
+                            continue
 
                 # Pre-prepared vignette image is better but we construct one.
                 # Optimized: Blit a "frame" of semi-transparent pixels?
@@ -1285,8 +1287,8 @@ class Game:
         # Draw Pause Menu on TOP of HUD
         if self.paused:
              # Re-blit pause menu text to ensure it's on top
-             pass 
-
+             # Pass as rendering is handled above/overlaid
+             pass
         pygame.display.flip()
 
     def render_rifle(self) -> None:
