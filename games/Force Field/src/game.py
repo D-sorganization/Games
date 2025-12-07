@@ -781,12 +781,8 @@ class Game:
                 accuracy_factor = max(0.5, 1.0 - (angle_diff / 0.15))
 
                 final_damage = int(weapon_damage * range_factor * accuracy_factor)
-                if is_secondary:
-                    # Secondary ignores some falloff? Or just huge base damage makes up for it.
-                    # Keep same logic.
-                    # Keep same logic.
-                    # pass checked by Quality Check
-                    pass
+                final_damage = int(weapon_damage * range_factor * accuracy_factor)
+
 
                 if is_headshot:
                     final_damage *= 3
@@ -839,18 +835,12 @@ class Game:
                         "width": C.LASER_WIDTH,
                     }
                 )
-            else:
-                # Muzzle flash only for primary (rendered elsewhere, but logic could be here)
-                # Muzzle flash only for primary (rendered elsewhere, but logic could be here)
-                # pass checked by Quality Check
-                pass
+
 
         except Exception as e:
             # Prevent gameplay crash from targeting logic
             print(f"Error in check_shot_hit: {e}")
-            print(f"Error in check_shot_hit: {e}")
-            # Ensure safe failure
-            pass
+
 
     def handle_bomb_explosion(self) -> None:
         """Handle bomb explosion logic"""
@@ -1283,19 +1273,13 @@ class Game:
 
                 text = self.font.render(item, True, color)
                 self.screen.blit(text, (C.SCREEN_WIDTH // 2 - text.get_width() // 2, rect.y + 10))
-        else:
-             # Only render weapons and HUD if NOT paused (cleaner pause screen)?
-             # Or render behind. Let's render behind.
-             pass
+
+
 
         self.render_rifle()
         self.render_hud()
         
-        # Draw Pause Menu on TOP of HUD
-        if self.paused:
-             # Re-blit pause menu text to ensure it's on top
-             # Pass as rendering is handled above/overlaid (actually rendered before flip)
-             pass
+
         pygame.display.flip()
 
     def render_rifle(self) -> None:
