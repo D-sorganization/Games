@@ -128,6 +128,9 @@ class Game:
         # Audio
         self.sound_manager = SoundManager()
         self.sound_manager.start_music()
+        
+        # Optimization: Shared surface for alpha effects
+        self.effects_surface = pygame.Surface((C.SCREEN_WIDTH, C.SCREEN_HEIGHT), pygame.SRCALPHA)
 
     def get_corner_positions(self) -> List[Tuple[float, float, float]]:
         """Get spawn positions for four corners (x, y, angle)"""
@@ -1052,69 +1055,53 @@ class Game:
         # Render projectiles via raycaster
         self.raycaster.render_projectiles(self.screen, self.player, self.projectiles)
 
+        # Clear effects surface
+        self.effects_surface.fill((0, 0, 0, 0))
+        
         # Render Lasers (Secondary Fire)
         for p in self.particles:
             if p.get("type") == "laser":
                 alpha = int(255 * (p["timer"] / C.LASER_DURATION))
-                line_surf = pygame.Surface((C.SCREEN_WIDTH, C.SCREEN_HEIGHT), pygame.SRCALPHA)
                 start = p["start"]
                 end = p["end"]
-                # Add some randomness to end point for "beam" effect or just straight?
-                # Straight is fine.
-                pygame.draw.line(line_surf, (*p["color"], alpha), start, end, p["width"])
-                # Add glow
-                pygame.draw.line(line_surf, (*p["color"], alpha // 2), start, end, p["width"] * 3)
-                self.screen.blit(line_surf, (0, 0))
+                color = (*p["color"], alpha)
+                # Draw on shared surface
+                pygame.draw.line(self.effects_surface, color, start, end, p["width"])
+                # Glow
+                pygame.draw.line(self.effects_surface, (*p["color"], alpha // 2), start, end, p["width"] * 3)
 
             elif "dx" in p:  # Normal particles
+                # Draw directly to screen usually faster for small circles? 
+                # Or use effects surface for alpha
                 alpha = int(255 * (p["timer"] / C.PARTICLE_LIFETIME))
-                surf = pygame.Surface((p["size"] * 2, p["size"] * 2), pygame.SRCALPHA)
-                pygame.draw.circle(surf, (*p["color"], alpha), (p["size"], p["size"]), p["size"])
-                self.screen.blit(surf, (p["x"] - p["size"], p["y"] - p["size"]))
+                pygame.draw.circle(self.effects_surface, (*p["color"], alpha), (int(p["x"]), int(p["y"])), int(p["size"]))
 
         # Damage Flash
         if self.damage_flash_timer > 0:
-            flash_surf = pygame.Surface((C.SCREEN_WIDTH, C.SCREEN_HEIGHT), pygame.SRCALPHA)
             alpha = int(100 * (self.damage_flash_timer / 10.0))
-            flash_surf.fill((255, 0, 0, alpha))
-            self.screen.blit(flash_surf, (0, 0))
+            self.effects_surface.fill((255, 0, 0, alpha), special_flags=pygame.BLEND_RGBA_ADD)
             self.damage_flash_timer -= 1
 
-        # Render damage texts
-        for t in self.damage_texts:
-            surf = self.title_font.render(t["text"], True, t["color"])  # Use larger font for impact
-            # Scale down slightly based on distance look
-            scale = 0.5
-            w = int(surf.get_width() * scale)
-            h = int(surf.get_height() * scale)
-            scaled_surf = pygame.transform.scale(surf, (w, h))
-            self.screen.blit(scaled_surf, (t["x"] - w // 2, t["y"] - h // 2))
-
-        self.render_rifle()
-        self.raycaster.render_minimap(self.screen, self.player, self.bots)
-        self.render_hud()
-
-        # Shield effect
+        # Shield effect (Draw onto effects surface)
         if self.player.shield_active:
-            overlay = pygame.Surface((C.SCREEN_WIDTH, C.SCREEN_HEIGHT), pygame.SRCALPHA)
-            overlay.fill((*C.SHIELD_COLOR, C.SHIELD_ALPHA))  # Semi-transparent cyan overlay
-            # Add hexagon pattern or grid? Simple border for now
-            pygame.draw.rect(overlay, C.SHIELD_COLOR, (0, 0, C.SCREEN_WIDTH, C.SCREEN_HEIGHT), 10)
-            self.screen.blit(overlay, (0, 0))
+             self.effects_surface.fill((*C.SHIELD_COLOR, C.SHIELD_ALPHA), special_flags=pygame.BLEND_RGBA_ADD) # Additive or just fill?
+             # Simple fill with alpha works if surface is alpha.
+             # Actually, filling whole surface checks previous pixels? 
+             # Just draw a rect.
+             pygame.draw.rect(self.effects_surface, (*C.SHIELD_COLOR, C.SHIELD_ALPHA), (0,0, C.SCREEN_WIDTH, C.SCREEN_HEIGHT))
+             pygame.draw.rect(self.effects_surface, C.SHIELD_COLOR, (0, 0, C.SCREEN_WIDTH, C.SCREEN_HEIGHT), 10)
 
-            shield_text = self.title_font.render("SHIELD ACTIVE", True, C.SHIELD_COLOR)
-            self.screen.blit(shield_text, (C.SCREEN_WIDTH // 2 - shield_text.get_width() // 2, 100))
+             shield_text = self.title_font.render("SHIELD ACTIVE", True, C.SHIELD_COLOR)
+             self.screen.blit(shield_text, (C.SCREEN_WIDTH // 2 - shield_text.get_width() // 2, 100))
 
-            # Timer bar or text
-            time_left = self.player.shield_timer / 60.0
-            timer_text = self.small_font.render(f"{time_left:.1f}s", True, C.WHITE)
-            self.screen.blit(timer_text, (C.SCREEN_WIDTH // 2 - timer_text.get_width() // 2, 160))
+             # Timer bar or text
+             time_left = self.player.shield_timer / 60.0
+             timer_text = self.small_font.render(f"{time_left:.1f}s", True, C.WHITE)
+             self.screen.blit(timer_text, (C.SCREEN_WIDTH // 2 - timer_text.get_width() // 2, 160))
 
-            # Flash if running out
-            if self.player.shield_timer < 120 and (self.player.shield_timer // 10) % 2 == 0:
-                flash_overlay = pygame.Surface((C.SCREEN_WIDTH, C.SCREEN_HEIGHT), pygame.SRCALPHA)
-                flash_overlay.fill((255, 0, 0, 50))
-                self.screen.blit(flash_overlay, (0, 0))
+             # Flash if running out
+             if self.player.shield_timer < 120 and (self.player.shield_timer // 10) % 2 == 0:
+                 pygame.draw.rect(self.effects_surface, (255, 0, 0, 50), (0,0, C.SCREEN_WIDTH, C.SCREEN_HEIGHT))
 
         # Show "Shield Ready" if full
         elif (
@@ -1123,9 +1110,9 @@ class Game:
         ):
             ready_text = self.tiny_font.render("SHIELD READY", True, C.CYAN)
             self.screen.blit(ready_text, (20, C.SCREEN_HEIGHT - 120))
-        elif self.player.shield_recharge_delay > 0:
-            # Charging feedback?
-            pass
+            
+        # Blit all effects once
+        self.screen.blit(self.effects_surface, (0, 0))
 
         self.render_crosshair()
 
