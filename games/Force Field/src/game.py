@@ -484,7 +484,7 @@ class Game:
         mouse_pos = pygame.mouse.get_pos()
         self.start_button.update(mouse_pos)
         
-        # Defining clickable areas for settings roughly
+        # Defining clickable areas for settings by coordinate ranges
         # This is a bit hacky without a UI library, but functional.
         # We'll just check Y coordinates relative to center
         center_x = C.SCREEN_WIDTH // 2
@@ -1229,7 +1229,7 @@ class Game:
             if b > 0.1:
                 # Projection
                 scale = C.FOV / b
-                screen_x = int((0.5 * C.SCREEN_WIDTH) * (1 + a / b * 2.0)) # approx
+                screen_x = int((0.5 * C.SCREEN_WIDTH) * (1 + a / b * 2.0))  # projection
                 screen_y = C.SCREEN_HEIGHT // 2
                 
                 size = int(800 / b) # Scale size

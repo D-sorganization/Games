@@ -82,7 +82,7 @@ class BloodButton(Button):
         """Generate random blood drips"""
         self.drips = []
         # Create drips along the bottom edge
-        # Spaced roughly every 10-20 pixels
+        # Spaced every 15 pixels with +/-5 variation
         num_drips = self.rect.width // 15
         for i in range(num_drips):
             x_offset = i * 15 + random.randint(-5, 5)
