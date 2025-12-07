@@ -13,6 +13,7 @@ from .map import Map
 from .player import Player
 from .raycaster import Raycaster
 from .ui import Button, BloodButton
+from .sound import SoundManager
 
 if TYPE_CHECKING:
     from .projectile import Projectile
@@ -121,6 +122,10 @@ class Game:
             "ENTER THE NIGHTMARE", # More dramatic
             C.DARK_RED, # Default red
         )
+
+        # Audio
+        self.sound_manager = SoundManager()
+        self.sound_manager.start_music()
 
     def get_corner_positions(self) -> List[Tuple[float, float, float]]:
         """Get spawn positions for four corners (x, y, angle)"""
@@ -546,9 +551,11 @@ class Game:
                 assert self.player is not None
                 if event.button == 1:  # Left-click to fire
                     if self.player.shoot():
+                        self.sound_manager.play_sound("shoot")
                         self.check_shot_hit()
                 elif event.button == 3:  # Right-click to secondary fire
                     if self.player.fire_secondary():
+                        self.sound_manager.play_sound("shoot") # Reuse for now or add specific
                         self.check_shot_hit(is_secondary=True)
             elif event.type == pygame.MOUSEMOTION and not self.paused:
                 assert self.player is not None
@@ -851,10 +858,29 @@ class Game:
 
         self.player.update()
 
+    def update_game(self) -> None:
+        """Update game state"""
+        if self.paused:
+            # Simple pause menu handling could go here
+            return
+
+        assert self.player is not None
+        if not self.player.alive:
+            # check lives logic (omitted)...
+            pass
+            
+        # ... (rest of logic)
+        # We need to find where enemies shoot. 
+        # Ah, enemies shoot in `bot.update`. But `bot.update` returns a projectile.
+        # We can check if a projectile was added.
+
+        # ...
+        
         for bot in self.bots:
             projectile = bot.update(self.game_map, self.player, self.bots)
             if projectile:
                 self.projectiles.append(projectile)
+                self.sound_manager.play_sound("enemy_shoot")
 
             # Health Pack Pickup
             if bot.enemy_type == "health_pack" and bot.alive:
