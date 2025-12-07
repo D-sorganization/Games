@@ -1229,6 +1229,9 @@ class Game:
                      pygame.draw.circle(self.screen, (255, 255, 255), (screen_x, screen_y), size // 4)
 
 
+        self.render_weapon()
+        self.render_hud()
+
         if self.paused:
             overlay = pygame.Surface((C.SCREEN_WIDTH, C.SCREEN_HEIGHT), pygame.SRCALPHA)
             overlay.fill((0, 0, 0, 200))
@@ -1251,56 +1254,78 @@ class Game:
 
 
 
-        self.render_rifle()
-        self.render_hud()
+
         
 
         pygame.display.flip()
 
-    def render_rifle(self) -> None:
-        """Render Sci-Fi Blaster"""
-        rifle_x = C.SCREEN_WIDTH - 300
-        rifle_y = C.SCREEN_HEIGHT - 250
+    def render_weapon(self) -> None:
+        """Render current weapon in FPS view (Centered)"""
+        weapon = self.player.current_weapon
+        cx = C.SCREEN_WIDTH // 2
+        cy = C.SCREEN_HEIGHT
+        
+        # Bobbing effect (simple)
+        bob_y = 0
+        if self.player.is_moving:
+            bob_y = int(math.sin(pygame.time.get_ticks() * 0.01) * 10)
+        
+        cy += bob_y
 
-        # Main body graphics - Sci-Fi style
-        # Base
-        pygame.draw.polygon(
-            self.screen,
-            (40, 40, 50),
-            [
-                (rifle_x, rifle_y + 100),
-                (rifle_x + 200, rifle_y + 100),
-                (rifle_x + 180, rifle_y + 180),
-                (rifle_x + 50, rifle_y + 180),
-            ],
-        )
+        if weapon == "pistol":
+            # Simple Handgun
+            # Grip/Hand
+            pygame.draw.rect(self.screen, (50, 40, 30), (cx - 20, cy - 100, 40, 100))
+            # Barrel
+            pygame.draw.rect(self.screen, (30, 30, 30), (cx - 15, cy - 150, 30, 100))
+            # Slide
+            pygame.draw.rect(self.screen, (60, 60, 60), (cx - 15, cy - 150, 30, 80))
+            # Muzzle
+            pygame.draw.rect(self.screen, (10, 10, 10), (cx - 5, cy - 150, 10, 10))
 
-        # Barrel
-        pygame.draw.rect(self.screen, (20, 20, 30), (rifle_x + 180, rifle_y + 110, 80, 40))
-        # Glow vents
-        pygame.draw.rect(self.screen, C.CYAN, (rifle_x + 190, rifle_y + 120, 60, 5))
-        pygame.draw.rect(self.screen, C.CYAN, (rifle_x + 190, rifle_y + 135, 60, 5))
+        elif weapon == "shotgun":
+            # Double Barrel Shotgun
+            # Left Barrel
+            pygame.draw.rect(self.screen, (40, 40, 40), (cx - 25, cy - 180, 20, 180))
+            # Right Barrel
+            pygame.draw.rect(self.screen, (40, 40, 40), (cx + 5, cy - 180, 20, 180))
+            # Stock/Body
+            pygame.draw.rect(self.screen, (100, 70, 20), (cx - 30, cy - 80, 60, 80))
+            # Sights
+            pygame.draw.circle(self.screen, (10, 10, 10), (cx - 15, cy - 180), 8)
+            pygame.draw.circle(self.screen, (10, 10, 10), (cx + 15, cy - 180), 8)
 
-        # Scope / Top
-        pygame.draw.rect(self.screen, (60, 60, 70), (rifle_x + 80, rifle_y + 80, 100, 20))
+        elif weapon == "machinegun":
+            # Chaingun / Minigun
+            # Main central axis
+            pygame.draw.rect(self.screen, (30, 30, 30), (cx - 10, cy - 160, 20, 160))
+            # Barrels
+            pygame.draw.rect(self.screen, (50, 50, 50), (cx - 25, cy - 140, 10, 140))
+            pygame.draw.rect(self.screen, (50, 50, 50), (cx + 15, cy - 140, 10, 140))
+            pygame.draw.rect(self.screen, (50, 50, 50), (cx - 5, cy - 130, 10, 130)) # Center lower
+            # Body box
+            pygame.draw.rect(self.screen, (40, 50, 40), (cx - 40, cy - 60, 80, 60))
+            # Ammo belt (suggestion)
+            pygame.draw.line(self.screen, (150, 130, 50), (cx + 40, cy - 40), (cx + 100, cy + 20), 10)
 
-        # Handle / Grip area
-        pygame.draw.polygon(
-            self.screen,
-            (30, 30, 40),
-            [
-                (rifle_x + 50, rifle_y + 180),
-                (rifle_x + 70, rifle_y + 250),
-                (rifle_x + 110, rifle_y + 250),
-                (rifle_x + 130, rifle_y + 180),
-            ],
-        )
+        elif weapon == "plasma":
+            # Sci-Fi Blaster (Plasma)
+            # Main Body (Purple/Blue)
+            pygame.draw.polygon(self.screen, (40, 40, 80), [
+                (cx - 40, cy),
+                (cx + 40, cy),
+                (cx + 30, cy - 150),
+                (cx - 30, cy - 150)
+            ])
+            # Core
+            pygame.draw.rect(self.screen, C.CYAN, (cx - 10, cy - 140, 20, 100))
+            # Vents
+            for i in range(5):
+                y = cy - 40 - i * 20
+                pygame.draw.line(self.screen, (0, 0, 255), (cx - 20, y), (cx + 20, y), 2)
+            # Tip
+            pygame.draw.circle(self.screen, C.white, (cx, cy - 150), 15)
 
-        # Details
-        pygame.draw.circle(self.screen, (100, 100, 100), (rifle_x + 150, rifle_y + 140), 10)
-        pygame.draw.rect(
-            self.screen, (200, 50, 50), (rifle_x + 160, rifle_y + 135, 10, 10)
-        )  # Red light
 
     def render_hud(self) -> None:
         """Render HUD in Doom-style"""
@@ -1324,7 +1349,8 @@ class Game:
         health_text = self.tiny_font.render(f"HP: {self.player.health}", True, C.WHITE)
         self.screen.blit(health_text, (health_x + 5, health_y + 3))
 
-        weapon_x = C.SCREEN_WIDTH // 2 - 100
+        # Weapon Info (Bottom Right)
+        weapon_x = C.SCREEN_WIDTH - 220
         weapon_y = hud_bottom
         weapon_width = 200
         weapon_height = 70
@@ -1357,16 +1383,15 @@ class Game:
         )
         self.screen.blit(hints_text, hints_rect)
 
+        # Game Stats (Top Right)
         level_text = self.small_font.render(f"Level: {self.level}", True, C.YELLOW)
-        self.screen.blit(level_text, (C.SCREEN_WIDTH - 200, hud_bottom))
+        level_rect = level_text.get_rect(topright=(C.SCREEN_WIDTH - 20, 20))
+        self.screen.blit(level_text, level_rect)
 
         bots_alive = sum(1 for bot in self.bots if bot.alive and bot.enemy_type != "health_pack")
-        # Total enemies is difficult to track dynamically if we just used formula.
-        # Better to count at start or just count non-health packs.
-        # But for now, let's just show "Enemies: X"
-
-        kills_text = self.small_font.render(f"Enemies Left: {bots_alive}", True, C.RED)
-        self.screen.blit(kills_text, (C.SCREEN_WIDTH - 200, hud_bottom + 30))
+        kills_text = self.small_font.render(f"Enemies: {bots_alive}", True, C.RED)
+        kills_rect = kills_text.get_rect(topright=(C.SCREEN_WIDTH - 20, 50))
+        self.screen.blit(kills_text, kills_rect)
 
         # Radar
         radar_size = 120
