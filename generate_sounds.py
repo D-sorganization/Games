@@ -3,12 +3,13 @@ import os
 import random
 import struct
 import wave
+from pathlib import Path
 
 
 def generate_sound_assets(sound_dir: str) -> None:
     """Generate procedural placeholders for sounds if they don't exist"""
-    if not os.path.exists(sound_dir):
-        os.makedirs(sound_dir)
+    sound_path = Path(sound_dir)
+    sound_path.mkdir(parents=True, exist_ok=True)
 
     # 1. Gunshot (White noise burst with decay)
     shoot_path = os.path.join(sound_dir, "shoot.wav")
