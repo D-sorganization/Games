@@ -605,7 +605,7 @@ class Game:
                     pygame.event.set_grab(not self.paused)
                 # Weapon switching
                 elif not self.paused:
-                    elif event.key == pygame.K_1:
+                    if event.key == pygame.K_1:
                         assert self.player is not None
                         if self.player.current_weapon != "pistol":
                             self.player.switch_weapon("pistol")
@@ -1735,7 +1735,7 @@ class Game:
             r1 = t1.get_rect(center=(C.SCREEN_WIDTH // 2, 80))
             self.screen.blit(t1, r1)
 
-            # Hacker Font logic (fallback to consolas/system)
+            # Matrix-style Font logic (fallback to consolas/system)
             hacker_font = pygame.font.SysFont("consolas", 60)
             t2 = hacker_font.render("UPSTREAM DRIFT", True, (0, 255, 0))  # Matrix Green
             r2 = t2.get_rect(center=(C.SCREEN_WIDTH // 2, 140))

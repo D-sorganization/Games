@@ -58,7 +58,7 @@ def generate_sound_assets(sound_dir: str) -> None:
         for i in range(int(44100 * duration)):
             env = 1.0 - (i / (44100 * duration))
             # Low rumble + noise
-            rumble = math.sin(2 * math.pi * 50 * (1.0 - i/44100) * i/44100)
+            rumble = math.sin(2 * math.pi * 50 * (1.0 - i / 44100) * i / 44100)
             noise = random.uniform(-1, 1)
             sample_val = (rumble * 0.5 + noise * 0.5) * env * 32767 * 0.8
             data.append(struct.pack("<h", int(sample_val)))
@@ -85,7 +85,7 @@ def generate_sound_assets(sound_dir: str) -> None:
         high_scale = [329.63, 392.00, 493.88, 587.33, 659.25]
 
         data = []
-        
+
         # Pre-generate melody sequence
         lead_melody = []
         for i in range(total_beats * 4):
@@ -96,31 +96,31 @@ def generate_sound_assets(sound_dir: str) -> None:
 
         for i in range(samples):
             t = i / 44100.0
-            
+
             # 1. Bass Drone (Darker)
             bass = math.sin(2 * math.pi * 41.20 * t) * 0.4
-            
+
             # 2. Rhythm (Drums)
             beat_t = t % beat_dur
             beat_idx = int(t / beat_dur)
             kick = 0.0
             snare = 0.0
             hihat = 0.0
-            
+
             # Kick on 1
             if beat_idx % 4 == 0 and beat_t < 0.2:
-                kick_freq = 150 * (1.0 - beat_t/0.2)
-                kick = math.sin(2 * math.pi * kick_freq * beat_t) * (1.0 - beat_t/0.2)
-            
+                kick_freq = 150 * (1.0 - beat_t / 0.2)
+                kick = math.sin(2 * math.pi * kick_freq * beat_t) * (1.0 - beat_t / 0.2)
+
             # Snare on 3
             if beat_idx % 4 == 2 and beat_t < 0.2:
-                snare = random.uniform(-0.5, 0.5) * (1.0 - beat_t/0.2)
-                
+                snare = random.uniform(-0.5, 0.5) * (1.0 - beat_t / 0.2)
+
             # Hihat every beat
             if beat_t < 0.05:
                 hihat = random.uniform(-0.3, 0.3)
-            
-            drums = (kick * 0.8 + snare * 0.6 + hihat * 0.3)
+
+            drums = kick * 0.8 + snare * 0.6 + hihat * 0.3
 
             # 3. Lead Melody (The "more melody" request)
             current_16th = int((t / beat_dur) * 4)
@@ -131,13 +131,13 @@ def generate_sound_assets(sound_dir: str) -> None:
                 env = max(0, 1.0 - note_t * 8)
                 # Square waveish
                 lead = (math.sin(2 * math.pi * lead_freq * t) > 0) * 0.2 * env
-                
+
             final_val = bass + drums + lead
             final_val = max(min(final_val, 1.0), -1.0)
-            
+
             sample = int(final_val * 32767 * 0.5)
             data.append(struct.pack("<h", sample))
-        
+
         f.writeframes(b"".join(data))
 
 

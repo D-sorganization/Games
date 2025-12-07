@@ -228,30 +228,26 @@ class Raycaster:
         body_width = sprite_size * 0.6
         body_height = sprite_size
         head_size = sprite_size * 0.4
-        
+
         body_x = center_x - body_width / 2
         body_y = sprite_y + sprite_size * 0.05
 
         # 1. Body
         # Main torso
         pygame.draw.rect(
-            screen,
-            base_color,
-            (body_x, body_y + head_size * 0.8, body_width, body_height * 0.6)
+            screen, base_color, (body_x, body_y + head_size * 0.8, body_width, body_height * 0.6)
         )
 
         # Pants/Belt (Dark Brown/Black)
         pygame.draw.rect(
             screen,
-            (42, 28, 28), 
-            (body_x, body_y + body_height * 0.65, body_width, body_height * 0.1)
+            (42, 28, 28),
+            (body_x, body_y + body_height * 0.65, body_width, body_height * 0.1),
         )
 
         # 2. Head (Gray Box)
         pygame.draw.rect(
-            screen,
-            (217, 217, 217),
-            (center_x - head_size / 2, body_y, head_size, head_size)
+            screen, (217, 217, 217), (center_x - head_size / 2, body_y, head_size, head_size)
         )
 
         # 3. Eyes with spinning pupils
@@ -259,34 +255,38 @@ class Raycaster:
         pupil_radius = eye_radius * 0.6
         eye_y_offset = head_size * 0.25
         eye_spacing = head_size * 0.18
-        
-        # Sclera (White)
+
+        # White parts of the eye
         pygame.draw.circle(
-            screen, (255, 255, 255),
+            screen,
+            (255, 255, 255),
             (int(center_x - eye_spacing), int(body_y + eye_y_offset)),
-            int(eye_radius)
+            int(eye_radius),
         )
         pygame.draw.circle(
-            screen, (255, 255, 255),
+            screen,
+            (255, 255, 255),
             (int(center_x + eye_spacing), int(body_y + eye_y_offset)),
-            int(eye_radius)
+            int(eye_radius),
         )
 
-        # Pupils (Spinning)
+        # Spinning black pupils
         pupil_angle = bot.eye_rotation
         pupil_offset = eye_radius * 0.4
         pupil_x_off = math.cos(pupil_angle) * pupil_offset
         pupil_y_off = math.sin(pupil_angle) * pupil_offset
 
         pygame.draw.circle(
-            screen, (34, 34, 34),
+            screen,
+            (34, 34, 34),
             (int(center_x - eye_spacing + pupil_x_off), int(body_y + eye_y_offset + pupil_y_off)),
-            int(pupil_radius)
+            int(pupil_radius),
         )
         pygame.draw.circle(
-            screen, (34, 34, 34),
+            screen,
+            (34, 34, 34),
             (int(center_x + eye_spacing + pupil_x_off), int(body_y + eye_y_offset + pupil_y_off)),
-            int(pupil_radius)
+            int(pupil_radius),
         )
 
         # 4. Mouth Animation
@@ -296,37 +296,37 @@ class Raycaster:
         mouth_y = body_y + head_size * 0.65
 
         # Mouth Interior (Red)
-        pygame.draw.rect(
-            screen, (180, 42, 42),
-            (mouth_x, mouth_y, mouth_width, mouth_height)
-        )
+        pygame.draw.rect(screen, (180, 42, 42), (mouth_x, mouth_y, mouth_width, mouth_height))
 
-        # Teeth (White)
+        # White teeth details
         tooth_width = mouth_width / 6
         tooth_height = mouth_height * 0.6
         for i in range(6):
             pygame.draw.rect(
-                screen, (238, 238, 238),
-                (mouth_x + i * tooth_width, mouth_y, tooth_width * 0.6, tooth_height)
+                screen,
+                (238, 238, 238),
+                (mouth_x + i * tooth_width, mouth_y, tooth_width * 0.6, tooth_height),
             )
 
         # 5. Drool (Blue Lines)
         drool_color = (126, 214, 255)
         drool_len = mouth_height * 1.2 + (bot.drool_offset % 10)
-        
+
         # Left Drool
         pygame.draw.line(
-            screen, drool_color,
+            screen,
+            drool_color,
             (mouth_x + mouth_width * 0.1, mouth_y + mouth_height),
             (mouth_x + mouth_width * 0.1, mouth_y + mouth_height + drool_len),
-            max(2, int(sprite_size * 0.01))
+            max(2, int(sprite_size * 0.01)),
         )
         # Right Drool
         pygame.draw.line(
-            screen, drool_color,
+            screen,
+            drool_color,
             (mouth_x + mouth_width * 0.9, mouth_y + mouth_height),
             (mouth_x + mouth_width * 0.9, mouth_y + mouth_height + drool_len * 0.8),
-            max(2, int(sprite_size * 0.01))
+            max(2, int(sprite_size * 0.01)),
         )
 
         # Weapon / Arm (Preserved from original logic but adjusted)

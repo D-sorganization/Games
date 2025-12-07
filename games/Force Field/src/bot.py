@@ -15,7 +15,14 @@ if TYPE_CHECKING:
 class Bot:
     """Enemy bot with AI"""
 
-    def __init__(self, x: float, y: float, level: int, enemy_type: str | None = None, difficulty: str = "NORMAL"):
+    def __init__(
+        self,
+        x: float,
+        y: float,
+        level: int,
+        enemy_type: str | None = None,
+        difficulty: str = "NORMAL",
+    ):
         """Initialize bot
         Args:
             x, y: Position
@@ -28,7 +35,7 @@ class Bot:
         self.angle: float = 0.0
         self.enemy_type = enemy_type if enemy_type else random.choice(list(C.ENEMY_TYPES.keys()))
         self.type_data = C.ENEMY_TYPES[self.enemy_type]
-        
+
         diff_stats = C.DIFFICULTIES.get(difficulty, C.DIFFICULTIES["NORMAL"])
 
         type_data: Dict[str, Any] = self.type_data
