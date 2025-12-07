@@ -12,7 +12,7 @@ from .bot import Bot
 from .map import Map
 from .player import Player
 from .raycaster import Raycaster
-from .ui import Button
+from .ui import Button, BloodButton
 
 if TYPE_CHECKING:
     from .projectile import Projectile
@@ -113,13 +113,13 @@ class Game:
 
         # Menu buttons
         # Buttons will be created dynamically or just defined in render
-        self.start_button = Button(
-            C.SCREEN_WIDTH // 2 - 150,
-            C.SCREEN_HEIGHT - 100,
-            300,
-            60,
+        self.start_button = BloodButton(
+            C.SCREEN_WIDTH // 2 - 250,
+            C.SCREEN_HEIGHT - 120,
+            500,
+            70,
             "ENTER THE NIGHTMARE", # More dramatic
-            C.RED, # Default red
+            C.DARK_RED, # Default red
         )
 
     def get_corner_positions(self) -> List[Tuple[float, float, float]]:
@@ -535,6 +535,13 @@ class Game:
                     elif event.key == pygame.K_4:
                         assert self.player is not None
                         self.player.switch_weapon("plasma")
+                    elif event.key == pygame.K_f:
+                        assert self.player is not None
+                        if self.player.activate_bomb():
+                            self.handle_bomb_explosion()
+                    elif event.key == pygame.K_z:  # Zoom Toggle
+                        assert self.player is not None
+                        self.player.zoomed = not self.player.zoomed
             elif event.type == pygame.MOUSEBUTTONDOWN and not self.paused:
                 assert self.player is not None
                 if event.button == 1:  # Left-click to fire
@@ -543,13 +550,6 @@ class Game:
                 elif event.button == 3:  # Right-click to secondary fire
                     if self.player.fire_secondary():
                         self.check_shot_hit(is_secondary=True)
-                elif event.key == pygame.K_f:
-                    assert self.player is not None
-                    if self.player.activate_bomb():
-                        self.handle_bomb_explosion()
-                elif event.key == pygame.K_z:  # Zoom Toggle
-                    assert self.player is not None
-                    self.player.zoomed = not self.player.zoomed
             elif event.type == pygame.MOUSEMOTION and not self.paused:
                 assert self.player is not None
                 self.player.rotate(event.rel[0] * C.PLAYER_ROT_SPEED)
