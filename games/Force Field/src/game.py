@@ -172,6 +172,19 @@ class Game:
         # Optimization: Shared surface for alpha effects
         self.effects_surface = pygame.Surface((C.SCREEN_WIDTH, C.SCREEN_HEIGHT), pygame.SRCALPHA)
 
+    def add_message(self, text: str, color: tuple) -> None:
+        """Add a temporary message to the center of the screen"""
+        self.damage_texts.append(
+            {
+                "x": C.SCREEN_WIDTH // 2,
+                "y": C.SCREEN_HEIGHT // 2 - 50,
+                "text": text,
+                "color": color,
+                "timer": 60,
+                "vy": -0.5,
+            }
+        )
+
     def spawn_portal(self) -> None:
         """Spawn exit portal"""
         # Find a spot far from player? Or center?
@@ -592,18 +605,26 @@ class Game:
                     pygame.event.set_grab(not self.paused)
                 # Weapon switching
                 elif not self.paused:
-                    if event.key == pygame.K_1:
+                    elif event.key == pygame.K_1:
                         assert self.player is not None
-                        self.player.switch_weapon("pistol")
+                        if self.player.current_weapon != "pistol":
+                            self.player.switch_weapon("pistol")
+                            self.add_message("SWITCHED TO PISTOL", C.YELLOW)
                     elif event.key == pygame.K_2:
                         assert self.player is not None
-                        self.player.switch_weapon("rifle")
+                        if self.player.current_weapon != "rifle":
+                            self.player.switch_weapon("rifle")
+                            self.add_message("SWITCHED TO RIFLE", C.YELLOW)
                     elif event.key == pygame.K_3:
                         assert self.player is not None
-                        self.player.switch_weapon("shotgun")
+                        if self.player.current_weapon != "shotgun":
+                            self.player.switch_weapon("shotgun")
+                            self.add_message("SWITCHED TO SHOTGUN", C.YELLOW)
                     elif event.key == pygame.K_4:
                         assert self.player is not None
-                        self.player.switch_weapon("plasma")
+                        if self.player.current_weapon != "plasma":
+                            self.player.switch_weapon("plasma")
+                            self.add_message("SWITCHED TO PLASMA", C.YELLOW)
                     elif event.key == pygame.K_f:
                         assert self.player is not None
                         if self.player.activate_bomb():
@@ -858,6 +879,7 @@ class Game:
                     self.kills += 1
 
         # Screen shake or feedback
+        self.sound_manager.play_sound("bomb")
         self.damage_texts.append(
             {
                 "x": C.SCREEN_WIDTH // 2,
@@ -917,7 +939,7 @@ class Game:
             dist = math.sqrt(
                 (self.portal["x"] - self.player.x) ** 2 + (self.portal["y"] - self.player.y) ** 2
             )
-            if dist < 1.0:
+            if dist < 1.5:
                 # Level Complete
                 level_time = (
                     pygame.time.get_ticks() - self.level_start_time - self.total_paused_time
@@ -1107,7 +1129,7 @@ class Game:
             "CLICK SETTINGS TO CHANGE",
             "",
             "WASD: Move | Shift: Sprint | Mouse: Look | 1-4: Weapons",
-            "Click: Shoot | Z: Zoom | F: Bomb",
+            "Click: Shoot | Z: Zoom | F: Bomb | Space: Shield",
         ]
 
         y = C.SCREEN_HEIGHT - 260  # Moved up to avoid overlap with button
