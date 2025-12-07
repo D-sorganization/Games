@@ -271,10 +271,10 @@ class Raycaster:
         )
 
         # Spinning black pupils
-        pupil_angle = bot.eye_rotation
+        eye_rotation_angle = bot.eye_rotation
         pupil_offset = eye_radius * 0.4
-        pupil_x_off = math.cos(pupil_angle) * pupil_offset
-        pupil_y_off = math.sin(pupil_angle) * pupil_offset
+        pupil_x_off = math.cos(eye_rotation_angle) * pupil_offset
+        pupil_y_off = math.sin(eye_rotation_angle) * pupil_offset
 
         pygame.draw.circle(
             screen,

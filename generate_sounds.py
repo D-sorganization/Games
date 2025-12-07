@@ -55,10 +55,13 @@ def generate_sound_assets(sound_dir: str) -> None:
         f.setframerate(44100)
         data = []
         duration = 1.0
+        base_rumble_freq = 50  # Hz, base frequency for rumble
         for i in range(int(44100 * duration)):
             env = 1.0 - (i / (44100 * duration))
             # Low rumble + noise
-            rumble = math.sin(2 * math.pi * 50 * (1.0 - i / 44100) * i / 44100)
+            sweep_pos = i / 44100
+            rumble_freq = base_rumble_freq * (1.0 - sweep_pos)
+            rumble = math.sin(2 * math.pi * rumble_freq * sweep_pos)
             noise = random.uniform(-1, 1)
             sample_val = (rumble * 0.5 + noise * 0.5) * env * 32767 * 0.8
             data.append(struct.pack("<h", int(sample_val)))

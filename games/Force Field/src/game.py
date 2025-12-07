@@ -185,6 +185,13 @@ class Game:
             }
         )
 
+    def switch_weapon_with_message(self, weapon_name: str) -> None:
+        """Switch weapon and show a message if successful"""
+        assert self.player is not None
+        if self.player.current_weapon != weapon_name:
+            self.player.switch_weapon(weapon_name)
+            self.add_message(f"SWITCHED TO {weapon_name.upper()}", C.YELLOW)
+
     def spawn_portal(self) -> None:
         """Spawn exit portal"""
         # Find a spot far from player? Or center?
@@ -606,25 +613,13 @@ class Game:
                 # Weapon switching
                 elif not self.paused:
                     if event.key == pygame.K_1:
-                        assert self.player is not None
-                        if self.player.current_weapon != "pistol":
-                            self.player.switch_weapon("pistol")
-                            self.add_message("SWITCHED TO PISTOL", C.YELLOW)
+                        self.switch_weapon_with_message("pistol")
                     elif event.key == pygame.K_2:
-                        assert self.player is not None
-                        if self.player.current_weapon != "rifle":
-                            self.player.switch_weapon("rifle")
-                            self.add_message("SWITCHED TO RIFLE", C.YELLOW)
+                        self.switch_weapon_with_message("rifle")
                     elif event.key == pygame.K_3:
-                        assert self.player is not None
-                        if self.player.current_weapon != "shotgun":
-                            self.player.switch_weapon("shotgun")
-                            self.add_message("SWITCHED TO SHOTGUN", C.YELLOW)
+                        self.switch_weapon_with_message("shotgun")
                     elif event.key == pygame.K_4:
-                        assert self.player is not None
-                        if self.player.current_weapon != "plasma":
-                            self.player.switch_weapon("plasma")
-                            self.add_message("SWITCHED TO PLASMA", C.YELLOW)
+                        self.switch_weapon_with_message("plasma")
                     elif event.key == pygame.K_f:
                         assert self.player is not None
                         if self.player.activate_bomb():
