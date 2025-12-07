@@ -63,7 +63,7 @@ class Game:
             self.font = pygame.font.SysFont("arial", 48)
             self.small_font = pygame.font.SysFont("arial", 32)
             self.tiny_font = pygame.font.SysFont("arial", 24)
-            self.subtitle_font = pygame.font.SysFont("comicsansms", 40)  # For narrative text
+            self.subtitle_font = pygame.font.SysFont("consolas", 40)  # For narrative text
         except:
             # Fallback
             self.title_font = pygame.font.Font(None, 80)
@@ -471,7 +471,6 @@ class Game:
     def update_game(self) -> None:
         """Update game state"""
         if self.paused:
-            pygame.mouse.get_pos()
             # Simple pause menu handling could go here
             return
 
