@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+import random
 from typing import TYPE_CHECKING, Any, Dict, List, Tuple
 
 import pygame
@@ -20,6 +21,17 @@ class Raycaster:
     def __init__(self, game_map: Map):
         """Initialize raycaster"""
         self.game_map = game_map
+        # Pre-generate stars
+        self.stars = []
+        for _ in range(100):
+            self.stars.append(
+                (
+                    random.randint(0, C.SCREEN_WIDTH),
+                    random.randint(0, C.SCREEN_HEIGHT // 2),
+                    random.uniform(0.5, 2.5),  # Size
+                    random.choice([(255, 255, 255), (200, 200, 255), (255, 255, 200)]),
+                )
+            )
 
     def cast_ray(
         self,
@@ -27,21 +39,56 @@ class Raycaster:
         origin_y: float,
         angle: float,
     ) -> Tuple[float, int, Bot | None]:
-        """Cast a single ray and return distance, wall type, and hit bot"""
-        sin_a = math.sin(angle)
-        cos_a = math.cos(angle)
+        """Cast a single ray using DDA"""
+        ray_dir_x = math.cos(angle)
+        ray_dir_y = math.sin(angle)
 
-        closest_bot = None
+        map_x = int(origin_x)
+        map_y = int(origin_y)
 
-        # Cast ray
-        for depth in range(1, int(C.MAX_DEPTH * 100)):
-            target_x = origin_x + depth * 0.01 * cos_a
-            target_y = origin_y + depth * 0.01 * sin_a
-            distance = depth * 0.01
+        delta_dist_x = abs(1 / ray_dir_x) if ray_dir_x != 0 else 1e30
+        delta_dist_y = abs(1 / ray_dir_y) if ray_dir_y != 0 else 1e30
 
-            if self.game_map.is_wall(target_x, target_y):
-                wall_type = self.game_map.get_wall_type(target_x, target_y)
-                return distance, wall_type, closest_bot
+        step_x = 1 if ray_dir_x >= 0 else -1
+        side_dist_x = (
+            (map_x + 1.0 - origin_x) * delta_dist_x
+            if ray_dir_x >= 0
+            else (origin_x - map_x) * delta_dist_x
+        )
+
+        step_y = 1 if ray_dir_y >= 0 else -1
+        side_dist_y = (
+            (map_y + 1.0 - origin_y) * delta_dist_y
+            if ray_dir_y >= 0
+            else (origin_y - map_y) * delta_dist_y
+        )
+
+        hit = False
+        side = 0  # 0 for NS, 1 for EW
+        wall_type = 0
+
+        # Max depth check to prevent infinite loop
+        # We can approximate max steps by MAX_DEPTH magnitude
+        max_steps = int(C.MAX_DEPTH * 1.5)
+        for _ in range(max_steps):
+            if side_dist_x < side_dist_y:
+                side_dist_x += delta_dist_x
+                map_x += step_x
+                side = 0
+            else:
+                side_dist_y += delta_dist_y
+                map_y += step_y
+                side = 1
+
+            # Check if wall hit
+            if self.game_map.is_wall(map_x, map_y):
+                hit = True
+                wall_type = self.game_map.get_wall_type(map_x, map_y)
+                break
+
+        if hit:
+            distance = side_dist_x - delta_dist_x if side == 0 else side_dist_y - delta_dist_y
+            return distance, wall_type, None
 
         return C.MAX_DEPTH, 0, None
 
@@ -53,53 +100,97 @@ class Raycaster:
         player_angle: float,
         bots: List[Bot],
     ) -> Tuple[float, int, Bot | None]:
-        """Cast ray and detect bots"""
-        sin_a = math.sin(angle)
-        cos_a = math.cos(angle)
-
+        """Cast ray using DDA and detect bots"""
+        # Bot detection (keep existing logic or improve? Existing is simple geometric check)
         closest_bot = None
         closest_bot_dist = float("inf")
 
-        # Check bots first
+        # Check bots first (geometric check independent of grid)
+        # This allows seeing bots even if they are not exactly on a grid line being stepped
         for bot in bots:
             if not bot.alive:
                 continue
 
-            # Calculate bot relative position
             dx = bot.x - origin_x
             dy = bot.y - origin_y
             bot_dist = math.sqrt(dx**2 + dy**2)
 
-            # Check if bot is in ray direction
             bot_angle = math.atan2(dy, dx)
-            # Normalize angles to [0, 2π) range for comparison
             bot_angle_norm = bot_angle if bot_angle >= 0 else bot_angle + 2 * math.pi
             angle_norm = angle % (2 * math.pi)
             angle_diff = abs(bot_angle_norm - angle_norm)
             if angle_diff > math.pi:
                 angle_diff = 2 * math.pi - angle_diff
 
-            # Bot hitbox
-            if angle_diff < 0.1 and bot_dist < closest_bot_dist:
+            # Bot hitbox - slightly generous for ray detection
+            if angle_diff < 0.05 and bot_dist < closest_bot_dist:
                 closest_bot = bot
                 closest_bot_dist = bot_dist
 
-        # Cast ray for walls
-        for depth in range(1, int(C.MAX_DEPTH * 100)):
-            target_x = origin_x + depth * 0.01 * cos_a
-            target_y = origin_y + depth * 0.01 * sin_a
-            distance = depth * 0.01
+        # Now cast ray for walls using DDA
+        ray_dir_x = math.cos(angle)
+        ray_dir_y = math.sin(angle)
 
-            # Check if we hit a bot before the wall
-            if closest_bot and distance > closest_bot_dist:
-                # Fix fish-eye effect
-                corrected_dist = closest_bot_dist * math.cos(player_angle - angle)
-                return corrected_dist, -1, closest_bot
+        map_x = int(origin_x)
+        map_y = int(origin_y)
 
-            if self.game_map.is_wall(target_x, target_y):
-                wall_type = self.game_map.get_wall_type(target_x, target_y)
-                corrected_dist = distance * math.cos(player_angle - angle)
-                return corrected_dist, wall_type, None
+        delta_dist_x = abs(1 / ray_dir_x) if ray_dir_x != 0 else 1e30
+        delta_dist_y = abs(1 / ray_dir_y) if ray_dir_y != 0 else 1e30
+
+        step_x = 1 if ray_dir_x >= 0 else -1
+        side_dist_x = (
+            (map_x + 1.0 - origin_x) * delta_dist_x
+            if ray_dir_x >= 0
+            else (origin_x - map_x) * delta_dist_x
+        )
+
+        step_y = 1 if ray_dir_y >= 0 else -1
+        side_dist_y = (
+            (map_y + 1.0 - origin_y) * delta_dist_y
+            if ray_dir_y >= 0
+            else (origin_y - map_y) * delta_dist_y
+        )
+
+        hit = False
+        side = 0
+        wall_type = 0
+
+        max_steps = int(C.MAX_DEPTH * 1.5)
+
+        wall_dist = C.MAX_DEPTH
+
+        for _ in range(max_steps):
+            if side_dist_x < side_dist_y:
+                side_dist_x += delta_dist_x
+                map_x += step_x
+                side = 0
+            else:
+                side_dist_y += delta_dist_y
+                map_y += step_y
+                side = 1
+
+            if self.game_map.is_wall(map_x, map_y):
+                hit = True
+                wall_type = self.game_map.get_wall_type(map_x, map_y)
+                break
+
+        if hit:
+            wall_dist = side_dist_x - delta_dist_x if side == 0 else side_dist_y - delta_dist_y
+
+            # Fisheye correction for wall
+            corrected_wall_dist = wall_dist * math.cos(player_angle - angle)
+
+            # Check if bot is closer than wall
+            if closest_bot and closest_bot_dist < wall_dist:
+                corrected_bot_dist = closest_bot_dist * math.cos(player_angle - angle)
+                return corrected_bot_dist, -1, closest_bot
+
+            return corrected_wall_dist, wall_type, None
+
+        # No wall hit, but maybe bot?
+        if closest_bot and closest_bot_dist < C.MAX_DEPTH:
+            corrected_bot_dist = closest_bot_dist * math.cos(player_angle - angle)
+            return corrected_bot_dist, -1, closest_bot
 
         return C.MAX_DEPTH, 0, None
 
@@ -111,96 +202,160 @@ class Raycaster:
         sprite_y: int,
         sprite_size: float,
     ) -> None:
-        """Render a detailed enemy sprite with head, body, legs, and arms"""
+        """Render a detailed enemy sprite with shape relative to type"""
         center_x = sprite_x + sprite_size / 2
-        body_width = sprite_size * 0.5
-        body_height = sprite_size * 0.6
-        head_size = sprite_size * 0.35
-        leg_width = sprite_size * 0.12
-        leg_height = sprite_size * 0.4
-        arm_width = sprite_size * 0.1
-        arm_height = sprite_size * 0.35
 
         type_data: Dict[str, Any] = bot.type_data
         base_color: Tuple[int, int, int] = type_data["color"]
+
+        if bot.enemy_type == "health_pack":
+            # Draw Green Cross
+            rect_w = sprite_size * 0.2
+            rect_h = sprite_size * 0.6
+            pygame.draw.rect(
+                screen,
+                base_color,
+                (center_x - rect_w / 2, sprite_y + sprite_size * 0.2, rect_w, rect_h),
+            )
+            pygame.draw.rect(
+                screen,
+                base_color,
+                (center_x - rect_h / 2, sprite_y + sprite_size * 0.4, rect_h, rect_w),
+            )
+            return
+
         dark_color = tuple(max(0, c - 40) for c in base_color)
-        leg_color = (30, 30, 30)
 
-        # Walk animation
+        # Dimensions based on type to give different shapes
+        width_scale = 1.0
+        if bot.enemy_type == "boss":
+            width_scale = 1.4
+        elif bot.enemy_type == "demon":
+            width_scale = 0.8  # skinny
+
+        body_width = sprite_size * 0.5 * width_scale
+        body_height = sprite_size * 0.6
+        head_size = sprite_size * 0.35 * (1.2 if bot.enemy_type == "boss" else 1.0)
+
+        # Animation
         leg_phase = math.sin(bot.walk_animation) * 0.3
-        arm_swing = math.sin(bot.walk_animation + math.pi) * 0.2
 
-        # Shoot animation
-        shoot_offset = bot.shoot_animation * sprite_size * 0.15
+        # Draw legs first (behind body)
+        leg_width = body_width * 0.3
+        leg_height = sprite_size * 0.35
+        leg_y = sprite_y + sprite_size * 0.65
 
-        # Head
-        head_y = sprite_y + sprite_size * 0.05
-        pygame.draw.ellipse(
-            screen,
-            base_color,
-            (center_x - head_size / 2, head_y, head_size, head_size),
+        left_leg_x = center_x - body_width * 0.3 + leg_phase * sprite_size * 0.5
+        right_leg_x = center_x + body_width * 0.3 - leg_phase * sprite_size * 0.5
+
+        pygame.draw.rect(
+            screen, (40, 40, 40), (left_leg_x - leg_width / 2, leg_y, leg_width, leg_height)
+        )
+        pygame.draw.rect(
+            screen, (40, 40, 40), (right_leg_x - leg_width / 2, leg_y, leg_width, leg_height)
         )
 
-        # Eyes
-        eye_size = head_size * 0.15
-        eye_y = head_y + head_size * 0.3
-        eye_spacing = head_size * 0.25
-        pygame.draw.circle(
-            screen, C.WHITE, (int(center_x - eye_spacing), int(eye_y)), int(eye_size)
-        )
-        pygame.draw.circle(
-            screen, C.WHITE, (int(center_x + eye_spacing), int(eye_y)), int(eye_size)
-        )
-        pygame.draw.circle(
-            screen,
-            C.BLACK,
-            (int(center_x - eye_spacing), int(eye_y)),
-            int(eye_size * 0.6),
-        )
-        pygame.draw.circle(
-            screen,
-            C.BLACK,
-            (int(center_x + eye_spacing), int(eye_y)),
-            int(eye_size * 0.6),
-        )
-
-        # Body
-        body_x = center_x - body_width / 2
-        body_y = head_y + head_size * 0.7
-        pygame.draw.rect(screen, base_color, (body_x, body_y, body_width, body_height))
-
-        # Arms
-        arm_y = body_y + body_height * 0.1
-        # Left arm
-        left_arm_x = body_x - arm_width + arm_swing * sprite_size
-        pygame.draw.rect(screen, dark_color, (left_arm_x, arm_y, arm_width, arm_height))
-        # Right arm (with shoot animation)
-        right_arm_x = body_x + body_width - shoot_offset
-        right_arm_y = arm_y + shoot_offset * 0.3
-        pygame.draw.rect(screen, dark_color, (right_arm_x, right_arm_y, arm_width, arm_height))
-
-        # Legs
-        leg_y = body_y + body_height * 0.7
-        # Left leg
-        left_leg_x = center_x - body_width * 0.3 + leg_phase * sprite_size
-        pygame.draw.rect(screen, leg_color, (left_leg_x, leg_y, leg_width, leg_height))
-        # Right leg
-        right_leg_x = center_x + body_width * 0.1 - leg_phase * sprite_size
-        pygame.draw.rect(screen, leg_color, (right_leg_x, leg_y, leg_width, leg_height))
-
-        # Muzzle flash when shooting
-        if bot.shoot_animation > 0.5:
-            flash_size = sprite_size * 0.2
-            flash_x = right_arm_x + arm_width
-            flash_y = right_arm_y + arm_height * 0.3
-            pygame.draw.circle(screen, C.YELLOW, (int(flash_x), int(flash_y)), int(flash_size))
-            pygame.draw.circle(
-                screen, C.ORANGE, (int(flash_x), int(flash_y)), int(flash_size * 0.6)
+        # Body - shape variation
+        body_y = sprite_y + sprite_size * 0.25
+        if bot.enemy_type == "dinosaur":
+            # T-Rex shapeish
+            points = [
+                (center_x, body_y - 20),
+                (center_x + body_width, body_y + body_height * 0.5),
+                (center_x, body_y + body_height),
+                (center_x - body_width, body_y + body_height * 0.5),
+            ]
+            pygame.draw.polygon(screen, base_color, points)
+        else:
+            # Humanoid / Blocky
+            pygame.draw.rect(
+                screen, base_color, (center_x - body_width / 2, body_y, body_width, body_height)
+            )
+            # Armor / chest detail
+            pygame.draw.rect(
+                screen,
+                dark_color,
+                (
+                    center_x - body_width / 3,
+                    body_y + body_height * 0.2,
+                    body_width * 0.66,
+                    body_height * 0.4,
+                ),
             )
 
-    def render_3d(self, screen: pygame.Surface, player: Player, bots: List[Bot]) -> None:
+        # Head
+        head_y = body_y - head_size * 0.8
+        head_x = center_x - head_size / 2
+
+        if bot.enemy_type == "demon":
+            # Horns
+            pygame.draw.polygon(
+                screen,
+                C.RED,
+                [
+                    (center_x - head_size * 0.4, head_y),
+                    (center_x - head_size * 0.6, head_y - 15),
+                    (center_x - head_size * 0.2, head_y + 10),
+                ],
+            )
+            pygame.draw.polygon(
+                screen,
+                C.RED,
+                [
+                    (center_x + head_size * 0.4, head_y),
+                    (center_x + head_size * 0.6, head_y - 15),
+                    (center_x + head_size * 0.2, head_y + 10),
+                ],
+            )
+
+        pygame.draw.rect(
+            screen, base_color, (head_x, head_y, head_size, head_size), border_radius=5
+        )
+
+        # Scary Eyes (Glowing)
+        eye_y = head_y + head_size * 0.3
+        eye_size = head_size * 0.2
+        eye_color = C.RED if bot.enemy_type in ["boss", "demon"] else C.YELLOW
+
+        pygame.draw.circle(
+            screen, eye_color, (int(center_x - head_size * 0.2), int(eye_y)), int(eye_size)
+        )
+        pygame.draw.circle(
+            screen, eye_color, (int(center_x + head_size * 0.2), int(eye_y)), int(eye_size)
+        )
+
+        # Weapon / Arm
+        arm_y = body_y + body_height * 0.2
+        shoot_offset = bot.shoot_animation * 10
+        pygame.draw.rect(
+            screen,
+            (20, 20, 20),
+            (center_x + body_width / 2, arm_y, sprite_size * 0.4 - shoot_offset, sprite_size * 0.1),
+        )
+
+        # Muzzle flash
+        if bot.shoot_animation > 0.5:
+            pygame.draw.circle(
+                screen,
+                C.YELLOW,
+                (int(center_x + body_width / 2 + sprite_size * 0.4), int(arm_y)),
+                int(sprite_size * 0.2),
+            )
+
+    def render_3d(
+        self, screen: pygame.Surface, player: Player, bots: List[Bot], level: int
+    ) -> None:
         """Render 3D view using raycasting"""
-        ray_angle = player.angle - C.HALF_FOV
+        current_fov = C.FOV * (C.ZOOM_FOV_MULT if player.zoomed else 1.0)
+        half_fov = current_fov / 2
+        delta_angle = current_fov / C.NUM_RAYS
+
+        ray_angle = player.angle - half_fov
+
+        # Select theme
+        theme_idx = (level - 1) % len(C.LEVEL_THEMES)
+        theme = C.LEVEL_THEMES[theme_idx]
+        wall_colors = theme["walls"]
 
         # Collect all bots to render as sprites
         bots_to_render = []
@@ -227,7 +382,7 @@ class Raycaster:
                 angle_to_bot += 2 * math.pi
 
             # Check if bot is in FOV
-            if abs(angle_to_bot) < C.HALF_FOV + 0.2:
+            if abs(angle_to_bot) < half_fov + 0.2:
                 # Check line of sight
                 has_los = True
                 steps = int(bot_dist * 10)
@@ -264,7 +419,7 @@ class Raycaster:
                 else:
                     wall_height = C.SCREEN_HEIGHT
 
-                base_color = C.WALL_COLORS.get(wall_type, C.GRAY)
+                base_color = wall_colors.get(wall_type, C.GRAY)
                 shade = max(0, 255 - int(distance * 25))
                 color = tuple(min(255, max(0, c * shade // 255)) for c in base_color)
 
@@ -299,7 +454,7 @@ class Raycaster:
                             1,
                         )
 
-            ray_angle += C.DELTA_ANGLE
+            ray_angle += delta_angle
 
         # Render enemy sprites (after walls, far to near)
         for bot, bot_dist, angle_to_bot in bots_to_render:
@@ -311,7 +466,7 @@ class Raycaster:
             # Calculate sprite position on screen
             sprite_x = (
                 C.SCREEN_WIDTH / 2
-                + (angle_to_bot / C.HALF_FOV) * C.SCREEN_WIDTH / 2
+                + (angle_to_bot / half_fov) * C.SCREEN_WIDTH / 2
                 - sprite_size / 2
             )
             sprite_y = C.SCREEN_HEIGHT / 2 - sprite_size / 2
@@ -340,23 +495,23 @@ class Raycaster:
             # Blit sprite to screen
             screen.blit(sprite_surface, (int(sprite_x), int(sprite_y)))
 
-    def render_floor_ceiling(self, screen: pygame.Surface, player_angle: float) -> None:
+    def render_floor_ceiling(self, screen: pygame.Surface, player_angle: float, level: int) -> None:
         """Render floor and sky with stars"""
-        # Sky background
-        pygame.draw.rect(screen, C.SKY_COLOR, (0, 0, C.SCREEN_WIDTH, C.SCREEN_HEIGHT // 2))
+        theme_idx = (level - 1) % len(C.LEVEL_THEMES)
+        theme = C.LEVEL_THEMES[theme_idx]
 
-        # Draw stars
+        # Sky/Ceiling
+        ceiling_color = theme["ceiling"]
+        pygame.draw.rect(screen, ceiling_color, (0, 0, C.SCREEN_WIDTH, C.SCREEN_HEIGHT // 2))
+
+        # Draw stars (randomized but consistent)
         # Use player angle to offset stars for parallax effect
         star_offset = int(player_angle * 200) % C.SCREEN_WIDTH
 
-        # Simple procedural stars
-        for i in range(50):
-            # Deterministic star positions
-            x = (i * 137 + star_offset) % C.SCREEN_WIDTH
-            y = (i * 53) % (C.SCREEN_HEIGHT // 2)
-            size = (i % 3) + 1
-            color = (200, 200, 255) if i % 2 == 0 else (255, 255, 255)
-            pygame.draw.circle(screen, color, (x, y), size)
+        for sx, sy, size, color in self.stars:
+            # Parallax x
+            x = (sx + star_offset) % C.SCREEN_WIDTH
+            pygame.draw.circle(screen, color, (x, sy), int(size))
 
         # Draw Moon
         moon_x = (C.SCREEN_WIDTH - 200 - int(player_angle * 100)) % (
@@ -364,12 +519,15 @@ class Raycaster:
         ) - C.SCREEN_WIDTH // 2
         if -100 < moon_x < C.SCREEN_WIDTH + 100:
             pygame.draw.circle(screen, (220, 220, 200), (int(moon_x), 100), 40)
-            pygame.draw.circle(screen, C.SKY_COLOR, (int(moon_x) - 10, 100), 40)  # Crescent
+            pygame.draw.circle(
+                screen, ceiling_color, (int(moon_x) - 10, 100), 40
+            )  # Crescent, match sky color
 
         # Floor
+        floor_color = theme["floor"]
         pygame.draw.rect(
             screen,
-            C.DARK_GRAY,
+            floor_color,
             (0, C.SCREEN_HEIGHT // 2, C.SCREEN_WIDTH, C.SCREEN_HEIGHT // 2),
         )
 

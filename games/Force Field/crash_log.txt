@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "C:\Users\diete\Repositories\Games\games\FPS Shooter\src\game.py", line 1209, in run
+    self.handle_game_events()
+    ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\diete\Repositories\Games\games\FPS Shooter\src\game.py", line 407, in handle_game_events
+    elif event.key == pygame.K_f:
+         ^^^^^^^^^
+AttributeError: 'pygame.event.Event' object has no attribute 'key'
