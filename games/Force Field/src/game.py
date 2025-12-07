@@ -936,8 +936,7 @@ class Game:
                 pygame.event.set_grab(False)
                 return
             
-            # Portal visuals handled in render_game projection
-            pass
+
 
         assert self.player is not None
         assert self.game_map is not None
