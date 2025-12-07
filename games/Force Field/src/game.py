@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import math
-import random
-from typing import TYPE_CHECKING, Any, Dict, List, Tuple
 import os
+import random
+import traceback
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Dict, List, Tuple
 
 import pygame
 
@@ -12,11 +14,12 @@ from .bot import Bot
 from .map import Map
 from .player import Player
 from .raycaster import Raycaster
-from .ui import Button, BloodButton
 from .sound import SoundManager
+from .ui import BloodButton
 
 try:
     import cv2
+
     HAS_CV2 = True
 except ImportError:
     HAS_CV2 = False
@@ -46,9 +49,9 @@ class Game:
 
         # Load Intro Images
         try:
-            base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            pics_dir = os.path.join(base_path, "pics")
-            
+            base_dir = Path(__file__).resolve().parent.parent
+            pics_dir = str(base_dir / "pics")
+
             # Willy Wonk
             willy_path = os.path.join(pics_dir, "WillyWonk.JPG")
             if os.path.exists(willy_path):
@@ -59,36 +62,31 @@ class Game:
                 if scale < 1:
                     new_size = (int(img.get_width() * scale), int(img.get_height() * scale))
                     img = pygame.transform.scale(img, new_size)
-                
+
                 # Soften edges (Vignette/Alpha Mask)
                 mask = pygame.Surface(img.get_size(), pygame.SRCALPHA)
                 mask.fill((0, 0, 0, 255))
                 # Draw transparent circle in center to keep, fading out to edges?
-                # Actually, standard way: draw white circle on black, sub from alpha. Or just straightforward:
+                # Actually, standard way: draw white circle on black, sub from alpha.
+                # Or just straightforward:
                 # Create a new surface with SRCALPHA
                 soft_img = pygame.Surface(img.get_size(), pygame.SRCALPHA)
                 soft_img.blit(img, (0, 0))
-                
-                # Create gradient mask
-                w, h = img.get_size()
-                center = (w // 2, h // 2)
-                max_radius = min(w, h) // 2
-                
+
                 # Simple loop for gradient (slow on init only)
                 # Or just draw a big radial gradient?
                 # Faster: Just rect border fade?
                 # Pre-prepared vignette image is better but we construct one.
                 # We will skip complex per-pixel and just rely on the black background.
 
-                
                 self.intro_images["willy"] = img
-            
+
             # Setup Video for Upstream Drift
             self.intro_video = None
             video_path = os.path.join(pics_dir, "DeadFishSwimming.mp4")
             if HAS_CV2 and os.path.exists(video_path):
                 self.intro_video = cv2.VideoCapture(video_path)
-            
+
             # Keep GIF as fallback
             deadfish_path = os.path.join(pics_dir, "Deadfish.gif")
             if os.path.exists(deadfish_path):
@@ -99,7 +97,7 @@ class Game:
                     img = pygame.transform.scale(img, new_size)
                 self.intro_images["deadfish"] = img
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(f"Failed to load intro images: {e}")
 
         # Gameplay state
@@ -112,7 +110,7 @@ class Game:
         self.pause_start_time = 0
         self.total_paused_time = 0
         self.show_damage = True
-        
+
         self.selected_difficulty = C.DEFAULT_DIFFICULTY
         self.selected_lives = C.DEFAULT_LIVES
         self.selected_start_level = C.DEFAULT_START_LEVEL
@@ -130,20 +128,20 @@ class Game:
         self.portal: Dict[str, Any] | None = None
         self.health = 100
         self.max_health = 100
-        
+
         self.is_moving = False  # Track movement state for bobbing
         self.damage_flash_timer = 0
-        if not hasattr(self, 'intro_video'):
+        if not hasattr(self, "intro_video"):
             self.intro_video = None
 
         # Fonts - Modern and Stylistic
         try:
-            self.title_font = pygame.font.SysFont("impact", 100) # Bold, impactful
-            self.font = pygame.font.SysFont("franklingothicmedium", 40) # Clean but heavy
+            self.title_font = pygame.font.SysFont("impact", 100)  # Bold, impactful
+            self.font = pygame.font.SysFont("franklingothicmedium", 40)  # Clean but heavy
             self.small_font = pygame.font.SysFont("franklingothicmedium", 28)
             self.tiny_font = pygame.font.SysFont("consolas", 20)
-            self.subtitle_font = pygame.font.SysFont("georgia", 36) # Noir style
-        except Exception:
+            self.subtitle_font = pygame.font.SysFont("georgia", 36)  # Noir style
+        except Exception:  # noqa: BLE001
             # Fallback
             self.title_font = pygame.font.Font(None, 80)
             self.font = pygame.font.Font(None, 48)
@@ -163,14 +161,14 @@ class Game:
             C.SCREEN_HEIGHT - 120,
             500,
             70,
-            "ENTER THE NIGHTMARE", # More dramatic
-            C.DARK_RED, # Default red
+            "ENTER THE NIGHTMARE",  # More dramatic
+            C.DARK_RED,  # Default red
         )
 
         # Audio
         self.sound_manager = SoundManager()
         self.sound_manager.start_music()
-        
+
         # Optimization: Shared surface for alpha effects
         self.effects_surface = pygame.Surface((C.SCREEN_WIDTH, C.SCREEN_HEIGHT), pygame.SRCALPHA)
 
@@ -189,7 +187,6 @@ class Game:
                         if not self.game_map.is_wall(x, y):
                             self.portal = {"x": x + 0.5, "y": y + 0.5}
                             return
-
 
     def get_corner_positions(self) -> List[Tuple[float, float, float]]:
         """Get spawn positions for four corners (x, y, angle)"""
@@ -263,41 +260,45 @@ class Game:
         """Respawn player after death if lives remain"""
         assert self.game_map is not None
         assert self.player is not None
-        
+
         # Find safe spawn (similar to start_level)
         corners = self.get_corner_positions()
         random.shuffle(corners)
         player_pos = corners[0]
-        
+
         # Check safety
-        if self.game_map.is_wall(player_pos[0], player_pos[1]) or \
-           self.game_map.is_inside_building(player_pos[0], player_pos[1]):
+        if self.game_map.is_wall(player_pos[0], player_pos[1]) or self.game_map.is_inside_building(
+            player_pos[0], player_pos[1]
+        ):
             # Find nearby
             for attempt in range(20):
                 test_x = player_pos[0] + random.uniform(-3, 3)
                 test_y = player_pos[1] + random.uniform(-3, 3)
-                if not self.game_map.is_wall(test_x, test_y) and \
-                   not self.game_map.is_inside_building(test_x, test_y):
-                     player_pos = (test_x, test_y, player_pos[2])
-                     break
-        
+                if not self.game_map.is_wall(
+                    test_x, test_y
+                ) and not self.game_map.is_inside_building(test_x, test_y):
+                    player_pos = (test_x, test_y, player_pos[2])
+                    break
+
         # Reset Player
         self.player.x = player_pos[0]
         self.player.y = player_pos[1]
         self.player.angle = player_pos[2]
         self.player.health = 100
         self.player.alive = True
-        self.player.shield_active = False # Reset shield
-        
+        self.player.shield_active = False  # Reset shield
+
         # Show message
-        self.damage_texts.append({
-            "x": C.SCREEN_WIDTH // 2,
-            "y": C.SCREEN_HEIGHT // 2,
-            "text": "RESPAWNED",
-            "color": C.GREEN,
-            "timer": 120,
-            "vy": -0.5
-        })
+        self.damage_texts.append(
+            {
+                "x": C.SCREEN_WIDTH // 2,
+                "y": C.SCREEN_HEIGHT // 2,
+                "text": "RESPAWNED",
+                "color": C.GREEN,
+                "timer": 120,
+                "vy": -0.5,
+            }
+        )
 
     def start_game(self) -> None:
         """Start new game"""
@@ -344,27 +345,27 @@ class Game:
                 ):
                     player_pos = (test_x, test_y, player_pos[2])
                     break
-        
+
         # Preserve ammo and weapon selection from previous level if player exists
         # Check if self.player exists and apply
-        
+
         previous_ammo = None
         previous_weapon = "rifle"
         if self.player:
-             previous_ammo = self.player.ammo
-             previous_weapon = self.player.current_weapon
-             
+            previous_ammo = self.player.ammo
+            previous_weapon = self.player.current_weapon
+
         self.player = Player(player_pos[0], player_pos[1], player_pos[2])
         if previous_ammo:
-             self.player.ammo = previous_ammo
-             self.player.current_weapon = previous_weapon
+            self.player.ammo = previous_ammo
+            self.player.current_weapon = previous_weapon
 
         # Bots spawn in other three corners with varied types
         self.bots = []
         self.projectiles = []
         enemies_per_corner = 4 + (self.level - 1)
 
-        available_types = [t for t in C.ENEMY_TYPES.keys() if t != "health_pack"]
+        available_types = [t for t in C.ENEMY_TYPES if t != "health_pack"]
         random.shuffle(available_types)
 
         for i in range(1, 4):
@@ -387,11 +388,11 @@ class Game:
                 ):
                     self.bots.append(
                         Bot(
-                            spawn_x, 
-                            spawn_y, 
-                            self.level, 
-                            enemy_type, 
-                            difficulty=self.selected_difficulty
+                            spawn_x,
+                            spawn_y,
+                            self.level,
+                            enemy_type,
+                            difficulty=self.selected_difficulty,
                         )
                     )
                 else:
@@ -412,11 +413,11 @@ class Game:
                         ):
                             self.bots.append(
                                 Bot(
-                                    test_x, 
-                                    test_y, 
-                                    self.level, 
-                                    enemy_type, 
-                                    difficulty=self.selected_difficulty
+                                    test_x,
+                                    test_y,
+                                    self.level,
+                                    enemy_type,
+                                    difficulty=self.selected_difficulty,
                                 )
                             )
                             found_pos = True
@@ -429,11 +430,11 @@ class Game:
                         ) and not self.game_map.is_inside_building(bot_pos[0], bot_pos[1]):
                             self.bots.append(
                                 Bot(
-                                    bot_pos[0], 
-                                    bot_pos[1], 
-                                    self.level, 
-                                    enemy_type, 
-                                    difficulty=self.selected_difficulty
+                                    bot_pos[0],
+                                    bot_pos[1],
+                                    self.level,
+                                    enemy_type,
+                                    difficulty=self.selected_difficulty,
                                 )
                             )
 
@@ -469,17 +470,16 @@ class Game:
         """Handle new game setup events"""
         mouse_pos = pygame.mouse.get_pos()
         self.start_button.update(mouse_pos)
-        
+
         # Defining clickable areas for settings by coordinate ranges
         # This is a bit hacky without a UI library, but functional.
         # We'll just check Y coordinates relative to center
-        center_x = C.SCREEN_WIDTH // 2
         start_y = 200
         line_height = 50
-        
+
         # Settings list matching render order
         settings = ["Map Size", "Difficulty", "Start Level", "Lives"]
-        
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
@@ -619,7 +619,7 @@ class Game:
                         self.check_shot_hit()
                 elif event.button == 3:  # Right-click to secondary fire
                     if self.player.fire_secondary():
-                        self.sound_manager.play_sound("shoot") # Reuse for now or add specific
+                        self.sound_manager.play_sound("shoot")  # Reuse for now or add specific
                         self.check_shot_hit(is_secondary=True)
             elif event.type == pygame.MOUSEMOTION and not self.paused:
                 assert self.player is not None
@@ -646,15 +646,15 @@ class Game:
             # Simple Raycast (DDA)
             sin_a = math.sin(self.player.angle)
             cos_a = math.cos(self.player.angle)
-            
+
             # Ray start
             rx, ry = self.player.x, self.player.y
             map_x, map_y = int(rx), int(ry)
-            
+
             # Delta Dist
             delta_dist_x = abs(1 / cos_a) if cos_a != 0 else 1e30
             delta_dist_y = abs(1 / sin_a) if sin_a != 0 else 1e30
-            
+
             # Step and side dist
             if cos_a < 0:
                 step_x = -1
@@ -662,20 +662,20 @@ class Game:
             else:
                 step_x = 1
                 side_dist_x = (map_x + 1.0 - rx) * delta_dist_x
-                
+
             if sin_a < 0:
                 step_y = -1
                 side_dist_y = (ry - map_y) * delta_dist_y
             else:
                 step_y = 1
                 side_dist_y = (map_y + 1.0 - ry) * delta_dist_y
-                
+
             # DDA
-            wall_dist = weapon_range # Max limit
+            wall_dist = weapon_range  # Max limit
             hit_wall = False
             steps = 0
             max_raycast_steps = C.MAX_RAYCAST_STEPS  # Maximum steps for raycasting
-            
+
             while not hit_wall and steps < max_raycast_steps:
                 steps += 1
                 if side_dist_x < side_dist_y:
@@ -686,12 +686,17 @@ class Game:
                     side_dist_y += delta_dist_y
                     map_y += step_y
                     dist = side_dist_y - delta_dist_y
-                    
+
                 if dist > weapon_range:
                     break
-                    
+
                 # Bounds check to prevent infinite or OOB errors
-                if map_x < 0 or map_x >= self.game_map.size or map_y < 0 or map_y >= self.game_map.size:
+                if (
+                    map_x < 0
+                    or map_x >= self.game_map.size
+                    or map_y < 0
+                    or map_y >= self.game_map.size
+                ):
                     hit_wall = True
                     wall_dist = dist
                     break
@@ -710,7 +715,7 @@ class Game:
                 dy = bot.y - self.player.y
                 distance = math.sqrt(dx**2 + dy**2)
 
-                if distance > wall_dist: # Blotched by wall
+                if distance > wall_dist:  # Blotched by wall
                     continue
 
                 # Check if bot is in front of player
@@ -736,7 +741,6 @@ class Game:
                         # Headshot is tighter threshold
                         is_headshot = angle_diff < C.HEADSHOT_THRESHOLD
 
-
             if closest_bot:
                 # Calculate hit position for blood
 
@@ -746,9 +750,12 @@ class Game:
                 # (Ideally we stored this loop above, but re-calc is cheap)
 
                 # ... Wait, I can't access locals from loop above easily unless I stored them.
-                # Simplified approach: Use basic factors here since we have closest_bot and closest_dist
+                # Simplified approach: Use basic factors here since we have closest_bot
+                # and closest_dist
 
-                range_factor = max(0.3, 1.0 - (closest_dist / weapon_range))  # Damage drops with range
+                range_factor = max(
+                    0.3, 1.0 - (closest_dist / weapon_range)
+                )  # Damage drops with range
 
                 # Centeredness
                 dx = closest_bot.x - self.player.x
@@ -767,8 +774,6 @@ class Game:
                 accuracy_factor = max(0.5, 1.0 - (angle_diff / 0.15))
 
                 final_damage = int(weapon_damage * range_factor * accuracy_factor)
-
-
 
                 if is_headshot:
                     final_damage *= 3
@@ -822,11 +827,9 @@ class Game:
                     }
                 )
 
-
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             # Prevent gameplay crash from targeting logic
             print(f"Error in check_shot_hit: {e}")
-
 
     def handle_bomb_explosion(self) -> None:
         """Handle bomb explosion logic"""
@@ -879,18 +882,17 @@ class Game:
                 self.lives -= 1
                 self.respawn_player()
                 return
-            else:
-                # Capture final time for the failed level
-                level_time = (
-                    pygame.time.get_ticks() - self.level_start_time - self.total_paused_time
-                ) / 1000.0
-                self.level_times.append(level_time)
-                self.lives = 0 # Ensure 0
-    
-                self.state = "game_over"
-                pygame.mouse.set_visible(True)
-                pygame.event.set_grab(False)
-                return
+            # Capture final time for the failed level
+            level_time = (
+                pygame.time.get_ticks() - self.level_start_time - self.total_paused_time
+            ) / 1000.0
+            self.level_times.append(level_time)
+            self.lives = 0  # Ensure 0
+
+            self.state = "game_over"
+            pygame.mouse.set_visible(True)
+            pygame.event.set_grab(False)
+            return
 
         # Check for enemies remaining (exclude health packs)
         enemies_alive = [b for b in self.bots if b.alive and b.enemy_type != "health_pack"]
@@ -899,18 +901,22 @@ class Game:
             if self.portal is None:
                 # Spawn Portal at the last enemy's position or random
                 self.spawn_portal()
-                self.damage_texts.append({
-                    "x": C.SCREEN_WIDTH // 2,
-                    "y": C.SCREEN_HEIGHT // 2,
-                    "text": "PORTAL OPENED!",
-                    "color": C.CYAN,
-                    "timer": 180,
-                    "vy": 0
-                })
+                self.damage_texts.append(
+                    {
+                        "x": C.SCREEN_WIDTH // 2,
+                        "y": C.SCREEN_HEIGHT // 2,
+                        "text": "PORTAL OPENED!",
+                        "color": C.CYAN,
+                        "timer": 180,
+                        "vy": 0,
+                    }
+                )
 
         if self.portal:
             # Check collision
-            dist = math.sqrt((self.portal["x"] - self.player.x)**2 + (self.portal["y"] - self.player.y)**2)
+            dist = math.sqrt(
+                (self.portal["x"] - self.player.x) ** 2 + (self.portal["y"] - self.player.y) ** 2
+            )
             if dist < 1.0:
                 # Level Complete
                 level_time = (
@@ -921,8 +927,6 @@ class Game:
                 pygame.mouse.set_visible(True)
                 pygame.event.set_grab(False)
                 return
-            
-
 
         assert self.player is not None
         assert self.game_map is not None
@@ -949,7 +953,7 @@ class Game:
 
         is_sprinting = keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]
         current_speed = C.PLAYER_SPRINT_SPEED if is_sprinting else C.PLAYER_SPEED
-        
+
         # Track movement for bobbing
         moving = False
 
@@ -965,7 +969,7 @@ class Game:
             moving = True
         if keys[pygame.K_d]:
             self.player.strafe(self.game_map, self.bots, right=True, speed=current_speed)
-            
+
         self.player.is_moving = moving
 
         if keys[pygame.K_LEFT]:
@@ -1015,15 +1019,13 @@ class Game:
                     old_health = self.player.health
                     self.player.take_damage(projectile.damage)
                     if self.player.health < old_health:
-                         # Hit flash
-                         self.damage_flash_timer = 10
-                         
+                        # Hit flash
+                        self.damage_flash_timer = 10
+
                     projectile.alive = False
 
             if not projectile.alive:
-                self.projectiles.remove(projectile) 
-            
-
+                self.projectiles.remove(projectile)
 
     def render_menu(self) -> None:
         """Render main menu (Title Screen)"""
@@ -1031,12 +1033,12 @@ class Game:
 
         title_y = C.SCREEN_HEIGHT // 2 - 100
         title_text = "FORCE FIELD"
-        
+
         # Shadow
         shadow = self.title_font.render(title_text, True, C.DARK_RED)
         shadow_rect = shadow.get_rect(center=(C.SCREEN_WIDTH // 2 + 4, title_y + 4))
         self.screen.blit(shadow, shadow_rect)
-        
+
         # Main Title
         title = self.title_font.render(title_text, True, C.WHITE)
         title_rect = title.get_rect(center=(C.SCREEN_WIDTH // 2, title_y))
@@ -1061,39 +1063,39 @@ class Game:
     def render_map_select(self) -> None:
         """Render new game setup screen"""
         self.screen.fill(C.BLACK)
-        
+
         # Max Payne style: Red Title, Gritty
         title = self.title_font.render("MISSION SETUP", True, C.RED)
         title_rect = title.get_rect(center=(C.SCREEN_WIDTH // 2, 80))
         self.screen.blit(title, title_rect)
-        
+
         # Draw settings listing
         center_x = C.SCREEN_WIDTH // 2
         start_y = 200
         line_height = 50
-        
+
         settings = [
             ("Map Size", str(self.selected_map_size)),
             ("Difficulty", self.selected_difficulty),
             ("Start Level", str(self.selected_start_level)),
-            ("Lives", str(self.selected_lives))
+            ("Lives", str(self.selected_lives)),
         ]
-        
+
         mouse_pos = pygame.mouse.get_pos()
-        
+
         for i, (label, value) in enumerate(settings):
             y = start_y + i * line_height
-            
+
             # Hover effect
             is_hovered = abs(mouse_pos[1] - y) < 20
             color_label = C.RED if is_hovered else C.GRAY
             color_value = C.WHITE if is_hovered else C.DARK_GRAY
-            
+
             # Label
             lbl_surf = self.font.render(label, True, color_label)
             lbl_rect = lbl_surf.get_rect(topright=(center_x - 20, y - 20))
             self.screen.blit(lbl_surf, lbl_rect)
-            
+
             # Value
             val_surf = self.font.render(value, True, color_value)
             val_rect = val_surf.get_rect(topleft=(center_x + 20, y - 20))
@@ -1108,7 +1110,7 @@ class Game:
             "Click: Shoot | Z: Zoom | F: Bomb",
         ]
 
-        y = C.SCREEN_HEIGHT - 260 # Moved up to avoid overlap with button
+        y = C.SCREEN_HEIGHT - 260  # Moved up to avoid overlap with button
         for line in instructions:
             text = self.tiny_font.render(line, True, C.RED)
             text_rect = text.get_rect(center=(C.SCREEN_WIDTH // 2, y))
@@ -1131,7 +1133,7 @@ class Game:
 
         # Clear effects surface
         self.effects_surface.fill((0, 0, 0, 0))
-        
+
         # Render Lasers (Secondary Fire)
         for p in self.particles:
             if p.get("type") == "laser":
@@ -1142,13 +1144,20 @@ class Game:
                 # Draw on shared surface
                 pygame.draw.line(self.effects_surface, color, start, end, p["width"])
                 # Glow
-                pygame.draw.line(self.effects_surface, (*p["color"], alpha // 2), start, end, p["width"] * 3)
+                pygame.draw.line(
+                    self.effects_surface, (*p["color"], alpha // 2), start, end, p["width"] * 3
+                )
 
             elif "dx" in p:  # Normal particles
-                # Draw directly to screen usually faster for small circles? 
+                # Draw directly to screen usually faster for small circles?
                 # Or use effects surface for alpha
                 alpha = int(255 * (p["timer"] / C.PARTICLE_LIFETIME))
-                pygame.draw.circle(self.effects_surface, (*p["color"], alpha), (int(p["x"]), int(p["y"])), int(p["size"]))
+                pygame.draw.circle(
+                    self.effects_surface,
+                    (*p["color"], alpha),
+                    (int(p["x"]), int(p["y"])),
+                    int(p["size"]),
+                )
 
         # Damage Flash
         if self.damage_flash_timer > 0:
@@ -1158,24 +1167,34 @@ class Game:
 
         # Shield effect (Draw onto effects surface)
         if self.player.shield_active:
-             self.effects_surface.fill((*C.SHIELD_COLOR, C.SHIELD_ALPHA), special_flags=pygame.BLEND_RGBA_ADD) # Additive or just fill?
-             # Simple fill with alpha works if surface is alpha.
-             # Actually, filling whole surface checks previous pixels? 
-             # Just draw a rect.
-             pygame.draw.rect(self.effects_surface, (*C.SHIELD_COLOR, C.SHIELD_ALPHA), (0,0, C.SCREEN_WIDTH, C.SCREEN_HEIGHT))
-             pygame.draw.rect(self.effects_surface, C.SHIELD_COLOR, (0, 0, C.SCREEN_WIDTH, C.SCREEN_HEIGHT), 10)
+            self.effects_surface.fill(
+                (*C.SHIELD_COLOR, C.SHIELD_ALPHA), special_flags=pygame.BLEND_RGBA_ADD
+            )  # Additive or just fill?
+            # Simple fill with alpha works if surface is alpha.
+            # Actually, filling whole surface checks previous pixels?
+            # Just draw a rect.
+            pygame.draw.rect(
+                self.effects_surface,
+                (*C.SHIELD_COLOR, C.SHIELD_ALPHA),
+                (0, 0, C.SCREEN_WIDTH, C.SCREEN_HEIGHT),
+            )
+            pygame.draw.rect(
+                self.effects_surface, C.SHIELD_COLOR, (0, 0, C.SCREEN_WIDTH, C.SCREEN_HEIGHT), 10
+            )
 
-             shield_text = self.title_font.render("SHIELD ACTIVE", True, C.SHIELD_COLOR)
-             self.screen.blit(shield_text, (C.SCREEN_WIDTH // 2 - shield_text.get_width() // 2, 100))
+            shield_text = self.title_font.render("SHIELD ACTIVE", True, C.SHIELD_COLOR)
+            self.screen.blit(shield_text, (C.SCREEN_WIDTH // 2 - shield_text.get_width() // 2, 100))
 
-             # Timer bar or text
-             time_left = self.player.shield_timer / 60.0
-             timer_text = self.small_font.render(f"{time_left:.1f}s", True, C.WHITE)
-             self.screen.blit(timer_text, (C.SCREEN_WIDTH // 2 - timer_text.get_width() // 2, 160))
+            # Timer bar or text
+            time_left = self.player.shield_timer / 60.0
+            timer_text = self.small_font.render(f"{time_left:.1f}s", True, C.WHITE)
+            self.screen.blit(timer_text, (C.SCREEN_WIDTH // 2 - timer_text.get_width() // 2, 160))
 
-             # Flash if running out
-             if self.player.shield_timer < 120 and (self.player.shield_timer // 10) % 2 == 0:
-                 pygame.draw.rect(self.effects_surface, (255, 0, 0, 50), (0,0, C.SCREEN_WIDTH, C.SCREEN_HEIGHT))
+            # Flash if running out
+            if self.player.shield_timer < 120 and (self.player.shield_timer // 10) % 2 == 0:
+                pygame.draw.rect(
+                    self.effects_surface, (255, 0, 0, 50), (0, 0, C.SCREEN_WIDTH, C.SCREEN_HEIGHT)
+                )
 
         # Show "Shield Ready" if full
         elif (
@@ -1184,7 +1203,7 @@ class Game:
         ):
             ready_text = self.tiny_font.render("SHIELD READY", True, C.CYAN)
             self.screen.blit(ready_text, (20, C.SCREEN_HEIGHT - 120))
-            
+
         # Blit all effects once
         self.screen.blit(self.effects_surface, (0, 0))
 
@@ -1211,33 +1230,34 @@ class Game:
             # Calculate sprite position relative to player
             sx = self.portal["x"] - self.player.x
             sy = self.portal["y"] - self.player.y
-            sz = 0 # varying height?
 
             # Rotate
             cs = math.cos(self.player.angle)
             sn = math.sin(self.player.angle)
             a = sy * cs - sx * sn
             b = sx * cs + sy * sn
-            
+
             # Draw if in front
             if b > 0.1:
                 # Projection
-                scale = C.FOV / b
                 screen_x = int((0.5 * C.SCREEN_WIDTH) * (1 + a / b * 2.0))  # projection
                 screen_y = C.SCREEN_HEIGHT // 2
-                
-                size = int(800 / b) # Scale size
-                
+
+                size = int(800 / b)  # Scale size
+
                 # Draw Portal Circle
                 if -size < screen_x < C.SCREEN_WIDTH + size:
-                     color = (0, 255, 255)
-                     # Pulse alpha
-                     alpha = 150 + int(50 * math.sin(pygame.time.get_ticks() * 0.01))
-                     
-                     # Draw multiple rings
-                     pygame.draw.circle(self.screen, (*color, alpha), (screen_x, screen_y), size // 2)
-                     pygame.draw.circle(self.screen, (255, 255, 255), (screen_x, screen_y), size // 4)
+                    color = (0, 255, 255)
+                    # Pulse alpha
+                    alpha = 150 + int(50 * math.sin(pygame.time.get_ticks() * 0.01))
 
+                    # Draw multiple rings
+                    pygame.draw.circle(
+                        self.screen, (*color, alpha), (screen_x, screen_y), size // 2
+                    )
+                    pygame.draw.circle(
+                        self.screen, (255, 255, 255), (screen_x, screen_y), size // 4
+                    )
 
         self.render_weapon()
         self.render_hud()
@@ -1262,11 +1282,6 @@ class Game:
                 text = self.font.render(item, True, color)
                 self.screen.blit(text, (C.SCREEN_WIDTH // 2 - text.get_width() // 2, rect.y + 10))
 
-
-
-
-        
-
         pygame.display.flip()
 
     def render_weapon(self) -> None:
@@ -1274,12 +1289,12 @@ class Game:
         weapon = self.player.current_weapon
         cx = C.SCREEN_WIDTH // 2
         cy = C.SCREEN_HEIGHT
-        
+
         # Bobbing effect (simple)
         bob_y = 0
         if self.player.is_moving:
             bob_y = int(math.sin(pygame.time.get_ticks() * 0.01) * 10)
-        
+
         cy += bob_y
 
         if weapon == "pistol":
@@ -1319,12 +1334,11 @@ class Game:
         elif weapon == "plasma":
             # Sci-Fi Blaster (Plasma)
             # Main Body (Purple/Blue)
-            pygame.draw.polygon(self.screen, (40, 40, 80), [
-                (cx - 40, cy),
-                (cx + 40, cy),
-                (cx + 30, cy - 150),
-                (cx - 30, cy - 150)
-            ])
+            pygame.draw.polygon(
+                self.screen,
+                (40, 40, 80),
+                [(cx - 40, cy), (cx + 40, cy), (cx + 30, cy - 150), (cx - 30, cy - 150)],
+            )
             # Core
             pygame.draw.rect(self.screen, C.CYAN, (cx - 10, cy - 140, 20, 100))
             # Vents
@@ -1333,7 +1347,6 @@ class Game:
                 pygame.draw.line(self.screen, (0, 0, 255), (cx - 20, y), (cx + 20, y), 2)
             # Tip
             pygame.draw.circle(self.screen, C.WHITE, (cx, cy - 150), 15)
-
 
     def render_hud(self) -> None:
         """Render HUD in Doom-style"""
@@ -1406,24 +1419,24 @@ class Game:
         radar_x = C.SCREEN_WIDTH - radar_size - 20
         radar_y = 20
         scale = radar_size / self.game_map.size
-        
+
         # Radar BG
         pygame.draw.rect(self.screen, (0, 50, 0), (radar_x, radar_y, radar_size, radar_size))
         pygame.draw.rect(self.screen, (0, 150, 0), (radar_x, radar_y, radar_size, radar_size), 2)
-        
+
         # Enemies
         for bot in self.bots:
             if bot.alive and bot.enemy_type != "health_pack":
                 bx = int(bot.x * scale)
                 by = int(bot.y * scale)
                 pygame.draw.circle(self.screen, C.RED, (radar_x + bx, radar_y + by), 2)
-        
+
         # Portal
         if self.portal:
             px = int(self.portal["x"] * scale)
             py = int(self.portal["y"] * scale)
             pygame.draw.circle(self.screen, C.CYAN, (radar_x + px, radar_y + py), 4)
-            
+
         # Player (with direction)
         px = int(self.player.x * scale)
         py = int(self.player.y * scale)
@@ -1431,39 +1444,50 @@ class Game:
         # Direction line
         dx = math.cos(self.player.angle) * 8
         dy = math.sin(self.player.angle) * 8
-        pygame.draw.line(self.screen, C.WHITE, (radar_x + px, radar_y + py), (radar_x + px + dx, radar_y + py + dy))
-
+        pygame.draw.line(
+            self.screen,
+            C.WHITE,
+            (radar_x + px, radar_y + py),
+            (radar_x + px + dx, radar_y + py + dy),
+        )
 
         # Shield Bar
         shield_width = 150
         shield_height = 10
         shield_x = health_x
         shield_y = health_y - 20
-        
+
         shield_pct = self.player.shield_timer / C.SHIELD_MAX_DURATION
-        pygame.draw.rect(self.screen, C.DARK_GRAY, (shield_x, shield_y, shield_width, shield_height))
-        pygame.draw.rect(self.screen, C.CYAN, (shield_x, shield_y, int(shield_width * shield_pct), shield_height))
+        pygame.draw.rect(
+            self.screen, C.DARK_GRAY, (shield_x, shield_y, shield_width, shield_height)
+        )
+        pygame.draw.rect(
+            self.screen, C.CYAN, (shield_x, shield_y, int(shield_width * shield_pct), shield_height)
+        )
         pygame.draw.rect(self.screen, C.WHITE, (shield_x, shield_y, shield_width, shield_height), 1)
-        
+
         # Check Recharge Delay
         if self.player.shield_recharge_delay > 0:
             status_text = "RECHARGING" if self.player.shield_active else "COOLDOWN"
             status_surf = self.tiny_font.render(status_text, True, C.WHITE)
             self.screen.blit(status_surf, (shield_x + shield_width + 5, shield_y - 2))
-        
+
         # Laser Charge
         laser_y = shield_y - 15
         laser_pct = 1.0 - (self.player.secondary_cooldown / C.SECONDARY_COOLDOWN)
-        if laser_pct < 0: laser_pct = 0
-        if laser_pct > 1: laser_pct = 1
-        
+        laser_pct = max(laser_pct, 0)
+        laser_pct = min(laser_pct, 1)
+
         pygame.draw.rect(self.screen, C.DARK_GRAY, (shield_x, laser_y, shield_width, shield_height))
-        pygame.draw.rect(self.screen, (255, 0, 255), (shield_x, laser_y, int(shield_width * laser_pct), shield_height)) # Purple/Magenta
+        pygame.draw.rect(
+            self.screen,
+            (255, 0, 255),
+            (shield_x, laser_y, int(shield_width * laser_pct), shield_height),
+        )  # Purple/Magenta
         pygame.draw.rect(self.screen, C.WHITE, (shield_x, laser_y, shield_width, shield_height), 1)
-        
+
         laser_txt = self.tiny_font.render("LASER", True, C.WHITE)
         self.screen.blit(laser_txt, (shield_x + shield_width + 5, laser_y - 2))
-
 
         if self.player.zoomed:
             zoom_text = self.tiny_font.render("ZOOM ACTIVE", True, C.CYAN)
@@ -1620,8 +1644,6 @@ class Game:
 
                 self.clock.tick(C.FPS)
         except Exception as e:
-            import traceback
-
             with open("crash_log.txt", "w") as f:
                 f.write(traceback.format_exc())
             print(f"CRASH: {e}")
@@ -1655,60 +1677,56 @@ class Game:
         # Phase 0: Willy Wonk Production
         if self.intro_phase == 0:
             duration = 3000
-            
+
             # Candy Aesthetics
             # Pastel Pink Title
-            text = self.subtitle_font.render("A Willy Wonk Production", True, (255, 182, 193)) # Light Pink
+            text = self.subtitle_font.render(
+                "A Willy Wonk Production", True, (255, 182, 193)
+            )  # Light Pink
             text_rect = text.get_rect(center=(C.SCREEN_WIDTH // 2, 100))
             self.screen.blit(text, text_rect)
-            
+
             # Image
             if "willy" in self.intro_images:
                 img = self.intro_images["willy"]
                 img_rect = img.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 30))
-                
+
                 # Soft blend (simple alpha fade on edges is hard in realtime without prep)
                 # We'll draw a "vignette" overlay using a texture if we had one.
                 # Instead, let's draw a soft pink border around it.
                 self.screen.blit(img, img_rect)
-                pygame.draw.rect(self.screen, (255, 192, 203), img_rect, 4, border_radius=10) # Pink border
-                
+                pygame.draw.rect(
+                    self.screen, (255, 192, 203), img_rect, 4, border_radius=10
+                )  # Pink border
+
             if elapsed > duration:
                 self.intro_phase = 1
                 self.intro_start_time = 0
 
         # Phase 1: Upstream Drift Studios
         elif self.intro_phase == 1:
-            duration = 10000 
-            
+            duration = 10000
+
             # Text - Terminal / Matrix Style
             # Use monochromatic green or bright console white
             t1 = self.tiny_font.render("in association with", True, C.GREEN)
             r1 = t1.get_rect(center=(C.SCREEN_WIDTH // 2, 80))
             self.screen.blit(t1, r1)
-            
+
             # Hacker Font logic (fallback to consolas/system)
             hacker_font = pygame.font.SysFont("consolas", 60)
-            t2 = hacker_font.render("UPSTREAM DRIFT", True, (0, 255, 0)) # Matrix Green
+            t2 = hacker_font.render("UPSTREAM DRIFT", True, (0, 255, 0))  # Matrix Green
             r2 = t2.get_rect(center=(C.SCREEN_WIDTH // 2, 140))
             self.screen.blit(t2, r2)
-            
+
             # Video Playback
             if self.intro_video and self.intro_video.isOpened():
                 ret, frame = self.intro_video.read()
                 if ret:
                     # Convert CV2 frame (BGR) to Pygame (RGB)
+                    frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
                     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                    
-                    # Flip (optional, but CV2 loaded images might be flipped relative to surface)
-                    # Often needed: frame = cv2.flip(frame, 1) or rotate. 
-                    # Assuming standard landscape video, direct conversion is usually fine.
-                    # Transpose to match surface if needed (width, height, 3)
-                    # frame = numpy.rot90(frame) # Requires numpy
-                    
-                    # Create surface
-                    frame = frame.swapaxes(0, 1) # Simple rotation attempt if needed
-                    
+
                     surf = pygame.surfarray.make_surface(frame)
 
                     # Scale to fit
@@ -1716,19 +1734,19 @@ class Game:
                     scale = target_h / surf.get_height()
                     new_size = (int(surf.get_width() * scale), int(surf.get_height() * scale))
                     surf = pygame.transform.scale(surf, new_size)
-                    
+
                     r = surf.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 50))
                     self.screen.blit(surf, r)
                 else:
                     # Loop video?
                     self.intro_video.set(cv2.CAP_PROP_POS_FRAMES, 0)
-            
+
             # Fallback to Image
             elif "deadfish" in self.intro_images:
                 img = self.intro_images["deadfish"]
                 img_rect = img.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 50))
                 self.screen.blit(img, img_rect)
-            
+
             if elapsed > duration:
                 self.intro_phase = 2
                 self.intro_start_time = 0
@@ -1759,7 +1777,9 @@ class Game:
                 )
 
                 line1_surf = self.title_font.render(line1, True, (255, 255, 255))
-                line2_surf = self.subtitle_font.render(line2, True, (255, 0, 0))  # Subtitle line in red
+                line2_surf = self.subtitle_font.render(
+                    line2, True, (255, 0, 0)
+                )  # Subtitle line in red
 
                 # Apply alpha approx (by set_alpha on blit or color) - simplistic here:
                 line1_surf.set_alpha(int(alpha))
