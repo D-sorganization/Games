@@ -340,14 +340,38 @@ class Raycaster:
             # Blit sprite to screen
             screen.blit(sprite_surface, (int(sprite_x), int(sprite_y)))
 
-    def render_floor_ceiling(self, screen: pygame.Surface) -> None:
-        """Render floor and ceiling"""
+    def render_floor_ceiling(self, screen: pygame.Surface, player_angle: float) -> None:
+        """Render floor and sky with stars"""
+        # Sky background
+        pygame.draw.rect(screen, C.SKY_COLOR, (0, 0, C.SCREEN_WIDTH, C.SCREEN_HEIGHT // 2))
+
+        # Draw stars
+        # Use player angle to offset stars for parallax effect
+        star_offset = int(player_angle * 200) % C.SCREEN_WIDTH
+
+        # Simple procedural stars
+        for i in range(50):
+            # Deterministic star positions
+            x = (i * 137 + star_offset) % C.SCREEN_WIDTH
+            y = (i * 53) % (C.SCREEN_HEIGHT // 2)
+            size = (i % 3) + 1
+            color = (200, 200, 255) if i % 2 == 0 else (255, 255, 255)
+            pygame.draw.circle(screen, color, (x, y), size)
+
+        # Draw Moon
+        moon_x = (C.SCREEN_WIDTH - 200 - int(player_angle * 100)) % (
+            C.SCREEN_WIDTH * 2
+        ) - C.SCREEN_WIDTH // 2
+        if -100 < moon_x < C.SCREEN_WIDTH + 100:
+            pygame.draw.circle(screen, (220, 220, 200), (int(moon_x), 100), 40)
+            pygame.draw.circle(screen, C.SKY_COLOR, (int(moon_x) - 10, 100), 40)  # Crescent
+
+        # Floor
         pygame.draw.rect(
             screen,
             C.DARK_GRAY,
             (0, C.SCREEN_HEIGHT // 2, C.SCREEN_WIDTH, C.SCREEN_HEIGHT // 2),
         )
-        pygame.draw.rect(screen, C.BLACK, (0, 0, C.SCREEN_WIDTH, C.SCREEN_HEIGHT // 2))
 
     def render_minimap(
         self,

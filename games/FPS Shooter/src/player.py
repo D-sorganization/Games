@@ -28,6 +28,7 @@ class Player:
         self.shooting = False
         self.shoot_timer = 0
         self.alive = True
+        self.shield_active = False
 
     def move(
         self,
@@ -37,6 +38,9 @@ class Player:
         speed: float = C.PLAYER_SPEED,
     ) -> None:
         """Move player forward or backward"""
+        if self.shield_active:
+            return
+
         dx = math.cos(self.angle) * speed * (1 if forward else -1)
         dy = math.sin(self.angle) * speed * (1 if forward else -1)
 
@@ -75,6 +79,9 @@ class Player:
         speed: float = C.PLAYER_SPEED,
     ) -> None:
         """Strafe left or right"""
+        if self.shield_active:
+            return
+
         angle = self.angle + math.pi / 2 * (1 if right else -1)
         dx = math.cos(angle) * speed
         dy = math.sin(angle) * speed
@@ -136,6 +143,8 @@ class Player:
 
     def take_damage(self, damage: int) -> None:
         """Take damage"""
+        if self.shield_active:
+            return
         self.health -= damage
         if self.health <= 0:
             self.health = 0

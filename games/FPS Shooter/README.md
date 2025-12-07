@@ -1,4 +1,4 @@
-# FPS Arena - First-Person Shooter Game
+# Force Field - Arena Combat
 
 A raycasting-based first-person shooter game built with Python and Pygame, featuring a 90x90 map with walls, buildings, and challenging bot enemies. Fight through increasingly difficult waves of enemies in an arena combat experience!
 
@@ -115,10 +115,11 @@ Each level, the four corners of the map are randomly assigned:
 - **S**: Move backward
 - **A**: Strafe left
 - **D**: Strafe right
+- **SPACE**: Hold for Force Field Shield (Protects you, but you cannot move)
 - **Mouse**: Look around
 - **Left Click**: Aim
 - **Right Click**: Shoot rifle
-- **Arrow Keys**: Rotate view (alternative to mouse)
+- **P**: Pause Game
 - **ESC**: Return to menu
 
 ### Between Levels
