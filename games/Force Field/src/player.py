@@ -20,7 +20,7 @@ class Player:
         self.angle = angle
         self.health = 100
         self.max_health = 100
-        self.lives = C.DEFAULT_LIVES
+        self.is_moving = False  # Track movement for bobbing
         weapon_ammo: Dict[str, Any] = {
             weapon: C.WEAPONS[weapon].get("ammo", 0) for weapon in C.WEAPONS
         }

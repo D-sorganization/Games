@@ -128,7 +128,10 @@ class Game:
         self.projectiles: List[Projectile] = []
         self.raycaster: Raycaster | None = None
         self.portal: Dict[str, Any] | None = None
-        self.lives = C.DEFAULT_LIVES
+        self.health = 100
+        self.max_health = 100
+        
+        self.is_moving = False  # Track movement state for bobbing
         self.damage_flash_timer = 0
         if not hasattr(self, 'intro_video'):
             self.intro_video = None
@@ -342,8 +345,7 @@ class Game:
                     player_pos = (test_x, test_y, player_pos[2])
                     break
         
-        # Preserve ammo if player existed (handled logic elsewhere? No, simple recreate is mostly fine, 
-        # but if we want to carry over ammo we should copy it.
+        # Preserve ammo and weapon selection from previous level if player exists
         # Check if self.player exists and apply
         
         previous_ammo = None
@@ -947,16 +949,24 @@ class Game:
 
         is_sprinting = keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]
         current_speed = C.PLAYER_SPRINT_SPEED if is_sprinting else C.PLAYER_SPEED
+        
+        # Track movement for bobbing
+        moving = False
 
         # Movement (move method checks for shield)
         if keys[pygame.K_w]:
             self.player.move(self.game_map, self.bots, forward=True, speed=current_speed)
+            moving = True
         if keys[pygame.K_s]:
             self.player.move(self.game_map, self.bots, forward=False, speed=current_speed)
+            moving = True
         if keys[pygame.K_a]:
             self.player.strafe(self.game_map, self.bots, right=False, speed=current_speed)
+            moving = True
         if keys[pygame.K_d]:
             self.player.strafe(self.game_map, self.bots, right=True, speed=current_speed)
+            
+        self.player.is_moving = moving
 
         if keys[pygame.K_LEFT]:
             self.player.rotate(-0.05)
@@ -1295,18 +1305,16 @@ class Game:
             pygame.draw.circle(self.screen, (10, 10, 10), (cx - 15, cy - 180), 8)
             pygame.draw.circle(self.screen, (10, 10, 10), (cx + 15, cy - 180), 8)
 
-        elif weapon == "machinegun":
-            # Chaingun / Minigun
+        elif weapon == "rifle":
+            # Sci-Fi Rifle (using chaingun style for now or updated)
             # Main central axis
-            pygame.draw.rect(self.screen, (30, 30, 30), (cx - 10, cy - 160, 20, 160))
+            pygame.draw.rect(self.screen, (40, 40, 50), (cx - 15, cy - 160, 30, 160))
             # Barrels
-            pygame.draw.rect(self.screen, (50, 50, 50), (cx - 25, cy - 140, 10, 140))
-            pygame.draw.rect(self.screen, (50, 50, 50), (cx + 15, cy - 140, 10, 140))
-            pygame.draw.rect(self.screen, (50, 50, 50), (cx - 5, cy - 130, 10, 130)) # Center lower
+            pygame.draw.rect(self.screen, (60, 60, 70), (cx - 10, cy - 180, 20, 180))
             # Body box
-            pygame.draw.rect(self.screen, (40, 50, 40), (cx - 40, cy - 60, 80, 60))
-            # Ammo belt (suggestion)
-            pygame.draw.line(self.screen, (150, 130, 50), (cx + 40, cy - 40), (cx + 100, cy + 20), 10)
+            pygame.draw.rect(self.screen, (50, 50, 60), (cx - 30, cy - 60, 60, 60))
+            # Detail
+            pygame.draw.rect(self.screen, C.CYAN, (cx - 5, cy - 100, 10, 40))
 
         elif weapon == "plasma":
             # Sci-Fi Blaster (Plasma)
@@ -1324,7 +1332,7 @@ class Game:
                 y = cy - 40 - i * 20
                 pygame.draw.line(self.screen, (0, 0, 255), (cx - 20, y), (cx + 20, y), 2)
             # Tip
-            pygame.draw.circle(self.screen, C.white, (cx, cy - 150), 15)
+            pygame.draw.circle(self.screen, C.WHITE, (cx, cy - 150), 15)
 
 
     def render_hud(self) -> None:
@@ -1439,9 +1447,9 @@ class Game:
         
         # Check Recharge Delay
         if self.player.shield_recharge_delay > 0:
-            status_text = "RECHARGING" if self.player.shield_active else "COOLDOWN" # Wait, logic:
-            # If active but timer going down -> active
-            # If recharge delay > 0 -> cooldown
+            status_text = "RECHARGING" if self.player.shield_active else "COOLDOWN"
+            status_surf = self.tiny_font.render(status_text, True, C.WHITE)
+            self.screen.blit(status_surf, (shield_x + shield_width + 5, shield_y - 2))
         
         # Laser Charge
         laser_y = shield_y - 15
