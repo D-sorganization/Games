@@ -242,8 +242,8 @@ class Game:
                     # Retry nearby
                     found_pos = False
                     for attempt in range(15):
-                        test_x = bot_pos[0] + random.uniform(-4, 4)
-                        test_y = bot_pos[1] + random.uniform(-4, 4)
+                        test_x = bot_pos[0] + random.uniform(-C.SPAWN_RETRY_RADIUS, C.SPAWN_RETRY_RADIUS)
+                        test_y = bot_pos[1] + random.uniform(-C.SPAWN_RETRY_RADIUS, C.SPAWN_RETRY_RADIUS)
                         if (
                             not self.game_map.is_wall(test_x, test_y)
                             and not self.game_map.is_inside_building(test_x, test_y)
@@ -309,7 +309,7 @@ class Game:
                                 pygame.event.set_grab(True)
                             elif item == "SAVE GAME":
                                 try:
-                                    with open("savegame.txt", "w") as f:
+                                    with open(C.SAVE_FILE_PATH, "w") as f:
                                         f.write(f"{self.level}")
                                 except IOError as e:
                                     print(f"Save failed: {e}")
@@ -420,6 +420,10 @@ class Game:
             hit_x = closest_bot.x
             hit_y = closest_bot.y
             
+            # Display calculated damage (includes headshot multiplier)
+            # Note: Bot.take_damage() handles the actual health reduction logic internally,
+            # using the base weapon_damage and is_headshot flag.
+            # We calculate damage_dealt here purely for the visual text.
             damage_dealt = weapon_damage * 3 if is_headshot else weapon_damage
             closest_bot.take_damage(weapon_damage, is_headshot=is_headshot)
             
@@ -442,7 +446,7 @@ class Game:
                     "dx": random.uniform(-5, 5),
                     "dy": random.uniform(-5, 5),
                     "color": C.BLUE_BLOOD,
-                    "timer": 30,
+                    "timer": C.PARTICLE_LIFETIME,
                     "size": random.randint(2, 5)
                 })
 
@@ -603,7 +607,7 @@ class Game:
         
         # Render particles
         for p in self.particles:
-            alpha = int(255 * (p["timer"] / 30))
+            alpha = int(255 * (p["timer"] / C.PARTICLE_LIFETIME))
             surf = pygame.Surface((p["size"]*2, p["size"]*2), pygame.SRCALPHA)
             pygame.draw.circle(surf, (*p["color"], alpha), (p["size"], p["size"]), p["size"])
             self.screen.blit(surf, (p["x"] - p["size"], p["y"] - p["size"]))
@@ -625,7 +629,7 @@ class Game:
         # Shield effect
         if self.player.shield_active:
             overlay = pygame.Surface((C.SCREEN_WIDTH, C.SCREEN_HEIGHT), pygame.SRCALPHA)
-            overlay.fill((*C.SHIELD_COLOR, 30)) # Semi-transparent cyan overlay
+            overlay.fill((*C.SHIELD_COLOR, C.SHIELD_ALPHA)) # Semi-transparent cyan overlay
             # Add hexagon pattern or grid? Simple border for now
             pygame.draw.rect(overlay, C.SHIELD_COLOR, (0, 0, C.SCREEN_WIDTH, C.SCREEN_HEIGHT), 10)
             self.screen.blit(overlay, (0, 0))
@@ -913,7 +917,7 @@ class Game:
             line1, line2, duration = slides[self.intro_step]
             
             # Fade in/out logic
-            alpha = min(255, max(0, 255 - abs(elapsed - duration/2) * (510/duration)))
+            alpha = min(C.INTRO_FADE_MAX, max(0, C.INTRO_FADE_MAX - abs(elapsed - duration/2) * (C.INTRO_FADE_SCALE/duration)))
             
             line1_surf = self.title_font.render(line1, True, (255, 255, 255))
             line2_surf = self.subtitle_font.render(line2, True, (255, 0, 0)) # Subtitle line in red
