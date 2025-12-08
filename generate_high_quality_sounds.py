@@ -7,7 +7,8 @@ import os
 sounds_dir = "games/Force Field/assets/sounds"
 os.makedirs(sounds_dir, exist_ok=True)
 
-def generate_wave(filename, frequency=440.0, duration=0.5, volume=0.5, type="sine"):
+def generate_wave(filename: str, frequency: float = 440.0, duration: float = 0.5, volume: float = 0.5, type: str = "sine") -> None:
+    """Generate a sound wave file."""
     sample_rate = 44100
     n_frames = int(sample_rate * duration)
     
@@ -38,7 +39,8 @@ def generate_wave(filename, frequency=440.0, duration=0.5, volume=0.5, type="sin
 
 # 1. Weapon Sounds - LOUDER (Increased vol from ~0.5 to ~0.8/0.9)
 # Pistol: Sharp crack
-def gen_pistol():
+def gen_pistol() -> None:
+    """Generate a pistol firing sound."""
     filename = os.path.join(sounds_dir, "shoot_pistol.wav")
     sample_rate = 44100
     duration = 0.3
@@ -55,7 +57,8 @@ def gen_pistol():
 gen_pistol()
 
 # Rifle: Short pop
-def gen_rifle():
+def gen_rifle() -> None:
+    """Generate a rifle firing sound."""
     filename = os.path.join(sounds_dir, "shoot_rifle.wav")
     sample_rate = 44100
     duration = 0.15
@@ -70,7 +73,8 @@ def gen_rifle():
 gen_rifle()
 
 # Shotgun: Big Boom
-def gen_shotgun():
+def gen_shotgun() -> None:
+    """Generate a shotgun firing sound."""
     filename = os.path.join(sounds_dir, "shoot_shotgun.wav")
     sample_rate = 44100
     duration = 0.6
@@ -87,7 +91,8 @@ def gen_shotgun():
 gen_shotgun()
 
 # Plasma: Zap
-def gen_plasma():
+def gen_plasma() -> None:
+    """Generate a plasma weapon sound."""
     filename = os.path.join(sounds_dir, "shoot_plasma.wav")
     sample_rate = 44100
     duration = 0.4
@@ -103,7 +108,8 @@ def gen_plasma():
 gen_plasma()
 
 # Heartbeat (Boosted)
-def gen_heartbeat():
+def gen_heartbeat() -> None:
+    """Generate a heartbeat sound."""
     filename = os.path.join(sounds_dir, "heartbeat.wav")
     sample_rate = 44100
     duration = 0.2
@@ -122,7 +128,8 @@ def gen_heartbeat():
 gen_heartbeat()
 
 # Player Hit - UGH Sound (Vocal-like formant attempt)
-def gen_hit():
+def gen_hit() -> None:
+    """Generate a player hit sound."""
     filename = os.path.join(sounds_dir, "player_hit.wav")
     sample_rate = 44100
     duration = 0.4
@@ -149,7 +156,8 @@ def gen_hit():
 gen_hit()
 
 # Enemy Scream - Lower pitch, less static
-def gen_scream():
+def gen_scream() -> None:
+    """Generate a monster scream sound."""
     filename = os.path.join(sounds_dir, "scream.wav")
     sample_rate = 44100
     duration = 0.6
@@ -172,7 +180,8 @@ gen_scream()
 
 
 # Bomb Explosion
-def gen_bomb():
+def gen_bomb() -> None:
+    """Generate a bomb explosion sound."""
     filename = os.path.join(sounds_dir, "bomb.wav")
     sample_rate = 44100
     duration = 1.0
@@ -194,7 +203,8 @@ gen_bomb()
 
 
 # Catchphrases (Synthesized robot voice style - poor man's TTS)
-def gen_phrase(name, freq_base):
+def gen_phrase(name: str, freq_base: float) -> None:
+    """Generate a synthesized voice phrase."""
     filename = os.path.join(sounds_dir, f"phrase_{name}.wav")
     sample_rate = 44100
     duration = 1.0
@@ -213,7 +223,8 @@ gen_phrase("awesome", 554)
 gen_phrase("brutal", 220)
 
 # Music Tracks
-def gen_music_intro():
+def gen_music_intro() -> None:
+    """Generate the intro music track."""
     filename = os.path.join(sounds_dir, "music_intro.wav")
     sample_rate = 44100
     duration = 10.0 # Short loop or intro
@@ -250,7 +261,8 @@ def gen_music_intro():
             f.writeframes(struct.pack('h', int(val * 32767)))
 gen_music_intro()
 
-def gen_music_loop():
+def gen_music_loop() -> None:
+    """Generate the looping music track."""
     filename = os.path.join(sounds_dir, "music_loop.wav")
     sample_rate = 44100
     duration = 8.0 # Loopable
@@ -286,7 +298,8 @@ def gen_music_loop():
 gen_music_loop()
 
 # Backup Oww if mp3 fails
-def gen_oww_backup():
+def gen_oww_backup() -> None:
+    """Generate a backup pain sound."""
     filename = os.path.join(sounds_dir, "oww.wav")
     sample_rate = 44100
     duration = 0.4

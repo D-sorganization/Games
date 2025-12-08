@@ -4,7 +4,8 @@ import struct
 import random
 import os
 
-def generate_wave(filename, frequency=440.0, duration=1.0, volume=0.5, type="sine"):
+def generate_wave(filename: str, frequency: float = 440.0, duration: float = 1.0, volume: float = 0.5, type: str = "sine") -> None:
+    """Generate a sound wave file with specified parameters."""
     sample_rate = 44100
     n_frames = int(sample_rate * duration)
     
@@ -36,7 +37,8 @@ os.makedirs(sounds_dir, exist_ok=True)
 generate_wave(os.path.join(sounds_dir, "dark_ambient.wav"), duration=5.0, type="dark_drone", volume=0.4)
 
 # Scream (High pitch sliding down noise/saw)
-def generate_scream(filename):
+def generate_scream(filename: str) -> None:
+    """Generate a scream sound effect."""
     sample_rate = 44100
     duration = 0.8
     n_frames = int(sample_rate * duration)
@@ -51,7 +53,8 @@ def generate_scream(filename):
 generate_scream(os.path.join(sounds_dir, "scream.wav"))
 
 # Death (Low thud/crunch)
-def generate_death(filename):
+def generate_death(filename: str) -> None:
+    """Generate a death sound effect."""
     sample_rate = 44100
     duration = 0.5
     n_frames = int(sample_rate * duration)
