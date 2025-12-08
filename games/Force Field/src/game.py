@@ -2090,12 +2090,18 @@ class Game:
             # Play Water Sound once
             if elapsed < 50: # Play at start
                  if not hasattr(self, "_water_played"):
-                      self.sound_manager.play_sound("water")
+                      try:
+                          self.sound_manager.play_sound("water")
+                      except Exception as e:
+                          print(f"Error playing water sound: {e}")
                       self._water_played = True
             
             # Play Music Box after delay
             if elapsed > 2000 and not hasattr(self, "_music_intro_played"):
-                 self.sound_manager.start_music("music_intro")
+                 try:
+                     self.sound_manager.start_music("music_intro")
+                 except Exception as e:
+                     print(f"Error starting music intro: {e}")
                  self._music_intro_played = True
             
             # Text - Stylish Upstream Drift
@@ -2120,47 +2126,50 @@ class Game:
             self.screen.blit(t1, r1)
 
             # Video Playback
-            if self.intro_video and self.intro_video.isOpened():
-                ret, frame = self.intro_video.read()
-                if ret:
-                    # Convert CV2 frame (BGR) to Pygame (RGB)
-                    # frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE) # Removing rotation as per typical video needs
-                    # User said it never played, maybe rotation was breaking it or it was slow?
-                    # But standard CV2->Pygame requires transposing usually not rotation.
-                    # Pygame surfaces are (width, height), logical.
-                    # CV2 is (row, col) -> (height, width).
-                    # We usually need to swap axes (transpose) then RGB.
-                    
-                    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                    frame = frame.swapaxes(0, 1) # Transpose for pgyame surface
-                    
-                    surf = pygame.surfarray.make_surface(frame)
+            try:
+                if self.intro_video and self.intro_video.isOpened():
+                    ret, frame = self.intro_video.read()
+                    if ret:
+                        # Convert CV2 frame (BGR) to Pygame (RGB)
+                        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                        frame = frame.swapaxes(0, 1) # Transpose for pgyame surface
+                        
+                        surf = pygame.surfarray.make_surface(frame)
 
-                    # Scale to fit
-                    target_h = 400
-                    scale = target_h / surf.get_height()
-                    new_size = (int(surf.get_width() * scale), int(surf.get_height() * scale))
-                    surf = pygame.transform.scale(surf, new_size)
+                        # Scale to fit
+                        target_h = 400
+                        scale = target_h / surf.get_height()
+                        new_size = (int(surf.get_width() * scale), int(surf.get_height() * scale))
+                        surf = pygame.transform.scale(surf, new_size)
 
-                    r = surf.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 50))
-                    self.screen.blit(surf, r)
+                        r = surf.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 50))
+                        self.screen.blit(surf, r)
+                    else:
+                        # Loop video?
+                        self.intro_video.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                
                 else:
-                    # Loop video?
-                    self.intro_video.set(cv2.CAP_PROP_POS_FRAMES, 0)
-            
-            else:
-                 # Debug info relative to user request
-                 if not hasattr(self, "_video_debug_printed"):
-                      vid_path = os.path.join(self.assets_dir, "video", "fish.mp4")
-                      print(f"DEBUG: Video not opened or CV2 missing. Path: {vid_path}")
-                      if os.path.exists(vid_path):
-                          print("DEBUG: File exists on disk.")
-                      else:
-                          print("DEBUG: File DOES NOT exist on disk.")
-                      self._video_debug_printed = True
+                     # Debug info relative to user request
+                     if not hasattr(self, "_video_debug_printed"):
+                          vid_path = os.path.join(self.assets_dir, "video", "fish.mp4")
+                          print(f"DEBUG: Video not opened or CV2 missing. Path: {vid_path}")
+                          if os.path.exists(vid_path):
+                              print("DEBUG: File exists on disk.")
+                          else:
+                              print("DEBUG: File DOES NOT exist on disk.")
+                          self._video_debug_printed = True
 
-                 # Fallback to Image
-                 if "deadfish" in self.intro_images:
+                     # Fallback to Image
+                     if "deadfish" in self.intro_images:
+                         img = self.intro_images["deadfish"]
+                         img_rect = img.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 50))
+                         self.screen.blit(img, img_rect)
+            except Exception as e:
+                print(f"Video Playback Error: {e}")
+                import traceback
+                traceback.print_exc()
+                # Fallback on error
+                if "deadfish" in self.intro_images:
                      img = self.intro_images["deadfish"]
                      img_rect = img.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 50))
                      self.screen.blit(img, img_rect)
