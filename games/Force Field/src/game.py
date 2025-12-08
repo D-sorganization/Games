@@ -741,11 +741,11 @@ class Game:
             if abs(look_x) > C.JOYSTICK_DEADZONE:
                 self.player.rotate(look_x * C.PLAYER_ROT_SPEED * 15 * C.SENSITIVITY_X)
             if abs(look_y) > C.JOYSTICK_DEADZONE:
-                self.player.pitch_view(look_y * 10 * C.SENSITIVITY_Y)
+                self.player.pitch_view(-look_y * 10 * C.SENSITIVITY_Y)
 
             # Buttons
             # 0: A (Shield)
-            if self.joystick.get_button(0):
+            if self.joystick.get_numbuttons() > 0 and self.joystick.get_button(0):
                 self.player.set_shield(True)
             else:
                 self.player.set_shield(False)
