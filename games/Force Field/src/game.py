@@ -453,6 +453,23 @@ class Game:
                             found_pos = True
                             break
 
+
+
+                    if not found_pos:
+                        # Last resort: spawn at corner if safe, otherwise skip ONE bot (safety)
+                        if not self.game_map.is_wall(
+                            bot_pos[0], bot_pos[1]
+                        ) and not self.game_map.is_inside_building(bot_pos[0], bot_pos[1]):
+                            self.bots.append(
+                                Bot(
+                                    bot_pos[0],
+                                    bot_pos[1],
+                                    self.level,
+                                    enemy_type,
+                                    difficulty=self.selected_difficulty,
+                                )
+                            )
+
         # Spawn Boss & Fast Enemy (Demon) in random corner or center
         # "At the end of each level we need a huge enemy or a fast enemy. - lets have one of each."
         boss_types = ["boss", "demon"]
@@ -475,23 +492,6 @@ class Game:
                         )
                      )
                      break
-                            found_pos = True
-                            break
-
-                    if not found_pos:
-                        # Last resort: spawn at corner if safe, otherwise skip ONE bot (safety)
-                        if not self.game_map.is_wall(
-                            bot_pos[0], bot_pos[1]
-                        ) and not self.game_map.is_inside_building(bot_pos[0], bot_pos[1]):
-                            self.bots.append(
-                                Bot(
-                                    bot_pos[0],
-                                    bot_pos[1],
-                                    self.level,
-                                    enemy_type,
-                                    difficulty=self.selected_difficulty,
-                                )
-                            )
 
         # Spawn Health Pack (Fewer and scattered)
         # Attempt fewer times (10 instead of 50) to make it scarce
