@@ -79,7 +79,7 @@ WEAPONS = {
     },
     "plasma": {
         "name": "Plasma",
-        "damage": 100, # Reduced from 200
+        "damage": 100, # Increased from 35
         "range": WEAPON_RANGE_PLASMA,
         "ammo": 999,
         "cooldown": 8, # Faster fire rate (was 12)

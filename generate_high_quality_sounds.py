@@ -113,7 +113,7 @@ def gen_plasma() -> None:
             t = i / sample_rate
             freq = 2000 - t * 4000
             val = math.sin(2 * math.pi * freq * t) * math.exp(-t*5)
-            f.writeframes(struct.pack("h", int(0.4 * 32767 * val))) # Reduce volume (was 0.7)
+            f.writeframes(struct.pack("h", int(0.8 * 32767 * val))) # Match other weapon volumes
 gen_plasma()
 
 # Heartbeat Boosted

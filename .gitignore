@@ -36,3 +36,9 @@ logs/
 # Binary models/data via LFS
 *.h5
 *.zip
+
+# Build Artifacts
+build/
+dist/
+*.spec
+*.toc
