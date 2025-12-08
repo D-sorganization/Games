@@ -504,6 +504,12 @@ class Game:
                 self.bots.append(Bot(rx + 0.5, ry + 0.5, self.level, "health_pack"))
                 break
 
+        # Start Music
+        if self.level <= 2:
+            self.sound_manager.start_music("music_loop") # Bell Trap
+        else:
+            self.sound_manager.start_music("music_drums") # Drum Ambience
+
         self.state = "playing"
 
         # Enable mouse capture
@@ -2089,7 +2095,7 @@ class Game:
             
             # Play Music Box after delay
             if elapsed > 2000 and not hasattr(self, "_music_intro_played"):
-                 self.sound_manager.play_sound("music_intro")
+                 self.sound_manager.start_music("music_intro")
                  self._music_intro_played = True
             
             # Text - Stylish Upstream Drift
