@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import math
 import os
 import random
@@ -13,18 +14,16 @@ from . import constants as C  # noqa: N812
 from .bot import Bot
 from .map import Map
 from .player import Player
+from .projectile import Projectile
 from .raycaster import Raycaster
 from .sound import SoundManager
 from .ui import BloodButton
-from .projectile import Projectile
 
 try:
     import cv2
     HAS_CV2 = True
 except ImportError:
     HAS_CV2 = False
-
-from .projectile import Projectile
 
 
 class Game:
@@ -1018,7 +1017,7 @@ class Game:
                 if was_alive and not closest_bot.alive:
                     self.sound_manager.play_sound("scream")
 
-                # damage_dealt = final_damage # Update for text
+
 
                 damage_dealt = final_damage  # Update for text
 
@@ -1173,66 +1172,6 @@ class Game:
             }
         )
 
-    def explode_plasma(self, projectile: Projectile) -> None:
-        """Trigger plasma AOE explosion"""
-        # Visuals - Shockwave / Expanding Circle
-        self.particles.append(
-            {
-                "x": projectile.x,
-                "y": projectile.y,
-                "dx": 0,
-                "dy": 0,
-                "color": C.CYAN,  # BFG Color
-                "timer": 20,
-                "size": 50,  # Initial size of expansion
-                "type": "shockwave",  # Special logic or just circle?
-            }
-        )
-        # Add many particles
-        for _ in range(20):
-             angle = random.uniform(0, 2*math.pi)
-             sp = random.uniform(2, 5)
-             self.particles.append({
-                 "x": projectile.x,
-                 "y": projectile.y,
-                 "dx": math.cos(angle) * sp,
-                 "dy": math.sin(angle) * sp,
-                 "color": C.BLUE,
-                 "timer": 30,
-                 "size": 5,
-             })
-
-        # Damage Logic - Flat Wave
-        for bot in self.bots:
-            if not bot.alive:
-                continue
-            dx = bot.x - projectile.x
-            dy = bot.y - projectile.y
-            dist = math.sqrt(dx*dx + dy*dy)
-
-            if dist < C.PLASMA_AOE_RADIUS:
-                was_alive = bot.alive
-                bot.take_damage(projectile.damage)
-                if was_alive and not bot.alive:
-                     self.sound_manager.play_sound("scream")
-                     self.kills += 1
-                     self.kill_combo_count += 1
-                     self.kill_combo_timer = 180
-                     self.last_death_pos = (bot.x, bot.y)
-
-                # Blood
-                if dist < 5.0:
-                    for _ in range(3):
-                        self.particles.append({
-                            "x": C.SCREEN_WIDTH // 2,
-                            "y": C.SCREEN_HEIGHT // 2,
-                            "dx": random.uniform(-4, 4),
-                            "dy": random.uniform(-4, 4),
-                            "color": (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)),
-                            "timer": 20,
-                            "size": 3
-                        })
-
     def explode_laser(self, impact_x: float, impact_y: float) -> None:
         """Trigger Massive Laser Explosion at Impact Point"""
         try:
@@ -1288,6 +1227,72 @@ class Game:
         except Exception as e:  # noqa: BLE001
             print(f"Critical Laser Error: {e}")
             traceback.print_exc()
+
+    def explode_plasma(self, projectile: Projectile) -> None:
+        """Trigger plasma AOE explosion"""
+        # Visuals - Shockwave / Expanding Circle
+        self.particles.append(
+            {
+                "x": projectile.x,
+                "y": projectile.y,
+                "dx": 0,
+                "dy": 0,
+                "color": C.CYAN,  # BFG Color
+                "timer": 20,
+                "size": 50,  # Initial size of expansion
+                "type": "shockwave",  # Special logic or just circle?
+            }
+        )
+        # Add many particles
+        for _ in range(20):
+             angle = random.uniform(0, 2*math.pi)
+             sp = random.uniform(2, 5)
+             self.particles.append({
+                 "x": projectile.x,
+                 "y": projectile.y,
+                 "dx": math.cos(angle) * sp,
+                 "dy": math.sin(angle) * sp,
+                 "color": C.BLUE,
+                 "timer": 30,
+                 "size": 5,
+             })
+
+        # Damage Logic - Flat Wave
+        for bot in self.bots:
+            if not bot.alive:
+                continue
+            dx = bot.x - projectile.x
+            dy = bot.y - projectile.y
+            dist = math.sqrt(dx*dx + dy*dy)
+
+            if dist < C.PLASMA_AOE_RADIUS:
+                was_alive = bot.alive
+                bot.take_damage(projectile.damage)
+                if was_alive and not bot.alive:
+                     self.sound_manager.play_sound("scream")
+                     self.kills += 1
+                     self.kill_combo_count += 1
+                     self.kill_combo_timer = 180
+                     self.last_death_pos = (bot.x, bot.y)
+
+                # Blood
+                if dist < 5.0:
+                    for _ in range(3):
+                        self.particles.append({
+                            "x": C.SCREEN_WIDTH // 2,
+                            "y": C.SCREEN_HEIGHT // 2,
+                            "dx": random.uniform(-4, 4),
+                            "dy": random.uniform(-4, 4),
+                            "color": (
+                            random.randint(0, 255),
+                            random.randint(0, 255),
+                            random.randint(0, 255),
+                        ),
+                            "timer": 20,
+                            "size": 3
+                        })
+
+
 
     def update_game(self) -> None:
         """Update game state"""
@@ -1437,7 +1442,11 @@ class Game:
             projectile.update(self.game_map)
 
             # Check Wall Hit (projectile dies in update)
-            if was_alive and not projectile.alive and getattr(projectile, "weapon_type", "normal") == "plasma":
+            if (
+                was_alive
+                and not projectile.alive
+                and getattr(projectile, "weapon_type", "normal") == "plasma"
+            ):
                  self.explode_plasma(projectile)
 
             if projectile.alive:
@@ -1696,10 +1705,7 @@ class Game:
 
                 try:
                     color = p["color"]
-                    if len(color) == 3:
-                        rgba = (*color, alpha)
-                    else:
-                        rgba = (*color[:3], alpha)  # Fallback if already 4
+                    rgba = (*color, alpha) if len(color) == 3 else (*color[:3], alpha)
 
                     pygame.draw.circle(
                         self.effects_surface,
@@ -1906,7 +1912,6 @@ class Game:
 
         if weapon == "pistol":
             # High-Res Heavy Pistol (Deagle-ish)
-            # scale = 4
 
             # 1. Grip (Darker)
             pygame.draw.polygon(self.screen, (30, 25, 20), [
@@ -2498,7 +2503,7 @@ class Game:
                  if not hasattr(self, "_water_played"):
                       try:
                           self.sound_manager.play_sound("water")
-                      except Exception as e:
+                      except Exception as e:  # noqa: BLE001
                           print(f"Error playing water sound: {e}")
                       self._water_played = True
 
@@ -2577,7 +2582,12 @@ class Game:
                 # Fallback on error
                 if "deadfish" in self.intro_images:
                      img = self.intro_images["deadfish"]
-                     img_rect = img.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 50))
+                     img_rect = img.get_rect(
+                         center=(
+                             C.SCREEN_WIDTH // 2,
+                             C.SCREEN_HEIGHT // 2 + 50,
+                         )
+                     )
                      self.screen.blit(img, img_rect)
 
             if elapsed > duration:
@@ -2588,13 +2598,14 @@ class Game:
                     self.intro_video = None
 
         # Phase 2: Graphic Novel / Story
-        elif self.intro_phase == 2:
+        if self.intro_phase == 2:
             # Slides Config
             slides = [
                 {
                     "type": "distortion",
-                    "text": "FROM THE DEMENTED MIND OF JASPER",
-                    "duration": 4000,
+                    "text": "FROM THE DEMENTED MIND",
+                    "text2": "OF JASPER",
+                    "duration": 8000,
                     "sound": "laugh",
                 },
                 {"type": "story", "lines": [
@@ -2631,29 +2642,50 @@ class Game:
 
                 # Distortion Effect
                 if slide["type"] == "distortion":
-                    font = self.title_font
-                    text_str = slide["text"]
+                    # Try using a scary font (Chiller is good for Goosebumps vibes)
+                    font = (
+                        pygame.font.SysFont("chiller", 70)
+                        if pygame.font.match_font("chiller")
+                        else self.title_font
+                    )
 
-                    # Center text roughly
-                    total_w = sum([font.size(char)[0] for char in text_str])
-                    start_x = (C.SCREEN_WIDTH - total_w) // 2
-                    y = C.SCREEN_HEIGHT // 2 - 50
+                    lines = [slide["text"]]
+                    if "text2" in slide:
+                        lines.append(slide["text2"])
 
-                    x_off = 0
-                    for index, char in enumerate(text_str):
-                        # Jitter math
-                        time_factor = pygame.time.get_ticks() * 0.01 + index * 0.5
-                        jitter_x = math.sin(time_factor * 2.0) * 8
-                        jitter_y = math.cos(time_factor * 1.5) * 8
+                    start_y = C.SCREEN_HEIGHT // 2 - (len(lines) * 80) // 2
 
-                        # Scale pulse?
+                    for line_idx, text_str in enumerate(lines):
+                        total_w = sum([font.size(char)[0] for char in text_str])
+                        start_x = (C.SCREEN_WIDTH - total_w) // 2
+                        y = start_y + line_idx * 100
 
-                        # Color pulse
-                        c_val = int(150 + 100 * math.sin(time_factor * 0.5))
-                        char_surf = font.render(char, True, (c_val, 0, 0))
+                        x_off = 0
+                        for index, char in enumerate(text_str):
+                            # Slower Jitter
+                            time_factor = (
+                                pygame.time.get_ticks() * 0.003 + index * 0.2
+                            )
+                            jitter_x = math.sin(time_factor * 2.0) * 2
+                            # More vertical dripping movement
+                            jitter_y = math.cos(time_factor * 1.5) * 4
 
-                        self.screen.blit(char_surf, (start_x + x_off + jitter_x, y + jitter_y))
-                        x_off += font.size(char)[0]
+                            # Pulsing Blood Red
+                            c_val = int(120 + 135 * abs(math.sin(time_factor * 0.8)))
+                            color = (c_val, 0, 0)
+
+                            char_surf = font.render(char, True, color)
+                            # Blur/Glow effect (draw scaled up slightly behind?)
+                            # Simple approach: Draw dark red shadow
+                            shadow_surf = font.render(char, True, (50, 0, 0))
+                            self.screen.blit(
+                                shadow_surf, (start_x + x_off + jitter_x + 2, y + jitter_y + 2)
+                            )
+
+                            self.screen.blit(
+                                char_surf, (start_x + x_off + jitter_x, y + jitter_y)
+                            )
+                            x_off += font.size(char)[0]
 
                 # Story Streaming
                 elif slide["type"] == "story":

@@ -5,7 +5,7 @@ a = Analysis(
     ['force_field.py'],
     pathex=[],
     binaries=[],
-    datas=[('assets', 'assets')],
+    datas=[('assets', 'assets'), ('pics', 'pics')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
@@ -36,3 +36,4 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
 )
+
