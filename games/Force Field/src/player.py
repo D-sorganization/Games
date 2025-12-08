@@ -109,6 +109,9 @@ class Player:
         if self.zoomed:
             return
 
+        if self.shield_active:
+             speed *= 0.8
+
         # Slightly faster strafe for Doom feel? Standard speed is fine.
         angle = self.angle + math.pi / 2 * (1 if right else -1)
         dx = math.cos(angle) * speed
@@ -198,10 +201,12 @@ class Player:
     def switch_weapon(self, weapon: str) -> None:
         """Switch to a different weapon"""
         if weapon in C.WEAPONS:
+            # Cancel reload of the PREVIOUS weapon to avoid pause/resume exploits.
+            if self.current_weapon in self.weapon_state:
+                 self.weapon_state[self.current_weapon]["reloading"] = False
+
             self.current_weapon = weapon
-            # Cancel reload on switch? Or background reload?
-            # Classic Doom: instant switch usually, reloading was animation.
-            # We'll cancel reload for now to avoid complexity or exploit.
+            # Also ensure new weapon is clean (redundant but safe)
             self.weapon_state[weapon]["reloading"] = False
 
     def get_current_weapon_damage(self) -> int:

@@ -631,6 +631,7 @@ class Game:
                         if self.player.activate_bomb():
                             self.handle_bomb_explosion()
                     elif event.key == pygame.K_r:
+                        assert self.player is not None
                         self.player.reload()
                     elif event.key == pygame.K_z:  # Zoom Toggle
                         assert self.player is not None
