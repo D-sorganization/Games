@@ -157,7 +157,7 @@ class Raycaster:
 
         max_steps = int(C.MAX_DEPTH * 1.5)
 
-        wall_dist = C.MAX_DEPTH
+        wall_dist: float = float(C.MAX_DEPTH)
 
         for _ in range(max_steps):
             if side_dist_x < side_dist_y:

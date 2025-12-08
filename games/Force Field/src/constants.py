@@ -48,24 +48,33 @@ WEAPONS = {
         "name": "Pistol",
         "damage": 20,
         "range": WEAPON_RANGE_PISTOL,
-        "ammo": 999,
+        "ammo": 999,  # Infinite total ammo concept? Or max carry?
+        # Keeping 999 as "unlimited" pool for now
         "cooldown": 10,
+        "clip_size": 12,
+        "reload_time": 60,  # 1 second
         "key": "1",
     },
     "rifle": {
         "name": "Rifle",
-        "damage": 25,
+        "damage": 15,  # Reduced from 25
         "range": WEAPON_RANGE_RIFLE,
         "ammo": 999,
-        "cooldown": 15,
+        "cooldown": 25,  # Slower fire rate (was 15)
+        "clip_size": 30,
+        "reload_time": 120,  # 2 seconds
         "key": "2",
     },
     "shotgun": {
         "name": "Shotgun",
-        "damage": 30,
+        "damage": 10,  # Per pellet? We'll simulate 5-8 pellets. 10 * 8 = 80 max dmg close range.
         "range": WEAPON_RANGE_SHOTGUN,
         "ammo": 999,
-        "cooldown": 20,
+        "cooldown": 30,
+        "clip_size": 2,  # Two shots
+        "reload_time": 150,  # 2.5 seconds (slow)
+        "pellets": 8,
+        "spread": 0.15,
         "key": "3",
     },
     "plasma": {
@@ -74,6 +83,13 @@ WEAPONS = {
         "range": WEAPON_RANGE_PLASMA,
         "ammo": 999,
         "cooldown": 12,
+        "clip_size": 999,  # Infinite clip, uses heat
+        "heat_per_shot": 0.15,
+        "max_heat": 1.0,
+        "cooling_rate": 0.01,
+        "overheat_penalty": 180,  # 3 seconds cooldown if overheated
+        "projectile_speed": 0.5,
+        "projectile_color": (0, 191, 255),  # Deep Sky Blue
         "key": "4",
     },
 }

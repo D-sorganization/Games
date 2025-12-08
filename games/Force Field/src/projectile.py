@@ -8,7 +8,7 @@ if TYPE_CHECKING:
 class Projectile:
     """Projectile shot by bots or player"""
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         x: float,
         y: float,
@@ -16,6 +16,8 @@ class Projectile:
         damage: int,
         speed: float,
         is_player: bool = False,
+        color: tuple = (255, 0, 0),
+        size: float = 0.2,
     ):
         """Initialize projectile"""
         self.x = x
@@ -24,6 +26,8 @@ class Projectile:
         self.damage = damage
         self.speed = speed
         self.is_player = is_player
+        self.color = color
+        self.size = size
         self.alive = True
 
     def update(self, game_map: "Map") -> None:
