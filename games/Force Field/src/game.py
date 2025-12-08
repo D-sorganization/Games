@@ -1575,7 +1575,10 @@ class Game:
             elif "dx" in p:  # Normal particles
                 # Draw directly to screen usually faster for small circles?
                 # Or use effects surface for alpha
-                alpha = int(255 * (p["timer"] / C.PARTICLE_LIFETIME))
+                ratio = p["timer"] / C.PARTICLE_LIFETIME
+                alpha = int(255 * ratio)
+                alpha = max(0, min(255, alpha))
+
                 pygame.draw.circle(
                     self.effects_surface,
                     (*p["color"], alpha),
