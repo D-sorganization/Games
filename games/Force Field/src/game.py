@@ -742,6 +742,8 @@ class Game:
             if is_secondary:
                 weapon_range = 100 # Maximum range for laser beam
 
+            weapon_damage = self.player.get_current_weapon_damage()
+
             closest_bot = None
             closest_dist = float("inf")
             is_headshot = False
