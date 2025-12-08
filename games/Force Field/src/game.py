@@ -895,7 +895,11 @@ class Game:
                 if is_headshot:
                     final_damage *= 3
 
+                was_alive = closest_bot.alive
                 closest_bot.take_damage(final_damage, is_headshot=is_headshot)
+                if was_alive and not closest_bot.alive:
+                    self.sound_manager.play_sound("scream")
+
                 # self.sound_manager.play_sound("scream") # Removed, only scream on death now
 
                 damage_dealt = final_damage  # Update for text
@@ -989,18 +993,23 @@ class Game:
                 continue
             dist = math.sqrt((bot.x - self.player.x) ** 2 + (bot.y - self.player.y) ** 2)
             if dist < C.BOMB_RADIUS:
+                was_alive = bot.alive
                 bot.take_damage(1000)  # massive damage
-                if not bot.alive:
+                if was_alive and not bot.alive:
+                    self.sound_manager.play_sound("scream")
                     self.kills += 1
                     self.kill_combo_count += 1
                     self.kill_combo_timer = 180
                     self.last_death_pos = (bot.x, bot.y)
 
         # Screen shake or feedback
+        # Screen shake or feedback
         try:
              self.sound_manager.play_sound("bomb")
-        except Exception as e:
-             print(f"Bomb Audio Failed: {e}")
+        except BaseException as e: # Catch KeyboardInterrupt/SystemExit too just in case
+             print(f"Bomb Audio Failed: {e}") 
+        except:
+             print("Bomb Audio Failed (Unknown Error)")
 
         self.damage_texts.append(
             {
@@ -1051,8 +1060,10 @@ class Game:
             dist = math.sqrt(dx*dx + dy*dy)
             
             if dist < C.PLASMA_AOE_RADIUS:
+                was_alive = bot.alive
                 bot.take_damage(projectile.damage)
-                if not bot.alive:
+                if was_alive and not bot.alive:
+                     self.sound_manager.play_sound("scream")
                      self.kills += 1
                      self.kill_combo_count += 1
                      self.kill_combo_timer = 180
@@ -1232,8 +1243,10 @@ class Game:
                         dy = projectile.y - bot.y
                         dist = math.sqrt(dx**2 + dy**2)
                         if dist < 0.8:  # Hit radius
+                            was_alive = bot.alive
                             bot.take_damage(projectile.damage)
-                            if not bot.alive:
+                            if was_alive and not bot.alive:
+                                self.sound_manager.play_sound("scream")
                                 self.kills += 1
                                 self.kill_combo_count += 1
                                 self.kill_combo_timer = 180 # 3 seconds window

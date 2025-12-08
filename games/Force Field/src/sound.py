@@ -57,7 +57,7 @@ class SoundManager:
             "enemy_shoot": "enemy_shoot.wav",
             "ambient": "music_loop.wav", # New spooky background
             "bomb": "bomb.wav",
-            "scream": "scream.wav",
+            "scream": "cartoon-scream-1-6835.mp3", # Cartoon scream
             "death": "death.wav",
             "heartbeat": "heartbeat.wav",
             "player_hit": "player_hit.wav",

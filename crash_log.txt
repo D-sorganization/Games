@@ -1,11 +1,15 @@
 Traceback (most recent call last):
-  File "c:\Users\diete\Repositories\Games\games\Force Field\src\game.py", line 2036, in run
+  File "c:\Users\diete\Repositories\Games\games\Force Field\src\game.py", line 2090, in run
     self.render_game()
     ~~~~~~~~~~~~~~~~^^
-  File "c:\Users\diete\Repositories\Games\games\Force Field\src\game.py", line 1433, in render_game
-    self.render_muzzle_flash()
-    ~~~~~~~~~~~~~~~~~~~~~~~~^^
-  File "c:\Users\diete\Repositories\Games\games\Force Field\src\game.py", line 1889, in render_muzzle_flash
-    if self.player.weapon == "plasma":
-       ^^^^^^^^^^^^^^^^^^
-AttributeError: 'Player' object has no attribute 'weapon'
+  File "c:\Users\diete\Repositories\Games\games\Force Field\src\game.py", line 1430, in render_game
+    pygame.draw.circle(
+    ~~~~~~~~~~~~~~~~~~^
+        self.effects_surface,
+        ^^^^^^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        int(p["size"]),
+        ^^^^^^^^^^^^^^^
+    )
+    ^
+ValueError: invalid color argument
