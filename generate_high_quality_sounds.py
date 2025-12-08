@@ -97,8 +97,9 @@ def gen_plasma():
         for i in range(n_frames):
             t = i / sample_rate
             freq = 2000 - t * 4000
+            freq = 2000 - t * 4000
             val = math.sin(2 * math.pi * freq * t) * math.exp(-t*5)
-            f.writeframes(struct.pack('h', int(0.7 * 32767 * val))) # Increased volume
+            f.writeframes(struct.pack('h', int(0.4 * 32767 * val))) # Reduce volume (was 0.7)
 gen_plasma()
 
 # Heartbeat

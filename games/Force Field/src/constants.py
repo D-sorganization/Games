@@ -82,9 +82,10 @@ WEAPONS = {
         "damage": 35,
         "range": WEAPON_RANGE_PLASMA,
         "ammo": 999,
-        "cooldown": 12,
+        "cooldown": 8, # Faster fire rate (was 12)
+        "automatic": True, # Allow hold-to-fire
         "clip_size": 999,  # Infinite clip, uses heat
-        "heat_per_shot": 0.15,
+        "heat_per_shot": 0.25, # Heats up faster (was 0.15)
         "max_heat": 1.0,
         "cooling_rate": 0.01,
         "overheat_penalty": 180,  # 3 seconds cooldown if overheated
