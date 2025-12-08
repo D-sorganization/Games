@@ -986,7 +986,11 @@ class Game:
                     self.last_death_pos = (bot.x, bot.y)
 
         # Screen shake or feedback
-        self.sound_manager.play_sound("bomb")
+        try:
+             self.sound_manager.play_sound("bomb")
+        except Exception as e:
+             print(f"Bomb Audio Failed: {e}")
+
         self.damage_texts.append(
             {
                 "x": C.SCREEN_WIDTH // 2,
