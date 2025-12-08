@@ -1,0 +1,15 @@
+Traceback (most recent call last):
+  File "c:\Users\diete\Repositories\Games\games\Force Field\src\game.py", line 1979, in run
+    self.render_game()
+    ~~~~~~~~~~~~~~~~^^
+  File "c:\Users\diete\Repositories\Games\games\Force Field\src\game.py", line 1353, in render_game
+    pygame.draw.circle(
+    ~~~~~~~~~~~~~~~~~~^
+        self.effects_surface,
+        ^^^^^^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        int(p["size"]),
+        ^^^^^^^^^^^^^^^
+    )
+    ^
+ValueError: invalid color argument
