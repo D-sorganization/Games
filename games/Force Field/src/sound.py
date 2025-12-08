@@ -69,6 +69,9 @@ class SoundManager:
             "scream_real": "pathetic-screaming-sound-effect-312867.mp3",
             "water": "stream-sounds-sample-420906.mp3",
             "laugh": "possessed-laugh-94851.mp3",
+            "breath": "normal-breath-loop-400151.mp3",
+            "oww": "short-oww-46070.mp3",
+            "groan": "male-groan-of-pain-357971.mp3",
         }
 
         for name, filename in sound_files.items():

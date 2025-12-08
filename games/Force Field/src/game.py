@@ -120,6 +120,8 @@ class Game:
         self.kill_combo_count = 0
         self.kill_combo_timer = 0
         self.heartbeat_timer = 0
+        self.breath_timer = 0
+        self.groan_timer = 0
 
         # Visual effects
         self.particles: List[Dict[str, Any]] = []
@@ -1159,6 +1161,7 @@ class Game:
                     if self.player.health < old_health:
                         # Hit flash
                         self.damage_flash_timer = 10
+                        self.sound_manager.play_sound("oww")
 
                     projectile.alive = False
             else:
@@ -1198,12 +1201,25 @@ class Game:
         
         # Beat frequency based on distance
         # e.g. 5 tiles = fast (0.5s), 20 tiles = slow (1.5s)
+        # Beat frequency based on distance
+        # e.g. 5 tiles = fast (0.5s), 20 tiles = slow (1.5s)
         if min_dist < 20:
             beat_delay = int(min(1.5, max(0.4, min_dist / 10.0)) * C.FPS)
             self.heartbeat_timer -= 1
             if self.heartbeat_timer <= 0:
                 self.sound_manager.play_sound("heartbeat")
+                # Trigger breath slightly offset or same time?
+                # User said "speed ... mirror heartrate".
+                self.sound_manager.play_sound("breath") 
                 self.heartbeat_timer = beat_delay
+
+        # Low Health Groans
+        if self.player.health < 50:
+            self.groan_timer -= 1
+            if self.groan_timer <= 0:
+                 self.sound_manager.play_sound("groan")
+                 self.groan_timer = 240 # 4 seconds roughly?
+
 
         # Combo system / Catchphrases check
         if self.kill_combo_timer > 0:
@@ -1975,7 +1991,25 @@ class Game:
                     self.render_map_select()
                 elif self.state == "playing":
                     self.handle_game_events()
-                    self.update_game()
+                    if self.paused:
+                         # Pause Menu Audio
+                         # Heartbeat: 70 BPM -> ~0.85s delay -> ~51 frames (at 60FPS)
+                         # Actually 60 / 70 * 60 = 51.4
+                         beat_delay = 51 
+                         self.heartbeat_timer -= 1
+                         if self.heartbeat_timer <= 0:
+                             self.sound_manager.play_sound("heartbeat")
+                             self.sound_manager.play_sound("breath") # Mirror heartbeat
+                             self.heartbeat_timer = beat_delay
+                             
+                         # Groan if health < 50
+                         if self.player.health < 50:
+                             self.groan_timer -= 1
+                             if self.groan_timer <= 0:
+                                  self.sound_manager.play_sound("groan")
+                                  self.groan_timer = 240
+                    else:
+                        self.update_game()
                     self.render_game()
                 elif self.state == "level_complete":
                     self.render_level_complete()
