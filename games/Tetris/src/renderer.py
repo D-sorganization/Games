@@ -19,7 +19,7 @@ class TetrisRenderer:
         # Create a vertical gradient from dark blue/purple to black
         top_color = (20, 20, 40)
         bottom_color = (0, 0, 10)
-        
+
         height = self.screen.get_height()
         for y in range(height):
             ratio = y / height
@@ -31,17 +31,17 @@ class TetrisRenderer:
     def draw_bevel_rect(self, surface: pygame.Surface, color: tuple, rect: pygame.Rect) -> None:
         """Draw a rectangle with a bevel effect"""
         pygame.draw.rect(surface, color, rect)
-        
-        # Highlighting (Top and Left)
+
+        # Apply highlighting (Top and Left)
         light_color = tuple(min(255, c + 80) for c in color)
         pygame.draw.line(surface, light_color, rect.topleft, rect.topright, 2)
         pygame.draw.line(surface, light_color, rect.topleft, rect.bottomleft, 2)
-        
-        # Shadow (Bottom and Right)
+
+        # Apply shadow (Bottom and Right)
         dark_color = tuple(max(0, c - 80) for c in color)
         pygame.draw.line(surface, dark_color, rect.bottomleft, rect.bottomright, 2)
         pygame.draw.line(surface, dark_color, rect.topright, rect.bottomright, 2)
-        
+
         # Inner fill gradient (subtle)
         inner_rect = rect.inflate(-4, -4)
         if inner_rect.width > 0 and inner_rect.height > 0:
@@ -57,7 +57,7 @@ class TetrisRenderer:
             (10, 10, 10), # Very dark gray/black
             (TOP_LEFT_X, TOP_LEFT_Y, PLAY_WIDTH, PLAY_HEIGHT),
         )
-        
+
         # Draw background grid lines (faint)
         for y in range(GRID_HEIGHT + 1):
              color = (30, 30, 30)
@@ -120,12 +120,22 @@ class TetrisRenderer:
                         surf.fill(piece.color)
                         surf.set_alpha(alpha)
                         self.screen.blit(surf, (px, py))
-                        pygame.draw.rect(self.screen, (255,255,255), (px, py, GRID_SIZE-1, GRID_SIZE-1), 1)
+                        pygame.draw.rect(
+                            self.screen,
+                            (255, 255, 255),
+                            (px, py, GRID_SIZE - 1, GRID_SIZE - 1),
+                            1,
+                        )
                     else:
                          # Glow effect for active piece
                         glow_surf = pygame.Surface((GRID_SIZE + 4, GRID_SIZE + 4), pygame.SRCALPHA)
                         glow_color = (*piece.color, 100)
-                        pygame.draw.rect(glow_surf, glow_color, (0, 0, GRID_SIZE + 4, GRID_SIZE + 4), border_radius=4)
+                        pygame.draw.rect(
+                            glow_surf,
+                            glow_color,
+                            (0, 0, GRID_SIZE + 4, GRID_SIZE + 4),
+                            border_radius=4,
+                        )
                         self.screen.blit(glow_surf, (px - 2, py - 2))
 
                         rect = pygame.Rect(px, py, GRID_SIZE - 1, GRID_SIZE - 1)

@@ -355,6 +355,15 @@ class Game:
         self.paused = False
         self.particles = []
         self.damage_texts = []
+        
+        # Reset Combo & Atmosphere
+        self.kill_combo_count = 0
+        self.kill_combo_timer = 0
+        self.heartbeat_timer = 0
+        self.breath_timer = 0
+        self.groan_timer = 0
+        self.beast_timer = 0
+
         # Create map with selected size
         self.game_map = Map(self.selected_map_size)
         self.raycaster = Raycaster(self.game_map)
@@ -491,9 +500,10 @@ class Game:
         boss_types = ["boss", "demon"]
         for b_type in boss_types:
             # Find safe spot
+            upper_bound = max(2, self.game_map.size - 3)
             for attempt in range(50):
-                cx = random.randint(2, self.game_map.size - 3)
-                cy = random.randint(2, self.game_map.size - 3)
+                cx = random.randint(2, upper_bound)
+                cy = random.randint(2, upper_bound)
                 if (
                     not self.game_map.is_wall(cx, cy)
                     and not self.game_map.is_inside_building(cx, cy)
@@ -616,112 +626,107 @@ class Game:
     def handle_game_events(self) -> None:
         """Handle gameplay events"""
         for event in pygame.event.get():
-            try:
-                if event.type == pygame.QUIT:
-                    self.running = False
-                elif event.type == pygame.MOUSEBUTTONDOWN and self.paused:
-                    if event.button == 1:
-                        mouse_pos = pygame.mouse.get_pos()
-                        menu_items = ["RESUME", "SAVE GAME", "QUIT TO MENU"]
-                        for i, item in enumerate(menu_items):
-                            rect = pygame.Rect(
-                                C.SCREEN_WIDTH // 2 - 100,
-                                C.SCREEN_HEIGHT // 2 - 50 + i * 60,
-                                200,
-                                50,
-                            )
-                            if rect.collidepoint(mouse_pos):
-                                if item == "RESUME":
-                                    self.paused = False
-                                    self.total_paused_time += (
-                                        pygame.time.get_ticks() - self.pause_start_time
+            if event.type == pygame.QUIT:
+                self.running = False
+            elif event.type == pygame.MOUSEBUTTONDOWN and self.paused:
+                if event.button == 1:
+                    mouse_pos = pygame.mouse.get_pos()
+                    menu_items = ["RESUME", "SAVE GAME", "QUIT TO MENU"]
+                    for i, item in enumerate(menu_items):
+                        rect = pygame.Rect(
+                            C.SCREEN_WIDTH // 2 - 100,
+                            C.SCREEN_HEIGHT // 2 - 50 + i * 60,
+                            200,
+                            50,
+                        )
+                        if rect.collidepoint(mouse_pos):
+                            if item == "RESUME":
+                                self.paused = False
+                                self.total_paused_time += (
+                                    pygame.time.get_ticks() - self.pause_start_time
+                                )
+                                pygame.mouse.set_visible(False)
+                                pygame.event.set_grab(True)
+                            elif item == "SAVE GAME":
+                                try:
+                                    with open(C.SAVE_FILE_PATH, "w") as f:
+                                        f.write(f"{self.level}")
+                                except OSError as e:
+                                    print(f"Save failed: {e}")
+                                    self.damage_texts.append(
+                                        {
+                                            "x": C.SCREEN_WIDTH // 2,
+                                            "y": C.SCREEN_HEIGHT // 2,
+                                            "text": "SAVE FAILED!",
+                                            "color": C.RED,
+                                            "timer": 60,
+                                            "vy": -0.5,
+                                        }
                                     )
-                                    pygame.mouse.set_visible(False)
-                                    pygame.event.set_grab(True)
-                                elif item == "SAVE GAME":
-                                    try:
-                                        with open(C.SAVE_FILE_PATH, "w") as f:
-                                            f.write(f"{self.level}")
-                                    except OSError as e:
-                                        print(f"Save failed: {e}")
-                                        self.damage_texts.append(
-                                            {
-                                                "x": C.SCREEN_WIDTH // 2,
-                                                "y": C.SCREEN_HEIGHT // 2,
-                                                "text": "SAVE FAILED!",
-                                                "color": C.RED,
-                                                "timer": 60,
-                                                "vy": -0.5,
-                                            }
-                                        )
-                                    self.paused = False
-                                    self.total_paused_time += (
-                                        pygame.time.get_ticks() - self.pause_start_time
-                                    )
-                                    pygame.mouse.set_visible(False)
-                                    pygame.event.set_grab(True)
-                                elif item == "QUIT TO MENU":
-                                    self.state = "menu"
-                                    self.paused = False
-                                    pygame.mouse.set_visible(True)
-                                    pygame.event.set_grab(False)
-                                break  # Handle one click
+                                self.paused = False
+                                self.total_paused_time += (
+                                    pygame.time.get_ticks() - self.pause_start_time
+                                )
+                                pygame.mouse.set_visible(False)
+                                pygame.event.set_grab(True)
+                            elif item == "QUIT TO MENU":
+                                self.state = "menu"
+                                self.paused = False
+                                pygame.mouse.set_visible(True)
+                                pygame.event.set_grab(False)
+                            break  # Handle one click
 
-                elif event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_ESCAPE:
-                        self.state = "menu"
-                        pygame.mouse.set_visible(True)
-                        pygame.event.set_grab(False)
-                    elif event.key == pygame.K_p:
-                        self.paused = not self.paused
-                        if self.paused:
-                            self.pause_start_time = pygame.time.get_ticks()
-                        else:
-                            self.total_paused_time += (
-                                pygame.time.get_ticks() - self.pause_start_time
-                            )
-                        pygame.mouse.set_visible(self.paused)
-                        pygame.event.set_grab(not self.paused)
-                    # Weapon switching
-                    elif not self.paused:
-                        if event.key == pygame.K_1:
-                            self.switch_weapon_with_message("pistol")
-                        elif event.key == pygame.K_2:
-                            self.switch_weapon_with_message("rifle")
-                        elif event.key == pygame.K_3:
-                            self.switch_weapon_with_message("shotgun")
-                        elif event.key == pygame.K_4:
-                            self.switch_weapon_with_message("plasma")
-                        elif event.key == pygame.K_f:
-                            try:
-                                assert self.player is not None
-                                if self.player.activate_bomb():
-                                    self.handle_bomb_explosion()
-                            except Exception as e:  # noqa: BLE001
-                                print(f"Bomb Error: {e}")
-                                traceback.print_exc()
-                        elif event.key == pygame.K_r:
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    self.state = "menu"
+                    pygame.mouse.set_visible(True)
+                    pygame.event.set_grab(False)
+                elif event.key == pygame.K_p:
+                    self.paused = not self.paused
+                    if self.paused:
+                        self.pause_start_time = pygame.time.get_ticks()
+                    else:
+                        self.total_paused_time += (
+                            pygame.time.get_ticks() - self.pause_start_time
+                        )
+                    pygame.mouse.set_visible(self.paused)
+                    pygame.event.set_grab(not self.paused)
+                # Weapon switching
+                elif not self.paused:
+                    if event.key == pygame.K_1:
+                        self.switch_weapon_with_message("pistol")
+                    elif event.key == pygame.K_2:
+                        self.switch_weapon_with_message("rifle")
+                    elif event.key == pygame.K_3:
+                        self.switch_weapon_with_message("shotgun")
+                    elif event.key == pygame.K_4:
+                        self.switch_weapon_with_message("plasma")
+                    elif event.key == pygame.K_f:
+                        try:
                             assert self.player is not None
-                            self.player.reload()
-                        elif event.key == pygame.K_z:  # Zoom Toggle
-                            assert self.player is not None
-                            self.player.zoomed = not self.player.zoomed
-                elif event.type == pygame.MOUSEBUTTONDOWN and not self.paused:
-                    assert self.player is not None
-                    if event.button == 1:  # Left-click to fire
-                        if self.player.shoot():
-                            self.fire_weapon()
-                    elif event.button == 3:  # Right-click to secondary fire
-                        if self.player.fire_secondary():
-                            self.fire_weapon(is_secondary=True)
-                elif event.type == pygame.MOUSEMOTION and not self.paused:
-                    assert self.player is not None
-                    self.player.rotate(event.rel[0] * C.PLAYER_ROT_SPEED)
-                    self.player.pitch_view(-event.rel[1] * C.PLAYER_ROT_SPEED * 200)
-
-            except AttributeError as e:
-                print(f"Event Error: {e}")
-                continue
+                            if self.player.activate_bomb():
+                                self.handle_bomb_explosion()
+                        except Exception as e:  # noqa: BLE001
+                            print(f"Bomb Error: {e}")
+                            traceback.print_exc()
+                    elif event.key == pygame.K_r:
+                        assert self.player is not None
+                        self.player.reload()
+                    elif event.key == pygame.K_z:  # Zoom Toggle
+                        assert self.player is not None
+                        self.player.zoomed = not self.player.zoomed
+            elif event.type == pygame.MOUSEBUTTONDOWN and not self.paused:
+                assert self.player is not None
+                if event.button == 1:  # Left-click to fire
+                    if self.player.shoot():
+                        self.fire_weapon()
+                elif event.button == 3:  # Right-click to secondary fire
+                    if self.player.fire_secondary():
+                        self.fire_weapon(is_secondary=True)
+            elif event.type == pygame.MOUSEMOTION and not self.paused:
+                assert self.player is not None
+                self.player.rotate(event.rel[0] * C.PLAYER_ROT_SPEED)
+                self.player.pitch_view(-event.rel[1] * C.PLAYER_ROT_SPEED * 200)
 
         # Controller Input (Continuous)
         if self.joystick and not self.paused and self.player and self.player.alive:
@@ -1019,8 +1024,7 @@ class Game:
 
                 was_alive = closest_bot.alive
                 closest_bot.take_damage(final_damage, is_headshot=is_headshot)
-                if was_alive and not closest_bot.alive:
-                    self.sound_manager.play_sound("scream")
+                # Scream handled in kill check below
 
                 damage_dealt = final_damage  # Update for text
 
@@ -1071,6 +1075,8 @@ class Game:
 
                 if not closest_bot.alive:
                     self.kills += 1
+                    self.kill_combo_count += 1
+                    self.kill_combo_timer = 180
                     self.last_death_pos = (closest_bot.x, closest_bot.y)
                     self.sound_manager.play_sound("scream")
 
@@ -1160,13 +1166,10 @@ class Game:
                         )
 
         # Screen shake or feedback
-        # Screen shake or feedback
         try:
             self.sound_manager.play_sound("bomb")
         except BaseException as e:  # noqa: BLE001
             print(f"Bomb Audio Failed: {e}")
-        except:
-            print("Bomb Audio Failed (Unknown Error)")
 
         self.damage_texts.append(
             {
@@ -1522,8 +1525,8 @@ class Game:
                                 self.explode_plasma(projectile)
                             break
 
-            if not projectile.alive and projectile in self.projectiles:
-                self.projectiles.remove(projectile)
+        # Remove dead projectiles after processing all
+        self.projectiles = [p for p in self.projectiles if p.alive]
 
         # Fog of War Update
         cx, cy = int(self.player.x), int(self.player.y)
@@ -1540,9 +1543,6 @@ class Game:
             if bot.alive:  # Only alive bots trigger heartbeat
                 dist = math.sqrt((bot.x - self.player.x) ** 2 + (bot.y - self.player.y) ** 2)
                 min_dist = min(min_dist, dist)
-
-        # Beat frequency based on distance
-        # e.g. 5 tiles = fast (0.5s), 20 tiles = slow (1.5s)
 
         # Periodic Monster Roars
         if min_dist < 15:
