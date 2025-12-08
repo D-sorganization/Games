@@ -113,7 +113,7 @@ class SoundManager:
         """Start ambient music loop"""
         if not self.sound_enabled:
             return
-            
+
         self.stop_music()
 
         if name in self.sounds:
@@ -123,9 +123,9 @@ class SoundManager:
 
     def stop_music(self) -> None:
         """Stop music"""
-        if hasattr(self, 'current_music') and self.current_music and self.current_music in self.sounds:
+        if hasattr(self, "current_music") and self.current_music and self.current_music in self.sounds:
              self.sounds[self.current_music].stop()
-        
+
         # Fallback
         if "ambient" in self.sounds:
             self.sounds["ambient"].stop()

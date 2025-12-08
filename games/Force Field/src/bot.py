@@ -62,7 +62,7 @@ class Bot:
         self.mouth_timer = 0
         self.eye_rotation = 0.0
         self.drool_offset = 0.0
-        
+
         # Death State
         self.dead = False
         self.death_timer = 0
@@ -187,7 +187,7 @@ class Bot:
             self.health -= damage * 3  # Headshot does 3x damage, not instant kill
         else:
             self.health -= damage
-            
+
         if self.health <= 0:
             self.health = 0
             self.dead = True

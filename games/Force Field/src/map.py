@@ -1,7 +1,7 @@
-import random
 import math
-from typing import List
-from .constants import DEFAULT_MAP_SIZE, MIN_BUILDING_OFFSET
+import random
+
+from .constants import DEFAULT_MAP_SIZE
 
 
 class Map:
@@ -88,7 +88,7 @@ class Map:
         cx, cy = size // 2, size // 2
         start_x, start_y = -1, -1
         # Find valid start point near center
-        for r in range(0, size // 2):
+        for r in range(size // 2):
             for angle in range(0, 360, 45):
                  rad = math.radians(angle)
                  tx = int(cx + math.cos(rad)*r)

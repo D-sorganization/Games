@@ -226,33 +226,33 @@ class Raycaster:
         if bot.dead:
             # Melting animation
             melt_pct = min(1.0, bot.death_timer / 60.0)
-            
+
             # Interpolate Color to Goo
             goo_color = (50, 150, 50)
             base_color = tuple(
-                int(c * (1 - melt_pct) + g * melt_pct) 
+                int(c * (1 - melt_pct) + g * melt_pct)
                 for c, g in zip(base_color, goo_color)
             )
-            
+
             # Squish
             scale_y = 1.0 - (melt_pct * 0.85)
             scale_x = 1.0 + (melt_pct * 0.8)
-            
+
             current_h = render_height * scale_y
             current_w = render_width * scale_x
-            
+
             render_y = sprite_y + (render_height - current_h) + (render_height * 0.05)
             render_height = current_h
             render_width = current_w
-            
+
             if bot.disintegrate_timer > 0:
                 dis_pct = bot.disintegrate_timer / 100.0
                 radius_mult = 1.0 - dis_pct
                 if radius_mult <= 0: return
                 pygame.draw.ellipse(screen, base_color, (
-                    center_x - render_width/2 * radius_mult, 
-                    render_y + render_height - 10, 
-                    render_width * radius_mult, 
+                    center_x - render_width/2 * radius_mult,
+                    render_y + render_height - 10,
+                    render_width * radius_mult,
                     20 * radius_mult
                 ))
                 return
@@ -262,21 +262,21 @@ class Raycaster:
              # Body
              body_rect = pygame.Rect(center_x - render_width/2, render_y + render_height * 0.4, render_width, render_height * 0.6)
              pygame.draw.rect(screen, base_color, body_rect, border_radius=int(render_width*0.4))
-             
+
              # Head (Floating slightly above)
              head_size = render_width
              head_y = render_y
              pygame.draw.circle(screen, base_color, (center_x, head_y + head_size/2), head_size/2)
-             
+
              # Face
              eye_r = head_size * 0.15
              pygame.draw.circle(screen, C.WHITE, (center_x - head_size*0.2, head_y + head_size*0.4), eye_r)
              pygame.draw.circle(screen, C.WHITE, (center_x + head_size*0.2, head_y + head_size*0.4), eye_r)
-             
+
              # Pupils (dilated)
              pygame.draw.circle(screen, C.BLACK, (center_x - head_size*0.2, head_y + head_size*0.4), eye_r*0.6)
              pygame.draw.circle(screen, C.BLACK, (center_x + head_size*0.2, head_y + head_size*0.4), eye_r*0.6)
-             
+
              # Mouth
              if bot.mouth_open:
                  pygame.draw.circle(screen, (50, 0, 0), (center_x, head_y + head_size*0.75), head_size * 0.1)
@@ -324,11 +324,11 @@ class Raycaster:
             head_y = render_y + render_height * 0.05
             head_rect = pygame.Rect(center_x - head_size/2, head_y, head_size, head_size)
             pygame.draw.rect(screen, base_color, head_rect)
-            
+
             # Glowing Eyes
             eye_color = (255, 50, 0)
             if bot.enemy_type == "boss": eye_color = (255, 255, 0)
-            
+
             # Angry Eyes
             pygame.draw.polygon(screen, eye_color, [
                 (center_x - head_size*0.3, head_y + head_size*0.3),

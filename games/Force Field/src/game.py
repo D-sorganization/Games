@@ -495,10 +495,10 @@ class Game:
             for attempt in range(50):
                  cx = random.randint(2, self.game_map.size - 3)
                  cy = random.randint(2, self.game_map.size - 3)
-                 if (not self.game_map.is_wall(cx, cy) 
+                 if (not self.game_map.is_wall(cx, cy)
                      and not self.game_map.is_inside_building(cx, cy)
                      and math.sqrt((cx-player_pos[0])**2 + (cy-player_pos[1])**2) > 10): # Far spawn
-                     
+
                      self.bots.append(
                         Bot(
                             cx + 0.5,
@@ -944,16 +944,16 @@ class Game:
                  impact_dist = wall_dist
                  if closest_bot and closest_dist < wall_dist:
                       impact_dist = closest_dist
-                 
+
                  ray_angle = self.player.angle
                  ix = self.player.x + math.cos(ray_angle) * impact_dist
                  iy = self.player.y + math.sin(ray_angle) * impact_dist
-                 
+
                  try:
                      self.explode_laser(ix, iy)
                  except Exception as e:
                      print(f"Error in explode_laser: {e}")
-                 
+
                  # Visual Beam
                  cx = C.SCREEN_WIDTH // 2
                  cy = C.SCREEN_HEIGHT
@@ -1117,7 +1117,7 @@ class Game:
                     self.kill_combo_count += 1
                     self.kill_combo_timer = 180
                     self.last_death_pos = (bot.x, bot.y)
-                
+
                 # Blood (if close)
                 if dist < 5.0:
                     for _ in range(3):
@@ -1136,7 +1136,7 @@ class Game:
         try:
              self.sound_manager.play_sound("bomb")
         except BaseException as e: # Catch KeyboardInterrupt/SystemExit too just in case
-             print(f"Bomb Audio Failed: {e}") 
+             print(f"Bomb Audio Failed: {e}")
         except:
              print("Bomb Audio Failed (Unknown Error)")
 
@@ -1187,7 +1187,7 @@ class Game:
             dx = bot.x - projectile.x
             dy = bot.y - projectile.y
             dist = math.sqrt(dx*dx + dy*dy)
-            
+
             if dist < C.PLASMA_AOE_RADIUS:
                 was_alive = bot.alive
                 bot.take_damage(projectile.damage)
@@ -1217,14 +1217,14 @@ class Game:
             self.sound_manager.play_sound("boom_real")
         except Exception as e:
             print(f"Boom sound failed: {e}")
-            
+
         try:
             # Huge AOE
             hits = 0
             for bot in self.bots:
                 # Basic check
-                if not hasattr(bot, 'alive'): continue
-                
+                if not hasattr(bot, "alive"): continue
+
                 if bot.alive:
                      dist = math.sqrt((bot.x - impact_x)**2 + (bot.y - impact_y)**2)
                      if dist < C.LASER_AOE_RADIUS:
@@ -1232,17 +1232,17 @@ class Game:
                          was_alive = bot.alive
                          bot.take_damage(damage)
                          hits += 1
-                         
+
                          if was_alive and not bot.alive:
                              try:
                                  self.sound_manager.play_sound("scream")
                              except: pass
-                             
+
                              self.kills += 1
                              self.kill_combo_count += 1
                              self.kill_combo_timer = 180
                              self.last_death_pos = (bot.x, bot.y)
-    
+
                          # Massive Blood
                          for _ in range(10):
                             self.particles.append({
@@ -1254,7 +1254,7 @@ class Game:
                                 "timer": 40,
                                 "size": random.randint(4, 8)
                             })
-    
+
             if hits > 0:
                  self.damage_texts.append({
                     "x": C.SCREEN_WIDTH//2,
@@ -1412,7 +1412,7 @@ class Game:
         for projectile in self.projectiles[:]:
             if projectile is None:
                 continue
-            
+
             was_alive = projectile.alive
             projectile.update(self.game_map)
 
@@ -1466,14 +1466,14 @@ class Game:
 
                             # Visual
                             projectile.alive = False
-                            
+
                             # Trigger AOE if Plasma
                             if getattr(projectile, "weapon_type", "normal") == "plasma":
                                 self.explode_plasma(projectile)
                             break
 
             if not projectile.alive and projectile in self.projectiles:
-                 self.projectiles.remove(projectile) 
+                 self.projectiles.remove(projectile)
 
 
         # Fog of War Update
@@ -1486,16 +1486,15 @@ class Game:
 
         # Heartbeat Logic
         # Find nearest enemy
-        min_dist = float('inf')
+        min_dist = float("inf")
         for bot in self.bots:
             if bot.alive: # Only alive bots trigger heartbeat
                 dist = math.sqrt((bot.x - self.player.x)**2 + (bot.y - self.player.y)**2)
-                if dist < min_dist:
-                    min_dist = dist
-        
+                min_dist = min(min_dist, dist)
+
         # Beat frequency based on distance
         # e.g. 5 tiles = fast (0.5s), 20 tiles = slow (1.5s)
-        
+
         # Periodic Monster Roars
         if min_dist < 15:
             self.beast_timer -= 1
@@ -1512,7 +1511,7 @@ class Game:
                 self.sound_manager.play_sound("heartbeat")
                 # Trigger breath slightly offset or same time?
                 # User said "speed ... mirror heartrate".
-                self.sound_manager.play_sound("breath") 
+                self.sound_manager.play_sound("breath")
                 self.heartbeat_timer = beat_delay
 
         # Low Health Groans
@@ -1862,11 +1861,11 @@ class Game:
         bob_y = 0
         if self.player.is_moving:
             bob_y = int(math.sin(pygame.time.get_ticks() * 0.012) * 15)
-        
+
         # Reload Animation (Dip)
         w_state = self.player.weapon_state[weapon]
         if w_state["reloading"]:
-            w_data = C.WEAPONS.get(weapon, {}) 
+            w_data = C.WEAPONS.get(weapon, {})
             reload_max = w_data.get("reload_time", 60)
             if reload_max > 0:
                 pct = w_state["reload_timer"] / reload_max # 1.0 to 0.0
@@ -1880,26 +1879,26 @@ class Game:
         GUN_METAL = (40, 45, 50)
         GUN_HIGHLIGHT = (70, 75, 80)
         GUN_DARK = (20, 25, 30)
-        
+
         if weapon == "pistol":
             # High-Res Heavy Pistol (Deagle-ish)
             scale = 4
-            
+
             # 1. Grip (Darker)
             pygame.draw.polygon(self.screen, (30, 25, 20), [
                 (cx - 30, cy), (cx + 30, cy),
                 (cx + 35, cy - 100), (cx - 35, cy - 100)
             ])
-            
+
             # 2. Main Body / Frame
             pygame.draw.rect(self.screen, GUN_METAL, (cx - 20, cy - 140, 40, 140))
-            
+
             # 3. Slide (Lighter, detailed)
             slide_y = cy - 180
             # Recoil recoil (if shooting, slide moves back)
             if self.player.shooting:
                 slide_y += 20
-                
+
             pygame.draw.polygon(self.screen, GUN_HIGHLIGHT, [
                 (cx - 25, slide_y), (cx + 25, slide_y),
                 (cx + 25, slide_y + 120), (cx - 25, slide_y + 120)
@@ -1908,10 +1907,10 @@ class Game:
             for i in range(5):
                  y_ser = slide_y + 80 + i * 8
                  pygame.draw.line(self.screen, GUN_DARK, (cx - 20, y_ser), (cx + 20, y_ser), 2)
-                 
+
             # 4. Barrel Tip
             pygame.draw.rect(self.screen, (10, 10, 10), (cx - 8, slide_y - 5, 16, 10))
-            
+
             # 5. Sights
             pygame.draw.rect(self.screen, (10, 10, 10), (cx - 20, slide_y - 12, 5, 12)) # Rear
             pygame.draw.rect(self.screen, (10, 10, 10), (cx + 15, slide_y - 12, 5, 12)) # Rear R
@@ -1919,51 +1918,51 @@ class Game:
 
         elif weapon == "shotgun":
             # Double Barrel Sawed-off
-            
+
             # Barrels (Side by Side)
             # Left Barrel
             pygame.draw.circle(self.screen, (20,20,20), (cx - 30, cy - 180), 22)
             pygame.draw.rect(self.screen, GUN_METAL, (cx - 52, cy - 180, 44, 200))
             pygame.draw.rect(self.screen, (10,10,10), (cx - 48, cy - 200, 36, 100)) # Hollow tone
-            
+
             # Right Barrel
             pygame.draw.circle(self.screen, (20,20,20), (cx + 30, cy - 180), 22)
             pygame.draw.rect(self.screen, GUN_METAL, (cx + 8, cy - 180, 44, 200))
             pygame.draw.rect(self.screen, (10,10,10), (cx + 12, cy - 200, 36, 100))
-            
+
             # Rib between barrels
             pygame.draw.rect(self.screen, GUN_DARK, (cx - 8, cy - 180, 16, 180))
-            
+
             # Wooden Foregrip
             pygame.draw.polygon(self.screen, (100, 60, 20), [
                 (cx - 60, cy - 50), (cx + 60, cy - 50),
                 (cx + 50, cy), (cx - 50, cy)
             ])
-            
+
             # Shell ejection feedback?
 
         elif weapon == "rifle":
             # Heavy Assault Rifle with Optic
-            
+
             # Magazine
             pygame.draw.rect(self.screen, (20,20,20), (cx - 40, cy - 80, 30, 80))
-            
+
             # Main Body
             pygame.draw.polygon(self.screen, GUN_METAL, [
                 (cx - 30, cy - 150), (cx + 30, cy - 150),
                 (cx + 40, cy), (cx - 40, cy)
             ])
-            
+
             # Barrel Shroud
             pygame.draw.rect(self.screen, GUN_HIGHLIGHT, (cx - 20, cy - 220, 40, 100))
             # Vents in shroud
             for i in range(6):
                 y_vent = cy - 210 + i * 15
                 pygame.draw.ellipse(self.screen, (10,10,10), (cx - 10, y_vent, 20, 8))
-            
+
             # Barrel
             pygame.draw.rect(self.screen, (10,10,10), (cx - 5, cy - 240, 10, 40))
-            
+
             # Optic
             pygame.draw.rect(self.screen, (10,10,10), (cx - 5, cy - 160, 10, 40)) # Mount
             pygame.draw.circle(self.screen, (30,30,30), (cx, cy - 170), 30) # Scope body
@@ -1977,23 +1976,23 @@ class Game:
 
         elif weapon == "plasma":
             # Sci-Fi BFG Style - High Tech
-            
+
             # Rear Stock/Bulk
             pygame.draw.polygon(self.screen, (40, 40, 60), [
                  (cx - 100, cy), (cx + 100, cy),
                  (cx + 90, cy - 80), (cx - 90, cy - 80)
             ])
-            
+
             # Main Barrel Housing
             pygame.draw.polygon(self.screen, (60, 60, 90), [
                  (cx - 70, cy - 80), (cx + 70, cy - 80),
                  (cx + 50, cy - 250), (cx - 50, cy - 250)
             ])
-            
+
             # Side Vents (Glowing)
             pulse = int(25 * math.sin(pygame.time.get_ticks() * 0.01))
             vent_color = (0, 150 + pulse, 200) if not w_state["overheated"] else (200 + pulse, 50, 0)
-            
+
             pygame.draw.rect(self.screen, vent_color, (cx - 90, cy - 150, 20, 100))
             pygame.draw.rect(self.screen, vent_color, (cx + 70, cy - 150, 20, 100))
 
@@ -2001,13 +2000,13 @@ class Game:
             core_width = 40 + pulse // 2
             pygame.draw.rect(self.screen, (20, 20, 30), (cx - 30, cy - 180, 60, 140)) # Chamber background
             pygame.draw.rect(self.screen, vent_color, (cx - core_width//2, cy - 190, core_width, 120), border_radius=10)
-            
+
             # Floating Rings / Coils
             for i in range(5):
                 y_coil = cy - 230 + i * 35
                 width_coil = 80 - i * 5
                 pygame.draw.rect(self.screen, (30, 30, 40), (cx - width_coil//2, y_coil, width_coil, 15), border_radius=4)
-                
+
             # Charging arcs (Lightning)
             if self.player.shooting:
                  for _ in range(3):
@@ -2229,7 +2228,7 @@ class Game:
         # Center of screen horizontally, exactly at gun tip (approx -200 from bottom)
         flash_x = C.SCREEN_WIDTH // 2
         flash_y = C.SCREEN_HEIGHT - 210
-        
+
         # Weapon specific flash
         if self.player.current_weapon == "plasma":
              # Blue
@@ -2238,7 +2237,7 @@ class Game:
              pygame.draw.circle(self.screen, C.WHITE, (flash_x, flash_y), 10)
         elif self.player.current_weapon == "shotgun":
              # Huge Orange Flash
-             
+
              # Random spikes?
              pygame.draw.circle(self.screen, (255, 100, 0), (flash_x, flash_y), 50) # Dark Orange
              pygame.draw.circle(self.screen, C.ORANGE, (flash_x, flash_y), 35)
@@ -2361,13 +2360,13 @@ class Game:
                          # Pause Menu Audio
                          # Heartbeat: 70 BPM -> ~0.85s delay -> ~51 frames (at 60FPS)
                          # Actually 60 / 70 * 60 = 51.4
-                         beat_delay = 51 
+                         beat_delay = 51
                          self.heartbeat_timer -= 1
                          if self.heartbeat_timer <= 0:
                              self.sound_manager.play_sound("heartbeat")
                              self.sound_manager.play_sound("breath") # Mirror heartbeat
                              self.heartbeat_timer = beat_delay
-                             
+
                          # Groan if health < 50
                          if self.player.health < 50:
                              self.groan_timer -= 1
@@ -2451,7 +2450,7 @@ class Game:
         # Phase 1: Upstream Drift Studios
         elif self.intro_phase == 1:
             duration = 5000  # User requested 5 seconds
-            
+
             # Play Water Sound once
             if elapsed < 50: # Play at start
                  if not hasattr(self, "_water_played"):
@@ -2460,24 +2459,24 @@ class Game:
                       except Exception as e:
                           print(f"Error playing water sound: {e}")
                       self._water_played = True
-            
+
             # Text - Stylish Upstream Drift
             # Use Impact or bold font
             stylish_font = pygame.font.SysFont("impact", 70)
-            
+
             # Dynamic Color (Pulsing Blue/Cyan)
             pulse = abs(math.sin(elapsed * 0.003))
             txt_color = (0, int(150 + 100 * pulse), int(200 + 55 * pulse))
-            
+
             t2 = stylish_font.render("UPSTREAM DRIFT", True, txt_color)
             r2 = t2.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 - 180)) # Closer to image
-            
+
             # Shadow
             t2_shadow = stylish_font.render("UPSTREAM DRIFT", True, (0, 0, 0))
             r2_shadow = t2_shadow.get_rect(center=(C.SCREEN_WIDTH // 2 + 4, C.SCREEN_HEIGHT // 2 - 176))
             self.screen.blit(t2_shadow, r2_shadow)
             self.screen.blit(t2, r2)
-            
+
             t1 = self.tiny_font.render("in association with", True, C.CYAN)
             r1 = t1.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 - 230))
             self.screen.blit(t1, r1)
@@ -2490,7 +2489,7 @@ class Game:
                         # Convert CV2 frame (BGR) to Pygame (RGB)
                         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                         frame = frame.swapaxes(0, 1) # Transpose for pgyame surface
-                        
+
                         surf = pygame.surfarray.make_surface(frame)
 
                         # Scale to fit
@@ -2504,7 +2503,7 @@ class Game:
                     else:
                         # Loop video?
                         self.intro_video.set(cv2.CAP_PROP_POS_FRAMES, 0)
-                
+
                 else:
                      # Debug info relative to user request
                      if not hasattr(self, "_video_debug_printed"):
@@ -2557,7 +2556,7 @@ class Game:
             if self.intro_step < len(slides):
                 slide = slides[self.intro_step]
                 duration = slide["duration"]
-                
+
                 # Sound Trigger
                 if elapsed < 50 and "sound" in slide:
                      if slide["sound"] == "laugh" and not hasattr(self, "_laugh_played_2"):
@@ -2568,25 +2567,25 @@ class Game:
                 if slide["type"] == "distortion":
                     font = self.title_font
                     text_str = slide["text"]
-                    
+
                     # Center text roughly
                     total_w = sum([font.size(char)[0] for char in text_str])
                     start_x = (C.SCREEN_WIDTH - total_w) // 2
                     y = C.SCREEN_HEIGHT // 2 - 50
-                    
+
                     x_off = 0
                     for index, char in enumerate(text_str):
                         # Jitter math
                         time_factor = pygame.time.get_ticks() * 0.01 + index * 0.5
                         jitter_x = math.sin(time_factor * 2.0) * 8
                         jitter_y = math.cos(time_factor * 1.5) * 8
-                        
+
                         # Scale pulse?
-                        
+
                         # Color pulse
                         c_val = int(150 + 100 * math.sin(time_factor * 0.5))
                         char_surf = font.render(char, True, (c_val, 0, 0))
-                        
+
                         self.screen.blit(char_surf, (start_x + x_off + jitter_x, y + jitter_y))
                         x_off += font.size(char)[0]
 
@@ -2597,25 +2596,25 @@ class Game:
                     # Show one line every 1.5 seconds
                     lines_to_show = int((elapsed / duration) * (len(lines) + 1))
                     lines_to_show = min(lines_to_show, len(lines))
-                    
+
                     y = C.SCREEN_HEIGHT // 2 - (len(lines) * 50) // 2
                     for i in range(lines_to_show):
                         l_text = lines[i]
                         color = C.WHITE
                         if i == lines_to_show - 1:
                              color = C.RED # Highlight newest line
-                        
+
                         txt_surf = self.subtitle_font.render(l_text, True, color)
                         txt_rect = txt_surf.get_rect(center=(C.SCREEN_WIDTH // 2, y))
                         self.screen.blit(txt_surf, txt_rect)
                         y += 50
-                        
+
                 # Static / Standard
                 elif slide["type"] == "static":
                      txt_surf = self.title_font.render(slide["text"], True, slide.get("color", C.WHITE))
                      txt_rect = txt_surf.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2))
                      self.screen.blit(txt_surf, txt_rect)
-                     
+
                      if "sub" in slide:
                           sub_surf = self.subtitle_font.render(slide["sub"], True, C.CYAN)
                           sub_rect = sub_surf.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 60))
