@@ -1640,8 +1640,8 @@ class Game:
         assert self.raycaster is not None
         assert self.player is not None
 
-        # Pass player angle for parallax stars
-        self.raycaster.render_floor_ceiling(self.screen, self.player.angle, self.level)
+        # Pass player object for angle and pitch
+        self.raycaster.render_floor_ceiling(self.screen, self.player, self.level)
         self.raycaster.render_3d(self.screen, self.player, self.bots, self.level)
 
         # Render projectiles via raycaster
