@@ -166,6 +166,50 @@ def gen_scream():
             f.writeframes(struct.pack('h', int(0.7 * 32767 * val)))
 gen_scream()
 
+# Fast Scream (2x Speed) - For user request
+# Actually, I'll just overwrite "scream.wav" with this faster version
+def gen_scream_fast():
+    filename = os.path.join(sounds_dir, "scream.wav")
+    sample_rate = 44100
+    duration = 0.3 # Was 0.6
+    n_frames = int(sample_rate * duration)
+    with wave.open(filename, 'w') as f:
+        f.setparams((1, 2, sample_rate, n_frames, 'NONE', 'not compressed'))
+        for i in range(n_frames):
+            t = i / sample_rate
+            # 2x Freq (Higher pitch)
+            freq = 300 * (1 - t/duration * 0.2) + random.uniform(-40, 40) 
+            
+            osc1 = (2.0 * (t * freq - math.floor(t * freq + 0.5))) 
+            osc2 = 1.0 if math.sin(2 * math.pi * (freq * 0.99) * t) > 0 else -1.0 
+            
+            val = (osc1 + osc2) * 0.5 * math.exp(-t * 6) # Faster decay
+            
+            f.writeframes(struct.pack('h', int(0.7 * 32767 * val)))
+gen_scream_fast()
+
+
+# Bomb Explosion
+def gen_bomb():
+    filename = os.path.join(sounds_dir, "bomb.wav")
+    sample_rate = 44100
+    duration = 1.0
+    n_frames = int(sample_rate * duration)
+    with wave.open(filename, 'w') as f:
+        f.setparams((1, 2, sample_rate, n_frames, 'NONE', 'not compressed'))
+        for i in range(n_frames):
+            t = i / sample_rate
+            # Deep rumble + noise
+            noise = random.uniform(-1, 1) * math.exp(-t * 2)
+            rumble = math.sin(2 * math.pi * (50 * math.exp(-t)) * t)
+            
+            val = (noise * 0.7 + rumble * 0.4) * math.exp(-t * 2)
+            # Clip
+            val = max(-1.0, min(1.0, val))
+            
+            f.writeframes(struct.pack('h', int(0.9 * 32767 * val)))
+gen_bomb()
+
 
 # Catchphrases (Synthesized robot voice style - poor man's TTS)
 def gen_phrase(name, freq_base):

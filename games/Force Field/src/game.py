@@ -921,7 +921,7 @@ class Game:
                 if not closest_bot.alive:
                     self.kills += 1
                     self.last_death_pos = (closest_bot.x, closest_bot.y)
-                    self.sound_manager.play_sound("scream_real")
+                    self.sound_manager.play_sound("scream")
 
             # Visuals
             if is_secondary:
@@ -989,7 +989,7 @@ class Game:
 
         # Screen shake or feedback
         try:
-             self.sound_manager.play_sound("boom_real")
+             self.sound_manager.play_sound("bomb")
         except Exception as e:
              print(f"Bomb Audio Failed: {e}")
 
