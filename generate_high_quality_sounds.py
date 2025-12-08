@@ -20,11 +20,11 @@ def generate_wave(filename, frequency=440.0, duration=0.5, volume=0.5, type="sin
             if type == "sine":
                 value = int(volume * 32767.0 * math.sin(2.0 * math.pi * frequency * t))
             elif type == "square":
-                 val = 1.0 if math.sin(2.0 * math.pi * frequency * t) > 0 else -1.0
-                 value = int(volume * 32767.0 * val)
+                val = 1.0 if math.sin(2.0 * math.pi * frequency * t) > 0 else -1.0
+                value = int(volume * 32767.0 * val)
             elif type == "saw":
-                 val = 2.0 * (t * frequency - math.floor(t * frequency + 0.5))
-                 value = int(volume * 32767.0 * val)
+                val = 2.0 * (t * frequency - math.floor(t * frequency + 0.5))
+                value = int(volume * 32767.0 * val)
             elif type == "noise":
                 value = int(volume * 32767.0 * random.uniform(-1, 1))
             

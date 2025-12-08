@@ -983,6 +983,8 @@ class Game:
                 bot.take_damage(1000)  # massive damage
                 if not bot.alive:
                     self.kills += 1
+                    self.kill_combo_count += 1
+                    self.kill_combo_timer = 180
                     self.last_death_pos = (bot.x, bot.y)
 
         # Screen shake or feedback
@@ -1126,6 +1128,7 @@ class Game:
                     if self.player.health < 100:
                         self.player.health = min(100, self.player.health + 50)
                         bot.alive = False
+                        bot.removed = True
                         self.damage_texts.append(
                             {
                                 "x": C.SCREEN_WIDTH // 2,
@@ -1168,6 +1171,8 @@ class Game:
                         bot.take_damage(projectile.damage)
                         if not bot.alive:
                             self.kills += 1
+                            self.kill_combo_count += 1
+                            self.kill_combo_timer = 180 # 3 seconds window
                             self.last_death_pos = (bot.x, bot.y)
 
                         # Visual
@@ -1176,8 +1181,9 @@ class Game:
                         projectile.alive = False
                         break
 
-                if not projectile.alive:
-                    self.projectiles.remove(projectile)
+            if not projectile.alive and projectile in self.projectiles:
+                 self.projectiles.remove(projectile) 
+
 
         # Heartbeat Logic
         # Find nearest enemy
