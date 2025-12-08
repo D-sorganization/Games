@@ -865,7 +865,10 @@ class Game:
                  ix = self.player.x + math.cos(ray_angle) * impact_dist
                  iy = self.player.y + math.sin(ray_angle) * impact_dist
                  
-                 self.explode_laser(ix, iy)
+                 try:
+                     self.explode_laser(ix, iy)
+                 except Exception as e:
+                     print(f"Error in explode_laser: {e}")
                  
                  # Visual Beam
                  cx = C.SCREEN_WIDTH // 2
