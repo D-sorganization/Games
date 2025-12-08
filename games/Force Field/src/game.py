@@ -737,13 +737,10 @@ class Game:
         assert self.player is not None
         try:
             # Cast ray in player's view direction
+            # Cast ray in player's view direction
             weapon_range = self.player.get_current_weapon_range()
             if is_secondary:
-                weapon_range *= 2  # Longer range for laser
-
-            weapon_damage = self.player.get_current_weapon_damage()
-            if is_secondary:
-                weapon_damage = int(weapon_damage * C.SECONDARY_DAMAGE_MULT)
+                weapon_range = 100 # Maximum range for laser beam
 
             closest_bot = None
             closest_dist = float("inf")
@@ -858,6 +855,25 @@ class Game:
                         closest_dist = distance
                         # Headshot is tighter threshold
                         is_headshot = angle_diff < C.HEADSHOT_THRESHOLD
+
+            if is_secondary:
+                 impact_dist = wall_dist
+                 if closest_bot and closest_dist < wall_dist:
+                      impact_dist = closest_dist
+                 
+                 ray_angle = self.player.angle
+                 ix = self.player.x + math.cos(ray_angle) * impact_dist
+                 iy = self.player.y + math.sin(ray_angle) * impact_dist
+                 
+                 self.explode_laser(ix, iy)
+                 
+                 # Visual Beam
+                 cx = C.SCREEN_WIDTH // 2
+                 cy = C.SCREEN_HEIGHT
+                 # Draw beam from bottom right (weapon pos) to center
+                 pygame.draw.line(self.screen, (255, 0, 255), (cx + 100, cy), (cx, C.SCREEN_HEIGHT//2), 30)
+                 pygame.draw.line(self.screen, C.WHITE, (cx + 100, cy), (cx, C.SCREEN_HEIGHT//2), 10)
+                 return
 
             if closest_bot:
                 # Calculate hit position for blood
@@ -1107,6 +1123,50 @@ class Game:
                             "timer": 20,
                             "size": 3
                         })
+
+    def explode_laser(self, impact_x: float, impact_y: float) -> None:
+        """Trigger Massive Laser Explosion at Impact Point"""
+        self.sound_manager.play_sound("boom_real")
+        
+        # Huge AOE
+        hits = 0
+        for bot in self.bots:
+            if bot.alive:
+                 dist = math.sqrt((bot.x - impact_x)**2 + (bot.y - impact_y)**2)
+                 if dist < C.LASER_AOE_RADIUS:
+                     damage = 500
+                     was_alive = bot.alive
+                     bot.take_damage(damage)
+                     hits += 1
+                     
+                     if was_alive and not bot.alive:
+                         self.sound_manager.play_sound("scream")
+                         self.kills += 1
+                         self.kill_combo_count += 1
+                         self.kill_combo_timer = 180
+                         self.last_death_pos = (bot.x, bot.y)
+
+                     # Massive Blood
+                     for _ in range(10):
+                        self.particles.append({
+                            "x": C.SCREEN_WIDTH // 2,
+                            "y": C.SCREEN_HEIGHT // 2,
+                            "dx": random.uniform(-10, 10),
+                            "dy": random.uniform(-10, 10),
+                            "color": (random.randint(200, 255), 0, random.randint(200, 255)),
+                            "timer": 40,
+                            "size": random.randint(4, 8)
+                        })
+
+        if hits > 0:
+             self.damage_texts.append({
+                "x": C.SCREEN_WIDTH//2,
+                "y": C.SCREEN_HEIGHT//2 - 80,
+                "text": "LASER ANNIHILATION!",
+                "color": (255, 0, 255),
+                "timer": 60,
+                "vy": -2
+             })
 
     def update_game(self) -> None:
         """Update game state"""
@@ -1788,32 +1848,46 @@ class Game:
             pygame.draw.circle(self.screen, (30,30,30), (cx, cy - 170), 30) # Scope body
 
         elif weapon == "plasma":
-            # Sci-Fi BFG Style
+            # Sci-Fi BFG Style - High Tech
             
-            # Main Bulk
-            pygame.draw.polygon(self.screen, (50, 40, 80), [
-                 (cx - 80, cy), (cx + 80, cy),
-                 (cx + 60, cy - 200), (cx - 60, cy - 200)
+            # Rear Stock/Bulk
+            pygame.draw.polygon(self.screen, (40, 40, 60), [
+                 (cx - 100, cy), (cx + 100, cy),
+                 (cx + 90, cy - 80), (cx - 90, cy - 80)
             ])
             
-            # Glowing Core (Pulsing)
-            pulse = int(20 * math.sin(pygame.time.get_ticks() * 0.01))
-            core_width = 40 + pulse
-            core_color = (0, 255, 255)
-            if w_state["overheated"]:
-                 core_color = (255, 50, 0) # Red if overheated
-                 
-            pygame.draw.rect(self.screen, (0,0,0), (cx - 30, cy - 160, 60, 120)) # Chamber
-            pygame.draw.rect(self.screen, core_color, (cx - core_width//2, cy - 150, core_width, 100))
+            # Main Barrel Housing
+            pygame.draw.polygon(self.screen, (60, 60, 90), [
+                 (cx - 70, cy - 80), (cx + 70, cy - 80),
+                 (cx + 50, cy - 250), (cx - 50, cy - 250)
+            ])
             
-            # Coils
-            for i in range(4):
-                y_coil = cy - 140 + i * 25
-                pygame.draw.rect(self.screen, GUN_METAL, (cx - 40, y_coil, 80, 10))
+            # Side Vents (Glowing)
+            pulse = int(25 * math.sin(pygame.time.get_ticks() * 0.01))
+            vent_color = (0, 150 + pulse, 200) if not w_state["overheated"] else (200 + pulse, 50, 0)
+            
+            pygame.draw.rect(self.screen, vent_color, (cx - 90, cy - 150, 20, 100))
+            pygame.draw.rect(self.screen, vent_color, (cx + 70, cy - 150, 20, 100))
+
+            # Central Core (Exposed)
+            core_width = 40 + pulse // 2
+            pygame.draw.rect(self.screen, (20, 20, 30), (cx - 30, cy - 180, 60, 140)) # Chamber background
+            pygame.draw.rect(self.screen, vent_color, (cx - core_width//2, cy - 190, core_width, 120), border_radius=10)
+            
+            # Floating Rings / Coils
+            for i in range(5):
+                y_coil = cy - 230 + i * 35
+                width_coil = 80 - i * 5
+                pygame.draw.rect(self.screen, (30, 30, 40), (cx - width_coil//2, y_coil, width_coil, 15), border_radius=4)
                 
-            # Charging arcs?
+            # Charging arcs (Lightning)
             if self.player.shooting:
-                 pygame.draw.line(self.screen, C.WHITE, (cx - 30, cy - 210), (cx + 30, cy - 210), 3)
+                 for _ in range(3):
+                     lx1 = random.randint(cx-40, cx+40)
+                     ly1 = random.randint(cy-250, cy-150)
+                     lx2 = random.randint(cx-40, cx+40)
+                     ly2 = random.randint(cy-250, cy-150)
+                     pygame.draw.line(self.screen, C.WHITE, (lx1, ly1), (lx2, ly2), 2)
 
     def render_hud(self) -> None:
         """Render HUD in Doom-style"""
