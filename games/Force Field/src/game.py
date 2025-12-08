@@ -198,20 +198,20 @@ class Game:
         """Spawn exit portal"""
         # Spawn at last enemy death position if possible (guaranteed accessible usually)
         if self.last_death_pos:
-             self.portal = {"x": self.last_death_pos[0], "y": self.last_death_pos[1]}
-             return
+            self.portal = {"x": self.last_death_pos[0], "y": self.last_death_pos[1]}
+            return
 
         # Fallback: Find a spot near player
         assert self.player is not None
         if self.game_map:
-             for r in range(2, 10):
-                 for angle in range(0, 360, 45):
-                     rad = math.radians(angle)
-                     tx = int(self.player.x + math.cos(rad) * r)
-                     ty = int(self.player.y + math.sin(rad) * r)
-                     if not self.game_map.is_wall(tx, ty):
-                          self.portal = {"x": tx + 0.5, "y": ty + 0.5}
-                          return
+            for r in range(2, 10):
+                for angle in range(0, 360, 45):
+                    rad = math.radians(angle)
+                    tx = int(self.player.x + math.cos(rad) * r)
+                    ty = int(self.player.y + math.sin(rad) * r)
+                    if not self.game_map.is_wall(tx, ty):
+                        self.portal = {"x": tx + 0.5, "y": ty + 0.5}
+                        return
 
     def get_corner_positions(self) -> List[Tuple[float, float, float]]:
         """Get spawn positions for four corners (x, y, angle)"""
@@ -337,6 +337,7 @@ class Game:
         # Create map with selected size
         self.game_map = Map(self.selected_map_size)
         self.raycaster = Raycaster(self.game_map)
+        self.last_death_pos = None
         self.start_level()
 
     def start_level(self) -> None:
@@ -630,7 +631,7 @@ class Game:
                         if self.player.activate_bomb():
                             self.handle_bomb_explosion()
                     elif event.key == pygame.K_r:
-                         self.player.reload()
+                        self.player.reload()
                     elif event.key == pygame.K_z:  # Zoom Toggle
                         assert self.player is not None
                         self.player.zoomed = not self.player.zoomed
@@ -938,6 +939,7 @@ class Game:
                 bot.take_damage(1000)  # massive damage
                 if not bot.alive:
                     self.kills += 1
+                    self.last_death_pos = (bot.x, bot.y)
 
         # Screen shake or feedback
         self.sound_manager.play_sound("bomb")
@@ -1122,10 +1124,13 @@ class Game:
 
                          # Visual
                          self.particles.append({
-                            "x": bot.x * C.TILE_SIZE,  # Wait, particles are screen space?
-                            # NO, particles in render loop seem to be screen space in previous code?
-                            # actually code shows particles have x,y,dx,dy.
-                            # We'll skip hit particles for remote hits for now
+                            "x": bot.x * C.TILE_SIZE,
+                            "y": bot.y * C.TILE_SIZE,
+                            "dx": random.uniform(-2, 2),
+                            "dy": random.uniform(-2, 2),
+                            "color": C.RED,
+                            "timer": 20,
+                            "size": 6,
                          })
                          projectile.alive = False
                          break
@@ -1137,7 +1142,7 @@ class Game:
         """Render main menu (Title Screen)"""
         self.screen.fill(C.BLACK)
 
-        title_y = C.SCREEN_WIDTH // 2 - 100
+        title_y = C.SCREEN_HEIGHT // 2 - 100
         title_text = "FORCE FIELD"
 
         # Shadow
@@ -1359,17 +1364,17 @@ class Game:
                 size = int(scale * p.size)
 
                 if 0 < screen_x < C.SCREEN_WIDTH:
-                     # Draw projectile
-                     color = getattr(p, "color", (255, 0, 0)) # default red
-                     if p.is_player:
-                         pygame.draw.circle(self.screen, color, (screen_x, screen_y), max(2, size))
-                         # Glow
-                         s = pygame.Surface((size*4, size*4), pygame.SRCALPHA)
-                         pygame.draw.circle(s, (*color, 100), (size*2, size*2), size*2)
-                         self.screen.blit(s, (screen_x - size*2, screen_y - size*2))
-                     else:
-                         # Enemy projectile
-                         pygame.draw.circle(self.screen, color, (screen_x, screen_y), max(2, size))
+                    # Draw projectile
+                    color = getattr(p, "color", (255, 0, 0)) # default red
+                    if p.is_player:
+                        pygame.draw.circle(self.screen, color, (screen_x, screen_y), max(2, size))
+                        # Glow
+                        s = pygame.Surface((size*4, size*4), pygame.SRCALPHA)
+                        pygame.draw.circle(s, (*color, 100), (size*2, size*2), size*2)
+                        self.screen.blit(s, (screen_x - size*2, screen_y - size*2))
+                    else:
+                        # Enemy projectile
+                        pygame.draw.circle(self.screen, color, (screen_x, screen_y), max(2, size))
 
         # Render Portal (Projected)
         if self.portal:
@@ -1526,16 +1531,16 @@ class Game:
         status_color = C.WHITE
 
         if w_state["reloading"]:
-             status_text = "RELOADING..."
-             status_color = C.YELLOW
+            status_text = "RELOADING..."
+            status_color = C.YELLOW
         elif w_state["overheated"]:
-             status_text = "OVERHEATED!"
-             status_color = C.RED
+            status_text = "OVERHEATED!"
+            status_color = C.RED
 
         if status_text:
-             txt = self.small_font.render(status_text, True, status_color)
-             tr = txt.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 60))
-             self.screen.blit(txt, tr)
+            txt = self.small_font.render(status_text, True, status_color)
+            tr = txt.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 60))
+            self.screen.blit(txt, tr)
 
         # Ammo Count
         if self.player.current_weapon == "plasma":

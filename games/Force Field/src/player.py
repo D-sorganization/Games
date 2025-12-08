@@ -160,10 +160,8 @@ class Player:
             return False
 
         # 3. Check Clip / Heat
-        if self.current_weapon == "plasma":
-            # Heat check
-            pass # Fired below
-        elif w_state["clip"] <= 0:
+        # 3. Check Clip / Heat
+        if self.current_weapon != "plasma" and w_state["clip"] <= 0:
             self.reload()
             return False
 
