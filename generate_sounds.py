@@ -62,10 +62,9 @@ def generate_scream(filename: str) -> None:
         for i in range(n_frames):
             t = i / sample_rate
             # Slide down
-            if duration > 0:
-                freq = 800 * (1 - t / duration) + random.uniform(-50, 50)
-            else:
-                freq = 800
+            freq = (
+                800 * (1 - t / duration) + random.uniform(-50, 50) if duration > 0 else 800
+            )
             value = int(0.5 * 32767.0 * math.sin(2 * math.pi * freq * t))
             wav_file.writeframes(struct.pack("h", value))
 
@@ -83,10 +82,7 @@ def generate_death(filename: str) -> None:
         wav_file.setparams((1, 2, sample_rate, n_frames, "NONE", "not compressed"))
         for i in range(n_frames):
             t = i / sample_rate
-            if duration > 0:
-                freq = 100 * (1 - t / duration)
-            else:
-                freq = 100
+            freq = 100 * (1 - t / duration) if duration > 0 else 100
             value = int(
                 0.6 * 32767.0 * (random.random() * math.sin(2 * math.pi * freq * t))
             )
