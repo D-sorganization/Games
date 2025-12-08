@@ -1899,9 +1899,9 @@ class Game:
         cy += bob_y
 
         # Helper colors
-        GUN_METAL = (40, 45, 50)
-        GUN_HIGHLIGHT = (70, 75, 80)
-        GUN_DARK = (20, 25, 30)
+        gun_metal = (40, 45, 50)
+        gun_highlight = (70, 75, 80)
+        gun_dark = (20, 25, 30)
 
         if weapon == "pistol":
             # High-Res Heavy Pistol (Deagle-ish)
