@@ -2032,7 +2032,7 @@ class Game:
 
         # Phase 1: Upstream Drift Studios
         elif self.intro_phase == 1:
-            duration = 10000
+            duration = 5000  # User requested 5 seconds
 
             # Text - Terminal / Matrix Style
             # Use monochromatic green or bright console white
@@ -2051,9 +2051,16 @@ class Game:
                 ret, frame = self.intro_video.read()
                 if ret:
                     # Convert CV2 frame (BGR) to Pygame (RGB)
-                    frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
+                    # frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE) # Removing rotation as per typical video needs
+                    # User said it never played, maybe rotation was breaking it or it was slow?
+                    # But standard CV2->Pygame requires transposing usually not rotation.
+                    # Pygame surfaces are (width, height), logical.
+                    # CV2 is (row, col) -> (height, width).
+                    # We usually need to swap axes (transpose) then RGB.
+                    
                     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-
+                    frame = frame.swapaxes(0, 1) # Transpose for pgyame surface
+                    
                     surf = pygame.surfarray.make_surface(frame)
 
                     # Scale to fit
@@ -2067,6 +2074,12 @@ class Game:
                 else:
                     # Loop video?
                     self.intro_video.set(cv2.CAP_PROP_POS_FRAMES, 0)
+            
+            else:
+                 # Debug info relative to user request
+                 if not hasattr(self, "_video_debug_printed"):
+                      print("DEBUG: Video not opened or CV2 missing")
+                      self._video_debug_printed = True
 
             # Fallback to Image
             elif "deadfish" in self.intro_images:

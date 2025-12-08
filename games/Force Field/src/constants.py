@@ -148,14 +148,14 @@ SPAWN_RETRY_RADIUS = 4
 DEFAULT_MAP_SIZE = 40
 
 # Balancing
-BOT_SPEED = 0.03  # Slower enemies (was default fast?)
+BOT_SPEED = 0.02  # Slower enemies (was 0.03)
 PLAYER_HEALTH = 100
 BASE_BOT_HEALTH = 30
-BASE_BOT_DAMAGE = 3
+BASE_BOT_DAMAGE = 2 # Reduced from 3
 BOT_ATTACK_RANGE = 5
 BOT_ATTACK_COOLDOWN = 60
-BOT_PROJECTILE_SPEED = 0.1
-BOT_PROJECTILE_DAMAGE = 6
+BOT_PROJECTILE_SPEED = 0.08 # Reduced from 0.1
+BOT_PROJECTILE_DAMAGE = 5 # Reduced from 6
 
 # Spread (Aiming randomness)
 SPREAD_BASE = 0.05
