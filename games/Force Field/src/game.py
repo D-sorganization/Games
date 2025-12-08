@@ -1914,7 +1914,7 @@ class Game:
             )
 
             # 2. Main Body / Frame
-            pygame.draw.rect(self.screen, GUN_METAL, (cx - 20, cy - 140, 40, 140))
+            pygame.draw.rect(self.screen, gun_metal, (cx - 20, cy - 140, 40, 140))
 
             # 3. Slide (Lighter, detailed)
             slide_y = cy - 180
@@ -1924,7 +1924,7 @@ class Game:
 
             pygame.draw.polygon(
                 self.screen,
-                GUN_HIGHLIGHT,
+                gun_highlight,
                 [
                     (cx - 25, slide_y),
                     (cx + 25, slide_y),
@@ -1935,7 +1935,7 @@ class Game:
             # Slide serrations
             for i in range(5):
                 y_ser = slide_y + 80 + i * 8
-                pygame.draw.line(self.screen, GUN_DARK, (cx - 20, y_ser), (cx + 20, y_ser), 2)
+                pygame.draw.line(self.screen, gun_dark, (cx - 20, y_ser), (cx + 20, y_ser), 2)
 
             # 4. Barrel Tip
             pygame.draw.rect(self.screen, (10, 10, 10), (cx - 8, slide_y - 5, 16, 10))
@@ -1951,16 +1951,16 @@ class Game:
             # Barrels (Side by Side)
             # Left Barrel
             pygame.draw.circle(self.screen, (20, 20, 20), (cx - 30, cy - 180), 22)
-            pygame.draw.rect(self.screen, GUN_METAL, (cx - 52, cy - 180, 44, 200))
+            pygame.draw.rect(self.screen, gun_metal, (cx - 52, cy - 180, 44, 200))
             pygame.draw.rect(self.screen, (10, 10, 10), (cx - 48, cy - 200, 36, 100))  # Hollow tone
 
             # Right Barrel
             pygame.draw.circle(self.screen, (20, 20, 20), (cx + 30, cy - 180), 22)
-            pygame.draw.rect(self.screen, GUN_METAL, (cx + 8, cy - 180, 44, 200))
+            pygame.draw.rect(self.screen, gun_metal, (cx + 8, cy - 180, 44, 200))
             pygame.draw.rect(self.screen, (10, 10, 10), (cx + 12, cy - 200, 36, 100))
 
             # Rib between barrels
-            pygame.draw.rect(self.screen, GUN_DARK, (cx - 8, cy - 180, 16, 180))
+            pygame.draw.rect(self.screen, gun_dark, (cx - 8, cy - 180, 16, 180))
 
             # Wooden Foregrip
             pygame.draw.polygon(
@@ -1980,12 +1980,12 @@ class Game:
             # Main Body
             pygame.draw.polygon(
                 self.screen,
-                GUN_METAL,
+                gun_metal,
                 [(cx - 30, cy - 150), (cx + 30, cy - 150), (cx + 40, cy), (cx - 40, cy)],
             )
 
             # Barrel Shroud
-            pygame.draw.rect(self.screen, GUN_HIGHLIGHT, (cx - 20, cy - 220, 40, 100))
+            pygame.draw.rect(self.screen, gun_highlight, (cx - 20, cy - 220, 40, 100))
             # Vents in shroud
             for i in range(6):
                 y_vent = cy - 210 + i * 15
