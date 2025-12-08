@@ -5,7 +5,7 @@ import os
 import random
 import traceback
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Tuple
+from typing import Any, Dict, List, Tuple
 
 import pygame
 
@@ -24,8 +24,9 @@ try:
 except ImportError:
     HAS_CV2 = False
 
-if TYPE_CHECKING:
-    from .projectile import Projectile
+    HAS_CV2 = False
+
+from .projectile import Projectile
 
 
 class Game:
@@ -46,6 +47,7 @@ class Game:
         self.intro_alpha = 0
         self.intro_start_time = 0
         self.intro_images: Dict[str, pygame.Surface] = {}
+        self.last_death_pos: Tuple[float, float] | None = None
 
         # Load Intro Images
         try:
@@ -194,19 +196,22 @@ class Game:
 
     def spawn_portal(self) -> None:
         """Spawn exit portal"""
-        # Find a spot far from player? Or center?
+        # Spawn at last enemy death position if possible (guaranteed accessible usually)
+        if self.last_death_pos:
+             self.portal = {"x": self.last_death_pos[0], "y": self.last_death_pos[1]}
+             return
+
+        # Fallback: Find a spot near player
+        assert self.player is not None
         if self.game_map:
-            center = self.game_map.size // 2
-            # Check if wall
-            if not self.game_map.is_wall(center, center):
-                self.portal = {"x": center + 0.5, "y": center + 0.5}
-            else:
-                # Find valid spot
-                for x in range(2, self.game_map.size - 2):
-                    for y in range(2, self.game_map.size - 2):
-                        if not self.game_map.is_wall(x, y):
-                            self.portal = {"x": x + 0.5, "y": y + 0.5}
-                            return
+             for r in range(2, 10):
+                 for angle in range(0, 360, 45):
+                     rad = math.radians(angle)
+                     tx = int(self.player.x + math.cos(rad) * r)
+                     ty = int(self.player.y + math.sin(rad) * r)
+                     if not self.game_map.is_wall(tx, ty):
+                          self.portal = {"x": tx + 0.5, "y": ty + 0.5}
+                          return
 
     def get_corner_positions(self) -> List[Tuple[float, float, float]]:
         """Get spawn positions for four corners (x, y, angle)"""
@@ -624,6 +629,8 @@ class Game:
                         assert self.player is not None
                         if self.player.activate_bomb():
                             self.handle_bomb_explosion()
+                    elif event.key == pygame.K_r:
+                         self.player.reload()
                     elif event.key == pygame.K_z:  # Zoom Toggle
                         assert self.player is not None
                         self.player.zoomed = not self.player.zoomed
@@ -631,17 +638,50 @@ class Game:
                 assert self.player is not None
                 if event.button == 1:  # Left-click to fire
                     if self.player.shoot():
-                        self.sound_manager.play_sound("shoot")
-                        self.check_shot_hit()
+                        self.fire_weapon()
                 elif event.button == 3:  # Right-click to secondary fire
                     if self.player.fire_secondary():
-                        self.sound_manager.play_sound("shoot")  # Reuse for now or add specific
-                        self.check_shot_hit(is_secondary=True)
+                        self.fire_weapon(is_secondary=True)
             elif event.type == pygame.MOUSEMOTION and not self.paused:
                 assert self.player is not None
                 self.player.rotate(event.rel[0] * C.PLAYER_ROT_SPEED)
 
-    def check_shot_hit(self, is_secondary: bool = False) -> None:
+    def fire_weapon(self, is_secondary: bool = False) -> None:
+        """Handle weapon firing (Hitscan or Projectile)"""
+        weapon = self.player.current_weapon
+
+        # Sound
+        self.sound_manager.play_sound("shoot")
+
+        # Visuals & Logic
+        if weapon == "plasma" and not is_secondary:
+             # Spawn Projectile
+             weapon_data = C.WEAPONS["plasma"]
+             p = Projectile(
+                 self.player.x,
+                 self.player.y,
+                 self.player.angle,
+                 damage=weapon_data["damage"],
+                 speed=weapon_data.get("projectile_speed", 0.5),
+                 is_player=True,
+                 color=weapon_data.get("projectile_color", (0, 255, 255)),
+                 size=0.3
+             )
+             self.projectiles.append(p)
+             return
+
+        if weapon == "shotgun" and not is_secondary:
+            # Spread Fire
+            pellets = C.WEAPONS["shotgun"].get("pellets", 8)
+            spread = C.WEAPONS["shotgun"].get("spread", 0.15)
+            for _ in range(pellets):
+                angle_off = random.uniform(-spread, spread)
+                self.check_shot_hit(angle_offset=angle_off)
+        else:
+            # Single Hitscan
+            self.check_shot_hit(is_secondary=is_secondary)
+
+    def check_shot_hit(self, is_secondary: bool = False, angle_offset: float = 0.0) -> None:
         """Check if player's shot hit a bot"""
         assert self.player is not None
         try:
@@ -660,8 +700,9 @@ class Game:
 
             # Optimize: Find strict distance to wall in aiming direction first
             # Simple Raycast (DDA)
-            sin_a = math.sin(self.player.angle)
-            cos_a = math.cos(self.player.angle)
+            ray_angle = self.player.angle + angle_offset
+            sin_a = math.sin(ray_angle)
+            cos_a = math.cos(ray_angle)
 
             # Ray start
             rx, ry = self.player.x, self.player.y
@@ -739,10 +780,19 @@ class Game:
                 bot_angle_norm = bot_angle if bot_angle >= 0 else bot_angle + 2 * math.pi
 
                 # Add Aiming Randomness (Spread)
+                # If we passed an angle_offset (shotgun), rely on that + base spread
+                # Otherwise standard spread
                 current_spread = C.SPREAD_ZOOM if self.player.zoomed else C.SPREAD_BASE
-                spread_offset = random.uniform(-current_spread, current_spread)
 
-                aim_angle = self.player.angle + spread_offset
+                # If angle_offset is provided, use it as the base aim direction
+                # but still apply small spread?
+                # Actually angle_offset IS the spread for shotgun.
+                if angle_offset == 0.0:
+                     spread_offset = random.uniform(-current_spread, current_spread)
+                     aim_angle = self.player.angle + spread_offset
+                else:
+                     aim_angle = self.player.angle + angle_offset
+
                 aim_angle %= 2 * math.pi
 
                 angle_diff = abs(bot_angle_norm - aim_angle)
@@ -827,6 +877,7 @@ class Game:
 
                 if not closest_bot.alive:
                     self.kills += 1
+                    self.last_death_pos = (closest_bot.x, closest_bot.y)
 
             # Visuals
             if is_secondary:
@@ -851,6 +902,8 @@ class Game:
         """Handle bomb explosion logic"""
         assert self.player is not None
         # Visuals
+        # Visuals
+        # 1. Big Flash
         self.particles.append(
             {
                 "x": C.SCREEN_WIDTH // 2,
@@ -858,10 +911,23 @@ class Game:
                 "dx": 0,
                 "dy": 0,
                 "color": C.WHITE,
-                "timer": 10,  # fast flash
-                "size": 1000,  # huge
+                "timer": 20,  # longer flash
+                "size": 2000,  # huge
             }
         )
+        # 2. Fireball Particles (Lots of them)
+        for _ in range(100):
+             angle = random.uniform(0, 2 * math.pi)
+             speed = random.uniform(2, 10)
+             self.particles.append({
+                 "x": C.SCREEN_WIDTH // 2,
+                 "y": C.SCREEN_HEIGHT // 2,
+                 "dx": math.cos(angle) * speed,
+                 "dy": math.sin(angle) * speed,
+                 "color": random.choice([C.ORANGE, C.RED, C.YELLOW]),
+                 "timer": random.randint(30, 60),
+                 "size": random.randint(5, 15)
+             })
 
         # Damage enemies
         for bot in self.bots:
@@ -916,7 +982,7 @@ class Game:
 
         if not enemies_alive:
             if self.portal is None:
-                # Spawn Portal at the last enemy's position or random
+                # Spawn Portal - Ensure it's reachable
                 self.spawn_portal()
                 self.damage_texts.append(
                     {
@@ -1040,6 +1106,29 @@ class Game:
                         self.damage_flash_timer = 10
 
                     projectile.alive = False
+            else:
+                # Player Projectile (Plasma) hitting Bots
+                for bot in self.bots:
+                    if not bot.alive:
+                        continue
+                    dx = projectile.x - bot.x
+                    dy = projectile.y - bot.y
+                    dist = math.sqrt(dx**2 + dy**2)
+                    if dist < 0.8: # Hit radius
+                         bot.take_damage(projectile.damage)
+                         if not bot.alive:
+                             self.kills += 1
+                             self.last_death_pos = (bot.x, bot.y)
+
+                         # Visual
+                         self.particles.append({
+                            "x": bot.x * C.TILE_SIZE,  # Wait, particles are screen space?
+                            # NO, particles in render loop seem to be screen space in previous code?
+                            # actually code shows particles have x,y,dx,dy.
+                            # We'll skip hit particles for remote hits for now
+                         })
+                         projectile.alive = False
+                         break
 
             if not projectile.alive:
                 self.projectiles.remove(projectile)
@@ -1048,7 +1137,7 @@ class Game:
         """Render main menu (Title Screen)"""
         self.screen.fill(C.BLACK)
 
-        title_y = C.SCREEN_HEIGHT // 2 - 100
+        title_y = C.SCREEN_WIDTH // 2 - 100
         title_text = "FORCE FIELD"
 
         # Shadow
@@ -1241,6 +1330,47 @@ class Game:
                 self.screen, C.CYAN, (cx - bar_w // 2, cy, int(bar_w * charge_pct), bar_h)
             )
 
+        # Render Projectiles (Billboarding)
+        # Render Projectiles (Billboarding)
+        # Actually standard Z-buffer is in raycaster,
+        # but we don't have access to Z-buffer here easily.
+        # We'll just draw them. If they are behind walls, we should check wall distance?
+        # Raycaster.render doesn't expose Z-buffer.
+        # Ideally projectiles are drawn INSIDE raycaster loop.
+        # But retro style commonly draws sprites after walls (with Z-check if possible).
+        # We'll just draw them and accept they might clip, or we check if visible before drawing.
+        # Check simple line of sight?
+        # Let's just draw them for now.
+
+        for p in self.projectiles:
+            sx = p.x - self.player.x
+            sy = p.y - self.player.y
+
+            cs = math.cos(self.player.angle)
+            sn = math.sin(self.player.angle)
+            a = sy * cs - sx * sn
+            b = sx * cs + sy * sn
+
+            if b > 0.1:
+                screen_x = int((0.5 * C.SCREEN_WIDTH) * (1 + a / b * 1.73))
+                screen_y = C.SCREEN_HEIGHT // 2
+
+                scale = C.SCREEN_HEIGHT / b
+                size = int(scale * p.size)
+
+                if 0 < screen_x < C.SCREEN_WIDTH:
+                     # Draw projectile
+                     color = getattr(p, "color", (255, 0, 0)) # default red
+                     if p.is_player:
+                         pygame.draw.circle(self.screen, color, (screen_x, screen_y), max(2, size))
+                         # Glow
+                         s = pygame.Surface((size*4, size*4), pygame.SRCALPHA)
+                         pygame.draw.circle(s, (*color, 100), (size*2, size*2), size*2)
+                         self.screen.blit(s, (screen_x - size*2, screen_y - size*2))
+                     else:
+                         # Enemy projectile
+                         pygame.draw.circle(self.screen, color, (screen_x, screen_y), max(2, size))
+
         # Render Portal (Projected)
         if self.portal:
             # Simple billboard projection for portal
@@ -1382,44 +1512,57 @@ class Game:
         health_color = (
             C.GREEN if health_percent > 0.5 else (C.ORANGE if health_percent > 0.25 else C.RED)
         )
+
         pygame.draw.rect(self.screen, health_color, (health_x, health_y, fill_width, health_height))
+        # Border
         pygame.draw.rect(self.screen, C.WHITE, (health_x, health_y, health_width, health_height), 2)
+
+        # Ammo / State
+        w_state = self.player.weapon_state[self.player.current_weapon]
+        w_name = C.WEAPONS[self.player.current_weapon]["name"]
+
+        # Reloading / Overheat Status
+        status_text = ""
+        status_color = C.WHITE
+
+        if w_state["reloading"]:
+             status_text = "RELOADING..."
+             status_color = C.YELLOW
+        elif w_state["overheated"]:
+             status_text = "OVERHEATED!"
+             status_color = C.RED
+
+        if status_text:
+             txt = self.small_font.render(status_text, True, status_color)
+             tr = txt.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 60))
+             self.screen.blit(txt, tr)
+
+        # Ammo Count
+        if self.player.current_weapon == "plasma":
+             # Heat Bar
+             heat_w = 150
+             heat_h = 25
+             heat_x = C.SCREEN_WIDTH - 20 - heat_w
+             heat_y = hud_bottom
+
+             pygame.draw.rect(self.screen, C.DARK_GRAY, (heat_x, heat_y, heat_w, heat_h))
+             heat_fill = min(1.0, w_state["heat"] / C.WEAPONS["plasma"].get("max_heat", 1.0))
+             pygame.draw.rect(self.screen, C.CYAN if not w_state["overheated"] else C.RED,
+                              (heat_x, heat_y, int(heat_w * heat_fill), heat_h))
+             pygame.draw.rect(self.screen, C.WHITE, (heat_x, heat_y, heat_w, heat_h), 2)
+
+             label = self.tiny_font.render("HEAT", True, C.WHITE)
+             self.screen.blit(label, (heat_x, heat_y - 20))
+
+        else:
+             # Clip / Ammo
+             ammo_val = self.player.ammo[self.player.current_weapon]
+             ammo_text = f"{w_name}: {w_state['clip']} / {ammo_val}"
+             at = self.font.render(ammo_text, True, C.WHITE)
+             at_rect = at.get_rect(bottomright=(C.SCREEN_WIDTH - 20, hud_bottom + 25))
+             self.screen.blit(at, at_rect)
         health_text = self.tiny_font.render(f"HP: {self.player.health}", True, C.WHITE)
         self.screen.blit(health_text, (health_x + 5, health_y + 3))
-
-        # Weapon Info (Bottom Right)
-        weapon_x = C.SCREEN_WIDTH - 220
-        weapon_y = hud_bottom
-        weapon_width = 200
-        weapon_height = 70
-
-        pygame.draw.rect(
-            self.screen, C.DARK_GRAY, (weapon_x, weapon_y, weapon_width, weapon_height)
-        )
-        pygame.draw.rect(self.screen, C.WHITE, (weapon_x, weapon_y, weapon_width, weapon_height), 2)
-
-        current_weapon_data: Dict[str, Any] = C.WEAPONS[self.player.current_weapon]
-        weapon_name = self.small_font.render(str(current_weapon_data["name"]), True, C.YELLOW)
-        weapon_name_rect = weapon_name.get_rect(
-            center=(weapon_x + weapon_width // 2, weapon_y + 15),
-        )
-        self.screen.blit(weapon_name, weapon_name_rect)
-
-        ammo_text = self.tiny_font.render(
-            f"Ammo: {self.player.ammo[self.player.current_weapon]}",
-            True,
-            C.CYAN,
-        )
-        ammo_rect = ammo_text.get_rect(
-            center=(weapon_x + weapon_width // 2, weapon_y + 40),
-        )
-        self.screen.blit(ammo_text, ammo_rect)
-
-        hints_text = self.tiny_font.render(self.weapon_hints, True, C.GRAY)
-        hints_rect = hints_text.get_rect(
-            center=(weapon_x + weapon_width // 2, weapon_y + 58),
-        )
-        self.screen.blit(hints_text, hints_rect)
 
         # Game Stats (Top Right)
         level_text = self.small_font.render(f"Level: {self.level}", True, C.YELLOW)

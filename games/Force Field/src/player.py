@@ -21,10 +21,24 @@ class Player:
         self.health = 100
         self.max_health = 100
         self.is_moving = False  # Track movement for bobbing
-        weapon_ammo: Dict[str, Any] = {
-            weapon: C.WEAPONS[weapon].get("ammo", 0) for weapon in C.WEAPONS
-        }
-        self.ammo: Dict[str, int] = {weapon: int(weapon_ammo[weapon]) for weapon in C.WEAPONS}
+
+        # Weapon State
+        self.weapon_state: Dict[str, Dict[str, Any]] = {}
+        for w_name, w_data in C.WEAPONS.items():
+            self.weapon_state[w_name] = {
+                "clip": w_data.get("clip_size", 999),
+                "heat": 0.0,
+                "reloading": False,
+                "reload_timer": 0,
+                "overheated": False,
+                "overheat_timer": 0
+            }
+
+        # Keep tracking total ammo (reserves) if we want,
+        # but user request implies specific mechanics per gun
+        # For now, we assume "ammo" in constants refers to reserves.
+        self.ammo: Dict[str, int] = {w: C.WEAPONS[w]["ammo"] for w in C.WEAPONS}
+
         self.current_weapon = "rifle"
         self.shooting = False
         self.shoot_timer = 0
@@ -45,9 +59,15 @@ class Player:
     ) -> None:
         """Move player forward or backward"""
         if self.shield_active or self.zoomed:
-            # Shield/Zoom blocks movement
-            return
+            # Shield/Zoom blocks movement? Maybe let shield allow movement but slower?
+            # Doom style usually allows movement always.
+            # I will unblock movement for Shield but keep it blocked/slow for Zoom.
+            if self.zoomed:
+                return
+            if self.shield_active:
+                speed *= 0.8
 
+        # Doom straferunning enabled (simple vector addition handled by caller if both pressed)
         dx = math.cos(self.angle) * speed * (1 if forward else -1)
         dy = math.sin(self.angle) * speed * (1 if forward else -1)
 
@@ -86,9 +106,10 @@ class Player:
         speed: float = C.PLAYER_SPEED,
     ) -> None:
         """Strafe left or right"""
-        if self.shield_active or self.zoomed:
+        if self.zoomed:
             return
 
+        # Slightly faster strafe for Doom feel? Standard speed is fine.
         angle = self.angle + math.pi / 2 * (1 if right else -1)
         dx = math.cos(angle) * speed
         dy = math.sin(angle) * speed
@@ -125,28 +146,73 @@ class Player:
 
     def shoot(self) -> bool:
         """Initiate shooting, return True if shot was fired"""
-        weapon_data: Dict[str, Any] = C.WEAPONS[self.current_weapon]
-        if self.ammo[self.current_weapon] > 0 and self.shoot_timer <= 0:
-            self.shooting = True
-            self.shoot_timer = int(weapon_data["cooldown"])
-            self.ammo[self.current_weapon] -= 1
-            return True
-        return False
+        weapon_data = C.WEAPONS[self.current_weapon]
+        w_state = self.weapon_state[self.current_weapon]
+
+        # 1. Check Global Cooldown
+        if self.shoot_timer > 0:
+            return False
+
+        # 2. Check Reloading / Overheat
+        if w_state["reloading"]:
+            return False
+        if w_state["overheated"]:
+            return False
+
+        # 3. Check Clip / Heat
+        if self.current_weapon == "plasma":
+            # Heat check
+            pass # Fired below
+        elif w_state["clip"] <= 0:
+            self.reload()
+            return False
+
+        self.shooting = True
+        self.shoot_timer = int(weapon_data["cooldown"])
+
+        # Consumables
+        if self.current_weapon == "plasma":
+            w_state["heat"] += weapon_data.get("heat_per_shot", 0.0)
+            if w_state["heat"] >= weapon_data.get("max_heat", 1.0):
+                w_state["overheated"] = True
+                w_state["overheat_timer"] = weapon_data.get("overheat_penalty", 180)
+        else:
+            w_state["clip"] -= 1
+
+        return True
+
+    def reload(self) -> None:
+        """Start reload process"""
+        w_data = C.WEAPONS[self.current_weapon]
+        w_state = self.weapon_state[self.current_weapon]
+
+        if w_state["reloading"] or w_state["overheated"]:
+            return
+
+        if self.current_weapon == "plasma":
+            # Plasma doesn't reload manually, it cools down
+            return
+
+        if w_state["clip"] < w_data["clip_size"]:
+             w_state["reloading"] = True
+             w_state["reload_timer"] = w_data.get("reload_time", 60)
 
     def switch_weapon(self, weapon: str) -> None:
         """Switch to a different weapon"""
         if weapon in C.WEAPONS:
             self.current_weapon = weapon
+            # Cancel reload on switch? Or background reload?
+            # Classic Doom: instant switch usually, reloading was animation.
+            # We'll cancel reload for now to avoid complexity or exploit.
+            self.weapon_state[weapon]["reloading"] = False
 
     def get_current_weapon_damage(self) -> int:
         """Get damage of current weapon"""
-        weapon_data: Dict[str, Any] = C.WEAPONS[self.current_weapon]
-        return int(weapon_data["damage"])
+        return int(C.WEAPONS[self.current_weapon]["damage"])
 
     def get_current_weapon_range(self) -> int:
         """Get range of current weapon"""
-        weapon_data: Dict[str, Any] = C.WEAPONS[self.current_weapon]
-        return int(weapon_data["range"])
+        return int(C.WEAPONS[self.current_weapon]["range"])
 
     def take_damage(self, damage: int) -> None:
         """Take damage"""
@@ -162,16 +228,15 @@ class Player:
         if self.bomb_cooldown <= 0:
             self.bomb_cooldown = C.BOMB_COOLDOWN
             self.shield_active = True  # Auto activate shield
-            # Don't deplete shield for this auto-activation or sets logic elsewhere?
-            # User said: "activate the shield and a bomb drops"
             return True
         return False
 
     def update(self) -> None:
-        """Update player state"""
+        """Update player state (timers, etc)"""
+        # Global shoot timer
         if self.shoot_timer > 0:
             self.shoot_timer -= 1
-        if self.shoot_timer <= 0:
+        else:
             self.shooting = False
 
         if self.bomb_cooldown > 0:
@@ -185,10 +250,8 @@ class Player:
             if self.shield_timer > 0:
                 self.shield_timer -= 1
             else:
-                # Run out
                 self.shield_active = False
                 self.shield_recharge_delay = C.SHIELD_COOLDOWN_DEPLETED
-        # Recharge logic
         elif self.shield_recharge_delay > 0:
             self.shield_recharge_delay -= 1
         elif self.shield_timer < C.SHIELD_MAX_DURATION:
@@ -197,16 +260,40 @@ class Player:
             )
             self.shield_timer = min(self.shield_timer, C.SHIELD_MAX_DURATION)
 
+        # Update Weapons (Reloads, Heat)
+        for w_name, w_state in self.weapon_state.items():
+            # Reloading
+            if w_state["reloading"]:
+                w_state["reload_timer"] -= 1
+                if w_state["reload_timer"] <= 0:
+                    w_state["reloading"] = False
+                    w_state["clip"] = C.WEAPONS[w_name]["clip_size"]
+
+            # Plasma Heat / Overheat
+            if w_name == "plasma":
+                if w_state["overheated"]:
+                    w_state["overheat_timer"] -= 1
+                    # Cool down while overheated? Or fixed penalty?
+                    # Usually fixed wait. We'll linearly cool it down too so visual bar goes down
+                    penalty_time = C.WEAPONS[w_name].get("overheat_penalty", 180)
+                    cool_amount = C.WEAPONS[w_name]["max_heat"] / penalty_time
+                    w_state["heat"] = max(0.0, w_state["heat"] - cool_amount)
+
+                    if w_state["overheat_timer"] <= 0:
+                        w_state["overheated"] = False
+                        w_state["heat"] = 0.0
+                elif w_state["heat"] > 0:
+                    w_state["heat"] -= C.WEAPONS[w_name].get("cooling_rate", 0.01)
+                    w_state["heat"] = max(0.0, w_state["heat"])
+
     def can_secondary_fire(self) -> bool:
         """Check if secondary fire is ready"""
-        return self.secondary_cooldown <= 0 and self.ammo[self.current_weapon] > 0
+        return self.secondary_cooldown <= 0
 
     def fire_secondary(self) -> bool:
         """Execute secondary fire"""
         if self.can_secondary_fire():
             self.secondary_cooldown = C.SECONDARY_COOLDOWN
-            if self.ammo[self.current_weapon] >= 1:
-                self.ammo[self.current_weapon] -= 1
             return True
         return False
 
