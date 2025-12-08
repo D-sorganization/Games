@@ -983,6 +983,19 @@ class Game:
                 pygame.draw.line(
                     self.screen, C.WHITE, (cx + 100, cy), (cx, C.SCREEN_HEIGHT // 2), 10
                 )
+                
+                # Add laser effect
+                # For a raycaster, drawing 2D line from weapon to center is best approximation
+                self.particles.append(
+                    {
+                        "type": "laser",
+                        "start": (C.SCREEN_WIDTH - 200, C.SCREEN_HEIGHT - 180),  # Approx gun muzzle
+                        "end": (C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2),  # Crosshair
+                        "color": (0, 255, 255),
+                        "timer": C.LASER_DURATION,
+                        "width": C.LASER_WIDTH,
+                    }
+                )
                 return
 
             if closest_bot:
@@ -1020,7 +1033,7 @@ class Game:
                 final_damage = int(weapon_damage * range_factor * accuracy_factor)
 
                 if is_headshot:
-                    final_damage *= 3
+                    pass # Damage handled in take_damage
 
                 was_alive = closest_bot.alive
                 closest_bot.take_damage(final_damage, is_headshot=is_headshot)
@@ -1080,20 +1093,7 @@ class Game:
                     self.last_death_pos = (closest_bot.x, closest_bot.y)
                     self.sound_manager.play_sound("scream")
 
-            # Visuals
-            if is_secondary:
-                # Add laser effect
-                # For a raycaster, drawing 2D line from weapon to center is best approximation
-                self.particles.append(  # type: ignore[unreachable]
-                    {
-                        "type": "laser",
-                        "start": (C.SCREEN_WIDTH - 200, C.SCREEN_HEIGHT - 180),  # Approx gun muzzle
-                        "end": (C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2),  # Crosshair
-                        "color": (0, 255, 255),
-                        "timer": C.LASER_DURATION,
-                        "width": C.LASER_WIDTH,
-                    }
-                )
+
 
         except Exception as e:  # noqa: BLE001
             # Prevent gameplay crash from targeting logic
@@ -1249,33 +1249,10 @@ class Game:
     def explode_plasma(self, projectile: Projectile) -> None:
         """Trigger plasma AOE explosion"""
         # Visuals - Shockwave / Expanding Circle
-        self.particles.append(
-            {
-                "x": projectile.x,
-                "y": projectile.y,
-                "dx": 0,
-                "dy": 0,
-                "color": C.CYAN,  # BFG Color
-                "timer": 20,
-                "size": 50,  # Initial size of expansion
-                "type": "shockwave",  # Special logic or just circle?
-            }
-        )
-        # Add many particles
-        for _ in range(20):
-            angle = random.uniform(0, 2 * math.pi)
-            sp = random.uniform(2, 5)
-            self.particles.append(
-                {
-                    "x": projectile.x,
-                    "y": projectile.y,
-                    "dx": math.cos(angle) * sp,
-                    "dy": math.sin(angle) * sp,
-                    "color": C.BLUE,
-                    "timer": 30,
-                    "size": 5,
-                }
-            )
+        # Visuals - Screen Flash
+        dist_to_player = math.sqrt((projectile.x - self.player.x) ** 2 + (projectile.y - self.player.y) ** 2)
+        if dist_to_player < 15:
+            self.damage_flash_timer = 15  # Re-use flash timer for feedback
 
         # Damage Logic - Flat Wave
         for bot in self.bots:
