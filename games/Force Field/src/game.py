@@ -1884,10 +1884,27 @@ class Game:
         """Render muzzle flash"""
         flash_x = C.SCREEN_WIDTH - 350
         flash_y = C.SCREEN_HEIGHT - 85
-
-        pygame.draw.circle(self.screen, C.YELLOW, (flash_x, flash_y), 25)
-        pygame.draw.circle(self.screen, C.ORANGE, (flash_x, flash_y), 15)
-        pygame.draw.circle(self.screen, C.WHITE, (flash_x, flash_y), 8)
+        
+        # Weapon specific flash
+        if self.player.weapon == "plasma":
+             # Blue
+             pygame.draw.circle(self.screen, C.CYAN, (flash_x, flash_y), 30)
+             pygame.draw.circle(self.screen, C.BLUE, (flash_x, flash_y), 20)
+             pygame.draw.circle(self.screen, C.WHITE, (flash_x, flash_y), 10)
+        elif self.player.weapon == "shotgun":
+             # Huge Orange Flash
+             flash_x -= 20 # Offset for center
+             flash_y -= 10
+             
+             # Random spikes?
+             pygame.draw.circle(self.screen, (255, 100, 0), (flash_x, flash_y), 50) # Dark Orange
+             pygame.draw.circle(self.screen, C.ORANGE, (flash_x, flash_y), 35)
+             pygame.draw.circle(self.screen, C.YELLOW, (flash_x, flash_y), 15)
+        else:
+             # Standard
+             pygame.draw.circle(self.screen, C.YELLOW, (flash_x, flash_y), 25)
+             pygame.draw.circle(self.screen, C.ORANGE, (flash_x, flash_y), 15)
+             pygame.draw.circle(self.screen, C.WHITE, (flash_x, flash_y), 8)
 
     def render_stats_lines(
         self,

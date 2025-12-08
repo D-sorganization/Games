@@ -39,7 +39,7 @@ DIFFICULTIES = {
 # Weapon Ranges
 WEAPON_RANGE_PISTOL = 15
 WEAPON_RANGE_RIFLE = 25
-WEAPON_RANGE_SHOTGUN = 8  # Short range
+WEAPON_RANGE_SHOTGUN = 12  # Increased range (was 8)
 WEAPON_RANGE_PLASMA = 30
 
 # Weapon settings
@@ -67,7 +67,7 @@ WEAPONS = {
     },
     "shotgun": {
         "name": "Shotgun",
-        "damage": 10,  # Per pellet? We'll simulate 5-8 pellets. 10 * 8 = 80 max dmg close range.
+        "damage": 15,  # Increased per pellet (was 10)
         "range": WEAPON_RANGE_SHOTGUN,
         "ammo": 999,
         "cooldown": 30,

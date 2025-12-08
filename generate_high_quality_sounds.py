@@ -102,7 +102,7 @@ def gen_plasma():
             f.writeframes(struct.pack('h', int(0.4 * 32767 * val))) # Reduce volume (was 0.7)
 gen_plasma()
 
-# Heartbeat
+# Heartbeat (Boosted)
 def gen_heartbeat():
     filename = os.path.join(sounds_dir, "heartbeat.wav")
     sample_rate = 44100
@@ -112,9 +112,13 @@ def gen_heartbeat():
         f.setparams((1, 2, sample_rate, n_frames, 'NONE', 'not compressed'))
         for i in range(n_frames):
             t = i / sample_rate
-            # Low thump
-            val = math.sin(2 * math.pi * 50 * t) * math.exp(-t*30)
-            f.writeframes(struct.pack('h', int(0.8 * 32767 * val)))
+            # Stronger Thump (60Hz + 120Hz harmonic)
+            val = (math.sin(2 * math.pi * 60 * t) + 0.5 * math.sin(2 * math.pi * 120 * t)) * math.exp(-t*20)
+            
+            # Clip/Limiter
+            val = max(-1.0, min(1.0, val))
+            
+            f.writeframes(struct.pack('h', int(0.98 * 32767 * val)))
 gen_heartbeat()
 
 # Player Hit - UGH Sound (Vocal-like formant attempt)
