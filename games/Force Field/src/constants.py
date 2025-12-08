@@ -79,7 +79,7 @@ WEAPONS = {
     },
     "plasma": {
         "name": "Plasma",
-        "damage": 75, # Boosted for BFG feel
+        "damage": 200, # Much more powerful (was 75)
         "range": WEAPON_RANGE_PLASMA,
         "ammo": 999,
         "cooldown": 8, # Faster fire rate (was 12)
@@ -98,7 +98,7 @@ WEAPONS = {
 # Combat settings
 HEADSHOT_THRESHOLD = 0.05
 SPAWN_SAFETY_MARGIN = 3
-PLASMA_AOE_RADIUS = 2.5 # Tiles
+PLASMA_AOE_RADIUS = 6.0 # Widened AOE (was 2.5)
 
 # UI settings
 HINT_BG_PADDING_H = 10
@@ -182,30 +182,34 @@ ENEMY_TYPES = {
     "zombie": {
         "color": ZOMBIE_COLOR,
         "health_mult": 1.0,
-        "speed_mult": 0.8,  # slower
+        "speed_mult": 0.8,
         "damage_mult": 1.0,
         "scale": 1.0,
+        "visual_style": "monster",
     },
     "boss": {
         "color": BOSS_COLOR,
-        "health_mult": 5.0,  # tough
-        "speed_mult": 0.5,  # slow
+        "health_mult": 5.0,
+        "speed_mult": 0.5,
         "damage_mult": 2.0,
         "scale": 1.4,
+        "visual_style": "monster",
     },
     "demon": {
         "color": DEMON_COLOR,
-        "health_mult": 0.5,  # weak
-        "speed_mult": 1.2,  # fast
+        "health_mult": 0.5,
+        "speed_mult": 1.2,
         "damage_mult": 1.5,
         "scale": 0.8,
+        "visual_style": "monster",
     },
     "dinosaur": {
         "color": DINOSAUR_COLOR,
         "health_mult": 2.0,
         "speed_mult": 0.9,
-        "damage_mult": 1.0,  # chomp
+        "damage_mult": 1.0,
         "scale": 1.0,
+        "visual_style": "monster",
     },
     "raider": {
         "color": RAIDER_COLOR,
@@ -213,6 +217,24 @@ ENEMY_TYPES = {
         "speed_mult": 1.0,
         "damage_mult": 1.2,
         "scale": 1.0,
+        "visual_style": "monster",
+    },
+    # Baby Variants (Cute/Creepy Round Style)
+    "baby_zombie": {
+        "color": (200, 255, 200),
+        "health_mult": 0.4,
+        "speed_mult": 1.3,
+        "damage_mult": 0.5,
+        "scale": 0.5,
+        "visual_style": "baby",
+    },
+    "mutant_baby": {
+        "color": (255, 180, 200),
+        "health_mult": 0.6,
+        "speed_mult": 1.1,
+        "damage_mult": 0.7,
+        "scale": 0.6,
+        "visual_style": "baby",
     },
     "health_pack": {
         "color": (0, 255, 0),
@@ -220,6 +242,7 @@ ENEMY_TYPES = {
         "speed_mult": 0.0,
         "damage_mult": 0.0,
         "scale": 0.5,
+        "visual_style": "item",
     },
 }
 
