@@ -728,73 +728,7 @@ class Game:
                 self.player.rotate(event.rel[0] * C.PLAYER_ROT_SPEED)
                 self.player.pitch_view(-event.rel[1] * C.PLAYER_ROT_SPEED * 200)
 
-        # Controller Input (Continuous)
-        if self.joystick and not self.paused and self.player and self.player.alive:
-            # Left Stick (0, 1) - Move/Strafe
-            axis_x = self.joystick.get_axis(0)
-            axis_y = self.joystick.get_axis(1)
 
-            if abs(axis_x) > C.JOYSTICK_DEADZONE:
-                assert self.game_map is not None
-                self.player.strafe(
-                    self.game_map, self.bots, right=(axis_x > 0), speed=abs(axis_x) * C.PLAYER_SPEED
-                )
-                self.player.is_moving = True
-            if abs(axis_y) > C.JOYSTICK_DEADZONE:
-                assert self.game_map is not None
-                self.player.move(
-                    self.game_map,
-                    self.bots,
-                    forward=(axis_y < 0),
-                    speed=abs(axis_y) * C.PLAYER_SPEED,
-                )
-                self.player.is_moving = True
-
-            # Right Stick
-            look_x = 0.0
-            look_y = 0.0
-            if self.joystick.get_numaxes() >= 4:
-                look_x = self.joystick.get_axis(2)
-                look_y = self.joystick.get_axis(3)
-
-            if abs(look_x) > C.JOYSTICK_DEADZONE:
-                self.player.rotate(look_x * C.PLAYER_ROT_SPEED * 15 * C.SENSITIVITY_X)
-            if abs(look_y) > C.JOYSTICK_DEADZONE:
-                self.player.pitch_view(-look_y * 10 * C.SENSITIVITY_Y)
-
-            # Buttons
-            # 0: A (Shield)
-            if self.joystick.get_numbuttons() > 0 and self.joystick.get_button(0):
-                self.player.set_shield(True)
-            else:
-                self.player.set_shield(False)
-
-            # 2: X (Reload)
-            if self.joystick.get_numbuttons() > 2 and self.joystick.get_button(2):
-                self.player.reload()
-
-            # Triggers or Shoulders for Fire
-            # 5: RB (Fire)
-            if self.joystick.get_numbuttons() > 5 and self.joystick.get_button(5):
-                if self.player.shoot():
-                    self.fire_weapon()
-
-            # Secondary Fire (LB)
-            if self.joystick.get_numbuttons() > 4 and self.joystick.get_button(4):
-                if self.player.fire_secondary():
-                    self.fire_weapon(is_secondary=True)
-
-            # Hat for Weapon Switch
-            if self.joystick.get_numhats() > 0:
-                hat = self.joystick.get_hat(0)
-                if hat[0] == -1:
-                    self.switch_weapon_with_message("pistol")
-                if hat[0] == 1:
-                    self.switch_weapon_with_message("rifle")
-                if hat[1] == 1:
-                    self.switch_weapon_with_message("shotgun")
-                if hat[1] == -1:
-                    self.switch_weapon_with_message("plasma")
 
     def fire_weapon(self, is_secondary: bool = False) -> None:
         """Handle weapon firing (Hitscan or Projectile)"""
@@ -1357,7 +1291,73 @@ class Game:
         keys = pygame.key.get_pressed()
 
         # Shield Logic
-        self.player.set_shield(keys[pygame.K_SPACE])
+        shield_active = keys[pygame.K_SPACE]
+
+        # Controller Input (Continuous)
+        if self.joystick and not self.paused and self.player and self.player.alive:
+            # Left Stick (0, 1) - Move/Strafe
+            axis_x = self.joystick.get_axis(0)
+            axis_y = self.joystick.get_axis(1)
+
+            if abs(axis_x) > C.JOYSTICK_DEADZONE:
+                self.player.strafe(
+                    self.game_map, self.bots, right=(axis_x > 0), speed=abs(axis_x) * C.PLAYER_SPEED
+                )
+                self.player.is_moving = True
+            if abs(axis_y) > C.JOYSTICK_DEADZONE:
+                self.player.move(
+                    self.game_map,
+                    self.bots,
+                    forward=(axis_y < 0),
+                    speed=abs(axis_y) * C.PLAYER_SPEED,
+                )
+                self.player.is_moving = True
+
+            # Right Stick
+            look_x = 0.0
+            look_y = 0.0
+            if self.joystick.get_numaxes() >= 4:
+                look_x = self.joystick.get_axis(2)
+                look_y = self.joystick.get_axis(3)
+
+            if abs(look_x) > C.JOYSTICK_DEADZONE:
+                self.player.rotate(look_x * C.PLAYER_ROT_SPEED * 15 * C.SENSITIVITY_X)
+            if abs(look_y) > C.JOYSTICK_DEADZONE:
+                self.player.pitch_view(-look_y * 10 * C.SENSITIVITY_Y)
+
+            # Buttons
+            # 0: A (Shield)
+            if self.joystick.get_numbuttons() > 0 and self.joystick.get_button(0):
+                shield_active = True
+
+            # 2: X (Reload)
+            if self.joystick.get_numbuttons() > 2 and self.joystick.get_button(2):
+                self.player.reload()
+
+            # Triggers or Shoulders for Fire
+            # 5: RB (Fire)
+            if self.joystick.get_numbuttons() > 5 and self.joystick.get_button(5):
+                if self.player.shoot():
+                    self.fire_weapon()
+
+            # Secondary Fire (LB)
+            if self.joystick.get_numbuttons() > 4 and self.joystick.get_button(4):
+                if self.player.fire_secondary():
+                    self.fire_weapon(is_secondary=True)
+
+            # Hat for Weapon Switch
+            if self.joystick.get_numhats() > 0:
+                hat = self.joystick.get_hat(0)
+                if hat[0] == -1:
+                    self.switch_weapon_with_message("pistol")
+                if hat[0] == 1:
+                    self.switch_weapon_with_message("rifle")
+                if hat[1] == 1:
+                    self.switch_weapon_with_message("shotgun")
+                if hat[1] == -1:
+                    self.switch_weapon_with_message("plasma")
+
+        self.player.set_shield(shield_active)
 
         # Particles update
         for p in self.particles[:]:
