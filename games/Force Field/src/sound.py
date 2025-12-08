@@ -101,7 +101,10 @@ class SoundManager:
             return
 
         if name in self.sounds:
-            self.sounds[name].play()
+            try:
+                self.sounds[name].play()
+            except BaseException as e:
+                print(f"Sound play failed for {name}: {e}")
 
     def start_music(self, name: str = "music_loop") -> None:
         """Start ambient music loop"""
