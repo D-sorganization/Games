@@ -14,55 +14,87 @@ class TetrisRenderer:
         self.small_font = pygame.font.Font(None, 24)
         self.tiny_font = pygame.font.Font(None, 18)
 
+    def draw_background(self) -> None:
+        """Draw a gradient background for the entire screen"""
+        # Create a vertical gradient from dark blue/purple to black
+        top_color = (20, 20, 40)
+        bottom_color = (0, 0, 10)
+        
+        height = self.screen.get_height()
+        for y in range(height):
+            ratio = y / height
+            r = int(top_color[0] * (1 - ratio) + bottom_color[0] * ratio)
+            g = int(top_color[1] * (1 - ratio) + bottom_color[1] * ratio)
+            b = int(top_color[2] * (1 - ratio) + bottom_color[2] * ratio)
+            pygame.draw.line(self.screen, (r, g, b), (0, y), (self.screen.get_width(), y))
+
+    def draw_bevel_rect(self, surface: pygame.Surface, color: tuple, rect: pygame.Rect) -> None:
+        """Draw a rectangle with a bevel effect"""
+        pygame.draw.rect(surface, color, rect)
+        
+        # Highlighting (Top and Left)
+        light_color = tuple(min(255, c + 80) for c in color)
+        pygame.draw.line(surface, light_color, rect.topleft, rect.topright, 2)
+        pygame.draw.line(surface, light_color, rect.topleft, rect.bottomleft, 2)
+        
+        # Shadow (Bottom and Right)
+        dark_color = tuple(max(0, c - 80) for c in color)
+        pygame.draw.line(surface, dark_color, rect.bottomleft, rect.bottomright, 2)
+        pygame.draw.line(surface, dark_color, rect.topright, rect.bottomright, 2)
+        
+        # Inner fill gradient (subtle)
+        inner_rect = rect.inflate(-4, -4)
+        if inner_rect.width > 0 and inner_rect.height > 0:
+             # Just a simple lighter center
+             center_color = tuple(min(255, c + 20) for c in color)
+             pygame.draw.rect(surface, center_color, inner_rect)
+
     def draw_grid(self, logic: TetrisLogic) -> None:
         """Draw the game grid"""
-        # Draw the play area background
+        # Draw the play area background with a subtle grid pattern
         pygame.draw.rect(
             self.screen,
-            DARK_GRAY,
+            (10, 10, 10), # Very dark gray/black
             (TOP_LEFT_X, TOP_LEFT_Y, PLAY_WIDTH, PLAY_HEIGHT),
         )
+        
+        # Draw background grid lines (faint)
+        for y in range(GRID_HEIGHT + 1):
+             color = (30, 30, 30)
+             pygame.draw.line(
+                self.screen,
+                color,
+                (TOP_LEFT_X, TOP_LEFT_Y + y * GRID_SIZE),
+                (TOP_LEFT_X + PLAY_WIDTH, TOP_LEFT_Y + y * GRID_SIZE),
+            )
+        for x in range(GRID_WIDTH + 1):
+             color = (30, 30, 30)
+             pygame.draw.line(
+                self.screen,
+                color,
+                (TOP_LEFT_X + x * GRID_SIZE, TOP_LEFT_Y),
+                (TOP_LEFT_X + x * GRID_SIZE, TOP_LEFT_Y + PLAY_HEIGHT),
+            )
 
         # Draw the locked blocks
         for y in range(GRID_HEIGHT):
             for x in range(GRID_WIDTH):
                 color = logic.grid[y][x]
                 if color != BLACK:
-                    # Draw block with 3D effect
                     rect = pygame.Rect(
                         TOP_LEFT_X + x * GRID_SIZE,
                         TOP_LEFT_Y + y * GRID_SIZE,
                         GRID_SIZE - 1,
                         GRID_SIZE - 1,
                     )
-                    pygame.draw.rect(self.screen, color, rect)
-                    # Highlight
-                    lighter = tuple(min(255, c + 50) for c in color)
-                    pygame.draw.rect(self.screen, lighter, rect, 2)
-
-        # Draw grid lines
-        for y in range(GRID_HEIGHT + 1):
-            pygame.draw.line(
-                self.screen,
-                GRAY,
-                (TOP_LEFT_X, TOP_LEFT_Y + y * GRID_SIZE),
-                (TOP_LEFT_X + PLAY_WIDTH, TOP_LEFT_Y + y * GRID_SIZE),
-            )
-
-        for x in range(GRID_WIDTH + 1):
-            pygame.draw.line(
-                self.screen,
-                GRAY,
-                (TOP_LEFT_X + x * GRID_SIZE, TOP_LEFT_Y),
-                (TOP_LEFT_X + x * GRID_SIZE, TOP_LEFT_Y + PLAY_HEIGHT),
-            )
+                    self.draw_bevel_rect(self.screen, color, rect)
 
         # Draw border
         pygame.draw.rect(
             self.screen,
             WHITE,
             (TOP_LEFT_X - 2, TOP_LEFT_Y - 2, PLAY_WIDTH + 4, PLAY_HEIGHT + 4),
-            3,
+            2,
         )
 
     def draw_piece(
@@ -81,20 +113,23 @@ class TetrisRenderer:
                     px = TOP_LEFT_X + (piece.x + x) * GRID_SIZE + offset_x
                     py = TOP_LEFT_Y + (piece.y + y) * GRID_SIZE + offset_y
 
-                    # Create surface for transparency
-                    surf = pygame.Surface((GRID_SIZE - 1, GRID_SIZE - 1))
-                    surf.fill(piece.color)
-                    surf.set_alpha(alpha)
-                    self.screen.blit(surf, (px, py))
+                    if alpha < 255:
+                        # Create surface for transparency
+                        surf = pygame.Surface((GRID_SIZE - 1, GRID_SIZE - 1))
+                        # For ghost piece, keep it simple
+                        surf.fill(piece.color)
+                        surf.set_alpha(alpha)
+                        self.screen.blit(surf, (px, py))
+                        pygame.draw.rect(self.screen, (255,255,255), (px, py, GRID_SIZE-1, GRID_SIZE-1), 1)
+                    else:
+                         # Glow effect for active piece
+                        glow_surf = pygame.Surface((GRID_SIZE + 4, GRID_SIZE + 4), pygame.SRCALPHA)
+                        glow_color = (*piece.color, 100)
+                        pygame.draw.rect(glow_surf, glow_color, (0, 0, GRID_SIZE + 4, GRID_SIZE + 4), border_radius=4)
+                        self.screen.blit(glow_surf, (px - 2, py - 2))
 
-                    # Draw highlight
-                    lighter = tuple(min(255, c + 50) for c in piece.color)
-                    pygame.draw.rect(
-                        self.screen,
-                        lighter,
-                        (px, py, GRID_SIZE - 1, GRID_SIZE - 1),
-                        2,
-                    )
+                        rect = pygame.Rect(px, py, GRID_SIZE - 1, GRID_SIZE - 1)
+                        self.draw_bevel_rect(self.screen, piece.color, rect)
 
     def draw_ghost_piece(self, logic: TetrisLogic) -> None:
         """Draw a ghost piece showing where the current piece will land"""

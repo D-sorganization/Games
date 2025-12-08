@@ -116,6 +116,11 @@ class Game:
         self.selected_lives = C.DEFAULT_LIVES
         self.selected_start_level = C.DEFAULT_START_LEVEL
 
+        # Combo & Atmosphere
+        self.kill_combo_count = 0
+        self.kill_combo_timer = 0
+        self.heartbeat_timer = 0
+
         # Visual effects
         self.particles: List[Dict[str, Any]] = []
         self.damage_texts: List[Dict[str, Any]] = []
@@ -448,6 +453,31 @@ class Game:
                             found_pos = True
                             break
 
+        # Spawn Boss & Fast Enemy (Demon) in random corner or center
+        # "At the end of each level we need a huge enemy or a fast enemy. - lets have one of each."
+        boss_types = ["boss", "demon"]
+        for b_type in boss_types:
+            # Find safe spot
+            for attempt in range(50):
+                 cx = random.randint(2, self.game_map.size - 3)
+                 cy = random.randint(2, self.game_map.size - 3)
+                 if (not self.game_map.is_wall(cx, cy) 
+                     and not self.game_map.is_inside_building(cx, cy)
+                     and math.sqrt((cx-player_pos[0])**2 + (cy-player_pos[1])**2) > 10): # Far spawn
+                     
+                     self.bots.append(
+                        Bot(
+                            cx + 0.5,
+                            cy + 0.5,
+                            self.level,
+                            enemy_type=b_type,
+                            difficulty=self.selected_difficulty
+                        )
+                     )
+                     break
+                            found_pos = True
+                            break
+
                     if not found_pos:
                         # Last resort: spawn at corner if safe, otherwise skip ONE bot (safety)
                         if not self.game_map.is_wall(
@@ -555,97 +585,106 @@ class Game:
     def handle_game_events(self) -> None:
         """Handle gameplay events"""
         for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                self.running = False
-            elif event.type == pygame.MOUSEBUTTONDOWN and self.paused:
-                if event.button == 1:
-                    mouse_pos = pygame.mouse.get_pos()
-                    menu_items = ["RESUME", "SAVE GAME", "QUIT TO MENU"]
-                    for i, item in enumerate(menu_items):
-                        rect = pygame.Rect(
-                            C.SCREEN_WIDTH // 2 - 100, C.SCREEN_HEIGHT // 2 - 50 + i * 60, 200, 50
-                        )
-                        if rect.collidepoint(mouse_pos):
-                            if item == "RESUME":
-                                self.paused = False
-                                self.total_paused_time += (
-                                    pygame.time.get_ticks() - self.pause_start_time
-                                )
-                                pygame.mouse.set_visible(False)
-                                pygame.event.set_grab(True)
-                            elif item == "SAVE GAME":
-                                try:
-                                    with open(C.SAVE_FILE_PATH, "w") as f:
-                                        f.write(f"{self.level}")
-                                except OSError as e:
-                                    print(f"Save failed: {e}")
-                                    self.damage_texts.append(
-                                        {
-                                            "x": C.SCREEN_WIDTH // 2,
-                                            "y": C.SCREEN_HEIGHT // 2,
-                                            "text": "SAVE FAILED!",
-                                            "color": C.RED,
-                                            "timer": 60,
-                                            "vy": -0.5,
-                                        }
+            try:
+                if event.type == pygame.QUIT:
+                    self.running = False
+                elif event.type == pygame.MOUSEBUTTONDOWN and self.paused:
+                    if event.button == 1:
+                        mouse_pos = pygame.mouse.get_pos()
+                        menu_items = ["RESUME", "SAVE GAME", "QUIT TO MENU"]
+                        for i, item in enumerate(menu_items):
+                            rect = pygame.Rect(
+                                C.SCREEN_WIDTH // 2 - 100, C.SCREEN_HEIGHT // 2 - 50 + i * 60, 200, 50
+                            )
+                            if rect.collidepoint(mouse_pos):
+                                if item == "RESUME":
+                                    self.paused = False
+                                    self.total_paused_time += (
+                                        pygame.time.get_ticks() - self.pause_start_time
                                     )
-                                self.paused = False
-                                self.total_paused_time += (
-                                    pygame.time.get_ticks() - self.pause_start_time
-                                )
-                                pygame.mouse.set_visible(False)
-                                pygame.event.set_grab(True)
-                            elif item == "QUIT TO MENU":
-                                self.state = "menu"
-                                self.paused = False
-                                pygame.mouse.set_visible(True)
-                                pygame.event.set_grab(False)
-                            break  # Handle one click
+                                    pygame.mouse.set_visible(False)
+                                    pygame.event.set_grab(True)
+                                elif item == "SAVE GAME":
+                                    try:
+                                        with open(C.SAVE_FILE_PATH, "w") as f:
+                                            f.write(f"{self.level}")
+                                    except OSError as e:
+                                        print(f"Save failed: {e}")
+                                        self.damage_texts.append(
+                                            {
+                                                "x": C.SCREEN_WIDTH // 2,
+                                                "y": C.SCREEN_HEIGHT // 2,
+                                                "text": "SAVE FAILED!",
+                                                "color": C.RED,
+                                                "timer": 60,
+                                                "vy": -0.5,
+                                            }
+                                        )
+                                    self.paused = False
+                                    self.total_paused_time += (
+                                        pygame.time.get_ticks() - self.pause_start_time
+                                    )
+                                    pygame.mouse.set_visible(False)
+                                    pygame.event.set_grab(True)
+                                elif item == "QUIT TO MENU":
+                                    self.state = "menu"
+                                    self.paused = False
+                                    pygame.mouse.set_visible(True)
+                                    pygame.event.set_grab(False)
+                                break  # Handle one click
 
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
-                    self.state = "menu"
-                    pygame.mouse.set_visible(True)
-                    pygame.event.set_grab(False)
-                elif event.key == pygame.K_p:
-                    self.paused = not self.paused
-                    if self.paused:
-                        self.pause_start_time = pygame.time.get_ticks()
-                    else:
-                        self.total_paused_time += pygame.time.get_ticks() - self.pause_start_time
-                    pygame.mouse.set_visible(self.paused)
-                    pygame.event.set_grab(not self.paused)
-                # Weapon switching
-                elif not self.paused:
-                    if event.key == pygame.K_1:
-                        self.switch_weapon_with_message("pistol")
-                    elif event.key == pygame.K_2:
-                        self.switch_weapon_with_message("rifle")
-                    elif event.key == pygame.K_3:
-                        self.switch_weapon_with_message("shotgun")
-                    elif event.key == pygame.K_4:
-                        self.switch_weapon_with_message("plasma")
-                    elif event.key == pygame.K_f:
-                        assert self.player is not None
-                        if self.player.activate_bomb():
-                            self.handle_bomb_explosion()
-                    elif event.key == pygame.K_r:
-                        assert self.player is not None
-                        self.player.reload()
-                    elif event.key == pygame.K_z:  # Zoom Toggle
-                        assert self.player is not None
-                        self.player.zoomed = not self.player.zoomed
-            elif event.type == pygame.MOUSEBUTTONDOWN and not self.paused:
-                assert self.player is not None
-                if event.button == 1:  # Left-click to fire
-                    if self.player.shoot():
-                        self.fire_weapon()
-                elif event.button == 3:  # Right-click to secondary fire
-                    if self.player.fire_secondary():
-                        self.fire_weapon(is_secondary=True)
-            elif event.type == pygame.MOUSEMOTION and not self.paused:
-                assert self.player is not None
-                self.player.rotate(event.rel[0] * C.PLAYER_ROT_SPEED)
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE:
+                        self.state = "menu"
+                        pygame.mouse.set_visible(True)
+                        pygame.event.set_grab(False)
+                    elif event.key == pygame.K_p:
+                        self.paused = not self.paused
+                        if self.paused:
+                            self.pause_start_time = pygame.time.get_ticks()
+                        else:
+                            self.total_paused_time += pygame.time.get_ticks() - self.pause_start_time
+                        pygame.mouse.set_visible(self.paused)
+                        pygame.event.set_grab(not self.paused)
+                    # Weapon switching
+                    elif not self.paused:
+                        if event.key == pygame.K_1:
+                            self.switch_weapon_with_message("pistol")
+                        elif event.key == pygame.K_2:
+                            self.switch_weapon_with_message("rifle")
+                        elif event.key == pygame.K_3:
+                            self.switch_weapon_with_message("shotgun")
+                        elif event.key == pygame.K_4:
+                            self.switch_weapon_with_message("plasma")
+                        elif event.key == pygame.K_f:
+                            try:
+                                assert self.player is not None
+                                if self.player.activate_bomb():
+                                    self.handle_bomb_explosion()
+                            except Exception as e:
+                                print(f"Bomb Error: {e}")
+                                import traceback
+                                traceback.print_exc()
+                        elif event.key == pygame.K_r:
+                            assert self.player is not None
+                            self.player.reload()
+                        elif event.key == pygame.K_z:  # Zoom Toggle
+                            assert self.player is not None
+                            self.player.zoomed = not self.player.zoomed
+                elif event.type == pygame.MOUSEBUTTONDOWN and not self.paused:
+                    assert self.player is not None
+                    if event.button == 1:  # Left-click to fire
+                        if self.player.shoot():
+                            self.fire_weapon()
+                    elif event.button == 3:  # Right-click to secondary fire
+                        if self.player.fire_secondary():
+                            self.fire_weapon(is_secondary=True)
+                elif event.type == pygame.MOUSEMOTION and not self.paused:
+                    assert self.player is not None
+                    self.player.rotate(event.rel[0] * C.PLAYER_ROT_SPEED)
+            except AttributeError as e:
+                print(f"Event Error: {e}")
+                continue
 
     def fire_weapon(self, is_secondary: bool = False) -> None:
         """Handle weapon firing (Hitscan or Projectile)"""
@@ -653,7 +692,8 @@ class Game:
         weapon = self.player.current_weapon
 
         # Sound
-        self.sound_manager.play_sound("shoot")
+        sound_name = f"shoot_{weapon}"
+        self.sound_manager.play_sound(sound_name)
 
         # Visuals & Logic
         if weapon == "plasma" and not is_secondary:
@@ -847,6 +887,7 @@ class Game:
                     final_damage *= 3
 
                 closest_bot.take_damage(final_damage, is_headshot=is_headshot)
+                self.sound_manager.play_sound("scream")
 
                 damage_dealt = final_damage  # Update for text
 
@@ -880,6 +921,7 @@ class Game:
                 if not closest_bot.alive:
                     self.kills += 1
                     self.last_death_pos = (closest_bot.x, closest_bot.y)
+                    self.sound_manager.play_sound("death")
 
             # Visuals
             if is_secondary:
@@ -1130,8 +1172,46 @@ class Game:
                         projectile.alive = False
                         break
 
-            if not projectile.alive:
-                self.projectiles.remove(projectile)
+                if not projectile.alive:
+                    self.projectiles.remove(projectile)
+
+        # Heartbeat Logic
+        # Find nearest enemy
+        min_dist = float('inf')
+        for bot in self.bots:
+            if bot.alive: # Only alive bots trigger heartbeat
+                dist = math.sqrt((bot.x - self.player.x)**2 + (bot.y - self.player.y)**2)
+                if dist < min_dist:
+                    min_dist = dist
+        
+        # Beat frequency based on distance
+        # e.g. 5 tiles = fast (0.5s), 20 tiles = slow (1.5s)
+        if min_dist < 20:
+            beat_delay = int(min(1.5, max(0.4, min_dist / 10.0)) * C.FPS)
+            self.heartbeat_timer -= 1
+            if self.heartbeat_timer <= 0:
+                self.sound_manager.play_sound("heartbeat")
+                self.heartbeat_timer = beat_delay
+
+        # Combo system / Catchphrases check
+        if self.kill_combo_timer > 0:
+            self.kill_combo_timer -= 1
+            if self.kill_combo_timer <= 0:
+                # Combo ended
+                if self.kill_combo_count >= 3:
+                    phrase = random.choice(["phrase_cool", "phrase_awesome", "phrase_brutal"])
+                    self.sound_manager.play_sound(phrase)
+                    # Text popup
+                    self.damage_texts.append({
+                        "x": C.SCREEN_WIDTH // 2,
+                        "y": C.SCREEN_HEIGHT // 2 - 150,
+                        "text": phrase.replace("phrase_", "").upper() + "!",
+                        "color": C.YELLOW,
+                        "timer": 120,
+                        "vy": -0.2
+                    })
+                self.kill_combo_count = 0
+
 
     def render_menu(self) -> None:
         """Render main menu (Title Screen)"""
@@ -1430,69 +1510,149 @@ class Game:
         pygame.display.flip()
 
     def render_weapon(self) -> None:
-        """Render current weapon in FPS view (Centered)"""
+        """Render current weapon in FPS view (Centered) with high fidelity"""
         assert self.player is not None
         weapon = self.player.current_weapon
         cx = C.SCREEN_WIDTH // 2
         cy = C.SCREEN_HEIGHT
 
-        # Bobbing effect (simple)
+        # Bobbing effect
         bob_y = 0
         if self.player.is_moving:
-            bob_y = int(math.sin(pygame.time.get_ticks() * 0.01) * 10)
+            bob_y = int(math.sin(pygame.time.get_ticks() * 0.012) * 15)
+        
+        # Reload Animation (Dip)
+        w_state = self.player.weapon_state[weapon]
+        if w_state["reloading"]:
+            w_data = C.WEAPONS.get(weapon, {}) 
+            reload_max = w_data.get("reload_time", 60)
+            if reload_max > 0:
+                pct = w_state["reload_timer"] / reload_max # 1.0 to 0.0
+                # Dip down and up. Peak at 0.5
+                dip = math.sin(pct * math.pi) * 150
+                cy += int(dip)
 
         cy += bob_y
 
+        # Helper colors
+        GUN_METAL = (40, 45, 50)
+        GUN_HIGHLIGHT = (70, 75, 80)
+        GUN_DARK = (20, 25, 30)
+        
         if weapon == "pistol":
-            # Simple Handgun
-            # Grip/Hand
-            pygame.draw.rect(self.screen, (50, 40, 30), (cx - 20, cy - 100, 40, 100))
-            # Barrel
-            pygame.draw.rect(self.screen, (30, 30, 30), (cx - 15, cy - 150, 30, 100))
-            # Slide
-            pygame.draw.rect(self.screen, (60, 60, 60), (cx - 15, cy - 150, 30, 80))
-            # Muzzle
-            pygame.draw.rect(self.screen, (10, 10, 10), (cx - 5, cy - 150, 10, 10))
+            # High-Res Heavy Pistol (Deagle-ish)
+            scale = 4
+            
+            # 1. Grip (Darker)
+            pygame.draw.polygon(self.screen, (30, 25, 20), [
+                (cx - 30, cy), (cx + 30, cy),
+                (cx + 35, cy - 100), (cx - 35, cy - 100)
+            ])
+            
+            # 2. Main Body / Frame
+            pygame.draw.rect(self.screen, GUN_METAL, (cx - 20, cy - 140, 40, 140))
+            
+            # 3. Slide (Lighter, detailed)
+            slide_y = cy - 180
+            # Recoil recoil (if shooting, slide moves back)
+            if self.player.shooting:
+                slide_y += 20
+                
+            pygame.draw.polygon(self.screen, GUN_HIGHLIGHT, [
+                (cx - 25, slide_y), (cx + 25, slide_y),
+                (cx + 25, slide_y + 120), (cx - 25, slide_y + 120)
+            ])
+            # Slide serrations
+            for i in range(5):
+                 y_ser = slide_y + 80 + i * 8
+                 pygame.draw.line(self.screen, GUN_DARK, (cx - 20, y_ser), (cx + 20, y_ser), 2)
+                 
+            # 4. Barrel Tip
+            pygame.draw.rect(self.screen, (10, 10, 10), (cx - 8, slide_y - 5, 16, 10))
+            
+            # 5. Sights
+            pygame.draw.rect(self.screen, (10, 10, 10), (cx - 20, slide_y - 12, 5, 12)) # Rear
+            pygame.draw.rect(self.screen, (10, 10, 10), (cx + 15, slide_y - 12, 5, 12)) # Rear R
+            pygame.draw.rect(self.screen, C.RED, (cx - 2, slide_y - 8, 4, 8)) # Front glowing dot
 
         elif weapon == "shotgun":
-            # Double Barrel Shotgun
+            # Double Barrel Sawed-off
+            
+            # Barrels (Side by Side)
             # Left Barrel
-            pygame.draw.rect(self.screen, (40, 40, 40), (cx - 25, cy - 180, 20, 180))
+            pygame.draw.circle(self.screen, (20,20,20), (cx - 30, cy - 180), 22)
+            pygame.draw.rect(self.screen, GUN_METAL, (cx - 52, cy - 180, 44, 200))
+            pygame.draw.rect(self.screen, (10,10,10), (cx - 48, cy - 200, 36, 100)) # Hollow tone
+            
             # Right Barrel
-            pygame.draw.rect(self.screen, (40, 40, 40), (cx + 5, cy - 180, 20, 180))
-            # Stock/Body
-            pygame.draw.rect(self.screen, (100, 70, 20), (cx - 30, cy - 80, 60, 80))
-            # Sights
-            pygame.draw.circle(self.screen, (10, 10, 10), (cx - 15, cy - 180), 8)
-            pygame.draw.circle(self.screen, (10, 10, 10), (cx + 15, cy - 180), 8)
+            pygame.draw.circle(self.screen, (20,20,20), (cx + 30, cy - 180), 22)
+            pygame.draw.rect(self.screen, GUN_METAL, (cx + 8, cy - 180, 44, 200))
+            pygame.draw.rect(self.screen, (10,10,10), (cx + 12, cy - 200, 36, 100))
+            
+            # Rib between barrels
+            pygame.draw.rect(self.screen, GUN_DARK, (cx - 8, cy - 180, 16, 180))
+            
+            # Wooden Foregrip
+            pygame.draw.polygon(self.screen, (100, 60, 20), [
+                (cx - 60, cy - 50), (cx + 60, cy - 50),
+                (cx + 50, cy), (cx - 50, cy)
+            ])
+            
+            # Shell ejection feedback?
 
         elif weapon == "rifle":
-            # Sci-Fi Rifle (using chaingun style for now or updated)
-            # Main central axis
-            pygame.draw.rect(self.screen, (40, 40, 50), (cx - 15, cy - 160, 30, 160))
-            # Barrels
-            pygame.draw.rect(self.screen, (60, 60, 70), (cx - 10, cy - 180, 20, 180))
-            # Body box
-            pygame.draw.rect(self.screen, (50, 50, 60), (cx - 30, cy - 60, 60, 60))
-            # Detail
-            pygame.draw.rect(self.screen, C.CYAN, (cx - 5, cy - 100, 10, 40))
+            # Heavy Assault Rifle with Optic
+            
+            # Magazine
+            pygame.draw.rect(self.screen, (20,20,20), (cx - 40, cy - 80, 30, 80))
+            
+            # Main Body
+            pygame.draw.polygon(self.screen, GUN_METAL, [
+                (cx - 30, cy - 150), (cx + 30, cy - 150),
+                (cx + 40, cy), (cx - 40, cy)
+            ])
+            
+            # Barrel Shroud
+            pygame.draw.rect(self.screen, GUN_HIGHLIGHT, (cx - 20, cy - 220, 40, 100))
+            # Vents in shroud
+            for i in range(6):
+                y_vent = cy - 210 + i * 15
+                pygame.draw.ellipse(self.screen, (10,10,10), (cx - 10, y_vent, 20, 8))
+            
+            # Barrel
+            pygame.draw.rect(self.screen, (10,10,10), (cx - 5, cy - 240, 10, 40))
+            
+            # Optic
+            pygame.draw.rect(self.screen, (10,10,10), (cx - 5, cy - 160, 10, 40)) # Mount
+            pygame.draw.circle(self.screen, (30,30,30), (cx, cy - 170), 30) # Scope body
 
         elif weapon == "plasma":
-            # Sci-Fi Blaster (Plasma)
-            # Main Body (Purple/Blue)
-            pygame.draw.polygon(
-                self.screen,
-                (40, 40, 80),
-                [(cx - 40, cy), (cx + 40, cy), (cx + 30, cy - 150), (cx - 30, cy - 150)],
-            )
-            # Core
-            pygame.draw.rect(self.screen, C.CYAN, (cx - 10, cy - 140, 20, 100))
-            # Vents
-            for i in range(5):
-                y = cy - 40 - i * 20
-                pygame.draw.line(self.screen, (0, 0, 255), (cx - 20, y), (cx + 20, y), 2)
-            # Tip
-            pygame.draw.circle(self.screen, C.WHITE, (cx, cy - 150), 15)
+            # Sci-Fi BFG Style
+            
+            # Main Bulk
+            pygame.draw.polygon(self.screen, (50, 40, 80), [
+                 (cx - 80, cy), (cx + 80, cy),
+                 (cx + 60, cy - 200), (cx - 60, cy - 200)
+            ])
+            
+            # Glowing Core (Pulsing)
+            pulse = int(20 * math.sin(pygame.time.get_ticks() * 0.01))
+            core_width = 40 + pulse
+            core_color = (0, 255, 255)
+            if w_state["overheated"]:
+                 core_color = (255, 50, 0) # Red if overheated
+                 
+            pygame.draw.rect(self.screen, (0,0,0), (cx - 30, cy - 160, 60, 120)) # Chamber
+            pygame.draw.rect(self.screen, core_color, (cx - core_width//2, cy - 150, core_width, 100))
+            
+            # Coils
+            for i in range(4):
+                y_coil = cy - 140 + i * 25
+                pygame.draw.rect(self.screen, GUN_METAL, (cx - 40, y_coil, 80, 10))
+                
+            # Charging arcs?
+            if self.player.shooting:
+                 pygame.draw.line(self.screen, C.WHITE, (cx - 30, cy - 210), (cx + 30, cy - 210), 3)
 
     def render_hud(self) -> None:
         """Render HUD in Doom-style"""

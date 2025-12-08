@@ -49,9 +49,20 @@ class SoundManager:
         # Map logical names to filenames
         sound_files = {
             "shoot": "shoot.wav",
+            "shoot_pistol": "shoot_pistol.wav",
+            "shoot_rifle": "shoot_rifle.wav",
+            "shoot_shotgun": "shoot_shotgun.wav",
+            "shoot_plasma": "shoot_plasma.wav",
             "enemy_shoot": "enemy_shoot.wav",
-            "ambient": "spooky_ambient.wav",
+            "ambient": "dark_ambient.wav",
             "bomb": "bomb.wav",
+            "scream": "scream.wav",
+            "death": "death.wav",
+            "heartbeat": "heartbeat.wav",
+            "player_hit": "player_hit.wav",
+            "phrase_cool": "phrase_cool.wav",
+            "phrase_awesome": "phrase_awesome.wav",
+            "phrase_brutal": "phrase_brutal.wav",
         }
 
         for name, filename in sound_files.items():

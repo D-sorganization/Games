@@ -62,13 +62,21 @@ class Bot:
         self.mouth_timer = 0
         self.eye_rotation = 0.0
         self.drool_offset = 0.0
+        
+        # Death State
+        self.dead = False
+        self.death_timer = 0
+        self.disintegrate_timer = 0
+        self.removed = False # When fully disintegrated
 
     def update(self, game_map: Map, player: Player, other_bots: List[Bot]) -> Projectile | None:
-        """Update bot AI
-        Returns:
-            Projectile if bot shoots, None otherwise
-        """
-        if not self.alive:
+        """Update bot AI"""
+        if self.dead:
+            self.death_timer += 1
+            if self.death_timer > 60: # Start disintegrating after 1 second
+                self.disintegrate_timer += 1
+                if self.disintegrate_timer > 100:
+                    self.removed = True
             return None
 
         # Update animations
@@ -127,7 +135,7 @@ class Bot:
 
             # Check collision with other bots
             for other_bot in other_bots:
-                if other_bot != self and other_bot.alive:
+                if other_bot != self and not other_bot.dead:
                     other_dist = math.sqrt((new_x - other_bot.x) ** 2 + (self.y - other_bot.y) ** 2)
                     if other_dist < 0.5:
                         can_move_x = False
@@ -172,10 +180,16 @@ class Bot:
             damage: Base damage amount
             is_headshot: If True, do 3x damage instead of instant kill
         """
+        if self.dead:
+            return
+
         if is_headshot:
             self.health -= damage * 3  # Headshot does 3x damage, not instant kill
         else:
             self.health -= damage
+            
         if self.health <= 0:
             self.health = 0
-            self.alive = False
+            self.dead = True
+            self.alive = False # Kept for backward compat logic usage, but we use dead/removed now
+
