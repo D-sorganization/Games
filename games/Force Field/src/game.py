@@ -2594,7 +2594,7 @@ class Game:
                 elif slide["type"] == "story":
                     lines = slide["lines"]
                     # Calculate how many lines to show based on time
-                    # Show one line every 1.5 seconds roughly
+                    # Show one line every 1.5 seconds
                     lines_to_show = int((elapsed / duration) * (len(lines) + 1))
                     lines_to_show = min(lines_to_show, len(lines))
                     
