@@ -2418,10 +2418,10 @@ class Game:
                     self.intro_video = None
 
         # Phase 2: Graphic Novel / Story
-        elif self.intro_phase == 2:
+        if self.intro_phase == 2:
             # Slides Config
             slides = [
-                {"type": "distortion", "text": "FROM THE DEMENTED MIND OF JASPER", "duration": 4000, "sound": "laugh"},
+                {"type": "distortion", "text": "FROM THE DEMENTED MIND", "text2": "OF JASPER", "duration": 5000, "sound": "laugh"},
                 {"type": "story", "lines": [
                     "They said the field would contain them.",
                     "They were wrong.",
@@ -2445,29 +2445,38 @@ class Game:
 
                 # Distortion Effect
                 if slide["type"] == "distortion":
-                    font = self.title_font
-                    text_str = slide["text"]
+                    # Try using a scary font (Chiller is good for Goosebumps vibes)
+                    font = pygame.font.SysFont("chiller", 100) if pygame.font.match_font("chiller") else self.title_font
                     
-                    # Center text roughly
-                    total_w = sum([font.size(char)[0] for char in text_str])
-                    start_x = (C.SCREEN_WIDTH - total_w) // 2
-                    y = C.SCREEN_HEIGHT // 2 - 50
+                    lines = [slide["text"]]
+                    if "text2" in slide: lines.append(slide["text2"])
                     
-                    x_off = 0
-                    for index, char in enumerate(text_str):
-                        # Jitter math
-                        time_factor = pygame.time.get_ticks() * 0.01 + index * 0.5
-                        jitter_x = math.sin(time_factor * 2.0) * 8
-                        jitter_y = math.cos(time_factor * 1.5) * 8
+                    start_y = C.SCREEN_HEIGHT // 2 - (len(lines) * 80) // 2
+                    
+                    for line_idx, text_str in enumerate(lines):
+                        total_w = sum([font.size(char)[0] for char in text_str])
+                        start_x = (C.SCREEN_WIDTH - total_w) // 2
+                        y = start_y + line_idx * 100
                         
-                        # Scale pulse?
-                        
-                        # Color pulse
-                        c_val = int(150 + 100 * math.sin(time_factor * 0.5))
-                        char_surf = font.render(char, True, (c_val, 0, 0))
-                        
-                        self.screen.blit(char_surf, (start_x + x_off + jitter_x, y + jitter_y))
-                        x_off += font.size(char)[0]
+                        x_off = 0
+                        for index, char in enumerate(text_str):
+                            # Slower Jitter
+                            time_factor = pygame.time.get_ticks() * 0.003 + index * 0.2
+                            jitter_x = math.sin(time_factor * 2.0) * 2
+                            jitter_y = math.cos(time_factor * 1.5) * 4 # More vertical dripping movement
+                            
+                            # Pulsing Blood Red
+                            c_val = int(120 + 135 * abs(math.sin(time_factor * 0.8)))
+                            color = (c_val, 0, 0)
+                            
+                            char_surf = font.render(char, True, color)
+                            # Blur/Glow effect (draw scaled up slightly behind?)
+                            # Simple approach: Draw dark red shadow
+                            shadow_surf = font.render(char, True, (50, 0, 0))
+                            self.screen.blit(shadow_surf, (start_x + x_off + jitter_x + 2, y + jitter_y + 2))
+                            
+                            self.screen.blit(char_surf, (start_x + x_off + jitter_x, y + jitter_y))
+                            x_off += font.size(char)[0]
 
                 # Story Streaming
                 elif slide["type"] == "story":
