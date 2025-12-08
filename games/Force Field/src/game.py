@@ -2087,6 +2087,11 @@ class Game:
                       self.sound_manager.play_sound("water")
                       self._water_played = True
             
+            # Play Music Box after delay
+            if elapsed > 2000 and not hasattr(self, "_music_intro_played"):
+                 self.sound_manager.play_sound("music_intro")
+                 self._music_intro_played = True
+            
             # Text - Stylish Upstream Drift
             # Use Impact or bold font
             stylish_font = pygame.font.SysFont("impact", 70)
@@ -2140,7 +2145,12 @@ class Game:
             else:
                  # Debug info relative to user request
                  if not hasattr(self, "_video_debug_printed"):
-                      print("DEBUG: Video not opened or CV2 missing")
+                      vid_path = os.path.join(self.assets_dir, "video", "fish.mp4")
+                      print(f"DEBUG: Video not opened or CV2 missing. Path: {vid_path}")
+                      if os.path.exists(vid_path):
+                          print("DEBUG: File exists on disk.")
+                      else:
+                          print("DEBUG: File DOES NOT exist on disk.")
                       self._video_debug_printed = True
 
                  # Fallback to Image

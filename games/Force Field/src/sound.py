@@ -70,8 +70,10 @@ class SoundManager:
             "water": "stream-sounds-sample-420906.mp3",
             "laugh": "possessed-laugh-94851.mp3",
             "breath": "normal-breath-loop-400151.mp3",
-            "oww": "short-oww-46070.mp3",
+            "oww": "oww.wav", # Using generated wav backup as MP3 failed
             "groan": "male-groan-of-pain-357971.mp3",
+            "music_intro": "music_intro.wav",
+            "music_loop": "music_loop.wav",
         }
 
         for name, filename in sound_files.items():

@@ -229,3 +229,92 @@ def gen_phrase(name, freq_base):
 gen_phrase("cool", 440)
 gen_phrase("awesome", 554)
 gen_phrase("brutal", 220)
+
+# Music Tracks
+def gen_music_intro():
+    filename = os.path.join(sounds_dir, "music_intro.wav")
+    sample_rate = 44100
+    duration = 10.0 # Short loop or intro
+    n_frames = int(sample_rate * duration)
+    with wave.open(filename, 'w') as f:
+        f.setparams((1, 2, sample_rate, n_frames, 'NONE', 'not compressed'))
+        
+        # Sequence of notes (frequencies) for music box
+        # Spooky chromatic / diminished scale
+        notes = [660, 587, 523, 622, 660, 784, 523, 440, 392, 440, 523, 660]
+        note_len = 0.5 # seconds
+        
+        for i in range(n_frames):
+            t = i / sample_rate
+            
+            # Which note?
+            note_idx = int(t / note_len) % len(notes)
+            freq = notes[note_idx]
+            
+            # Detune - sinusoidal pitch wobble (record player warp / untuned)
+            freq = freq * (1.0 + 0.02 * math.sin(2 * math.pi * 0.5 * t))
+            
+            # Note envelope (Attack Decay)
+            local_t = t % note_len
+            env = math.exp(-local_t * 5)
+            
+            # Tintinnabulation (Sine + high harmonics)
+            val = math.sin(2 * math.pi * freq * t) * 0.5 + \
+                  math.sin(2 * math.pi * freq * 2.01 * t) * 0.2 + \
+                  math.sin(2 * math.pi * freq * 3.5 * t) * 0.1
+            
+            val = val * env * 0.6
+             
+            f.writeframes(struct.pack('h', int(val * 32767)))
+gen_music_intro()
+
+def gen_music_loop():
+    filename = os.path.join(sounds_dir, "music_loop.wav")
+    sample_rate = 44100
+    duration = 8.0 # Loopable
+    n_frames = int(sample_rate * duration)
+    with wave.open(filename, 'w') as f:
+        f.setparams((1, 2, sample_rate, n_frames, 'NONE', 'not compressed'))
+        
+        # Halloween Trap / Bells
+        # Minor arpeggio
+        notes = [440, 523, 659, 523, 440, 392, 349, 392] # A C E C A G F G
+        note_len = 0.5
+        
+        for i in range(n_frames):
+            t = i / sample_rate
+            
+            note_idx = int(t / note_len / 2) % len(notes) # Slower? No
+            # Actually let's do fast arpeggios
+            note_idx = int(t * 4) % len(notes) 
+            freq = notes[note_idx]
+            
+            local_t = (t * 4) % 1.0
+            
+            # Bell sound: FM synthesis?
+            # Carrier freq, Modulator 
+            val = math.sin(2 * math.pi * freq * t) * math.exp(-local_t * 3)
+            
+            # Add creepy drone bass
+            bass = math.sin(2 * math.pi * 110 * t) * 0.3
+            
+            val = (val * 0.5 + bass * 0.5) * 0.8
+            
+            f.writeframes(struct.pack('h', int(val * 32767)))
+gen_music_loop()
+
+# Backup Oww if mp3 fails
+def gen_oww_backup():
+    filename = os.path.join(sounds_dir, "oww.wav")
+    sample_rate = 44100
+    duration = 0.4
+    n_frames = int(sample_rate * duration)
+    with wave.open(filename, 'w') as f:
+        f.setparams((1, 2, sample_rate, n_frames, 'NONE', 'not compressed'))
+        for i in range(n_frames):
+            t = i / sample_rate
+            # Falling pitch "ow"
+            freq = 400 * (1 - t/duration)
+            val = math.sin(2 * math.pi * freq * t) * math.exp(-t*3)
+            f.writeframes(struct.pack('h', int(0.8 * 32767 * val)))
+gen_oww_backup()
