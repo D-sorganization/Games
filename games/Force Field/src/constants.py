@@ -79,7 +79,7 @@ WEAPONS = {
     },
     "plasma": {
         "name": "Plasma",
-        "damage": 35,
+        "damage": 75, # Boosted for BFG feel
         "range": WEAPON_RANGE_PLASMA,
         "ammo": 999,
         "cooldown": 8, # Faster fire rate (was 12)
@@ -98,6 +98,7 @@ WEAPONS = {
 # Combat settings
 HEADSHOT_THRESHOLD = 0.05
 SPAWN_SAFETY_MARGIN = 3
+PLASMA_AOE_RADIUS = 2.5 # Tiles
 
 # UI settings
 HINT_BG_PADDING_H = 10

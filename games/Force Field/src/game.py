@@ -715,6 +715,7 @@ class Game:
                 is_player=True,
                 color=tuple(C.WEAPONS["plasma"].get("projectile_color", (0, 255, 255))),  # type: ignore[arg-type]
                 size=0.3,
+                weapon_type="plasma",
             )
             self.projectiles.append(p)
             return
@@ -1012,6 +1013,51 @@ class Game:
             }
         )
 
+    def explode_plasma(self, projectile: Projectile) -> None:
+        """Trigger plasma AOE explosion"""
+        # Visuals - Shockwave / Expanding Circle
+        self.particles.append(
+            {
+                "x": projectile.x,
+                "y": projectile.y,
+                "dx": 0,
+                "dy": 0,
+                "color": C.CYAN,  # BFG Color
+                "timer": 20,
+                "size": 50, # Initial size of expansion
+                "type": "shockwave", # Special logic or just circle? Game loop renders simple circles usually.
+            }
+        )
+        # Add many particles
+        for _ in range(20):
+             angle = random.uniform(0, 2*math.pi)
+             sp = random.uniform(2, 5)
+             self.particles.append({
+                 "x": projectile.x,
+                 "y": projectile.y,
+                 "dx": math.cos(angle) * sp,
+                 "dy": math.sin(angle) * sp,
+                 "color": C.BLUE,
+                 "timer": 30,
+                 "size": 5,
+             })
+
+        # Damage Logic - Flat Wave
+        for bot in self.bots:
+            if not bot.alive:
+                continue
+            dx = bot.x - projectile.x
+            dy = bot.y - projectile.y
+            dist = math.sqrt(dx*dx + dy*dy)
+            
+            if dist < C.PLASMA_AOE_RADIUS:
+                bot.take_damage(projectile.damage)
+                if not bot.alive:
+                     self.kills += 1
+                     self.kill_combo_count += 1
+                     self.kill_combo_timer = 180
+                     self.last_death_pos = (bot.x, bot.y)
+
     def update_game(self) -> None:
         """Update game state"""
         if self.paused:
@@ -1155,42 +1201,51 @@ class Game:
         for projectile in self.projectiles[:]:
             if projectile is None:
                 continue
+            
+            was_alive = projectile.alive
             projectile.update(self.game_map)
 
-            if not projectile.is_player:
-                dx = projectile.x - self.player.x
-                dy = projectile.y - self.player.y
-                dist = math.sqrt(dx**2 + dy**2)
-                if dist < 0.5:
-                    old_health = self.player.health
-                    self.player.take_damage(projectile.damage)
-                    if self.player.health < old_health:
-                        # Hit flash
-                        self.damage_flash_timer = 10
-                        self.sound_manager.play_sound("oww")
+            # Check Wall Hit (projectile dies in update)
+            if was_alive and not projectile.alive and getattr(projectile, "weapon_type", "normal") == "plasma":
+                 self.explode_plasma(projectile)
 
-                    projectile.alive = False
-            else:
-                # Player Projectile (Plasma) hitting Bots
-                for bot in self.bots:
-                    if not bot.alive:
-                        continue
-                    dx = projectile.x - bot.x
-                    dy = projectile.y - bot.y
+            if projectile.alive:
+                if not projectile.is_player:
+                    dx = projectile.x - self.player.x
+                    dy = projectile.y - self.player.y
                     dist = math.sqrt(dx**2 + dy**2)
-                    if dist < 0.8:  # Hit radius
-                        bot.take_damage(projectile.damage)
-                        if not bot.alive:
-                            self.kills += 1
-                            self.kill_combo_count += 1
-                            self.kill_combo_timer = 180 # 3 seconds window
-                            self.last_death_pos = (bot.x, bot.y)
+                    if dist < 0.5:
+                        old_health = self.player.health
+                        self.player.take_damage(projectile.damage)
+                        if self.player.health < old_health:
+                            # Hit flash
+                            self.damage_flash_timer = 10
+                            self.sound_manager.play_sound("oww")
 
-                        # Visual
-                        # We skip hit particles for remote hits because computing screen coordinates
-                        # from world coordinates requires projection logic.
                         projectile.alive = False
-                        break
+                else:
+                    # Player Projectile hitting Bots
+                    for bot in self.bots:
+                        if not bot.alive:
+                            continue
+                        dx = projectile.x - bot.x
+                        dy = projectile.y - bot.y
+                        dist = math.sqrt(dx**2 + dy**2)
+                        if dist < 0.8:  # Hit radius
+                            bot.take_damage(projectile.damage)
+                            if not bot.alive:
+                                self.kills += 1
+                                self.kill_combo_count += 1
+                                self.kill_combo_timer = 180 # 3 seconds window
+                                self.last_death_pos = (bot.x, bot.y)
+
+                            # Visual
+                            projectile.alive = False
+                            
+                            # Trigger AOE if Plasma
+                            if getattr(projectile, "weapon_type", "normal") == "plasma":
+                                self.explode_plasma(projectile)
+                            break
 
             if not projectile.alive and projectile in self.projectiles:
                  self.projectiles.remove(projectile) 

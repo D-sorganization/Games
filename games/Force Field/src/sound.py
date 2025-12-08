@@ -53,7 +53,7 @@ class SoundManager:
             "shoot_pistol": "shoot_pistol.wav",
             "shoot_rifle": "shoot_rifle.wav",
             "shoot_shotgun": "shoot_shotgun.wav",
-            "shoot_plasma": "shoot_plasma.wav",
+            "shoot_plasma": "bfg-laser-89662.mp3", # BFG Sound
             "enemy_shoot": "enemy_shoot.wav",
             "ambient": "music_loop.wav", # New spooky background
             "bomb": "bomb.wav",

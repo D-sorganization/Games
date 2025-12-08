@@ -18,6 +18,7 @@ class Projectile:
         is_player: bool = False,
         color: tuple = (255, 0, 0),
         size: float = 0.2,
+        weapon_type: str = "normal",
     ):
         """Initialize projectile"""
         self.x = x
@@ -28,6 +29,7 @@ class Projectile:
         self.is_player = is_player
         self.color = color
         self.size = size
+        self.weapon_type = weapon_type
         self.alive = True
 
     def update(self, game_map: "Map") -> None:
