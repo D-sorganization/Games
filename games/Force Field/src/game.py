@@ -1937,8 +1937,9 @@ class Game:
 
     def render_muzzle_flash(self) -> None:
         """Render muzzle flash"""
-        flash_x = C.SCREEN_WIDTH - 350
-        flash_y = C.SCREEN_HEIGHT - 85
+        # Center of screen horizontally, exactly at gun tip (approx -200 from bottom)
+        flash_x = C.SCREEN_WIDTH // 2
+        flash_y = C.SCREEN_HEIGHT - 210
         
         # Weapon specific flash
         if self.player.current_weapon == "plasma":
@@ -1948,8 +1949,6 @@ class Game:
              pygame.draw.circle(self.screen, C.WHITE, (flash_x, flash_y), 10)
         elif self.player.current_weapon == "shotgun":
              # Huge Orange Flash
-             flash_x -= 20 # Offset for center
-             flash_y -= 10
              
              # Random spikes?
              pygame.draw.circle(self.screen, (255, 100, 0), (flash_x, flash_y), 50) # Dark Orange

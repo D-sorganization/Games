@@ -67,7 +67,7 @@ WEAPONS = {
     },
     "shotgun": {
         "name": "Shotgun",
-        "damage": 15,  # Increased per pellet (was 10)
+        "damage": 20,  # Increased again (was 15)
         "range": WEAPON_RANGE_SHOTGUN,
         "ammo": 999,
         "cooldown": 30,
