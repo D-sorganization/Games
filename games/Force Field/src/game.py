@@ -887,7 +887,7 @@ class Game:
                     final_damage *= 3
 
                 closest_bot.take_damage(final_damage, is_headshot=is_headshot)
-                self.sound_manager.play_sound("scream")
+                # self.sound_manager.play_sound("scream") # Removed, only scream on death now
 
                 damage_dealt = final_damage  # Update for text
 
@@ -921,7 +921,7 @@ class Game:
                 if not closest_bot.alive:
                     self.kills += 1
                     self.last_death_pos = (closest_bot.x, closest_bot.y)
-                    self.sound_manager.play_sound("death")
+                    self.sound_manager.play_sound("scream_real")
 
             # Visuals
             if is_secondary:
@@ -989,7 +989,7 @@ class Game:
 
         # Screen shake or feedback
         try:
-             self.sound_manager.play_sound("bomb")
+             self.sound_manager.play_sound("boom_real")
         except Exception as e:
              print(f"Bomb Audio Failed: {e}")
 
@@ -1025,6 +1025,8 @@ class Game:
             self.lives = 0  # Ensure 0
 
             self.state = "game_over"
+            self.game_over_timer = 0
+            self.sound_manager.play_sound("game_over1")
             pygame.mouse.set_visible(True)
             pygame.event.set_grab(False)
             return
@@ -1919,6 +1921,11 @@ class Game:
         title = self.title_font.render("SYSTEM FAILURE", True, C.RED)
         title_rect = title.get_rect(center=(C.SCREEN_WIDTH // 2, 200))
         self.screen.blit(title, title_rect)
+
+        # Sequence Sound Logic
+        self.game_over_timer += 1
+        if self.game_over_timer == 120: # 2 seconds delay
+             self.sound_manager.play_sound("game_over2")
 
         completed_levels = max(0, self.level - 1)
         total_time = sum(self.level_times)

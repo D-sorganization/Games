@@ -63,6 +63,10 @@ class SoundManager:
             "phrase_cool": "phrase_cool.wav",
             "phrase_awesome": "phrase_awesome.wav",
             "phrase_brutal": "phrase_brutal.wav",
+            "boom_real": "boom-356126.mp3",
+            "game_over1": "game-over-417465.mp3",
+            "game_over2": "game-over-deep-male-voice-clip-352695.mp3",
+            "scream_real": "pathetic-screaming-sound-effect-312867.mp3",
         }
 
         for name, filename in sound_files.items():
