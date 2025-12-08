@@ -1520,7 +1520,7 @@ class Game:
             self.groan_timer -= 1
             if self.groan_timer <= 0:
                  self.sound_manager.play_sound("groan")
-                 self.groan_timer = 240 # 4 seconds roughly?
+                 self.groan_timer = 240 # 4 seconds
 
 
         # Combo system / Catchphrases check
