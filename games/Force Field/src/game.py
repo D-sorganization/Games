@@ -122,6 +122,7 @@ class Game:
         self.heartbeat_timer = 0
         self.breath_timer = 0
         self.groan_timer = 0
+        self.beast_timer = 0
 
         # Visual effects
         self.particles: List[Dict[str, Any]] = []
@@ -506,7 +507,7 @@ class Game:
 
         # Start Music
         # Start Music
-        music_tracks = ["music_loop", "music_drums", "music_horror", "music_piano"]
+        music_tracks = ["music_loop", "music_drums", "music_wind", "music_horror", "music_piano", "music_action"]
         track_name = music_tracks[(self.level - 1) % len(music_tracks)]
         self.sound_manager.start_music(track_name)
 
@@ -1325,6 +1326,14 @@ class Game:
         
         # Beat frequency based on distance
         # e.g. 5 tiles = fast (0.5s), 20 tiles = slow (1.5s)
+        
+        # Periodic Monster Roars
+        if min_dist < 15:
+            self.beast_timer -= 1
+            if self.beast_timer <= 0:
+                 self.sound_manager.play_sound("beast")
+                 self.beast_timer = random.randint(300, 900) # 5-15 seconds
+
         # Beat frequency based on distance
         # e.g. 5 tiles = fast (0.5s), 20 tiles = slow (1.5s)
         if min_dist < 20:

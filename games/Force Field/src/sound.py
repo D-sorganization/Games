@@ -78,6 +78,9 @@ class SoundManager:
             "music_drums": "creepy-drum-ambience-443142.mp3",
             "music_horror": "scary-horror-theme-song-382733.mp3",
             "music_piano": "creepy-piano-for-scary-stories-158423.mp3",
+            "music_action": "horror-thriller-action-247745.mp3",
+            "music_wind": "creepy-wind-410541.mp3",
+            "beast": "beast-408442.mp3",
         }
 
         for name, filename in sound_files.items():
