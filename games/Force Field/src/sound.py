@@ -54,7 +54,7 @@ class SoundManager:
             "shoot_shotgun": "shoot_shotgun.wav",
             "shoot_plasma": "shoot_plasma.wav",
             "enemy_shoot": "enemy_shoot.wav",
-            "ambient": "dark_ambient.wav",
+            "ambient": "music_loop.wav", # New spooky background
             "bomb": "bomb.wav",
             "scream": "scream.wav",
             "death": "death.wav",
