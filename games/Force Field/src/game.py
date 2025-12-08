@@ -1129,47 +1129,61 @@ class Game:
 
     def explode_laser(self, impact_x: float, impact_y: float) -> None:
         """Trigger Massive Laser Explosion at Impact Point"""
-        self.sound_manager.play_sound("boom_real")
-        
-        # Huge AOE
-        hits = 0
-        for bot in self.bots:
-            if bot.alive:
-                 dist = math.sqrt((bot.x - impact_x)**2 + (bot.y - impact_y)**2)
-                 if dist < C.LASER_AOE_RADIUS:
-                     damage = 500
-                     was_alive = bot.alive
-                     bot.take_damage(damage)
-                     hits += 1
-                     
-                     if was_alive and not bot.alive:
-                         self.sound_manager.play_sound("scream")
-                         self.kills += 1
-                         self.kill_combo_count += 1
-                         self.kill_combo_timer = 180
-                         self.last_death_pos = (bot.x, bot.y)
-
-                     # Massive Blood
-                     for _ in range(10):
-                        self.particles.append({
-                            "x": C.SCREEN_WIDTH // 2,
-                            "y": C.SCREEN_HEIGHT // 2,
-                            "dx": random.uniform(-10, 10),
-                            "dy": random.uniform(-10, 10),
-                            "color": (random.randint(200, 255), 0, random.randint(200, 255)),
-                            "timer": 40,
-                            "size": random.randint(4, 8)
-                        })
-
-        if hits > 0:
-             self.damage_texts.append({
-                "x": C.SCREEN_WIDTH//2,
-                "y": C.SCREEN_HEIGHT//2 - 80,
-                "text": "LASER ANNIHILATION!",
-                "color": (255, 0, 255),
-                "timer": 60,
-                "vy": -2
-             })
+        try:
+            self.sound_manager.play_sound("boom_real")
+        except Exception as e:
+            print(f"Boom sound failed: {e}")
+            
+        try:
+            # Huge AOE
+            hits = 0
+            for bot in self.bots:
+                # Basic check
+                if not hasattr(bot, 'alive'): continue
+                
+                if bot.alive:
+                     dist = math.sqrt((bot.x - impact_x)**2 + (bot.y - impact_y)**2)
+                     if dist < C.LASER_AOE_RADIUS:
+                         damage = 500
+                         was_alive = bot.alive
+                         bot.take_damage(damage)
+                         hits += 1
+                         
+                         if was_alive and not bot.alive:
+                             try:
+                                 self.sound_manager.play_sound("scream")
+                             except: pass
+                             
+                             self.kills += 1
+                             self.kill_combo_count += 1
+                             self.kill_combo_timer = 180
+                             self.last_death_pos = (bot.x, bot.y)
+    
+                         # Massive Blood
+                         for _ in range(10):
+                            self.particles.append({
+                                "x": C.SCREEN_WIDTH // 2,
+                                "y": C.SCREEN_HEIGHT // 2,
+                                "dx": random.uniform(-10, 10),
+                                "dy": random.uniform(-10, 10),
+                                "color": (random.randint(200, 255), 0, random.randint(200, 255)),
+                                "timer": 40,
+                                "size": random.randint(4, 8)
+                            })
+    
+            if hits > 0:
+                 self.damage_texts.append({
+                    "x": C.SCREEN_WIDTH//2,
+                    "y": C.SCREEN_HEIGHT//2 - 80,
+                    "text": "LASER ANNIHILATION!",
+                    "color": (255, 0, 255),
+                    "timer": 60,
+                    "vy": -2
+                 })
+        except Exception as e:
+            print(f"Critical Laser Error: {e}")
+            import traceback
+            traceback.print_exc()
 
     def update_game(self) -> None:
         """Update game state"""
@@ -2263,6 +2277,11 @@ class Game:
                         self.intro_video.release()
                         self.intro_video = None
                     self.state = "menu"
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                 if self.intro_video:
+                        self.intro_video.release()
+                        self.intro_video = None
+                 self.state = "menu"
 
     def render_intro(self) -> None:
         """Render Max Payne style graphic novel intro"""
@@ -2393,51 +2412,92 @@ class Game:
                     self.intro_video.release()
                     self.intro_video = None
 
-        # Phase 2: Graphic Novel Slides
+        # Phase 2: Graphic Novel / Story
         elif self.intro_phase == 2:
-            # Play Demented Laugh
-            if self.intro_step == 0 and not hasattr(self, "_laugh_played"):
-                self.sound_manager.play_sound("laugh")
-                self._laugh_played = True
-
-            # Intro slides
+            # Slides Config
             slides = [
-                ("FROM THE DEMENTED MIND", "OF JASPER", 3000),
-                ("NO MERCY", "NO ESCAPE", 4000),
-                ("FORCE FIELD", "THE ARENA AWAITS", 4000),
+                {"type": "distortion", "text": "FROM THE DEMENTED MIND OF JASPER", "duration": 4000, "sound": "laugh"},
+                {"type": "story", "lines": [
+                    "They said the field would contain them.",
+                    "They were wrong.",
+                    "The specimens have breached the perimeter.",
+                    "You are the last containment unit.",
+                    "Objective: TERMINATE."
+                ], "duration": 10000},
+                {"type": "static", "text": "NO MERCY. NO ESCAPE.", "duration": 4000, "color": (200, 0, 0)},
+                {"type": "static", "text": "FORCE FIELD", "sub": "THE ARENA AWAITS", "duration": 4000, "color": C.WHITE},
             ]
 
             if self.intro_step < len(slides):
-                line1, line2, duration = slides[self.intro_step]
+                slide = slides[self.intro_step]
+                duration = slide["duration"]
+                
+                # Sound Trigger
+                if elapsed < 50 and "sound" in slide:
+                     if slide["sound"] == "laugh" and not hasattr(self, "_laugh_played_2"):
+                          self.sound_manager.play_sound("laugh")
+                          self._laugh_played_2 = True
 
-                # Fade in/out logic
-                alpha = min(
-                    C.INTRO_FADE_MAX,
-                    max(
-                        0,
-                        C.INTRO_FADE_MAX
-                        - abs(elapsed - duration / 2) * (C.INTRO_FADE_SCALE / duration),
-                    ),
-                )
+                # Distortion Effect
+                if slide["type"] == "distortion":
+                    font = self.title_font
+                    text_str = slide["text"]
+                    
+                    # Center text roughly
+                    total_w = sum([font.size(char)[0] for char in text_str])
+                    start_x = (C.SCREEN_WIDTH - total_w) // 2
+                    y = C.SCREEN_HEIGHT // 2 - 50
+                    
+                    x_off = 0
+                    for index, char in enumerate(text_str):
+                        # Jitter math
+                        time_factor = pygame.time.get_ticks() * 0.01 + index * 0.5
+                        jitter_x = math.sin(time_factor * 2.0) * 8
+                        jitter_y = math.cos(time_factor * 1.5) * 8
+                        
+                        # Scale pulse?
+                        
+                        # Color pulse
+                        c_val = int(150 + 100 * math.sin(time_factor * 0.5))
+                        char_surf = font.render(char, True, (c_val, 0, 0))
+                        
+                        self.screen.blit(char_surf, (start_x + x_off + jitter_x, y + jitter_y))
+                        x_off += font.size(char)[0]
 
-                line1_surf = self.title_font.render(line1, True, (255, 255, 255))
-                line2_surf = self.subtitle_font.render(
-                    line2, True, (255, 0, 0)
-                )  # Subtitle line in red
-
-                # Apply alpha approx (by set_alpha on blit or color) - simplistic here:
-                line1_surf.set_alpha(int(alpha))
-                line2_surf.set_alpha(int(alpha))
-
-                rect1 = line1_surf.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 - 40))
-                rect2 = line2_surf.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 40))
-
-                self.screen.blit(line1_surf, rect1)
-                self.screen.blit(line2_surf, rect2)
+                # Story Streaming
+                elif slide["type"] == "story":
+                    lines = slide["lines"]
+                    # Calculate how many lines to show based on time
+                    # Show one line every 1.5 seconds roughly
+                    lines_to_show = int((elapsed / duration) * (len(lines) + 1))
+                    lines_to_show = min(lines_to_show, len(lines))
+                    
+                    y = C.SCREEN_HEIGHT // 2 - (len(lines) * 50) // 2
+                    for i in range(lines_to_show):
+                        l_text = lines[i]
+                        color = C.WHITE
+                        if i == lines_to_show - 1:
+                             color = C.RED # Highlight newest line
+                        
+                        txt_surf = self.subtitle_font.render(l_text, True, color)
+                        txt_rect = txt_surf.get_rect(center=(C.SCREEN_WIDTH // 2, y))
+                        self.screen.blit(txt_surf, txt_rect)
+                        y += 50
+                        
+                # Static / Standard
+                elif slide["type"] == "static":
+                     txt_surf = self.title_font.render(slide["text"], True, slide.get("color", C.WHITE))
+                     txt_rect = txt_surf.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2))
+                     self.screen.blit(txt_surf, txt_rect)
+                     
+                     if "sub" in slide:
+                          sub_surf = self.subtitle_font.render(slide["sub"], True, C.CYAN)
+                          sub_rect = sub_surf.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 60))
+                          self.screen.blit(sub_surf, sub_rect)
 
                 if elapsed > duration:
                     self.intro_step += 1
-                    self.intro_start_time = 0  # Reset for next slide
+                    self.intro_start_time = 0
             else:
                 self.state = "menu"
 
