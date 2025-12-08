@@ -1,3 +1,6 @@
+import random
+import math
+from typing import List
 from .constants import DEFAULT_MAP_SIZE, MIN_BUILDING_OFFSET
 
 
@@ -14,8 +17,18 @@ class Map:
         self.create_map()
 
     def create_map(self) -> None:
-        """Create the map layout with walls and buildings"""
+        """Create the map layout using Cellular Automata for organic caves/rooms"""
         size = self.size
+
+        # 1. Initialize random grid
+        # 45% chance of being a wall
+        for i in range(size):
+            for j in range(size):
+                if random.random() < 0.45:
+                    self.grid[i][j] = 1
+                else:
+                    self.grid[i][j] = 0
+
         # Border walls
         for i in range(size):
             self.grid[0][i] = 1
@@ -23,118 +36,90 @@ class Map:
             self.grid[i][0] = 1
             self.grid[i][size - 1] = 1
 
-        building_edge_margin = max(
-            MIN_BUILDING_OFFSET,
-            int(size * 0.1),
-        )
+        # 2. Cellular Automata Smoothing (5 iterations)
+        for _ in range(5):
+             new_grid = [row[:] for row in self.grid]
+             for i in range(1, size-1):
+                 for j in range(1, size-1):
+                     # Count neighbors
+                     neighbors = 0
+                     for ni in range(-1, 2):
+                         for nj in range(-1, 2):
+                             if ni == 0 and nj == 0: continue
+                             if self.grid[i+ni][j+nj] > 0:
+                                 neighbors += 1
 
-        # Building 1 - Large rectangular building (top-left area)
-        b1_start_i = max(building_edge_margin, int(size * 0.15))
-        b1_end_i = max(b1_start_i + 2, min(int(size * 0.3), size - 1))
-        b1_start_j = max(building_edge_margin, int(size * 0.15))
-        b1_end_j = max(b1_start_j + 2, min(int(size * 0.4), size - 1))
-        if b1_end_i > b1_start_i and b1_end_j > b1_start_j:
-            for i in range(b1_start_i, b1_end_i):
-                for j in range(b1_start_j, b1_end_j):
-                    if i in {b1_start_i, b1_end_i - 1} or j in {
-                        b1_start_j,
-                        b1_end_j - 1,
-                    }:
-                        self.grid[i][j] = 2
+                     if neighbors > 4:
+                         new_grid[i][j] = 1
+                     elif neighbors < 4:
+                         new_grid[i][j] = 0
+             self.grid = new_grid
 
-        # Building 2 - Medium building (top-right area)
-        b2_start_i = max(building_edge_margin, int(size * 0.15))
-        b2_end_i = max(b2_start_i + 2, min(int(size * 0.25), size - 1))
-        b2_start_j = max(building_edge_margin, int(size * 0.7))
-        b2_end_j = max(b2_start_j + 2, min(int(size * 0.9), size - 1))
-        if b2_end_i > b2_start_i and b2_end_j > b2_start_j:
-            for i in range(b2_start_i, b2_end_i):
-                for j in range(b2_start_j, b2_end_j):
-                    if i in {b2_start_i, b2_end_i - 1} or j in {
-                        b2_start_j,
-                        b2_end_j - 1,
-                    }:
-                        self.grid[i][j] = 3
+        # 3. Add Buildings / Rooms overlay (Rectangular structures for variety)
+        # Randomly place 3-5 rectangular rooms
+        num_rooms = random.randint(3, 5)
+        for _ in range(num_rooms):
+             w = random.randint(5, 10)
+             h = random.randint(5, 10)
+             # Ensure within bounds
+             if size - w - 2 < 2 or size - h - 2 < 2: continue
 
-        # Building 3 - L-shaped building (bottom-left)
-        b3_start_i = max(building_edge_margin, int(size * 0.7))
-        b3_end_i = max(b3_start_i + 2, min(int(size * 0.95), size - 1))
-        b3_start_j = max(building_edge_margin, int(size * 0.15))
-        b3_end_j = max(b3_start_j + 2, min(int(size * 0.35), size - 1))
-        if b3_end_i > b3_start_i and b3_end_j > b3_start_j:
-            for i in range(b3_start_i, b3_end_i):
-                for j in range(b3_start_j, b3_end_j):
-                    if i in {b3_start_i, b3_end_i - 1} or j in {
-                        b3_start_j,
-                        b3_end_j - 1,
-                    }:
-                        self.grid[i][j] = 2
-            # L-shape extension
-            b3_ext_start_i = min(max(int(size * 0.8), b3_start_i), b3_end_i - 1)
-            b3_ext_end_j = min(int(size * 0.5), size - 1)
-            if b3_ext_start_i < b3_end_i and b3_ext_end_j > b3_start_j:
-                for i in range(b3_ext_start_i, b3_end_i):
-                    for j in range(b3_start_j, b3_ext_end_j):
-                        if i in {b3_ext_start_i, b3_end_i - 1} or j in {
-                            b3_start_j,
-                            b3_ext_end_j - 1,
-                        }:
-                            self.grid[i][j] = 2
+             x = random.randint(2, size - w - 2)
+             y = random.randint(2, size - h - 2)
 
-        # Building 4 - Square building (bottom-right)
-        b4_start_i = int(size * 0.75)
-        b4_end_i = min(int(size * 0.95), size - 1)
-        b4_start_j = int(size * 0.75)
-        b4_end_j = min(int(size * 0.95), size - 1)
-        if b4_end_i > b4_start_i and b4_end_j > b4_start_j:
-            for i in range(b4_start_i, b4_end_i):
-                for j in range(b4_start_j, b4_end_j):
-                    if i in {b4_start_i, b4_end_i - 1} or j in {
-                        b4_start_j,
-                        b4_end_j - 1,
-                    }:
-                        self.grid[i][j] = 3
+             # Carve room (set to 0)
+             for i in range(y, y+h):
+                 for j in range(x, x+w):
+                     if 0 <= i < size and 0 <= j < size:
+                        self.grid[i][j] = 0
 
-        # Central courtyard walls
-        center_start = int(size * 0.45)
-        center_end = min(int(size * 0.55), size - 1)
-        if center_end > center_start:
-            for i in range(center_start, center_end):
-                self.grid[i][center_start] = 4
-                self.grid[i][center_end] = 4
-            for j in range(center_start, min(center_end + 1, size)):
-                self.grid[center_start][j] = 4
-                if center_end < size:
-                    self.grid[center_end][j] = 4
+             # Add walls around room (type 2, 3, 4)
+             wall_type = random.choice([2, 3, 4])
+             for i in range(y, y+h):
+                 if 0 <= i < size:
+                     if 0 <= x < size: self.grid[i][x] = wall_type
+                     if 0 <= x+w-1 < size: self.grid[i][x+w-1] = wall_type
+             for j in range(x, x+w):
+                 if 0 <= j < size:
+                     if 0 <= y < size: self.grid[y][j] = wall_type
+                     if 0 <= y+h-1 < size: self.grid[y+h-1][j] = wall_type
 
-        # Scattered walls
-        if size >= 30:
-            wall1_i = int(size * 0.4)
-            wall1_j = int(size * 0.6)
-            if wall1_i < size and wall1_j < size:
-                for i in range(wall1_i, min(wall1_i + 5, size)):
-                    self.grid[i][wall1_j] = 1
+        # 4. Ensure connectivity (Flood fill)
+        cx, cy = size // 2, size // 2
+        start_x, start_y = -1, -1
+        # Find valid start point near center
+        for r in range(0, size // 2):
+            for angle in range(0, 360, 45):
+                 rad = math.radians(angle)
+                 tx = int(cx + math.cos(rad)*r)
+                 ty = int(cy + math.sin(rad)*r)
+                 if 0 < tx < size and 0 < ty < size and self.grid[ty][tx] == 0:
+                      start_x, start_y = tx, ty
+                      break
+            if start_x != -1: break
 
-        if size >= 40:
-            wall2_i = int(size * 0.6)
-            wall2_j = int(size * 0.7)
-            if wall2_i < size and wall2_j < size:
-                for j in range(wall2_j, min(wall2_j + 5, size)):
-                    self.grid[wall2_i][j] = 1
+        if start_x == -1:
+             start_x, start_y = cx, cy
+             self.grid[cy][cx] = 0
 
-        if size >= 50:
-            wall3_i = int(size * 0.35)
-            wall3_j = int(size * 0.7)
-            if wall3_i < size and wall3_j < size:
-                for i in range(wall3_i, min(wall3_i + 5, size)):
-                    self.grid[i][wall3_j] = 1
+        # Identify connected region
+        queue = [(start_x, start_y)]
+        visited = set([(start_x, start_y)])
 
-        if size >= 60:
-            wall4_j = int(size * 0.4)
-            wall4_i = int(size * 0.75)
-            if wall4_i < size and wall4_j < size:
-                for j in range(wall4_j, min(wall4_j + 5, size)):
-                    self.grid[wall4_i][j] = 1
+        while queue:
+             x, y = queue.pop(0)
+
+             for dx, dy in [(0,1), (0,-1), (1,0), (-1,0)]:
+                 nx, ny = x+dx, y+dy
+                 if 0 <= nx < size and 0 <= ny < size and self.grid[ny][nx] == 0 and (nx, ny) not in visited:
+                     visited.add((nx, ny))
+                     queue.append((nx, ny))
+
+        # Close off unconnected areas
+        for i in range(size):
+             for j in range(size):
+                 if self.grid[i][j] == 0 and (j, i) not in visited:
+                      self.grid[i][j] = 1
 
     def is_wall(self, x: float, y: float) -> bool:
         """Check if position contains a wall"""
@@ -153,50 +138,5 @@ class Map:
         return 1
 
     def is_inside_building(self, x: float, y: float) -> bool:
-        """Check if position is inside a building (not just on the wall)"""
-        i = int(y)
-        j = int(x)
-        if i < 0 or i >= self.size or j < 0 or j >= self.size:
-            return False
-
-        if self.grid[i][j] != 0:
-            return False
-
-        size = self.size
-        building_edge_margin = max(MIN_BUILDING_OFFSET, int(size * 0.1))
-
-        # Re-calculating bounds is repetitive.
-        # Ideally we'd store building bounds, but for this refactor I'll copy logic or simplify.
-        # Copying logic for now to ensure behavior matches.
-
-        b1_start_i = max(building_edge_margin, int(size * 0.15))
-        b1_end_i = max(b1_start_i + 2, min(int(size * 0.3), size - 1))
-        b1_start_j = max(building_edge_margin, int(size * 0.15))
-        b1_end_j = max(b1_start_j + 2, min(int(size * 0.4), size - 1))
-        if b1_start_i < i < b1_end_i and b1_start_j < j < b1_end_j:
-            return True
-
-        b2_start_i = max(building_edge_margin, int(size * 0.15))
-        b2_end_i = max(b2_start_i + 2, min(int(size * 0.25), size - 1))
-        b2_start_j = max(building_edge_margin, int(size * 0.7))
-        b2_end_j = max(b2_start_j + 2, min(int(size * 0.9), size - 1))
-        if b2_start_i < i < b2_end_i and b2_start_j < j < b2_end_j:
-            return True
-
-        b3_start_i = max(building_edge_margin, int(size * 0.7))
-        b3_end_i = max(b3_start_i + 2, min(int(size * 0.95), size - 1))
-        b3_start_j = max(building_edge_margin, int(size * 0.15))
-        b3_end_j = max(b3_start_j + 2, min(int(size * 0.35), size - 1))
-        if b3_start_i < i < b3_end_i and b3_start_j < j < b3_end_j:
-            return True
-
-        b4_start_i = int(size * 0.75)
-        b4_end_i = min(int(size * 0.95), size - 1)
-        b4_start_j = int(size * 0.75)
-        b4_end_j = min(int(size * 0.95), size - 1)
-        if b4_start_i < i < b4_end_i and b4_start_j < j < b4_end_j:
-            return True
-
-        center_start = int(size * 0.45)
-        center_end = min(int(size * 0.55), size - 1)
-        return center_start < i < center_end and center_start < j < center_end
+        """Deprecated: Always return False as generation is organic now"""
+        return False

@@ -285,14 +285,34 @@ class Raycaster:
                  pygame.draw.line(screen, (50, 0, 0), (center_x - 5, head_y + head_size*0.75), (center_x + 5, head_y + head_size*0.75), 2)
              return
 
-        # Monster Style (Jagged, Hunched)
+        # Monster Style (Detailed, Textured)
         body_x = center_x - render_width / 2
 
-        # 1. Body
-        torso_rect = pygame.Rect(body_x, render_y + render_height * 0.25, render_width, render_height * 0.5)
-        pygame.draw.rect(screen, base_color, torso_rect)
-        
-        # Ribs
+        # 1. Body (Rounded Torso)
+        # Use ellipse for more organic look
+        torso_rect = pygame.Rect(
+            body_x, render_y + render_height * 0.25, render_width, render_height * 0.5
+        )
+        # Draw torso
+        pygame.draw.ellipse(screen, base_color, torso_rect)
+
+        # Muscle definition (Shadows)
+        dark_color = tuple(max(0, c - 40) for c in base_color)
+        light_color = tuple(min(255, c + 30) for c in base_color)
+
+        # Highlight top
+        pygame.draw.ellipse(
+            screen,
+            light_color,
+            (
+                body_x + render_width * 0.2,
+                render_y + render_height * 0.25,
+                render_width * 0.6,
+                render_height * 0.2,
+            ),
+        )
+
+        # Ribs/Abs
         dark_color = tuple(max(0, c - 50) for c in base_color)
         for i in range(3):
             y_off = render_y + render_height * (0.35 + i * 0.1)
@@ -439,10 +459,33 @@ class Raycaster:
                     wall_height = C.SCREEN_HEIGHT
 
                 base_color = wall_colors.get(wall_type, C.GRAY)
-                shade = max(0, 255 - int(distance * 25))
-                color = tuple(min(255, max(0, c * shade // 255)) for c in base_color)
 
-                wall_top = (C.SCREEN_HEIGHT - wall_height) // 2
+                # Fog Logic
+                fog_factor = max(
+                    0.0,
+                    min(
+                        1.0,
+                        (distance - C.MAX_DEPTH * C.FOG_START)
+                        / (C.MAX_DEPTH * (1 - C.FOG_START)),
+                    ),
+                )
+
+                # Local lighting (Shade)
+                shade = max(0.4, 1.0 - distance / 20.0)
+
+                lit_r = base_color[0] * shade
+                lit_g = base_color[1] * shade
+                lit_b = base_color[2] * shade
+
+                # Mix with Fog
+                final_r = lit_r * (1 - fog_factor) + C.FOG_COLOR[0] * fog_factor
+                final_g = lit_g * (1 - fog_factor) + C.FOG_COLOR[1] * fog_factor
+                final_b = lit_b * (1 - fog_factor) + C.FOG_COLOR[2] * fog_factor
+
+                color = (int(final_r), int(final_g), int(final_b))
+
+                # Pitch Adjustment
+                wall_top = (C.SCREEN_HEIGHT - wall_height) // 2 + player.pitch
 
                 # Draw base wall color
                 pygame.draw.rect(screen, color, (ray * 2, wall_top, 2, wall_height))
@@ -488,7 +531,7 @@ class Raycaster:
                 + (angle_to_bot / half_fov) * C.SCREEN_WIDTH / 2
                 - sprite_size / 2
             )
-            sprite_y = C.SCREEN_HEIGHT / 2 - sprite_size / 2
+            sprite_y = C.SCREEN_HEIGHT / 2 - sprite_size / 2 + player.pitch
 
             # Apply distance shading
             distance_shade: float = max(0.4, 1.0 - bot_dist / C.MAX_DEPTH)
@@ -514,14 +557,17 @@ class Raycaster:
             # Blit sprite to screen
             screen.blit(sprite_surface, (int(sprite_x), int(sprite_y)))
 
-    def render_floor_ceiling(self, screen: pygame.Surface, player_angle: float, level: int) -> None:
+    def render_floor_ceiling(self, screen: pygame.Surface, player: Player, level: int) -> None:
         """Render floor and sky with stars"""
         theme_idx = (level - 1) % len(C.LEVEL_THEMES)
         theme = C.LEVEL_THEMES[theme_idx]
+        player_angle = player.angle
+
+        horizon = C.SCREEN_HEIGHT // 2 + int(player.pitch)
 
         # Sky/Ceiling
         ceiling_color = theme["ceiling"]
-        pygame.draw.rect(screen, ceiling_color, (0, 0, C.SCREEN_WIDTH, C.SCREEN_HEIGHT // 2))
+        pygame.draw.rect(screen, ceiling_color, (0, 0, C.SCREEN_WIDTH, horizon))
 
         # Draw stars (randomized but consistent)
         # Use player angle to offset stars for parallax effect
@@ -530,24 +576,31 @@ class Raycaster:
         for sx, sy, size, color in self.stars:
             # Parallax x
             x = (sx + star_offset) % C.SCREEN_WIDTH
-            pygame.draw.circle(screen, color, (x, sy), int(size))
+            # Parallax y (move with pitch)
+            y = sy + player.pitch
+
+            if 0 <= y < horizon:
+                pygame.draw.circle(screen, color, (x, int(y)), int(size))
 
         # Draw Moon
         moon_x = (C.SCREEN_WIDTH - 200 - int(player_angle * 100)) % (
             C.SCREEN_WIDTH * 2
         ) - C.SCREEN_WIDTH // 2
+        moon_y = 100 + int(player.pitch)
+
         if -100 < moon_x < C.SCREEN_WIDTH + 100:
-            pygame.draw.circle(screen, (220, 220, 200), (int(moon_x), 100), 40)
-            pygame.draw.circle(
-                screen, ceiling_color, (int(moon_x) - 10, 100), 40
-            )  # Crescent, match sky color
+            if 0 <= moon_y < horizon + 40:  # Check visibility
+                pygame.draw.circle(screen, (220, 220, 200), (int(moon_x), moon_y), 40)
+                pygame.draw.circle(
+                    screen, ceiling_color, (int(moon_x) - 10, moon_y), 40
+                )  # Crescent, match sky color
 
         # Floor
         floor_color = theme["floor"]
         pygame.draw.rect(
             screen,
             floor_color,
-            (0, C.SCREEN_HEIGHT // 2, C.SCREEN_WIDTH, C.SCREEN_HEIGHT // 2),
+            (0, horizon, C.SCREEN_WIDTH, C.SCREEN_HEIGHT - horizon),
         )
 
     def render_minimap(
@@ -636,7 +689,7 @@ class Raycaster:
                 # Calculate screen position
                 proj_size = max(2, 10 / proj_dist) if proj_dist > 0 else 10
                 proj_x = C.SCREEN_WIDTH / 2 + (angle_to_proj / C.HALF_FOV) * C.SCREEN_WIDTH / 2
-                proj_y = C.SCREEN_HEIGHT / 2
+                proj_y = C.SCREEN_HEIGHT / 2 + player.pitch
 
                 # Draw projectile as a glowing circle
                 pygame.draw.circle(screen, C.RED, (int(proj_x), int(proj_y)), int(proj_size))

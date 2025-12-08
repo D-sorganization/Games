@@ -178,6 +178,19 @@ class Game:
         self.sound_manager = SoundManager()
         self.sound_manager.start_music()
 
+        # Input
+        self.joystick = None
+        if pygame.joystick.get_count() > 0:
+            try:
+                self.joystick = pygame.joystick.Joystick(0)
+                self.joystick.init()
+                print(f"Controller detected: {self.joystick.get_name()}")
+            except Exception as e:
+                print(f"Controller init failed: {e}")
+
+        # Fog of War
+        self.visited_cells = set()
+
         # Optimization: Shared surface for alpha effects
         self.effects_surface = pygame.Surface((C.SCREEN_WIDTH, C.SCREEN_HEIGHT), pygame.SRCALPHA)
 
@@ -355,6 +368,7 @@ class Game:
         self.particles = []
         self.damage_texts = []
         self.damage_flash_timer = 0
+        self.visited_cells = set()  # Reset fog of war
         self.portal = None
         corners = self.get_corner_positions()
         random.shuffle(corners)
@@ -691,9 +705,77 @@ class Game:
                 elif event.type == pygame.MOUSEMOTION and not self.paused:
                     assert self.player is not None
                     self.player.rotate(event.rel[0] * C.PLAYER_ROT_SPEED)
+                    self.player.pitch_view(-event.rel[1] * C.PLAYER_ROT_SPEED * 200)
+
             except AttributeError as e:
                 print(f"Event Error: {e}")
                 continue
+
+        # Controller Input (Continuous)
+        if self.joystick and not self.paused and self.player and self.player.alive:
+            # Left Stick (0, 1) - Move/Strafe
+            axis_x = self.joystick.get_axis(0)
+            axis_y = self.joystick.get_axis(1)
+
+            if abs(axis_x) > C.JOYSTICK_DEADZONE:
+                self.player.strafe(
+                    self.game_map, self.bots, right=(axis_x > 0), speed=abs(axis_x) * C.PLAYER_SPEED
+                )
+                self.player.is_moving = True
+            if abs(axis_y) > C.JOYSTICK_DEADZONE:
+                self.player.move(
+                    self.game_map,
+                    self.bots,
+                    forward=(axis_y < 0),
+                    speed=abs(axis_y) * C.PLAYER_SPEED,
+                )
+                self.player.is_moving = True
+
+            # Right Stick
+            look_x = 0.0
+            look_y = 0.0
+            if self.joystick.get_numaxes() >= 4:
+                look_x = self.joystick.get_axis(2)
+                look_y = self.joystick.get_axis(3)
+
+            if abs(look_x) > C.JOYSTICK_DEADZONE:
+                self.player.rotate(look_x * C.PLAYER_ROT_SPEED * 15 * C.SENSITIVITY_X)
+            if abs(look_y) > C.JOYSTICK_DEADZONE:
+                self.player.pitch_view(look_y * 10 * C.SENSITIVITY_Y)
+
+            # Buttons
+            # 0: A (Shield)
+            if self.joystick.get_button(0):
+                self.player.set_shield(True)
+            else:
+                self.player.set_shield(False)
+
+            # 2: X (Reload)
+            if self.joystick.get_numbuttons() > 2 and self.joystick.get_button(2):
+                self.player.reload()
+
+            # Triggers or Shoulders for Fire
+            # 5: RB (Fire)
+            if self.joystick.get_numbuttons() > 5 and self.joystick.get_button(5):
+                if self.player.shoot():
+                    self.fire_weapon()
+
+            # LB (Secondary)
+            if self.joystick.get_numbuttons() > 4 and self.joystick.get_button(4):
+                if self.player.fire_secondary():
+                    self.fire_weapon(is_secondary=True)
+
+            # Hat for Weapon Switch
+            if self.joystick.get_numhats() > 0:
+                hat = self.joystick.get_hat(0)
+                if hat[0] == -1:
+                    self.switch_weapon_with_message("pistol")
+                if hat[0] == 1:
+                    self.switch_weapon_with_message("rifle")
+                if hat[1] == 1:
+                    self.switch_weapon_with_message("shotgun")
+                if hat[1] == -1:
+                    self.switch_weapon_with_message("plasma")
 
     def fire_weapon(self, is_secondary: bool = False) -> None:
         """Handle weapon firing (Hitscan or Projectile)"""
@@ -1394,6 +1476,14 @@ class Game:
                  self.projectiles.remove(projectile) 
 
 
+        # Fog of War Update
+        cx, cy = int(self.player.x), int(self.player.y)
+        reveal_radius = 5
+        for r_i in range(-reveal_radius, reveal_radius + 1):
+            for r_j in range(-reveal_radius, reveal_radius + 1):
+                if r_i * r_i + r_j * r_j <= reveal_radius * reveal_radius:
+                    self.visited_cells.add((cx + r_j, cy + r_i))
+
         # Heartbeat Logic
         # Find nearest enemy
         min_dist = float('inf')
@@ -1581,12 +1671,21 @@ class Game:
                 alpha = int(255 * ratio)
                 alpha = max(0, min(255, alpha))
 
-                pygame.draw.circle(
-                    self.effects_surface,
-                    (*p["color"], alpha),
-                    (int(p["x"]), int(p["y"])),
-                    int(p["size"]),
-                )
+                try:
+                    color = p["color"]
+                    if len(color) == 3:
+                        rgba = (*color, alpha)
+                    else:
+                        rgba = (*color[:3], alpha)  # Fallback if already 4
+
+                    pygame.draw.circle(
+                        self.effects_surface,
+                        rgba,
+                        (int(p["x"]), int(p["y"])),
+                        int(p["size"]),
+                    )
+                except (ValueError, TypeError):
+                    pass  # Skip invalid particles
 
         # Damage Flash
         if self.damage_flash_timer > 0:
@@ -1868,6 +1967,13 @@ class Game:
             # Optic
             pygame.draw.rect(self.screen, (10,10,10), (cx - 5, cy - 160, 10, 40)) # Mount
             pygame.draw.circle(self.screen, (30,30,30), (cx, cy - 170), 30) # Scope body
+            # Lens reflection
+            pygame.draw.circle(self.screen, (0, 100, 0), (cx, cy - 170), 25)  # Dark green lens
+            pygame.draw.circle(self.screen, (150, 255, 150), (cx - 10, cy - 180), 8)  # Glint
+            # Crosshair inside scope (if zoomed)
+            if self.player.zoomed:
+                pygame.draw.line(self.screen, C.RED, (cx - 25, cy - 170), (cx + 25, cy - 170), 1)
+                pygame.draw.line(self.screen, C.RED, (cx, cy - 195), (cx, cy - 145), 1)
 
         elif weapon == "plasma":
             # Sci-Fi BFG Style - High Tech
@@ -2003,6 +2109,21 @@ class Game:
         # Radar BG
         pygame.draw.rect(self.screen, (0, 50, 0), (radar_x, radar_y, radar_size, radar_size))
         pygame.draw.rect(self.screen, (0, 150, 0), (radar_x, radar_y, radar_size, radar_size), 2)
+
+        # Draw Visited Walls
+        for (vx, vy) in self.visited_cells:
+            if 0 <= vx < self.game_map.size and 0 <= vy < self.game_map.size:
+                wall_val = self.game_map.grid[vy][vx]
+                if wall_val != 0:
+                    wx = int(vx * scale)
+                    wy = int(vy * scale)
+                    # Draw wall block
+                    color = C.WALL_COLORS.get(wall_val, C.GRAY)
+                    pygame.draw.rect(
+                        self.screen,
+                        color,
+                        (radar_x + wx, radar_y + wy, max(1, int(scale)), max(1, int(scale))),
+                    )
 
         # Enemies
         for bot in self.bots:

@@ -135,6 +135,16 @@ PARTICLE_LIFETIME = 30
 INTRO_FADE_MAX = 255
 INTRO_FADE_SCALE = 510
 
+# Fog
+FOG_COLOR = SKY_COLOR  # Fade to sky color
+FOG_START = 0.4  # Percentage of MAX_DEPTH where fog starts
+
+# Input
+JOYSTICK_DEADZONE = 0.1
+PITCH_LIMIT = 400  # Pixels up/down
+SENSITIVITY_X = 1.0
+SENSITIVITY_Y = 1.0
+
 # Shield Settings
 SHIELD_MAX_DURATION = 600  # 10 seconds at 60 FPS
 SHIELD_COOLDOWN_NORMAL = 600  # 10 seconds
