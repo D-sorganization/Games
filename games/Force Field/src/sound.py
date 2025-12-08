@@ -76,6 +76,8 @@ class SoundManager:
             "music_intro": "creepy-untuned-music-box-427400.mp3",
             "music_loop": "creepy-halloween-bell-trap-melody-247720.mp3",
             "music_drums": "creepy-drum-ambience-443142.mp3",
+            "music_horror": "scary-horror-theme-song-382733.mp3",
+            "music_piano": "creepy-piano-for-scary-stories-158423.mp3",
         }
 
         for name, filename in sound_files.items():

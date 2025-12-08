@@ -10,7 +10,7 @@ Please check the following audio features in the Force Field game:
 
 ## In-Game Audio
 
-- [ ] **Background Music**: A "creepy halloween bell trap" melody should play on loop throughout the game.
+- [ ] **Background Music**: Should cycle through 4 tracks based on level (Bell Trap -> Drum -> Horror -> Piano).
 - [ ] **Gun Sounds**: Pistol, Rifle, and Shotgun should sound significantly louder/punchier than before.
 - [ ] **Bomb**: Pressing 'F' should trigger a synthesized explosion sound (Safe WAV) and NOT crash the game.
 - [ ] **Enemy Scream**: Enemies should emit a fast, high-pitched scream when they die (2x speed effect).

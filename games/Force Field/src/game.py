@@ -505,10 +505,10 @@ class Game:
                 break
 
         # Start Music
-        if self.level <= 2:
-            self.sound_manager.start_music("music_loop") # Bell Trap
-        else:
-            self.sound_manager.start_music("music_drums") # Drum Ambience
+        # Start Music
+        music_tracks = ["music_loop", "music_drums", "music_horror", "music_piano"]
+        track_name = music_tracks[(self.level - 1) % len(music_tracks)]
+        self.sound_manager.start_music(track_name)
 
         self.state = "playing"
 
