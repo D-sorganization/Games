@@ -2046,18 +2046,33 @@ class Game:
         # Phase 1: Upstream Drift Studios
         elif self.intro_phase == 1:
             duration = 5000  # User requested 5 seconds
-
-            # Text - Terminal / Matrix Style
-            # Use monochromatic green or bright console white
-            t1 = self.tiny_font.render("in association with", True, C.GREEN)
-            r1 = t1.get_rect(center=(C.SCREEN_WIDTH // 2, 80))
-            self.screen.blit(t1, r1)
-
-            # Matrix-style Font logic (fallback to consolas/system)
-            hacker_font = pygame.font.SysFont("consolas", 60)
-            t2 = hacker_font.render("UPSTREAM DRIFT", True, (0, 255, 0))  # Matrix Green
-            r2 = t2.get_rect(center=(C.SCREEN_WIDTH // 2, 140))
+            
+            # Play Water Sound once
+            if elapsed < 50: # Play at start
+                 if not hasattr(self, "_water_played"):
+                      self.sound_manager.play_sound("water")
+                      self._water_played = True
+            
+            # Text - Stylish Upstream Drift
+            # Use Impact or bold font
+            stylish_font = pygame.font.SysFont("impact", 70)
+            
+            # Dynamic Color (Pulsing Blue/Cyan)
+            pulse = abs(math.sin(elapsed * 0.003))
+            txt_color = (0, int(150 + 100 * pulse), int(200 + 55 * pulse))
+            
+            t2 = stylish_font.render("UPSTREAM DRIFT", True, txt_color)
+            r2 = t2.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 - 180)) # Closer to image
+            
+            # Shadow
+            t2_shadow = stylish_font.render("UPSTREAM DRIFT", True, (0, 0, 0))
+            r2_shadow = t2_shadow.get_rect(center=(C.SCREEN_WIDTH // 2 + 4, C.SCREEN_HEIGHT // 2 - 176))
+            self.screen.blit(t2_shadow, r2_shadow)
             self.screen.blit(t2, r2)
+            
+            t1 = self.tiny_font.render("in association with", True, C.CYAN)
+            r1 = t1.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 - 230))
+            self.screen.blit(t1, r1)
 
             # Video Playback
             if self.intro_video and self.intro_video.isOpened():
@@ -2109,6 +2124,11 @@ class Game:
 
         # Phase 2: Graphic Novel Slides
         elif self.intro_phase == 2:
+            # Play Demented Laugh
+            if self.intro_step == 0 and not hasattr(self, "_laugh_played"):
+                self.sound_manager.play_sound("laugh")
+                self._laugh_played = True
+
             # Intro slides
             slides = [
                 ("FROM THE DEMENTED MIND", "OF JASPER", 3000),

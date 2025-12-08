@@ -67,6 +67,8 @@ class SoundManager:
             "game_over1": "game-over-417465.mp3",
             "game_over2": "game-over-deep-male-voice-clip-352695.mp3",
             "scream_real": "pathetic-screaming-sound-effect-312867.mp3",
+            "water": "stream-sounds-sample-420906.mp3",
+            "laugh": "possessed-laugh-94851.mp3",
         }
 
         for name, filename in sound_files.items():
