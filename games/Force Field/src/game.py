@@ -16,10 +16,10 @@ from .player import Player
 from .raycaster import Raycaster
 from .sound import SoundManager
 from .ui import BloodButton
+from .projectile import Projectile
 
 try:
     import cv2
-
     HAS_CV2 = True
 except ImportError:
     HAS_CV2 = False
@@ -185,7 +185,7 @@ class Game:
                 self.joystick = pygame.joystick.Joystick(0)
                 self.joystick.init()
                 print(f"Controller detected: {self.joystick.get_name()}")
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 print(f"Controller init failed: {e}")
 
         # Fog of War
@@ -520,8 +520,14 @@ class Game:
                 break
 
         # Start Music
-        # Start Music
-        music_tracks = ["music_loop", "music_drums", "music_wind", "music_horror", "music_piano", "music_action"]
+        music_tracks = [
+            "music_loop",
+            "music_drums",
+            "music_wind",
+            "music_horror",
+            "music_piano",
+            "music_action",
+        ]
         track_name = music_tracks[(self.level - 1) % len(music_tracks)]
         self.sound_manager.start_music(track_name)
 
@@ -617,7 +623,10 @@ class Game:
                         menu_items = ["RESUME", "SAVE GAME", "QUIT TO MENU"]
                         for i, item in enumerate(menu_items):
                             rect = pygame.Rect(
-                                C.SCREEN_WIDTH // 2 - 100, C.SCREEN_HEIGHT // 2 - 50 + i * 60, 200, 50
+                                C.SCREEN_WIDTH // 2 - 100,
+                                C.SCREEN_HEIGHT // 2 - 50 + i * 60,
+                                200,
+                                50,
                             )
                             if rect.collidepoint(mouse_pos):
                                 if item == "RESUME":
@@ -666,7 +675,9 @@ class Game:
                         if self.paused:
                             self.pause_start_time = pygame.time.get_ticks()
                         else:
-                            self.total_paused_time += pygame.time.get_ticks() - self.pause_start_time
+                            self.total_paused_time += (
+                                pygame.time.get_ticks() - self.pause_start_time
+                            )
                         pygame.mouse.set_visible(self.paused)
                         pygame.event.set_grab(not self.paused)
                     # Weapon switching
@@ -684,9 +695,8 @@ class Game:
                                 assert self.player is not None
                                 if self.player.activate_bomb():
                                     self.handle_bomb_explosion()
-                            except Exception as e:
+                            except Exception as e:  # noqa: BLE001
                                 print(f"Bomb Error: {e}")
-                                import traceback
                                 traceback.print_exc()
                         elif event.key == pygame.K_r:
                             assert self.player is not None
@@ -760,7 +770,7 @@ class Game:
                 if self.player.shoot():
                     self.fire_weapon()
 
-            # LB (Secondary)
+            # Secondary Fire (LB)
             if self.joystick.get_numbuttons() > 4 and self.joystick.get_button(4):
                 if self.player.fire_secondary():
                     self.fire_weapon(is_secondary=True)
@@ -951,15 +961,19 @@ class Game:
 
                  try:
                      self.explode_laser(ix, iy)
-                 except Exception as e:
+                 except Exception as e:  # noqa: BLE001
                      print(f"Error in explode_laser: {e}")
 
                  # Visual Beam
                  cx = C.SCREEN_WIDTH // 2
                  cy = C.SCREEN_HEIGHT
                  # Draw beam from bottom right (weapon pos) to center
-                 pygame.draw.line(self.screen, (255, 0, 255), (cx + 100, cy), (cx, C.SCREEN_HEIGHT//2), 30)
-                 pygame.draw.line(self.screen, C.WHITE, (cx + 100, cy), (cx, C.SCREEN_HEIGHT//2), 10)
+                 pygame.draw.line(
+                     self.screen, (255, 0, 255), (cx + 100, cy), (cx, C.SCREEN_HEIGHT // 2), 30
+                 )
+                 pygame.draw.line(
+                     self.screen, C.WHITE, (cx + 100, cy), (cx, C.SCREEN_HEIGHT // 2), 10
+                 )
                  return
 
             if closest_bot:
@@ -1004,7 +1018,7 @@ class Game:
                 if was_alive and not closest_bot.alive:
                     self.sound_manager.play_sound("scream")
 
-                # self.sound_manager.play_sound("scream") # Removed, only scream on death now
+                # damage_dealt = final_damage # Update for text
 
                 damage_dealt = final_damage  # Update for text
 
@@ -1028,7 +1042,11 @@ class Game:
                         "y": C.SCREEN_HEIGHT // 2,
                         "dx": random.uniform(-5, 5),
                         "dy": random.uniform(-5, 5),
-                        "color": (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)),
+                        "color": (
+                            random.randint(0, 255),
+                            random.randint(0, 255),
+                            random.randint(0, 255),
+                        ),
                         "timer": 30,
                         "size": random.randint(2, 6)
                     })
@@ -1126,7 +1144,11 @@ class Game:
                             "y": C.SCREEN_HEIGHT // 2,
                             "dx": random.uniform(-4, 4),
                             "dy": random.uniform(-4, 4),
-                            "color": (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)),
+                            "color": (
+                                random.randint(0, 255),
+                                random.randint(0, 255),
+                                random.randint(0, 255),
+                            ),
                             "timer": 20,
                             "size": 3
                         })
@@ -1135,7 +1157,7 @@ class Game:
         # Screen shake or feedback
         try:
              self.sound_manager.play_sound("bomb")
-        except BaseException as e: # Catch KeyboardInterrupt/SystemExit too just in case
+        except BaseException as e:  # noqa: BLE001
              print(f"Bomb Audio Failed: {e}")
         except:
              print("Bomb Audio Failed (Unknown Error)")
@@ -1162,8 +1184,8 @@ class Game:
                 "dy": 0,
                 "color": C.CYAN,  # BFG Color
                 "timer": 20,
-                "size": 50, # Initial size of expansion
-                "type": "shockwave", # Special logic or just circle? Game loop renders simple circles usually.
+                "size": 50,  # Initial size of expansion
+                "type": "shockwave",  # Special logic or just circle?
             }
         )
         # Add many particles
@@ -1215,7 +1237,7 @@ class Game:
         """Trigger Massive Laser Explosion at Impact Point"""
         try:
             self.sound_manager.play_sound("boom_real")
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(f"Boom sound failed: {e}")
 
         try:
@@ -1223,7 +1245,8 @@ class Game:
             hits = 0
             for bot in self.bots:
                 # Basic check
-                if not hasattr(bot, "alive"): continue
+                if not hasattr(bot, "alive"):
+                    continue
 
                 if bot.alive:
                      dist = math.sqrt((bot.x - impact_x)**2 + (bot.y - impact_y)**2)
@@ -1234,10 +1257,8 @@ class Game:
                          hits += 1
 
                          if was_alive and not bot.alive:
-                             try:
+                             with contextlib.suppress(Exception):
                                  self.sound_manager.play_sound("scream")
-                             except: pass
-
                              self.kills += 1
                              self.kill_combo_count += 1
                              self.kill_combo_timer = 180
@@ -1264,9 +1285,8 @@ class Game:
                     "timer": 60,
                     "vy": -2
                  })
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(f"Critical Laser Error: {e}")
-            import traceback
             traceback.print_exc()
 
     def update_game(self) -> None:
@@ -1459,7 +1479,11 @@ class Game:
                                     "y": C.SCREEN_HEIGHT // 2,
                                     "dx": random.uniform(-5, 5),
                                     "dy": random.uniform(-5, 5),
-                                    "color": (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)),
+                                    "color": (
+                                        random.randint(0, 255),
+                                        random.randint(0, 255),
+                                        random.randint(0, 255),
+                                    ),
                                     "timer": 25,
                                     "size": random.randint(2, 5)
                                 })
@@ -1876,13 +1900,13 @@ class Game:
         cy += bob_y
 
         # Helper colors
-        GUN_METAL = (40, 45, 50)
-        GUN_HIGHLIGHT = (70, 75, 80)
-        GUN_DARK = (20, 25, 30)
+        gun_metal = (40, 45, 50)
+        gun_highlight = (70, 75, 80)
+        gun_dark = (20, 25, 30)
 
         if weapon == "pistol":
             # High-Res Heavy Pistol (Deagle-ish)
-            scale = 4
+            # scale = 4
 
             # 1. Grip (Darker)
             pygame.draw.polygon(self.screen, (30, 25, 20), [
@@ -1891,7 +1915,7 @@ class Game:
             ])
 
             # 2. Main Body / Frame
-            pygame.draw.rect(self.screen, GUN_METAL, (cx - 20, cy - 140, 40, 140))
+            pygame.draw.rect(self.screen, gun_metal, (cx - 20, cy - 140, 40, 140))
 
             # 3. Slide (Lighter, detailed)
             slide_y = cy - 180
@@ -1899,14 +1923,14 @@ class Game:
             if self.player.shooting:
                 slide_y += 20
 
-            pygame.draw.polygon(self.screen, GUN_HIGHLIGHT, [
+            pygame.draw.polygon(self.screen, gun_highlight, [
                 (cx - 25, slide_y), (cx + 25, slide_y),
                 (cx + 25, slide_y + 120), (cx - 25, slide_y + 120)
             ])
             # Slide serrations
             for i in range(5):
                  y_ser = slide_y + 80 + i * 8
-                 pygame.draw.line(self.screen, GUN_DARK, (cx - 20, y_ser), (cx + 20, y_ser), 2)
+                 pygame.draw.line(self.screen, gun_dark, (cx - 20, y_ser), (cx + 20, y_ser), 2)
 
             # 4. Barrel Tip
             pygame.draw.rect(self.screen, (10, 10, 10), (cx - 8, slide_y - 5, 16, 10))
@@ -1922,16 +1946,16 @@ class Game:
             # Barrels (Side by Side)
             # Left Barrel
             pygame.draw.circle(self.screen, (20,20,20), (cx - 30, cy - 180), 22)
-            pygame.draw.rect(self.screen, GUN_METAL, (cx - 52, cy - 180, 44, 200))
+            pygame.draw.rect(self.screen, gun_metal, (cx - 52, cy - 180, 44, 200))
             pygame.draw.rect(self.screen, (10,10,10), (cx - 48, cy - 200, 36, 100)) # Hollow tone
 
             # Right Barrel
             pygame.draw.circle(self.screen, (20,20,20), (cx + 30, cy - 180), 22)
-            pygame.draw.rect(self.screen, GUN_METAL, (cx + 8, cy - 180, 44, 200))
+            pygame.draw.rect(self.screen, gun_metal, (cx + 8, cy - 180, 44, 200))
             pygame.draw.rect(self.screen, (10,10,10), (cx + 12, cy - 200, 36, 100))
 
             # Rib between barrels
-            pygame.draw.rect(self.screen, GUN_DARK, (cx - 8, cy - 180, 16, 180))
+            pygame.draw.rect(self.screen, gun_dark, (cx - 8, cy - 180, 16, 180))
 
             # Wooden Foregrip
             pygame.draw.polygon(self.screen, (100, 60, 20), [
@@ -1948,13 +1972,13 @@ class Game:
             pygame.draw.rect(self.screen, (20,20,20), (cx - 40, cy - 80, 30, 80))
 
             # Main Body
-            pygame.draw.polygon(self.screen, GUN_METAL, [
+            pygame.draw.polygon(self.screen, gun_metal, [
                 (cx - 30, cy - 150), (cx + 30, cy - 150),
                 (cx + 40, cy), (cx - 40, cy)
             ])
 
             # Barrel Shroud
-            pygame.draw.rect(self.screen, GUN_HIGHLIGHT, (cx - 20, cy - 220, 40, 100))
+            pygame.draw.rect(self.screen, gun_highlight, (cx - 20, cy - 220, 40, 100))
             # Vents in shroud
             for i in range(6):
                 y_vent = cy - 210 + i * 15
@@ -1991,21 +2015,39 @@ class Game:
 
             # Side Vents (Glowing)
             pulse = int(25 * math.sin(pygame.time.get_ticks() * 0.01))
-            vent_color = (0, 150 + pulse, 200) if not w_state["overheated"] else (200 + pulse, 50, 0)
+            vent_color = (
+                (0, 150 + pulse, 200)
+                if not w_state["overheated"]
+                else (200 + pulse, 50, 0)
+            )
 
             pygame.draw.rect(self.screen, vent_color, (cx - 90, cy - 150, 20, 100))
             pygame.draw.rect(self.screen, vent_color, (cx + 70, cy - 150, 20, 100))
 
             # Central Core (Exposed)
             core_width = 40 + pulse // 2
-            pygame.draw.rect(self.screen, (20, 20, 30), (cx - 30, cy - 180, 60, 140)) # Chamber background
-            pygame.draw.rect(self.screen, vent_color, (cx - core_width//2, cy - 190, core_width, 120), border_radius=10)
+            pygame.draw.rect(
+                self.screen,
+                (20, 20, 30),
+                (cx - 30, cy - 180, 60, 140),
+            )  # Chamber background
+            pygame.draw.rect(
+                self.screen,
+                vent_color,
+                (cx - core_width // 2, cy - 190, core_width, 120),
+                border_radius=10,
+            )
 
             # Floating Rings / Coils
             for i in range(5):
                 y_coil = cy - 230 + i * 35
                 width_coil = 80 - i * 5
-                pygame.draw.rect(self.screen, (30, 30, 40), (cx - width_coil//2, y_coil, width_coil, 15), border_radius=4)
+                pygame.draw.rect(
+                    self.screen,
+                    (30, 30, 40),
+                    (cx - width_coil // 2, y_coil, width_coil, 15),
+                    border_radius=4,
+                )
 
             # Charging arcs (Lightning)
             if self.player.shooting:
@@ -2469,11 +2511,15 @@ class Game:
             txt_color = (0, int(150 + 100 * pulse), int(200 + 55 * pulse))
 
             t2 = stylish_font.render("UPSTREAM DRIFT", True, txt_color)
-            r2 = t2.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 - 180)) # Closer to image
+            r2 = t2.get_rect(
+                center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 - 180)
+            )  # Closer to image
 
             # Shadow
             t2_shadow = stylish_font.render("UPSTREAM DRIFT", True, (0, 0, 0))
-            r2_shadow = t2_shadow.get_rect(center=(C.SCREEN_WIDTH // 2 + 4, C.SCREEN_HEIGHT // 2 - 176))
+            r2_shadow = t2_shadow.get_rect(
+                center=(C.SCREEN_WIDTH // 2 + 4, C.SCREEN_HEIGHT // 2 - 176)
+            )
             self.screen.blit(t2_shadow, r2_shadow)
             self.screen.blit(t2, r2)
 
@@ -2518,11 +2564,15 @@ class Game:
                      # Fallback to Image
                      if "deadfish" in self.intro_images:
                          img = self.intro_images["deadfish"]
-                         img_rect = img.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 50))
+                         img_rect = img.get_rect(
+                             center=(
+                                 C.SCREEN_WIDTH // 2,
+                                 C.SCREEN_HEIGHT // 2 + 50,
+                             )
+                         )
                          self.screen.blit(img, img_rect)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 print(f"Video Playback Error: {e}")
-                import traceback
                 traceback.print_exc()
                 # Fallback on error
                 if "deadfish" in self.intro_images:
@@ -2541,7 +2591,12 @@ class Game:
         elif self.intro_phase == 2:
             # Slides Config
             slides = [
-                {"type": "distortion", "text": "FROM THE DEMENTED MIND OF JASPER", "duration": 4000, "sound": "laugh"},
+                {
+                    "type": "distortion",
+                    "text": "FROM THE DEMENTED MIND OF JASPER",
+                    "duration": 4000,
+                    "sound": "laugh",
+                },
                 {"type": "story", "lines": [
                     "They said the field would contain them.",
                     "They were wrong.",
@@ -2549,8 +2604,19 @@ class Game:
                     "You are the last containment unit.",
                     "Objective: TERMINATE."
                 ], "duration": 10000},
-                {"type": "static", "text": "NO MERCY. NO ESCAPE.", "duration": 4000, "color": (200, 0, 0)},
-                {"type": "static", "text": "FORCE FIELD", "sub": "THE ARENA AWAITS", "duration": 4000, "color": C.WHITE},
+                {
+                    "type": "static",
+                    "text": "NO MERCY. NO ESCAPE.",
+                    "duration": 4000,
+                    "color": (200, 0, 0),
+                },
+                {
+                    "type": "static",
+                    "text": "FORCE FIELD",
+                    "sub": "THE ARENA AWAITS",
+                    "duration": 4000,
+                    "color": C.WHITE,
+                },
             ]
 
             if self.intro_step < len(slides):
@@ -2611,13 +2677,22 @@ class Game:
 
                 # Static / Standard
                 elif slide["type"] == "static":
-                     txt_surf = self.title_font.render(slide["text"], True, slide.get("color", C.WHITE))
-                     txt_rect = txt_surf.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2))
+                     txt_surf = self.title_font.render(
+                         slide["text"], True, slide.get("color", C.WHITE)
+                     )
+                     txt_rect = txt_surf.get_rect(
+                         center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2)
+                     )
                      self.screen.blit(txt_surf, txt_rect)
 
                      if "sub" in slide:
                           sub_surf = self.subtitle_font.render(slide["sub"], True, C.CYAN)
-                          sub_rect = sub_surf.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 60))
+                          sub_rect = sub_surf.get_rect(
+                              center=(
+                                  C.SCREEN_WIDTH // 2,
+                                  C.SCREEN_HEIGHT // 2 + 60,
+                              )
+                          )
                           self.screen.blit(sub_surf, sub_rect)
 
                 if elapsed > duration:

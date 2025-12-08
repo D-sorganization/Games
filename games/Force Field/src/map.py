@@ -45,7 +45,8 @@ class Map:
                      neighbors = 0
                      for ni in range(-1, 2):
                          for nj in range(-1, 2):
-                             if ni == 0 and nj == 0: continue
+                             if ni == 0 and nj == 0:
+                                 continue
                              if self.grid[i+ni][j+nj] > 0:
                                  neighbors += 1
 
@@ -62,7 +63,8 @@ class Map:
              w = random.randint(5, 10)
              h = random.randint(5, 10)
              # Ensure within bounds
-             if size - w - 2 < 2 or size - h - 2 < 2: continue
+             if size - w - 2 < 2 or size - h - 2 < 2:
+                 continue
 
              x = random.randint(2, size - w - 2)
              y = random.randint(2, size - h - 2)
@@ -75,14 +77,18 @@ class Map:
 
              # Add walls around room (type 2, 3, 4)
              wall_type = random.choice([2, 3, 4])
-             for i in range(y, y+h):
+             for i in range(y, y + h):
                  if 0 <= i < size:
-                     if 0 <= x < size: self.grid[i][x] = wall_type
-                     if 0 <= x+w-1 < size: self.grid[i][x+w-1] = wall_type
-             for j in range(x, x+w):
+                     if 0 <= x < size:
+                         self.grid[i][x] = wall_type
+                     if 0 <= x + w - 1 < size:
+                         self.grid[i][x + w - 1] = wall_type
+             for j in range(x, x + w):
                  if 0 <= j < size:
-                     if 0 <= y < size: self.grid[y][j] = wall_type
-                     if 0 <= y+h-1 < size: self.grid[y+h-1][j] = wall_type
+                     if 0 <= y < size:
+                         self.grid[y][j] = wall_type
+                     if 0 <= y + h - 1 < size:
+                         self.grid[y + h - 1][j] = wall_type
 
         # 4. Ensure connectivity (Flood fill)
         cx, cy = size // 2, size // 2
@@ -96,7 +102,8 @@ class Map:
                  if 0 < tx < size and 0 < ty < size and self.grid[ty][tx] == 0:
                       start_x, start_y = tx, ty
                       break
-            if start_x != -1: break
+            if start_x != -1:
+                break
 
         if start_x == -1:
              start_x, start_y = cx, cy
@@ -104,14 +111,19 @@ class Map:
 
         # Identify connected region
         queue = [(start_x, start_y)]
-        visited = set([(start_x, start_y)])
+        visited = {(start_x, start_y)}
 
         while queue:
              x, y = queue.pop(0)
 
              for dx, dy in [(0,1), (0,-1), (1,0), (-1,0)]:
                  nx, ny = x+dx, y+dy
-                 if 0 <= nx < size and 0 <= ny < size and self.grid[ny][nx] == 0 and (nx, ny) not in visited:
+                 if (
+                     0 <= nx < size
+                     and 0 <= ny < size
+                     and self.grid[ny][nx] == 0
+                     and (nx, ny) not in visited
+                 ):
                      visited.add((nx, ny))
                      queue.append((nx, ny))
 

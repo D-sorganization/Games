@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import contextlib
-import os
 from pathlib import Path
 from typing import Dict
 
@@ -84,19 +83,21 @@ class SoundManager:
         }
 
         for name, filename in sound_files.items():
-            path = os.path.join(sound_dir, filename)
-            if os.path.exists(path):
+            path = sound_dir / filename
+            if path.exists():
                 try:
                     self.sounds[name] = pygame.mixer.Sound(path)
                     # Lower volume for ambient to be background
                     if "music" in name or name == "ambient":
                         self.sounds[name].set_volume(0.5)
                 except Exception as e:  # noqa: BLE001
-                    print(f"Failed to load sound {filename} (probably codec issue?): {e}")
+                    print(
+                        f"Failed to load sound {filename} (probably codec issue?): {e}"
+                    )
                     # If we fail to load a "real" sound, try to fallback to synthesized logic if possible?
                     # For now just log it.
             else:
-                print(f"Sound file not found: {path} (Current Dir: {os.getcwd()})")
+                print(f"Sound file not found: {path} (Current Dir: {Path.cwd()})")
 
     def play_sound(self, name: str) -> None:
         """Play a sound effect"""
@@ -106,7 +107,7 @@ class SoundManager:
         if name in self.sounds:
             try:
                 self.sounds[name].play()
-            except BaseException as e:
+            except BaseException as e:  # noqa: BLE001
                 print(f"Sound play failed for {name}: {e}")
 
     def start_music(self, name: str = "music_loop") -> None:
@@ -123,7 +124,11 @@ class SoundManager:
 
     def stop_music(self) -> None:
         """Stop music"""
-        if hasattr(self, "current_music") and self.current_music and self.current_music in self.sounds:
+        if (
+            hasattr(self, "current_music")
+            and self.current_music
+            and self.current_music in self.sounds
+        ):
              self.sounds[self.current_music].stop()
 
         # Fallback
