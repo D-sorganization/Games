@@ -917,6 +917,18 @@ class Game:
                         }
                     )
 
+                # Random Blood Splatter (Screen)
+                for _ in range(5):
+                    self.particles.append({
+                        "x": C.SCREEN_WIDTH // 2,
+                        "y": C.SCREEN_HEIGHT // 2,
+                        "dx": random.uniform(-5, 5),
+                        "dy": random.uniform(-5, 5),
+                        "color": (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)),
+                        "timer": 30,
+                        "size": random.randint(2, 6)
+                    })
+
                 # Spawn Blue Blood
                 for _ in range(10):
                     self.particles.append(
@@ -1001,6 +1013,19 @@ class Game:
                     self.kill_combo_count += 1
                     self.kill_combo_timer = 180
                     self.last_death_pos = (bot.x, bot.y)
+                
+                # Blood (if close)
+                if dist < 5.0:
+                    for _ in range(3):
+                        self.particles.append({
+                            "x": C.SCREEN_WIDTH // 2,
+                            "y": C.SCREEN_HEIGHT // 2,
+                            "dx": random.uniform(-4, 4),
+                            "dy": random.uniform(-4, 4),
+                            "color": (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)),
+                            "timer": 20,
+                            "size": 3
+                        })
 
         # Screen shake or feedback
         # Screen shake or feedback
@@ -1068,6 +1093,19 @@ class Game:
                      self.kill_combo_count += 1
                      self.kill_combo_timer = 180
                      self.last_death_pos = (bot.x, bot.y)
+
+                # Blood
+                if dist < 5.0:
+                    for _ in range(3):
+                        self.particles.append({
+                            "x": C.SCREEN_WIDTH // 2,
+                            "y": C.SCREEN_HEIGHT // 2,
+                            "dx": random.uniform(-4, 4),
+                            "dy": random.uniform(-4, 4),
+                            "color": (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)),
+                            "timer": 20,
+                            "size": 3
+                        })
 
     def update_game(self) -> None:
         """Update game state"""
@@ -1251,6 +1289,18 @@ class Game:
                                 self.kill_combo_count += 1
                                 self.kill_combo_timer = 180 # 3 seconds window
                                 self.last_death_pos = (bot.x, bot.y)
+
+                            # Blood
+                            for _ in range(5):
+                                self.particles.append({
+                                    "x": C.SCREEN_WIDTH // 2,
+                                    "y": C.SCREEN_HEIGHT // 2,
+                                    "dx": random.uniform(-5, 5),
+                                    "dy": random.uniform(-5, 5),
+                                    "color": (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)),
+                                    "timer": 25,
+                                    "size": random.randint(2, 5)
+                                })
 
                             # Visual
                             projectile.alive = False

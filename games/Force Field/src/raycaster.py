@@ -202,123 +202,142 @@ class Raycaster:
         sprite_y: int,
         sprite_size: float,
     ) -> None:
-        """Render a detailed enemy sprite with shape relative to type (Doom Style) - Hi-Res"""
+        """Render a detailed enemy sprite - Monster Style"""
         center_x = sprite_x + sprite_size / 2
         
         type_data: Dict[str, Any] = bot.type_data
         base_color: Tuple[int, int, int] = type_data["color"]
 
-        # Health Pack
+        # Health Pack (Same as before)
         if bot.enemy_type == "health_pack":
-            # Draw Detailed Medkit
             rect_w = sprite_size * 0.4
             rect_h = sprite_size * 0.3
             kit_y = sprite_y + sprite_size * 0.7
-            
-            # Box
             pygame.draw.rect(screen, (220, 220, 220), (center_x - rect_w/2, kit_y, rect_w, rect_h), border_radius=4)
-            # Red Cross
             cross_thick = rect_w * 0.2
             pygame.draw.rect(screen, (200, 0, 0), (center_x - cross_thick/2, kit_y + 5, cross_thick, rect_h - 10))
             pygame.draw.rect(screen, (200, 0, 0), (center_x - rect_w/2 + 5, kit_y + rect_h/2 - cross_thick/2, rect_w - 10, cross_thick))
             return
 
-        # Death / Goo Logic
+        # Dimensions
         render_height = sprite_size
-        render_width = sprite_size * 0.6
+        render_width = sprite_size * 0.55 # Slightly thinner/taller aspect
         render_y = sprite_y
         
+        # Death Animation
         if bot.dead:
-            # Melting animation
-            melt_pct = min(1.0, bot.death_timer / 60.0)
-            
-            # Interpolate Color to Goo (Greenish Slime)
-            goo_color = (50, 150, 50)
-            base_color = tuple(
-                int(c * (1 - melt_pct) + g * melt_pct) 
-                for c, g in zip(base_color, goo_color)
-            )
-            
-            # Squish
-            scale_y = 1.0 - (melt_pct * 0.85) # Squash to 15% height
-            scale_x = 1.0 + (melt_pct * 0.8)  # Widen to 180%
-            
-            current_h = render_height * scale_y
-            current_w = render_width * scale_x
-            
-            # Align bottom
-            render_y = sprite_y + (render_height - current_h) + (render_height * 0.05)
-            render_height = current_h
-            render_width = current_w
-            
-            if bot.disintegrate_timer > 0:
-                # Fade out / Shrink puddle
-                dis_pct = bot.disintegrate_timer / 100.0
-                radius_mult = 1.0 - dis_pct
-                if radius_mult <= 0:
-                    return
-                # Render just a puddle circle
-                pygame.draw.ellipse(screen, base_color, (
-                    center_x - render_width/2 * radius_mult, 
-                    render_y + render_height - 10, 
-                    render_width * radius_mult, 
-                    20 * radius_mult
-                ))
-                return
+             # Melting/Disintegrating
+             melt_pct = min(1.0, bot.death_timer / 60.0)
+             scale_y = 1.0 - (melt_pct * 0.9)
+             scale_x = 1.0 + (melt_pct * 0.5)
+             
+             current_h = render_height * scale_y
+             current_w = render_width * scale_x
+             
+             render_y = sprite_y + (render_height - current_h)
+             render_height = current_h
+             render_width = current_w
+             
+             if bot.disintegrate_timer > 0:
+                 dis_pct = bot.disintegrate_timer / 100.0
+                 if dis_pct >= 1.0: return
+                 # Fade out / Shrink
+                 radius = (render_width/2) * (1.0 - dis_pct)
+                 pygame.draw.ellipse(screen, (100, 0, 0), (center_x - radius, render_y + render_height - 10, radius*2, 15))
+                 return
 
         body_x = center_x - render_width / 2
-        
-        # High-Res Procedural Drawing
-        
-        # 1. Body (Rounded Rectangle)
-        body_rect = pygame.Rect(body_x, render_y + render_height * 0.1, render_width, render_height * 0.6)
-        pygame.draw.rect(screen, base_color, body_rect, border_radius=int(render_width*0.2))
-        
-        # Shading/Gradient effect (simple inset)
-        pygame.draw.rect(screen, tuple(max(0, c-40) for c in base_color), body_rect.inflate(-4, -4), width=2, border_radius=int(render_width*0.2))
 
-        # 2. Head
-        if not bot.dead or bot.death_timer < 30: # Head disappears into body when melting
-            head_size = render_width * 0.7
-            head_y = render_y
-            pygame.draw.rect(screen, (200, 200, 200), (center_x - head_size/2, head_y, head_size, head_size), border_radius=int(head_size*0.2))
-            
-            # Eyes (High Def)
-            eye_r = head_size * 0.15
-            pygame.draw.circle(screen, C.WHITE, (center_x - head_size*0.25, head_y + head_size*0.4), eye_r)
-            pygame.draw.circle(screen, C.WHITE, (center_x + head_size*0.25, head_y + head_size*0.4), eye_r)
-            
-            # Pupils (Spinning)
-            pupil_r = eye_r * 0.5
-            px = math.cos(bot.eye_rotation) * (eye_r * 0.4)
-            py = math.sin(bot.eye_rotation) * (eye_r * 0.4)
-            pygame.draw.circle(screen, C.BLACK, (center_x - head_size*0.25 + px, head_y + head_size*0.4 + py), pupil_r)
-            pygame.draw.circle(screen, C.BLACK, (center_x + head_size*0.25 + px, head_y + head_size*0.4 + py), pupil_r)
-            
-            # Mouth
-            mouth_w = head_size * 0.6
-            mouth_h = head_size * 0.25 if bot.mouth_open else head_size * 0.05
-            pygame.draw.rect(screen, (150, 0, 0), (center_x - mouth_w/2, head_y + head_size*0.7, mouth_w, mouth_h), border_radius=2)
-            
-            # Drool
-            if bot.mouth_open:
-                 drool_len = math.sin(bot.drool_offset)*5 + 10
-                 pygame.draw.line(screen, C.CYAN, (center_x - mouth_w*0.3, head_y + head_size*0.7 + mouth_h), (center_x - mouth_w*0.3, head_y + head_size*0.7 + mouth_h + drool_len), 2)
+        # 1. Body (Hunched, angular)
+        # Main torso
+        torso_rect = pygame.Rect(body_x, render_y + render_height * 0.25, render_width, render_height * 0.5)
+        pygame.draw.rect(screen, base_color, torso_rect)
+        
+        # Ribs / Detail layer (darker lines)
+        dark_color = tuple(max(0, c - 50) for c in base_color)
+        for i in range(3):
+            y_off = render_y + render_height * (0.35 + i * 0.1)
+            pygame.draw.line(screen, dark_color, (body_x + 5, y_off), (body_x + render_width - 5, y_off), 2)
 
-        # 3. Arms / Weapon
-        if not bot.dead:
-            arm_y = render_y + render_height * 0.35
-            # Left Arm
-            pygame.draw.polygon(screen, base_color, [
-                (body_x, arm_y), (body_x - 10, arm_y + 20), (body_x + 5, arm_y + 20)
+        # 2. Head (Smaller, set lower for hunchback look)
+        if not bot.dead or bot.death_timer < 30:
+            head_size = render_width * 0.6  # Smaller head
+            head_y = render_y + render_height * 0.05 # Lower down
+            head_rect = pygame.Rect(center_x - head_size/2, head_y, head_size, head_size)
+            
+            # Head Shape
+            pygame.draw.rect(screen, base_color, head_rect)
+            
+            # Glowing Eyes (Angular)
+            eye_color = (255, 50, 0) # Red
+            if bot.enemy_type == "boss": eye_color = (255, 255, 0) # Yellow
+            
+            eye_size = head_size * 0.25
+            # Left Eye (Triangle)
+            pygame.draw.polygon(screen, eye_color, [
+                (center_x - head_size*0.3, head_y + head_size*0.3),
+                (center_x - head_size*0.1, head_y + head_size*0.3),
+                (center_x - head_size*0.2, head_y + head_size*0.45)
             ])
-            # Right Arm (Weapon)
+            # Right Eye
+            pygame.draw.polygon(screen, eye_color, [
+                (center_x + head_size*0.3, head_y + head_size*0.3),
+                (center_x + head_size*0.1, head_y + head_size*0.3),
+                (center_x + head_size*0.2, head_y + head_size*0.45)
+            ])
+
+            # Mouth (Jagged)
+            mouth_y = head_y + head_size * 0.65
+            mouth_w = head_size * 0.6
+            
+            if bot.mouth_open:
+                # Open screaming maw
+                pygame.draw.rect(screen, (50, 0, 0), (center_x - mouth_w/2, mouth_y, mouth_w, head_size*0.3))
+                # Teeth
+                pygame.draw.line(screen, C.WHITE, (center_x - mouth_w/2, mouth_y), (center_x - mouth_w/4, mouth_y + 5), 2)
+                pygame.draw.line(screen, C.WHITE, (center_x - mouth_w/4, mouth_y + 5), (center_x, mouth_y), 2)
+                pygame.draw.line(screen, C.WHITE, (center_x, mouth_y), (center_x + mouth_w/4, mouth_y + 5), 2)
+                pygame.draw.line(screen, C.WHITE, (center_x + mouth_w/4, mouth_y + 5), (center_x + mouth_w/2, mouth_y), 2)
+            else:
+                # Gritted teeth
+                pygame.draw.line(screen, (200, 200, 200), (center_x - mouth_w/2, mouth_y + 5), (center_x + mouth_w/2, mouth_y + 5), 3)
+                for i in range(4):
+                    x_off = center_x - mouth_w/2 + (i+1) * (mouth_w/5)
+                    pygame.draw.line(screen, (50, 0, 0), (x_off, mouth_y), (x_off, mouth_y + 10), 1)
+
+        # 3. Arms (Claws / Weapons)
+        if not bot.dead:
+            arm_y = render_y + render_height * 0.3
+            # Left Claw
+            pygame.draw.line(screen, base_color, (body_x, arm_y + 10), (body_x - 15, arm_y + 30), 6)
+            pygame.draw.polygon(screen, (200, 200, 200), [ # Sharp Claw
+                (body_x - 15, arm_y + 30),
+                (body_x - 20, arm_y + 40),
+                (body_x - 5, arm_y + 35)
+            ])
+            
+            # Right Arm (Weapon integrated)
             weapon_x = body_x + render_width
-            pygame.draw.line(screen, (10,10,10), (weapon_x - 5, arm_y), (weapon_x + 20, arm_y + 5), 8)
+            pygame.draw.line(screen, base_color, (weapon_x, arm_y + 10), (weapon_x + 15, arm_y + 30), 6)
+            
+            # Weapon Barrel
+            pygame.draw.rect(screen, (30, 30, 30), (weapon_x + 10, arm_y + 25, 25, 10))
             
             # Shoot Flash
             if bot.shoot_animation > 0.5:
-                 pygame.draw.circle(screen, C.YELLOW, (weapon_x + 25, arm_y + 5), 10 + random.randint(0, 5))
+                 pygame.draw.circle(screen, C.YELLOW, (weapon_x + 35, arm_y + 30), 8 + random.randint(0, 4))
+                 pygame.draw.circle(screen, C.WHITE, (weapon_x + 35, arm_y + 30), 4)
+
+        # 4. Legs (Stout, monstrous)
+        if not bot.dead:
+            leg_w = render_width * 0.3
+            leg_h = render_height * 0.25
+            leg_y = render_y + render_height * 0.75
+            
+            # Left Leg
+            pygame.draw.rect(screen, base_color, (body_x + 5, leg_y, leg_w, leg_h))
+            # Right Leg
+            pygame.draw.rect(screen, base_color, (body_x + render_width - 5 - leg_w, leg_y, leg_w, leg_h))
 
     def render_3d(
         self, screen: pygame.Surface, player: Player, bots: List[Bot], level: int
