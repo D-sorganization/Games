@@ -2421,7 +2421,7 @@ class Game:
         if self.intro_phase == 2:
             # Slides Config
             slides = [
-                {"type": "distortion", "text": "FROM THE DEMENTED MIND", "text2": "OF JASPER", "duration": 5000, "sound": "laugh"},
+                {"type": "distortion", "text": "FROM THE DEMENTED MIND", "text2": "OF JASPER", "duration": 8000, "sound": "laugh"},
                 {"type": "story", "lines": [
                     "They said the field would contain them.",
                     "They were wrong.",
@@ -2446,7 +2446,7 @@ class Game:
                 # Distortion Effect
                 if slide["type"] == "distortion":
                     # Try using a scary font (Chiller is good for Goosebumps vibes)
-                    font = pygame.font.SysFont("chiller", 100) if pygame.font.match_font("chiller") else self.title_font
+                    font = pygame.font.SysFont("chiller", 70) if pygame.font.match_font("chiller") else self.title_font
                     
                     lines = [slide["text"]]
                     if "text2" in slide: lines.append(slide["text2"])
