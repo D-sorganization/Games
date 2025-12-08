@@ -1886,12 +1886,12 @@ class Game:
         flash_y = C.SCREEN_HEIGHT - 85
         
         # Weapon specific flash
-        if self.player.weapon == "plasma":
+        if self.player.current_weapon == "plasma":
              # Blue
              pygame.draw.circle(self.screen, C.CYAN, (flash_x, flash_y), 30)
              pygame.draw.circle(self.screen, C.BLUE, (flash_x, flash_y), 20)
              pygame.draw.circle(self.screen, C.WHITE, (flash_x, flash_y), 10)
-        elif self.player.weapon == "shotgun":
+        elif self.player.current_weapon == "shotgun":
              # Huge Orange Flash
              flash_x -= 20 # Offset for center
              flash_y -= 10
@@ -2112,14 +2112,6 @@ class Game:
                       except Exception as e:
                           print(f"Error playing water sound: {e}")
                       self._water_played = True
-            
-            # Play Music Box after delay
-            if elapsed > 2000 and not hasattr(self, "_music_intro_played"):
-                 try:
-                     self.sound_manager.start_music("music_intro")
-                 except Exception as e:
-                     print(f"Error starting music intro: {e}")
-                 self._music_intro_played = True
             
             # Text - Stylish Upstream Drift
             # Use Impact or bold font
