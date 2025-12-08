@@ -2087,11 +2087,11 @@ class Game:
                       print("DEBUG: Video not opened or CV2 missing")
                       self._video_debug_printed = True
 
-            # Fallback to Image
-            elif "deadfish" in self.intro_images:
-                img = self.intro_images["deadfish"]
-                img_rect = img.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 50))
-                self.screen.blit(img, img_rect)
+                 # Fallback to Image
+                 if "deadfish" in self.intro_images:
+                     img = self.intro_images["deadfish"]
+                     img_rect = img.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 50))
+                     self.screen.blit(img, img_rect)
 
             if elapsed > duration:
                 self.intro_phase = 2
