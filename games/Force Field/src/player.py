@@ -31,7 +31,7 @@ class Player:
                 "reloading": False,
                 "reload_timer": 0,
                 "overheated": False,
-                "overheat_timer": 0
+                "overheat_timer": 0,
             }
 
         # Keep tracking total ammo (reserves) if we want,
@@ -110,7 +110,7 @@ class Player:
             return
 
         if self.shield_active:
-             speed *= 0.8
+            speed *= 0.8
 
         # Slightly faster strafe for Doom feel? Standard speed is fine.
         angle = self.angle + math.pi / 2 * (1 if right else -1)
@@ -163,7 +163,6 @@ class Player:
             return False
 
         # 3. Check Clip / Heat
-        # 3. Check Clip / Heat
         if self.current_weapon != "plasma" and w_state["clip"] <= 0:
             self.reload()
             return False
@@ -195,15 +194,15 @@ class Player:
             return
 
         if w_state["clip"] < w_data["clip_size"]:
-             w_state["reloading"] = True
-             w_state["reload_timer"] = w_data.get("reload_time", 60)
+            w_state["reloading"] = True
+            w_state["reload_timer"] = w_data.get("reload_time", 60)
 
     def switch_weapon(self, weapon: str) -> None:
         """Switch to a different weapon"""
         if weapon in C.WEAPONS:
             # Cancel reload of the PREVIOUS weapon to avoid pause/resume exploits.
             if self.current_weapon in self.weapon_state:
-                 self.weapon_state[self.current_weapon]["reloading"] = False
+                self.weapon_state[self.current_weapon]["reloading"] = False
 
             self.current_weapon = weapon
             # Also ensure new weapon is clean (redundant but safe)
