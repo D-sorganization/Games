@@ -667,7 +667,9 @@ class GameRenderer:
         kills_rect = kills_text.get_rect(topright=(C.SCREEN_WIDTH - 20, 50))
         self.screen.blit(kills_text, kills_rect)
 
-        game.raycaster.render_minimap(self.screen, game.player, game.bots)
+        game.raycaster.render_minimap(
+            self.screen, game.player, game.bots, game.visited_cells, game.portal
+        )
 
         # Shield Bar
         shield_width = 150
