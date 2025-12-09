@@ -369,6 +369,11 @@ class Game:
         self.particles = []
         self.damage_texts = []
 
+        # Reset Cheats/Progress
+        self.unlocked_weapons = {"pistol"}
+        self.god_mode = False
+        self.cheat_mode_active = False
+
         # Reset Combo & Atmosphere
         self.kill_combo_count = 0
         self.kill_combo_timer = 0
@@ -425,7 +430,9 @@ class Game:
                 self.player.current_weapon = previous_weapon
             else:
                 self.player.current_weapon = "pistol"
-
+        # Validate current weapon is unlocked (e.g. Player init sets 'rifle' but it might be locked)
+        if self.player.current_weapon not in self.unlocked_weapons:
+             self.player.current_weapon = "pistol"
         # Reset Fog/Mist surface on level load
         if hasattr(self, "mist_surface"):
             del self.mist_surface
@@ -1689,9 +1696,6 @@ class Game:
                 color = (*p["color"], alpha)
                 # Draw on shared surface
                 pygame.draw.line(self.effects_surface, color, start, end, p["width"])
-                pygame.draw.line(self.effects_surface, color, start, end, p["width"])
-                # Horizontal spread visualization removed
-
                 # Draw main beam
                 pygame.draw.line(self.effects_surface, color, start, end, p["width"])
 
@@ -2132,8 +2136,6 @@ class Game:
             self.screen.blit(txt, tr)
 
             # Heat bar drawing removed
-
-        else:
             # Clip / Ammo + Bomb Count + Inventory
             assert self.player is not None
             ammo_val = self.player.ammo[self.player.current_weapon]
@@ -2488,6 +2490,7 @@ class Game:
 
     def handle_map_select_events(self) -> None:
         """Handle map selection events"""
+        self.start_button.update(pygame.mouse.get_pos())
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
@@ -2505,10 +2508,36 @@ class Game:
                     self.state = "playing"
                     pygame.mouse.set_visible(False)
                     pygame.event.set_grab(True)
-                    self.state = "playing"
+
 
                 # Check for settings clicks (Simplified: Cycle on click anywhere in top area?)
-                # For now just start button interaction is critical.
+                # We need simple hitboxes for the settings rows rendered in render_map_select
+                # Settings start at y=200, height=80
+                my = event.pos[1]
+                if 200 <= my < 200 + 4 * 80:
+                    row = (my - 200) // 80
+                    if row == 0:
+                        # Map Size
+                        sizes = [20, 30, 40, 50, 60]
+                        try:
+                            idx = sizes.index(self.selected_map_size)
+                            self.selected_map_size = sizes[(idx + 1) % len(sizes)]
+                        except ValueError:
+                            self.selected_map_size = 40
+                    elif row == 1:
+                        # Difficulty
+                        diffs = list(C.DIFFICULTIES.keys())
+                        try:
+                            idx = diffs.index(self.selected_difficulty)
+                            self.selected_difficulty = diffs[(idx + 1) % len(diffs)]
+                        except ValueError:
+                            self.selected_difficulty = "NORMAL"
+                    elif row == 2:
+                        # Start Level
+                        self.selected_start_level = (self.selected_start_level % 5) + 1
+                    elif row == 3:
+                        # Lives
+                        self.selected_lives = (self.selected_lives % 5) + 1
 
     def render_intro(self) -> None:
         """Render Max Payne style graphic novel intro"""

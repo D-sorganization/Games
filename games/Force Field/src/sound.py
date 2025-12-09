@@ -58,6 +58,7 @@ class SoundManager:
             "reload_shotgun": "realistic-shotgun-cocking-sound-38640.mp3",
             "shoot_plasma": "bfg-laser-89662.mp3",  # BFG Sound
             "shoot_stormtrooper": "sci-fi-weapon-laser-shot-04-316416.mp3",
+            "shoot_laser": "sci-fi-weapon-laser-shot-04-316416.mp3",
             "enemy_shoot": "enemy_shoot.wav",
             "ambient": "music_loop.wav",  # New spooky background
             "bomb": "bomb.wav",

@@ -722,7 +722,6 @@ class Raycaster:
                     continue
 
                 # Calculate corresponding column in sprite texture
-                # Calculate corresponding column in sprite texture
                 tex_x = int(x - start_x)
                 if tex_x < 0 or tex_x >= tex_width:
                     continue
