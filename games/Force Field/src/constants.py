@@ -14,7 +14,8 @@ MIN_BUILDING_OFFSET = 3  # Minimum offset from map edges for building generation
 # Speeds reduced to improve game pacing
 PLAYER_SPEED = 0.375
 PLAYER_SPRINT_SPEED = 0.575
-PLAYER_ROT_SPEED = 0.006
+PLAYER_ROT_SPEED = 0.0015
+SENSITIVITY_X = 1.0
 MAX_RAYCAST_STEPS = 1000  # Maximum steps for raycasting
 
 FOV = math.pi / 3  # 60 degrees
@@ -22,6 +23,10 @@ HALF_FOV = FOV / 2
 NUM_RAYS = SCREEN_WIDTH // 2
 MAX_DEPTH = 100  # Increased render distance (2x)
 DELTA_ANGLE = FOV / NUM_RAYS
+
+DEFAULT_PLAYER_SPAWN = (2.5, 2.5, 0.0)
+SPAWN_SAFE_ZONE_RADIUS = 15.0
+MAP_SIZES = [20, 30, 40, 50, 60]
 
 # New Game Defaults
 DEFAULT_LIVES = 3

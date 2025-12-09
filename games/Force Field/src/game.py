@@ -412,8 +412,19 @@ class Game:
         player_pos = corners[0]
         # Just in case, try to verify valid spot (though corners should be valid)
         if self.game_map.is_wall(int(player_pos[0]), int(player_pos[1])):
-            # Fallback
-            player_pos = (2.5, 2.5, 0.0)
+             # Fallback: Find first non-wall cell in the map
+            found = False
+            for y in range(self.game_map.height):
+                for x in range(self.game_map.width):
+                    if not self.game_map.is_wall(x, y):
+                        player_pos = (x + 0.5, y + 0.5, 0.0)
+                        found = True
+                        break
+                if found:
+                    break
+            else:
+                # If no valid cell found, default to constant
+                player_pos = C.DEFAULT_PLAYER_SPAWN
 
         # Preserve ammo and weapon selection from previous level if player exists
         previous_ammo = None
@@ -1409,8 +1420,7 @@ class Game:
                     dist = math.sqrt(dx**2 + dy**2)
                     if dist < 0.5:
                         old_health = self.player.health
-                        if not self.god_mode:
-                            self.player.take_damage(projectile.damage)
+                        self.player.take_damage(projectile.damage)
 
                         if self.player.health < old_health:
                             # Hit flash
@@ -2164,6 +2174,17 @@ class Game:
                 inv_txt = self.tiny_font.render(
                     f"[{C.WEAPONS[w]['key']}] {C.WEAPONS[w]['name']}", True, color
                 )
+
+                # Ensure displayed key matches actual key binding for special cases
+                key_display = C.WEAPONS[w]["key"]
+                if w == "laser":
+                    key_display = "4"
+                elif w == "plasma":
+                    key_display = "5"
+
+                inv_txt = self.tiny_font.render(
+                    f"[{key_display}] {C.WEAPONS[w]['name']}", True, color
+                )
                 inv_rect = inv_txt.get_rect(bottomright=(C.SCREEN_WIDTH - 20, inv_y))
                 self.screen.blit(inv_txt, inv_rect)
                 inv_y -= 25
@@ -2524,7 +2545,7 @@ class Game:
                     row = (my - 200) // 80
                     if row == 0:
                         # Map Size
-                        sizes = [20, 30, 40, 50, 60]
+                        sizes = C.MAP_SIZES
                         try:
                             idx = sizes.index(self.selected_map_size)
                             self.selected_map_size = sizes[(idx + 1) % len(sizes)]

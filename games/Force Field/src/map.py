@@ -16,6 +16,14 @@ class Map:
         self.grid = [[0 for _ in range(size)] for _ in range(size)]
         self.create_map()
 
+    @property
+    def width(self) -> int:
+        return self.size
+
+    @property
+    def height(self) -> int:
+        return self.size
+
     def create_map(self) -> None:
         """Create the map layout using Cellular Automata for organic caves/rooms"""
         size = self.size
