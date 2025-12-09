@@ -51,6 +51,7 @@ class Player:
         self.bombs = 1  # Start with 1 bomb
         self.secondary_cooldown = 0
         self.zoomed = False
+        self.god_mode = False
 
     def move(
         self,
@@ -229,7 +230,7 @@ class Player:
 
     def take_damage(self, damage: int) -> None:
         """Take damage"""
-        if self.shield_active:
+        if self.shield_active or self.god_mode:
             return
         self.health -= damage
         if self.health <= 0:

@@ -381,6 +381,11 @@ class Game:
         self.game_map = Map(self.selected_map_size)
         self.raycaster = Raycaster(self.game_map)
         self.last_death_pos = None
+
+        # Grab mouse
+        pygame.mouse.set_visible(False)
+        pygame.event.set_grab(True)
+
         self.start_level()
 
     def start_level(self) -> None:
@@ -562,6 +567,7 @@ class Game:
                             self.add_message(msg, C.YELLOW)
                             if self.player:
                                 self.player.health = 100
+                                self.player.god_mode = self.god_mode
                             self.current_cheat_input = ""
                             self.cheat_mode_active = False
                     continue
@@ -650,29 +656,12 @@ class Game:
             self.projectiles.append(p)
             return
 
-        if weapon == "stormtrooper" and not is_secondary:
-            # Spawn Stormtrooper Projectile
-            p = Projectile(
-                self.player.x,
-                self.player.y,
-                self.player.angle,  # Add small random spread?
-                speed=float(C.WEAPONS["stormtrooper"].get("projectile_speed", 2.0)),
-                damage=self.player.get_current_weapon_damage(),
-                is_player=True,
-                color=tuple(C.WEAPONS["stormtrooper"].get("projectile_color", (255, 0, 0))),
-                size=0.15,
-                weapon_type="stormtrooper",
-            )
-            # Add spread to projectile angle directly
-            spread = C.WEAPONS["stormtrooper"].get("spread", 0.08)
-            p.angle = self.player.angle + random.uniform(-spread, spread)
 
-            self.projectiles.append(p)
-            return
 
         if weapon == "laser" and not is_secondary:
             # Hitscan with Beam Visual
             self.check_shot_hit(is_secondary=False, is_laser=True)
+            return
 
         if weapon == "shotgun" and not is_secondary:
             # Spread Fire
@@ -856,7 +845,7 @@ class Game:
                         "width": 3,
                     }
                 )
-                return
+                # Fall through to damage logic
 
             if closest_bot:
                 # Calculate hit position for blood
@@ -1659,7 +1648,7 @@ class Game:
         self.start_button.draw(self.screen, self.font)
 
         instructions = [
-            "CLICK SETTINGS TO CHANGE",
+            "",
             "",
             "WASD: Move | Shift: Sprint | Mouse: Look | 1-4: Weapons",
             "Click: Shoot | Z: Zoom | F: Bomb | Space: Shield",
@@ -1686,13 +1675,8 @@ class Game:
         # Render projectiles via raycaster
         self.raycaster.render_projectiles(self.screen, self.player, self.projectiles)
 
-        if not hasattr(self, "mist_surface"):
-            self.mist_surface = pygame.Surface((C.SCREEN_WIDTH, C.SCREEN_HEIGHT), pygame.SRCALPHA)
-            # Mist removed based on feedback
-            # self.mist_surface.fill((200, 200, 220, 5))
+        # Mist removed based on feedback
 
-        # Mist blit removed
-        # self.screen.blit(self.mist_surface, (0, 0))
 
         # Clear effects surface
         self.effects_surface.fill((0, 0, 0, 0))
@@ -1706,8 +1690,9 @@ class Game:
                 color = (*p["color"], alpha)
                 # Draw on shared surface
                 pygame.draw.line(self.effects_surface, color, start, end, p["width"])
-                # Horizontal spread visualization
-                center_y = (start[1] + end[1]) / 2
+                pygame.draw.line(self.effects_surface, color, start, end, p["width"])
+                # Horizontal spread visualization removed
+
 
                 # Draw main beam
                 pygame.draw.line(self.effects_surface, color, start, end, p["width"])
@@ -2148,7 +2133,7 @@ class Game:
             tr = txt.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 60))
             self.screen.blit(txt, tr)
 
-            self.screen.blit(txt, tr)
+
             # Heat bar drawing removed
 
         else:
@@ -2515,9 +2500,14 @@ class Game:
                 elif event.key == pygame.K_RETURN:
                     self.start_game()
                     self.state = "playing"
+                    pygame.mouse.set_visible(False)
+                    pygame.event.set_grab(True)
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if self.start_button.is_clicked(event.pos):
                     self.start_game()
+                    self.state = "playing"
+                    pygame.mouse.set_visible(False)
+                    pygame.event.set_grab(True)
                     self.state = "playing"
 
                 # Check for settings clicks (Simplified: Cycle on click anywhere in top area?)
@@ -2766,8 +2756,8 @@ class Game:
                     y = C.SCREEN_HEIGHT // 2 - (len(lines) * 50) // 2
                     for i in range(lines_to_show):
                         l_text = lines[i]
-                        # User wants them to STAY red. No white.
-                        # "In the intro, the letters in the lines change from red to white... I want them to stay red"
+                        # User wants them to STAY red. No white changes.
+                        # "In the intro, the letters in the lines change from red to white..."
                         color = C.RED
 
                         txt_surf = self.subtitle_font.render(l_text, True, color)
