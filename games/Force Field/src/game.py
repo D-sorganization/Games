@@ -1713,27 +1713,27 @@ class Game:
 
     def render_menu(self) -> None:
         """Render main menu (Title Screen)"""
+        if self.intro_video and self.intro_video.isOpened():
+             # Draw transparent overlay if needed
+             pass
+        
         self.screen.fill(C.BLACK)
 
-        title_y = C.SCREEN_HEIGHT // 2 - 100
-        title_text = "FORCE FIELD"
-
-        # Shadow
-        shadow = self.title_font.render(title_text, True, C.DARK_RED)
-        shadow_rect = shadow.get_rect(center=(C.SCREEN_WIDTH // 2 + 4, title_y + 4))
-        self.screen.blit(shadow, shadow_rect)
-
-        # Main Title (RED style for continuity)
-        title = self.title_font.render(title_text, True, C.RED)
-        title_rect = title.get_rect(center=(C.SCREEN_WIDTH // 2, title_y))
+        # Menu Title
+        # "Force Field The Arena Awaits"
+        title = self.title_font.render("FORCE FIELD", True, C.RED)
+        title_rect = title.get_rect(center=(C.SCREEN_WIDTH // 2, 100))
+        
+        sub = self.subtitle_font.render("THE ARENA AWAITS", True, C.WHITE)
+        sub_rect = sub.get_rect(center=(C.SCREEN_WIDTH // 2, 160))
+        
         self.screen.blit(title, title_rect)
+        self.screen.blit(sub, sub_rect)
 
         # Blood Drips (Persistant)
         self.update_blood_drips(title_rect)
         self.draw_blood_drips()
 
-        subtitle = self.subtitle_font.render("MAXIMUM CARNAGE EDITION", True, C.RED)
-        subtitle_rect = subtitle.get_rect(center=(C.SCREEN_WIDTH // 2, title_y + 80))
         self.screen.blit(subtitle, subtitle_rect)
 
         # "Press Start" style prompt
@@ -1788,10 +1788,10 @@ class Game:
             # User said "Mission Setup screen... use same type of font".
             # I will use subtitle_font (Georgia) for labels too.
             label_surf = self.subtitle_font.render(f"{label}:", True, C.GRAY)
-            label_rect = label_surf.get_rect(right=C.SCREEN_WIDTH // 2 - 20, center_y=y)
+            label_rect = label_surf.get_rect(right=C.SCREEN_WIDTH // 2 - 20, centery=y)
             
             val_surf = self.subtitle_font.render(value, True, color)
-            val_rect = val_surf.get_rect(left=C.SCREEN_WIDTH // 2 + 20, center_y=y)
+            val_rect = val_surf.get_rect(left=C.SCREEN_WIDTH // 2 + 20, centery=y)
 
             self.screen.blit(label_surf, label_rect)
             self.screen.blit(val_surf, val_rect)
@@ -2872,10 +2872,10 @@ class Game:
                     y = C.SCREEN_HEIGHT // 2 - (len(lines) * 50) // 2
                     for i in range(lines_to_show):
                         l_text = lines[i]
-                        color = C.WHITE
-                        if i == lines_to_show - 1:
-                            color = C.RED  # Highlight newest line
-
+                        # User wants them to STAY red. No white.
+                        # "In the intro, the letters in the lines change from red to white... I want them to stay red"
+                        color = C.RED
+                        
                         txt_surf = self.subtitle_font.render(l_text, True, color)
                         txt_rect = txt_surf.get_rect(center=(C.SCREEN_WIDTH // 2, y))
                         self.screen.blit(txt_surf, txt_rect)
