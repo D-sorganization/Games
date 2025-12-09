@@ -2387,6 +2387,9 @@ class Game:
                 if event.key == pygame.K_SPACE:
                     self.level += 1
                     self.start_level()
+                    self.state = "playing"
+                    pygame.mouse.set_visible(False)
+                    pygame.event.set_grab(True)
                 elif event.key == pygame.K_ESCAPE:
                     self.state = "menu"
 
@@ -2432,6 +2435,7 @@ class Game:
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:
                     self.start_game()
+                    self.state = "playing"
                 elif event.key == pygame.K_ESCAPE:
                     self.state = "menu"
 
