@@ -656,8 +656,6 @@ class Game:
             self.projectiles.append(p)
             return
 
-
-
         if weapon == "laser" and not is_secondary:
             # Hitscan with Beam Visual
             self.check_shot_hit(is_secondary=False, is_laser=True)
@@ -1677,7 +1675,6 @@ class Game:
 
         # Mist removed based on feedback
 
-
         # Clear effects surface
         self.effects_surface.fill((0, 0, 0, 0))
 
@@ -1692,7 +1689,6 @@ class Game:
                 pygame.draw.line(self.effects_surface, color, start, end, p["width"])
                 pygame.draw.line(self.effects_surface, color, start, end, p["width"])
                 # Horizontal spread visualization removed
-
 
                 # Draw main beam
                 pygame.draw.line(self.effects_surface, color, start, end, p["width"])
@@ -2132,7 +2128,6 @@ class Game:
             txt = self.small_font.render(status_text, True, status_color)
             tr = txt.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 60))
             self.screen.blit(txt, tr)
-
 
             # Heat bar drawing removed
 

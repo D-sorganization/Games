@@ -11,7 +11,7 @@ TILE_SIZE = 64
 MIN_BUILDING_OFFSET = 3  # Minimum offset from map edges for building generation
 
 # Player settings
-
+# Speeds reduced to improve game pacing
 PLAYER_SPEED = 0.375
 PLAYER_SPRINT_SPEED = 0.575
 PLAYER_ROT_SPEED = 0.006
@@ -97,14 +97,14 @@ WEAPONS = {
     "laser": {
         "name": "Laser",
         "damage": 50,  # Continuous damage capability
-        "range": 50,    # Long range
+        "range": 50,  # Long range
         "ammo": 999,
         "cooldown": 5,  # Very fast fire
         "automatic": True,
         "clip_size": 100,
         "reload_time": 100,
         "key": "4",
-        "beam_color": (255, 0, 0), # Red laser
+        "beam_color": (255, 0, 0),  # Red laser
         "beam_width": 3,
     },
 }
@@ -309,21 +309,20 @@ ENEMY_TYPES = {
         "scale": 0.5,
         "visual_style": "item",
     },
-
     "ball": {
-        "color": (50, 50, 50), # Metallic
+        "color": (50, 50, 50),  # Metallic
         "health_mult": 3.0,
-        "speed_mult": 2.5, # Very fast
-        "damage_mult": 3.0, # Crushing damage
+        "speed_mult": 2.5,  # Very fast
+        "damage_mult": 3.0,  # Crushing damage
         "scale": 1.5,
         "visual_style": "ball",
     },
     "beast": {
-        "color": (160, 40, 40), # Dark Red
+        "color": (160, 40, 40),  # Dark Red
         "health_mult": 6.0,
-        "speed_mult": 0.4, # Slow
+        "speed_mult": 0.4,  # Slow
         "damage_mult": 2.5,
-        "scale": 3.0, # Huge
+        "scale": 3.0,  # Huge
         "visual_style": "beast",
     },
 }

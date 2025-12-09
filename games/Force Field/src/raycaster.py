@@ -581,11 +581,6 @@ class Raycaster:
             )
 
             # Update Z-Buffer for this ray's columns
-            if distance > 0:
-                # Correct fisheye for Z-buffer comparison
-                # Correct fisheye for Z-buffer comparison
-                # cast_ray returns corrected_wall_dist which is what we need for Z-buffer comparison
-                pass
 
             # Map ray to screen columns
             col_start = ray * 2
@@ -680,7 +675,7 @@ class Raycaster:
             )
             sprite_y = C.SCREEN_HEIGHT / 2 - sprite_size / 2 + player.pitch
 
-            # Optimization: If sprite is completely off screen or completely occluded (simple check), skip
+            # Optimization: If sprite is off screen, skip
             if sprite_x + sprite_size < 0 or sprite_x > C.SCREEN_WIDTH:
                 continue
 
