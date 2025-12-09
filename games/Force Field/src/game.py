@@ -1734,8 +1734,6 @@ class Game:
         self.update_blood_drips(title_rect)
         self.draw_blood_drips()
 
-        self.screen.blit(subtitle, subtitle_rect)
-
         # "Press Start" style prompt
         if (pygame.time.get_ticks() // 500) % 2 == 0:
             prompt = self.font.render("CLICK TO BEGIN", True, C.GRAY)
