@@ -433,6 +433,9 @@ class Game:
         # Validate current weapon is unlocked (e.g. Player init sets 'rifle' but it might be locked)
         if self.player.current_weapon not in self.unlocked_weapons:
              self.player.current_weapon = "pistol"
+
+        # Propagate God Mode state
+        self.player.god_mode = self.god_mode
         # Reset Fog/Mist surface on level load
         if hasattr(self, "mist_surface"):
             del self.mist_surface
@@ -1694,8 +1697,6 @@ class Game:
                 start = p["start"]
                 end = p["end"]
                 color = (*p["color"], alpha)
-                # Draw on shared surface
-                pygame.draw.line(self.effects_surface, color, start, end, p["width"])
                 # Draw main beam
                 pygame.draw.line(self.effects_surface, color, start, end, p["width"])
 
@@ -2172,7 +2173,13 @@ class Game:
         level_rect = level_text.get_rect(topright=(C.SCREEN_WIDTH - 20, 20))
         self.screen.blit(level_text, level_rect)
 
-        bots_alive = sum(1 for bot in self.bots if bot.alive and bot.enemy_type != "health_pack")
+        bots_alive = sum(
+            1
+            for bot in self.bots
+            if bot.alive
+            and bot.enemy_type != "health_pack"
+            and C.ENEMY_TYPES[bot.enemy_type].get("visual_style") != "item"
+        )
         kills_text = self.small_font.render(f"Enemies: {bots_alive}", True, C.RED)
         kills_rect = kills_text.get_rect(topright=(C.SCREEN_WIDTH - 20, 50))
         self.screen.blit(kills_text, kills_rect)

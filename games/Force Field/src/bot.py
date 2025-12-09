@@ -228,14 +228,17 @@ class Bot:
                         # Beast pushes others?
                         if self.enemy_type == "beast":
                             push_x = other_bot.x + move_dx * 2
-                            push_y = other_bot.y + move_dy * 2
-                            if not game_map.is_wall(push_x, push_y):
+                            if not game_map.is_wall(push_x, other_bot.y):
                                 other_bot.x = push_x
-                                other_bot.y = push_y
 
                     other_dist = math.sqrt((self.x - other_bot.x) ** 2 + (new_y - other_bot.y) ** 2)
                     if other_dist < 0.5 + (0.5 if self.enemy_type == "beast" else 0):
                         can_move_y = False
+                         # Beast pushes others (Y only)
+                        if self.enemy_type == "beast":
+                            push_y = other_bot.y + move_dy * 2
+                            if not game_map.is_wall(other_bot.x, push_y):
+                                other_bot.y = push_y
 
             if can_move_x:
                 self.x = new_x
