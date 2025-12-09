@@ -5,7 +5,6 @@ from pathlib import Path
 from typing import Dict
 
 import pygame
-from typing_extensions import Self
 
 
 class SoundManager:
@@ -14,7 +13,7 @@ class SoundManager:
     _instance: SoundManager | None = None
     initialized: bool
 
-    def __new__(cls) -> Self:
+    def __new__(cls) -> SoundManager:  # noqa: PYI034
         """Create singleton instance"""
         if cls._instance is None:
             cls._instance = super().__new__(cls)

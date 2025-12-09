@@ -151,12 +151,15 @@ class Bot:
             self.x = new_x
             self.y = new_y
 
-            # Rotation (visual)
+            # Visual rotation
             self.angle = math.atan2(self.vy, self.vx)
 
             # Collision with player (Crush)
-            if dist < 1.0:
-                player.take_damage(self.damage)
+            # Recalculate distance after move
+            dist_new = math.sqrt((new_x - player.x) ** 2 + (new_y - player.y) ** 2)
+            if dist_new < 1.0:
+                if not player.god_mode:
+                    player.take_damage(self.damage)
                 # Bounce back
                 self.vx *= -1.0
                 self.vy *= -1.0
@@ -171,7 +174,7 @@ class Bot:
             if distance < 15 and self.attack_timer <= 0:  # Long range
                 if self.has_line_of_sight(game_map, player):
                     # Calculate parabola (fake 3D arc)
-                    # We just spawn a special projectile that has a "z" component handled in renderer?
+                    # We just spawn a big fireball projectile (fake 3D arc handled later)
                     # For now, just a big fireball projectile
                     projectile = Projectile(
                         self.x,

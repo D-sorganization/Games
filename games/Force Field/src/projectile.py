@@ -16,7 +16,7 @@ class Projectile:
         damage: int,
         speed: float,
         is_player: bool = False,
-        color: tuple = (255, 0, 0),
+        color: tuple[int, int, int] = (255, 0, 0),
         size: float = 0.2,
         weapon_type: str = "normal",
     ):
