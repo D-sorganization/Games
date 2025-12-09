@@ -265,12 +265,12 @@ class GameRenderer:
         self._render_weapon(game.player)
         self._render_hud(game)
 
-        # 6. Pause Menu
+        # 6. Damage Text (before pause overlay)
+        self._render_damage_texts(game.damage_texts)
+
+        # 7. Pause Menu (overlay on top)
         if game.paused:
             self._render_pause_menu()
-
-        # 7. Damage Text
-        self._render_damage_texts(game.damage_texts)
 
         pygame.display.flip()
 
