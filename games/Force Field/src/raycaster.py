@@ -258,9 +258,9 @@ class Raycaster:
             current_h = render_height * scale_y
             current_w = render_width * scale_x
 
-            render_y = sprite_y + (render_height - current_h) + (render_height * 0.05)
-            render_height = current_h
-            render_width = current_w
+            render_y = int(sprite_y + (render_height - current_h) + (render_height * 0.05))
+            render_height = int(current_h)
+            render_width = int(current_w)
 
             if bot.disintegrate_timer > 0:
                 dis_pct = bot.disintegrate_timer / 100.0
@@ -283,10 +283,10 @@ class Raycaster:
             # Render Baby Style (Round, Big Head, Cute/Creepy)
             # Body
             body_rect = pygame.Rect(
-                center_x - render_width / 2,
-                render_y + render_height * 0.4,
-                render_width,
-                render_height * 0.6,
+                int(center_x - render_width / 2),
+                int(render_y + render_height * 0.4),
+                int(render_width),
+                int(render_height * 0.6),
             )
             pygame.draw.rect(screen, base_color, body_rect, border_radius=int(render_width * 0.4))
 
@@ -351,7 +351,10 @@ class Raycaster:
         # 1. Body (Rounded Torso)
         # Use ellipse for more organic look
         torso_rect = pygame.Rect(
-            body_x, render_y + render_height * 0.25, render_width, render_height * 0.5
+            int(body_x),
+            int(render_y + render_height * 0.25),
+            int(render_width),
+            int(render_height * 0.5),
         )
         # Draw torso
         pygame.draw.ellipse(screen, base_color, torso_rect)
@@ -386,9 +389,9 @@ class Raycaster:
 
         # 2. Head
         if not bot.dead or bot.death_timer < 30:
-            head_size = render_width * 0.6
-            head_y = render_y + render_height * 0.05
-            head_rect = pygame.Rect(center_x - head_size / 2, head_y, head_size, head_size)
+            head_size = int(render_width * 0.6)
+            head_y = int(render_y + render_height * 0.05)
+            head_rect = pygame.Rect(center_x - head_size // 2, head_y, head_size, head_size)
             pygame.draw.rect(screen, base_color, head_rect)
 
             # Glowing Eyes
@@ -524,7 +527,7 @@ class Raycaster:
         # Select theme
         theme_idx = (level - 1) % len(C.LEVEL_THEMES)
         theme = C.LEVEL_THEMES[theme_idx]
-        wall_colors = theme["walls"]
+        wall_colors = cast("Dict[int, Tuple[int, int, int]]", theme["walls"])
 
         # Collect all bots to render as sprites
         bots_to_render = []
@@ -568,6 +571,9 @@ class Raycaster:
         # Sort bots by distance (far to near)
         bots_to_render.sort(key=lambda x: x[1], reverse=True)
 
+        # Z-Buffer to track wall distance per screen column
+        z_buffer = [float("inf")] * C.SCREEN_WIDTH
+
         for ray in range(C.NUM_RAYS):
             distance, wall_type, hit_bot = self.cast_ray_with_bots(
                 player.x,
@@ -576,6 +582,14 @@ class Raycaster:
                 player.angle,
                 bots,
             )
+
+            # Update Z-Buffer for this ray's columns
+
+            # Map ray to screen columns
+            col_start = ray * 2
+            col_end = min(col_start + 2, C.SCREEN_WIDTH)
+            for col in range(col_start, col_end):
+                z_buffer[col] = distance
 
             if hit_bot:
                 # Skip bot rendering here - we'll render sprites separately
@@ -648,6 +662,8 @@ class Raycaster:
             ray_angle += delta_angle
 
         # Render enemy sprites (after walls, far to near)
+        # Note: We still sort far-to-near to handle sprite-on-sprite overlap correctly
+        # But we use z_buffer to handle sprite-behind-wall occlusion.
         for bot, bot_dist, angle_to_bot in bots_to_render:
             # Calculate sprite size based on distance and enemy scale
             base_sprite_size = C.SCREEN_HEIGHT / bot_dist if bot_dist > 0 else C.SCREEN_HEIGHT
@@ -661,6 +677,10 @@ class Raycaster:
                 - sprite_size / 2
             )
             sprite_y = C.SCREEN_HEIGHT / 2 - sprite_size / 2 + player.pitch
+
+            # Optimization: If sprite is off screen, skip
+            if sprite_x + sprite_size < 0 or sprite_x > C.SCREEN_WIDTH:
+                continue
 
             # Apply distance shading
             distance_shade: float = max(0.4, 1.0 - bot_dist / C.MAX_DEPTH)
@@ -683,8 +703,32 @@ class Raycaster:
             )
             sprite_surface.blit(shade_surface, (0, 0), special_flags=pygame.BLEND_MULT)
 
-            # Blit sprite to screen
-            screen.blit(sprite_surface, (int(sprite_x), int(sprite_y)))
+            # Column-based rendering for proper occlusion
+            start_x = int(sprite_x)
+            end_x = int(sprite_x + sprite_size)
+
+            # Optimization: Pre-calculate scaling
+            tex_width = sprite_surface.get_width()
+            tex_height = sprite_surface.get_height()
+
+            # Iterate through screen columns covered by sprite
+            for x in range(start_x, end_x):
+                # Bounds check
+                if x < 0 or x >= C.SCREEN_WIDTH:
+                    continue
+
+                # Z-Buffer check
+                if bot_dist >= z_buffer[x]:
+                    continue
+
+                # Calculate corresponding column in sprite texture
+                tex_x = int(x - start_x)
+                if tex_x < 0 or tex_x >= tex_width:
+                    continue
+
+                # Blit this 1-pixel wide strip
+                area = pygame.Rect(tex_x, 0, 1, tex_height)
+                screen.blit(sprite_surface, (x, int(sprite_y)), area=area)
 
     def render_floor_ceiling(self, screen: pygame.Surface, player: Player, level: int) -> None:
         """Render floor and sky with stars"""

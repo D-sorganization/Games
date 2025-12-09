@@ -61,6 +61,12 @@ class Bot:
         self.last_y = y
         self.shoot_animation = 0.0  # For shoot animation
 
+        # Momentum for Ball boss
+        self.vx = 0.0
+        self.vy = 0.0
+        if self.enemy_type == "ball":
+            self.damage = int(self.damage * 1.5)  # Impact damage
+
         # Visuals (Doom style)
         self.mouth_open = False
         self.mouth_timer = 0
@@ -108,8 +114,84 @@ class Bot:
         # Face player
         self.angle = float(math.atan2(dy, dx))
 
+        if self.enemy_type == "ball":
+            # Rolling Momentum Logic
+            # Accelerate towards player
+            accel = 0.001 * self.speed
+            dx = player.x - self.x
+            dy = player.y - self.y
+            dist = math.sqrt(dx * dx + dy * dy)
+
+            # Normalize direction
+            if dist > 0:
+                self.vx += (dx / dist) * accel
+                self.vy += (dy / dist) * accel
+
+            # Max speed cap (high)
+            current_speed = math.sqrt(self.vx**2 + self.vy**2)
+            max_speed = self.speed * 2.0
+            if current_speed > max_speed:
+                scale = max_speed / current_speed
+                self.vx *= scale
+                self.vy *= scale
+
+            # Move
+            new_x = self.x + self.vx
+            new_y = self.y + self.vy
+
+            # Bounce off walls
+            if game_map.is_wall(new_x, self.y):
+                self.vx *= -0.8  # Bounce with some loss
+                new_x = self.x
+            if game_map.is_wall(self.x, new_y):
+                self.vy *= -0.8
+                new_y = self.y
+
+            # Update pos
+            self.x = new_x
+            self.y = new_y
+
+            # Visual rotation
+            self.angle = math.atan2(self.vy, self.vx)
+
+            # Collision with player (Crush)
+            # Recalculate distance after move
+            dist_new = math.sqrt((new_x - player.x) ** 2 + (new_y - player.y) ** 2)
+            if dist_new < 1.0:
+                if not player.god_mode:
+                    player.take_damage(self.damage)
+                # Bounce back
+                self.vx *= -1.0
+                self.vy *= -1.0
+
+            return None
+
+        if self.enemy_type == "beast":
+            # Slow movement, big fireballs
+            # Standard move logic below will handle slow movement
+
+            # Custom Fireball Attack
+            if distance < 15 and self.attack_timer <= 0:  # Long range
+                if self.has_line_of_sight(game_map, player):
+                    # Calculate parabola (fake 3D arc)
+                    # We just spawn a big fireball projectile (fake 3D arc handled later)
+                    # For now, just a big fireball projectile
+                    projectile = Projectile(
+                        self.x,
+                        self.y,
+                        self.angle,
+                        damage=self.damage * 2,
+                        speed=0.15,  # Slow heavy projectile
+                        is_player=False,
+                        color=(255, 100, 0),
+                        size=1.0,  # Big
+                    )
+                    self.attack_timer = 120  # Slow fire rate
+                    self.shoot_animation = 1.0
+                    return projectile
+
         # Attack if in range
-        if distance < C.BOT_ATTACK_RANGE:
+        if distance < C.BOT_ATTACK_RANGE and self.enemy_type != "beast":  # Beast handled above
             if self.attack_timer <= 0:
                 # Check line of sight
                 if self.has_line_of_sight(game_map, player):
@@ -141,11 +223,22 @@ class Bot:
             for other_bot in other_bots:
                 if other_bot != self and not other_bot.dead:
                     other_dist = math.sqrt((new_x - other_bot.x) ** 2 + (self.y - other_bot.y) ** 2)
-                    if other_dist < 0.5:
+                    if other_dist < 0.5 + (0.5 if self.enemy_type == "beast" else 0):
                         can_move_x = False
+                        # Beast pushes others?
+                        if self.enemy_type == "beast":
+                            push_x = other_bot.x + move_dx * 2
+                            if not game_map.is_wall(push_x, other_bot.y):
+                                other_bot.x = push_x
+
                     other_dist = math.sqrt((self.x - other_bot.x) ** 2 + (new_y - other_bot.y) ** 2)
-                    if other_dist < 0.5:
+                    if other_dist < 0.5 + (0.5 if self.enemy_type == "beast" else 0):
                         can_move_y = False
+                        # Beast pushes others (Y only)
+                        if self.enemy_type == "beast":
+                            push_y = other_bot.y + move_dy * 2
+                            if not game_map.is_wall(other_bot.x, push_y):
+                                other_bot.y = push_y
 
             if can_move_x:
                 self.x = new_x

@@ -11,10 +11,11 @@ TILE_SIZE = 64
 MIN_BUILDING_OFFSET = 3  # Minimum offset from map edges for building generation
 
 # Player settings
-
-PLAYER_SPEED = 0.75
-PLAYER_SPRINT_SPEED = 1.15
-PLAYER_ROT_SPEED = 0.003
+# Speeds reduced to improve game pacing
+PLAYER_SPEED = 0.375
+PLAYER_SPRINT_SPEED = 0.575
+PLAYER_ROT_SPEED = 0.0015
+SENSITIVITY_X = 1.0
 MAX_RAYCAST_STEPS = 1000  # Maximum steps for raycasting
 
 FOV = math.pi / 3  # 60 degrees
@@ -22,6 +23,10 @@ HALF_FOV = FOV / 2
 NUM_RAYS = SCREEN_WIDTH // 2
 MAX_DEPTH = 100  # Increased render distance (2x)
 DELTA_ANGLE = FOV / NUM_RAYS
+
+DEFAULT_PLAYER_SPAWN = (2.5, 2.5, 0.0)
+SPAWN_SAFE_ZONE_RADIUS = 15.0
+MAP_SIZES = [20, 30, 40, 50, 60]
 
 # New Game Defaults
 DEFAULT_LIVES = 3
@@ -41,6 +46,7 @@ WEAPON_RANGE_PISTOL = 15
 WEAPON_RANGE_RIFLE = 25
 WEAPON_RANGE_SHOTGUN = 12  # Increased range (was 8)
 WEAPON_RANGE_PLASMA = 30
+WEAPON_RANGE_STORMTROOPER = 30
 
 # Weapon settings
 WEAPONS = {
@@ -72,33 +78,46 @@ WEAPONS = {
         "ammo": 999,
         "cooldown": 30,
         "clip_size": 2,  # Two shots
-        "reload_time": 150,  # 2.5 seconds (slow)
+        "reload_time": 100,  # Faster reload (was 150)
         "pellets": 8,
         "spread": 0.15,
         "key": "3",
     },
     "plasma": {
         "name": "Plasma",
-        "damage": 100,  # Increased from 35
+        "damage": 100,
         "range": WEAPON_RANGE_PLASMA,
         "ammo": 999,
-        "cooldown": 8,  # Faster fire rate (was 12)
-        "automatic": True,  # Allow hold-to-fire
-        "clip_size": 999,  # Infinite clip, uses heat
-        "heat_per_shot": 0.25,  # Heats up faster (was 0.15)
+        "cooldown": 8,
+        "automatic": True,
+        "clip_size": 999,
+        "heat_per_shot": 0.25,
         "max_heat": 1.0,
         "cooling_rate": 0.01,
-        "overheat_penalty": 180,  # 3 seconds cooldown if overheated
+        "overheat_penalty": 180,
         "projectile_speed": 0.5,
-        "projectile_color": (0, 191, 255),  # Deep Sky Blue
+        "projectile_color": (0, 191, 255),
+        "key": "5",
+    },
+    "laser": {
+        "name": "Laser",
+        "damage": 50,  # Continuous damage capability
+        "range": 50,  # Long range
+        "ammo": 999,
+        "cooldown": 5,  # Very fast fire
+        "automatic": True,
+        "clip_size": 100,
+        "reload_time": 100,
         "key": "4",
+        "beam_color": (255, 0, 0),  # Red laser
+        "beam_width": 3,
     },
 }
 
 # Combat settings
 HEADSHOT_THRESHOLD = 0.05
 SPAWN_SAFETY_MARGIN = 3
-PLASMA_AOE_RADIUS = 6.0  # Widened AOE (was 2.5)
+PLASMA_AOE_RADIUS = 3.0  # Reduced AOE (was 6.0)
 
 # UI settings
 HINT_BG_PADDING_H = 10
@@ -171,7 +190,7 @@ BOT_PROJECTILE_DAMAGE = 5  # Reduced from 6
 
 # Spread (Aiming randomness)
 SPREAD_BASE = 0.05
-SPREAD_ZOOM = 0.01
+SPREAD_ZOOM = 0.005
 
 # Zoom
 ZOOM_FOV_MULT = 0.5  # 2x Zoom (Half FOV)
@@ -254,6 +273,62 @@ ENEMY_TYPES = {
         "damage_mult": 0.0,
         "scale": 0.5,
         "visual_style": "item",
+    },
+    "ammo_box": {
+        "color": (255, 255, 0),
+        "health_mult": 1.0,
+        "speed_mult": 0.0,
+        "damage_mult": 0.0,
+        "scale": 0.4,
+        "visual_style": "item",
+    },
+    "bomb_item": {
+        "color": (50, 50, 50),
+        "health_mult": 1.0,
+        "speed_mult": 0.0,
+        "damage_mult": 0.0,
+        "scale": 0.4,
+        "visual_style": "item",
+    },
+    "pickup_rifle": {
+        "color": (100, 100, 255),
+        "health_mult": 1.0,
+        "speed_mult": 0.0,
+        "damage_mult": 0.0,
+        "scale": 0.5,
+        "visual_style": "item",
+    },
+    "pickup_shotgun": {
+        "color": (150, 75, 0),
+        "health_mult": 1.0,
+        "speed_mult": 0.0,
+        "damage_mult": 0.0,
+        "scale": 0.5,
+        "visual_style": "item",
+    },
+    "pickup_plasma": {
+        "color": (0, 255, 255),
+        "health_mult": 1.0,
+        "speed_mult": 0.0,
+        "damage_mult": 0.0,
+        "scale": 0.5,
+        "visual_style": "item",
+    },
+    "ball": {
+        "color": (50, 50, 50),  # Metallic
+        "health_mult": 3.0,
+        "speed_mult": 2.5,  # Very fast
+        "damage_mult": 3.0,  # Crushing damage
+        "scale": 1.5,
+        "visual_style": "ball",
+    },
+    "beast": {
+        "color": (160, 40, 40),  # Dark Red
+        "health_mult": 6.0,
+        "speed_mult": 0.4,  # Slow
+        "damage_mult": 2.5,
+        "scale": 3.0,  # Huge
+        "visual_style": "beast",
     },
 }
 

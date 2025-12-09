@@ -165,8 +165,10 @@ class BloodButton(Button):
         )
         screen.blit(highlight_surf, highlight_rect)
 
-        # Border
-        pygame.draw.rect(screen, (50, 0, 0), self.rect, 2, border_radius=5)
+        # Border (Top, Left, Right) - No Bottom to blend drips
+        pygame.draw.line(screen, (50, 0, 0), self.rect.topleft, self.rect.topright, 2)
+        pygame.draw.line(screen, (50, 0, 0), self.rect.topleft, self.rect.bottomleft, 2)
+        pygame.draw.line(screen, (50, 0, 0), self.rect.topright, self.rect.bottomright, 2)
 
         # Text with shadow
         text_surf = font.render(self.text, True, C.WHITE)
