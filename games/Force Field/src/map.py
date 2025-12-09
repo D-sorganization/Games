@@ -18,10 +18,12 @@ class Map:
 
     @property
     def width(self) -> int:
+        """Get map width"""
         return self.size
 
     @property
     def height(self) -> int:
+        """Get map height"""
         return self.size
 
     def create_map(self) -> None:
