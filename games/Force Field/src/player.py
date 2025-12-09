@@ -18,6 +18,7 @@ class Player:
         self.x = x
         self.y = y
         self.angle = angle
+        self.pitch = 0.0  # Vertical look offset
         self.health = 100
         self.max_health = 100
         self.is_moving = False  # Track movement for bobbing
@@ -146,6 +147,11 @@ class Player:
         """Rotate player view"""
         self.angle += delta
         self.angle %= 2 * math.pi
+
+    def pitch_view(self, delta: float) -> None:
+        """Change vertical view angle (pitch)"""
+        self.pitch += delta
+        self.pitch = max(-C.PITCH_LIMIT, min(C.PITCH_LIMIT, self.pitch))
 
     def shoot(self) -> bool:
         """Initiate shooting, return True if shot was fired"""

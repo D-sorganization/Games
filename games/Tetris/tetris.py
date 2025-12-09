@@ -264,13 +264,16 @@ class TetrisGame:
                 self.input_handler.handle_controller_state(self.logic)
                 self.logic.update(dt)
 
+                if self.logic.game_over:
+                    self.state = C.GameState.GAME_OVER
+
             # Drawing
             if self.state == C.GameState.MENU:
                 self.renderer.draw_menu(self.logic.starting_level)
             elif self.state == C.GameState.SETTINGS:
                 self.draw_settings()
             elif self.state in [C.GameState.PLAYING, C.GameState.PAUSED]:
-                self.screen.fill(C.BLACK)
+                self.renderer.draw_background()
                 self.renderer.draw_grid(self.logic)
                 if self.show_ghost_piece:
                     self.renderer.draw_ghost_piece(self.logic)

@@ -1,148 +1,92 @@
 import math
-import os
 import random
 import struct
 import wave
 from pathlib import Path
 
 
-def generate_sound_assets(sound_dir: str) -> None:
-    """Generate procedural placeholders for sounds if they don't exist"""
-    sound_path = Path(sound_dir)
-    sound_path.mkdir(parents=True, exist_ok=True)
+def generate_wave(
+    filename: str,
+    frequency: float = 440.0,
+    duration: float = 1.0,
+    volume: float = 0.5,
+    wave_type: str = "sine",
+) -> None:
+    """Generate a sound wave file with specified parameters."""
+    sample_rate = 44100
+    n_frames = int(sample_rate * duration)
 
-    # 1. Gunshot (White noise burst with decay)
-    shoot_path = os.path.join(sound_dir, "shoot.wav")
-    # Always regenerate for tuning
-    print(f"Generating {shoot_path}...")
-    with wave.open(shoot_path, "w") as f:
-        f.setnchannels(1)
-        f.setsampwidth(2)
-        f.setframerate(44100)
-        data = []
-        duration = 0.3
-        for i in range(int(44100 * duration)):
-            env = 1.0 - (i / (44100 * duration))
-            noise = random.uniform(-1, 1)
-            sample = int(noise * env * 32767 * 0.5)
-            data.append(struct.pack("<h", sample))
-        f.writeframes(b"".join(data))
+    with wave.open(filename, "w") as wav_file:
+        wav_file.setparams((1, 2, sample_rate, n_frames, "NONE", "not compressed"))
 
-    # 2. Enemy Shoot
-    enemy_shoot_path = os.path.join(sound_dir, "enemy_shoot.wav")
-    print(f"Generating {enemy_shoot_path}...")
-    with wave.open(enemy_shoot_path, "w") as f:
-        f.setnchannels(1)
-        f.setsampwidth(2)
-        f.setframerate(44100)
-        data = []
-        duration = 0.4
-        for i in range(int(44100 * duration)):
-            env = 1.0 - (i / (44100 * duration))
-            # Sawtooth-ish
-            angle = i * 200 * 2 * math.pi / 44100
-            val = (angle % (2 * math.pi)) / (2 * math.pi) * 2 - 1
-            sample = int(val * env * 32767 * 0.3)
-            data.append(struct.pack("<h", sample))
-        f.writeframes(b"".join(data))
+        for i in range(n_frames):
+            t = i / sample_rate
+            value = 0
+            if wave_type == "sine":
+                value = int(volume * 32767.0 * math.sin(2.0 * math.pi * frequency * t))
+            elif wave_type == "sawtooth":
+                val = 2.0 * (t * frequency - math.floor(t * frequency + 0.5))
+                value = int(volume * 32767.0 * val)
+            elif wave_type == "noise":
+                value = int(volume * 32767.0 * random.uniform(-1, 1))
+            elif wave_type == "dark_drone":
+                # Multiple low frequencies
+                v1 = math.sin(2.0 * math.pi * 55.0 * t)
+                v2 = math.sin(2.0 * math.pi * 110.0 * t * 1.01)  # Detuned
+                v3 = math.sin(2.0 * math.pi * 27.5 * t)
+                value = int(volume * 32767.0 * (v1 * 0.5 + v2 * 0.3 + v3 * 0.2))
 
-    # 4. Bomb Explosion
-    bomb_path = os.path.join(sound_dir, "bomb.wav")
-    print(f"Generating {bomb_path}...")
-    with wave.open(bomb_path, "w") as f:
-        f.setnchannels(1)
-        f.setsampwidth(2)
-        f.setframerate(44100)
-        data = []
-        duration = 1.0
-        base_rumble_freq = 50  # Hz, base frequency for rumble
-        for i in range(int(44100 * duration)):
-            env = 1.0 - (i / (44100 * duration))
-            # Low rumble + noise
-            sweep_pos = i / 44100
-            rumble_freq = base_rumble_freq * (1.0 - sweep_pos)
-            rumble = math.sin(2 * math.pi * rumble_freq * sweep_pos)
-            noise = random.uniform(-1, 1)
-            sample_val = (rumble * 0.5 + noise * 0.5) * env * 32767 * 0.8
-            data.append(struct.pack("<h", int(sample_val)))
-        f.writeframes(b"".join(data))
+            packed_value = struct.pack("h", value)
+            wav_file.writeframes(packed_value)
 
-    # 3. Spooky Musical Soundtrack (Enhanced)
-    music_path = os.path.join(sound_dir, "spooky_ambient.wav")
-    print(f"Generating {music_path}...")
-    with wave.open(music_path, "w") as f:
-        f.setnchannels(1)
-        f.setsampwidth(2)
-        f.setframerate(44100)
+sounds_dir = Path("games/Force Field/assets/sounds")
+sounds_dir.mkdir(parents=True, exist_ok=True)
 
-        # Composition parameters
-        tempo = 100  # BPM
-        beat_dur = 60.0 / tempo
-        total_beats = 64  # Extended loop
-        duration = total_beats * beat_dur
-        samples = int(44100 * duration)
-
-        # Melodies
-        # Bass: E minor drone
-        # Lead: High E minor arpeggios
-        high_scale = [329.63, 392.00, 493.88, 587.33, 659.25]
-
-        data = []
-
-        # Pre-generate melody sequence
-        lead_melody = []
-        for i in range(total_beats * 4):
-            if i % 8 == 0 or (i % 8 > 4 and random.random() > 0.5):
-                lead_melody.append(random.choice(high_scale))
-            else:
-                lead_melody.append(0)
-
-        for i in range(samples):
-            t = i / 44100.0
-
-            # 1. Bass Drone (Darker)
-            bass = math.sin(2 * math.pi * 41.20 * t) * 0.4
-
-            # 2. Rhythm (Drums)
-            beat_t = t % beat_dur
-            beat_idx = int(t / beat_dur)
-            kick = 0.0
-            snare = 0.0
-            hihat = 0.0
-
-            # Kick on 1
-            if beat_idx % 4 == 0 and beat_t < 0.2:
-                kick_freq = 150 * (1.0 - beat_t / 0.2)
-                kick = math.sin(2 * math.pi * kick_freq * beat_t) * (1.0 - beat_t / 0.2)
-
-            # Snare on 3
-            if beat_idx % 4 == 2 and beat_t < 0.2:
-                snare = random.uniform(-0.5, 0.5) * (1.0 - beat_t / 0.2)
-
-            # Hihat every beat
-            if beat_t < 0.05:
-                hihat = random.uniform(-0.3, 0.3)
-
-            drums = kick * 0.8 + snare * 0.6 + hihat * 0.3
-
-            # 3. Lead Melody (The "more melody" request)
-            current_16th = int((t / beat_dur) * 4)
-            lead_freq = lead_melody[current_16th % len(lead_melody)]
-            lead = 0.0
-            if lead_freq > 0:
-                note_t = t % (beat_dur / 4)
-                env = max(0, 1.0 - note_t * 8)
-                # Square waveish
-                lead = (math.sin(2 * math.pi * lead_freq * t) > 0) * 0.2 * env
-
-            final_val = bass + drums + lead
-            final_val = max(min(final_val, 1.0), -1.0)
-
-            sample = int(final_val * 32767 * 0.5)
-            data.append(struct.pack("<h", sample))
-
-        f.writeframes(b"".join(data))
+# Dark Ambient
+generate_wave(
+    str(sounds_dir / "dark_ambient.wav"),
+    duration=5.0,
+    wave_type="dark_drone",
+    volume=0.4,
+)
 
 
-if __name__ == "__main__":
-    generate_sound_assets("games/Force Field/assets/sounds")
+# Scream (High pitch sliding down noise/saw)
+def generate_scream(filename: str) -> None:
+    """Generate a scream sound effect."""
+    sample_rate = 44100
+    duration = 0.8
+    n_frames = int(sample_rate * duration)
+    with wave.open(filename, "w") as wav_file:
+        wav_file.setparams((1, 2, sample_rate, n_frames, "NONE", "not compressed"))
+        for i in range(n_frames):
+            t = i / sample_rate
+            # Slide down
+            freq = (
+                800 * (1 - t / duration) + random.uniform(-50, 50) if duration > 0 else 800
+            )
+            value = int(0.5 * 32767.0 * math.sin(2 * math.pi * freq * t))
+            wav_file.writeframes(struct.pack("h", value))
+
+
+generate_scream(str(sounds_dir / "scream.wav"))
+
+
+# Death (Low thud/crunch)
+def generate_death(filename: str) -> None:
+    """Generate a death sound effect."""
+    sample_rate = 44100
+    duration = 0.5
+    n_frames = int(sample_rate * duration)
+    with wave.open(filename, "w") as wav_file:
+        wav_file.setparams((1, 2, sample_rate, n_frames, "NONE", "not compressed"))
+        for i in range(n_frames):
+            t = i / sample_rate
+            freq = 100 * (1 - t / duration) if duration > 0 else 100
+            value = int(
+                0.6 * 32767.0 * (random.random() * math.sin(2 * math.pi * freq * t))
+            )
+            wav_file.writeframes(struct.pack("h", value))
+
+
+generate_death(str(sounds_dir / "death.wav"))

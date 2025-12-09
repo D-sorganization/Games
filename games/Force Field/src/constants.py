@@ -15,12 +15,12 @@ MIN_BUILDING_OFFSET = 3  # Minimum offset from map edges for building generation
 PLAYER_SPEED = 0.75
 PLAYER_SPRINT_SPEED = 1.15
 PLAYER_ROT_SPEED = 0.003
-MAX_RAYCAST_STEPS = 500  # Maximum steps for raycasting
+MAX_RAYCAST_STEPS = 1000  # Maximum steps for raycasting
 
 FOV = math.pi / 3  # 60 degrees
 HALF_FOV = FOV / 2
 NUM_RAYS = SCREEN_WIDTH // 2
-MAX_DEPTH = 50  # Increased render distance
+MAX_DEPTH = 100  # Increased render distance (2x)
 DELTA_ANGLE = FOV / NUM_RAYS
 
 # New Game Defaults
@@ -39,7 +39,7 @@ DIFFICULTIES = {
 # Weapon Ranges
 WEAPON_RANGE_PISTOL = 15
 WEAPON_RANGE_RIFLE = 25
-WEAPON_RANGE_SHOTGUN = 8  # Short range
+WEAPON_RANGE_SHOTGUN = 12  # Increased range (was 8)
 WEAPON_RANGE_PLASMA = 30
 
 # Weapon settings
@@ -67,7 +67,7 @@ WEAPONS = {
     },
     "shotgun": {
         "name": "Shotgun",
-        "damage": 10,  # Per pellet? We'll simulate 5-8 pellets. 10 * 8 = 80 max dmg close range.
+        "damage": 20,  # Increased again (was 15)
         "range": WEAPON_RANGE_SHOTGUN,
         "ammo": 999,
         "cooldown": 30,
@@ -79,12 +79,13 @@ WEAPONS = {
     },
     "plasma": {
         "name": "Plasma",
-        "damage": 35,
+        "damage": 100, # Increased from 35
         "range": WEAPON_RANGE_PLASMA,
         "ammo": 999,
-        "cooldown": 12,
+        "cooldown": 8, # Faster fire rate (was 12)
+        "automatic": True, # Allow hold-to-fire
         "clip_size": 999,  # Infinite clip, uses heat
-        "heat_per_shot": 0.15,
+        "heat_per_shot": 0.25, # Heats up faster (was 0.15)
         "max_heat": 1.0,
         "cooling_rate": 0.01,
         "overheat_penalty": 180,  # 3 seconds cooldown if overheated
@@ -97,6 +98,7 @@ WEAPONS = {
 # Combat settings
 HEADSHOT_THRESHOLD = 0.05
 SPAWN_SAFETY_MARGIN = 3
+PLASMA_AOE_RADIUS = 6.0 # Widened AOE (was 2.5)
 
 # UI settings
 HINT_BG_PADDING_H = 10
@@ -133,6 +135,16 @@ PARTICLE_LIFETIME = 30
 INTRO_FADE_MAX = 255
 INTRO_FADE_SCALE = 510
 
+# Fog
+FOG_COLOR = SKY_COLOR  # Fade to sky color
+FOG_START = 0.4  # Percentage of MAX_DEPTH where fog starts
+
+# Input
+JOYSTICK_DEADZONE = 0.1
+PITCH_LIMIT = 400  # Pixels up/down
+SENSITIVITY_X = 1.0
+SENSITIVITY_Y = 1.0
+
 # Shield Settings
 SHIELD_MAX_DURATION = 600  # 10 seconds at 60 FPS
 SHIELD_COOLDOWN_NORMAL = 600  # 10 seconds
@@ -148,14 +160,14 @@ SPAWN_RETRY_RADIUS = 4
 DEFAULT_MAP_SIZE = 40
 
 # Balancing
-BOT_SPEED = 0.03  # Slower enemies (was default fast?)
+BOT_SPEED = 0.02  # Slower enemies (was 0.03)
 PLAYER_HEALTH = 100
 BASE_BOT_HEALTH = 30
-BASE_BOT_DAMAGE = 3
+BASE_BOT_DAMAGE = 2 # Reduced from 3
 BOT_ATTACK_RANGE = 5
 BOT_ATTACK_COOLDOWN = 60
-BOT_PROJECTILE_SPEED = 0.1
-BOT_PROJECTILE_DAMAGE = 6
+BOT_PROJECTILE_SPEED = 0.08 # Reduced from 0.1
+BOT_PROJECTILE_DAMAGE = 5 # Reduced from 6
 
 # Spread (Aiming randomness)
 SPREAD_BASE = 0.05
@@ -166,9 +178,10 @@ ZOOM_FOV_MULT = 0.5  # 2x Zoom (Half FOV)
 
 # Secondary Fire
 SECONDARY_COOLDOWN = 600  # 10 seconds
-SECONDARY_DAMAGE_MULT = 3.0
-LASER_DURATION = 15
-LASER_WIDTH = 5
+SECONDARY_DAMAGE_MULT = 10.0 # Massively destructive
+LASER_DURATION = 30 # Longer show
+LASER_WIDTH = 40 # Huge beam
+LASER_AOE_RADIUS = 8.0
 
 ZOMBIE_COLOR = (107, 138, 111)
 BOSS_COLOR = (140, 63, 63)
@@ -180,30 +193,34 @@ ENEMY_TYPES = {
     "zombie": {
         "color": ZOMBIE_COLOR,
         "health_mult": 1.0,
-        "speed_mult": 0.8,  # slower
+        "speed_mult": 0.8,
         "damage_mult": 1.0,
         "scale": 1.0,
+        "visual_style": "monster",
     },
     "boss": {
         "color": BOSS_COLOR,
-        "health_mult": 5.0,  # tough
-        "speed_mult": 0.5,  # slow
+        "health_mult": 5.0,
+        "speed_mult": 0.5,
         "damage_mult": 2.0,
         "scale": 1.4,
+        "visual_style": "monster",
     },
     "demon": {
         "color": DEMON_COLOR,
-        "health_mult": 0.5,  # weak
-        "speed_mult": 1.2,  # fast
+        "health_mult": 0.5,
+        "speed_mult": 1.2,
         "damage_mult": 1.5,
         "scale": 0.8,
+        "visual_style": "monster",
     },
     "dinosaur": {
         "color": DINOSAUR_COLOR,
         "health_mult": 2.0,
         "speed_mult": 0.9,
-        "damage_mult": 1.0,  # chomp
+        "damage_mult": 1.0,
         "scale": 1.0,
+        "visual_style": "monster",
     },
     "raider": {
         "color": RAIDER_COLOR,
@@ -211,6 +228,24 @@ ENEMY_TYPES = {
         "speed_mult": 1.0,
         "damage_mult": 1.2,
         "scale": 1.0,
+        "visual_style": "monster",
+    },
+    # Baby Variants (Cute/Creepy Round Style)
+    "baby_zombie": {
+        "color": (200, 255, 200),
+        "health_mult": 0.4,
+        "speed_mult": 1.3,
+        "damage_mult": 0.5,
+        "scale": 0.5,
+        "visual_style": "baby",
+    },
+    "mutant_baby": {
+        "color": (255, 180, 200),
+        "health_mult": 0.6,
+        "speed_mult": 1.1,
+        "damage_mult": 0.7,
+        "scale": 0.6,
+        "visual_style": "baby",
     },
     "health_pack": {
         "color": (0, 255, 0),
@@ -218,6 +253,7 @@ ENEMY_TYPES = {
         "speed_mult": 0.0,
         "damage_mult": 0.0,
         "scale": 0.5,
+        "visual_style": "item",
     },
 }
 

@@ -1,0 +1,142 @@
+warning: `TCH003` has been remapped to `TC003`.
+games\Force Field\src\game.py:1882:1: invalid-syntax: Unexpected indentation
+     |
+1881 |             # 3. Slide (Lighter, detailed)
+1882 |             slide_y = cy - 180
+     | ^^^^^^^^^^^^
+1883 |             # Recoil recoil (if shooting, slide moves back)
+1884 |             if self.player.shooting:
+     |
+
+games\Force Field\src\game.py:1904:9: invalid-syntax: Expected a statement
+     |
+1902 |             pygame.draw.rect(self.screen, C.RED, (cx - 2, slide_y - 8, 4, 8)) # Front glowing dot
+1903 |
+1904 |         elif weapon == "shotgun":
+     |         ^^^^
+1905 |             # Double Barrel Sawed-off
+     |
+
+games\Force Field\src\game.py:1904:14: invalid-syntax: Invalid annotated assignment target
+     |
+1902 |             pygame.draw.rect(self.screen, C.RED, (cx - 2, slide_y - 8, 4, 8)) # Front glowing dot
+1903 |
+1904 |         elif weapon == "shotgun":
+     |              ^^^^^^^^^^^^^^^^^^^
+1905 |             # Double Barrel Sawed-off
+     |
+
+games\Force Field\src\game.py:1904:34: invalid-syntax: Expected an expression
+     |
+1902 |             pygame.draw.rect(self.screen, C.RED, (cx - 2, slide_y - 8, 4, 8)) # Front glowing dot
+1903 |
+1904 |         elif weapon == "shotgun":
+     |                                  ^
+1905 |             # Double Barrel Sawed-off
+1906 |
+1907 |             # Barrels (Side by Side)
+     |
+
+games\Force Field\src\game.py:1909:1: invalid-syntax: Unexpected indentation
+     |
+1907 |             # Barrels (Side by Side)
+1908 |             # Left Barrel
+1909 |             pygame.draw.circle(self.screen, (20,20,20), (cx - 30, cy - 180), 22)
+     | ^^^^^^^^^^^^
+1910 |             pygame.draw.rect(self.screen, gun_metal, (cx - 52, cy - 180, 44, 200))
+1911 |             pygame.draw.rect(self.screen, (10,10,10), (cx - 48, cy - 200, 36, 100)) # Hollow tone
+     |
+
+games\Force Field\src\game.py:1929:9: invalid-syntax: Expected a statement
+     |
+1927 |             # Shell ejection feedback?
+1928 |
+1929 |         elif weapon == "rifle":
+     |         ^^^^
+1930 |             # Heavy Assault Rifle with Optic
+     |
+
+games\Force Field\src\game.py:1929:14: invalid-syntax: Invalid annotated assignment target
+     |
+1927 |             # Shell ejection feedback?
+1928 |
+1929 |         elif weapon == "rifle":
+     |              ^^^^^^^^^^^^^^^^^
+1930 |             # Heavy Assault Rifle with Optic
+     |
+
+games\Force Field\src\game.py:1929:32: invalid-syntax: Expected an expression
+     |
+1927 |             # Shell ejection feedback?
+1928 |
+1929 |         elif weapon == "rifle":
+     |                                ^
+1930 |             # Heavy Assault Rifle with Optic
+1931 |
+1932 |             # Magazine
+     |
+
+games\Force Field\src\game.py:1933:1: invalid-syntax: Unexpected indentation
+     |
+1932 |             # Magazine
+1933 |             pygame.draw.rect(self.screen, (20,20,20), (cx - 40, cy - 80, 30, 80))
+     | ^^^^^^^^^^^^
+1934 |
+1935 |             # Main Body
+     |
+
+games\Force Field\src\game.py:1962:9: invalid-syntax: Expected a statement
+     |
+1960 |                 pygame.draw.line(self.screen, C.RED, (cx, cy - 195), (cx, cy - 145), 1)
+1961 |
+1962 |         elif weapon == "plasma":
+     |         ^
+1963 |             # Sci-Fi BFG Style - High Tech
+     |
+
+games\Force Field\src\game.py:1962:14: invalid-syntax: Invalid annotated assignment target
+     |
+1960 |                 pygame.draw.line(self.screen, C.RED, (cx, cy - 195), (cx, cy - 145), 1)
+1961 |
+1962 |         elif weapon == "plasma":
+     |              ^^^^^^^^^^^^^^^^^^
+1963 |             # Sci-Fi BFG Style - High Tech
+     |
+
+games\Force Field\src\game.py:1962:33: invalid-syntax: Expected an expression
+     |
+1960 |                 pygame.draw.line(self.screen, C.RED, (cx, cy - 195), (cx, cy - 145), 1)
+1961 |
+1962 |         elif weapon == "plasma":
+     |                                 ^
+1963 |             # Sci-Fi BFG Style - High Tech
+1964 |
+1965 |             # Rear Stock/Bulk
+     |
+
+games\Force Field\src\game.py:1966:1: invalid-syntax: Unexpected indentation
+     |
+1965 |             # Rear Stock/Bulk
+1966 |             pygame.draw.polygon(self.screen, (40, 40, 60), [
+     | ^^^^^^^^^^^^
+1967 |                  (cx - 100, cy), (cx + 100, cy),
+1968 |                  (cx + 90, cy - 80), (cx - 90, cy - 80)
+     |
+
+games\Force Field\src\game.py:2022:5: invalid-syntax: Expected a statement
+     |
+2020 |                      pygame.draw.line(self.screen, C.WHITE, (lx1, ly1), (lx2, ly2), 2)
+2021 |
+2022 |     def render_hud(self) -> None:
+     |     ^
+2023 |         """Render HUD in Doom-style"""
+2024 |         hud_bottom = C.SCREEN_HEIGHT - 80
+     |
+
+games\Force Field\src\game.py:2594:1: invalid-syntax: Expected a statement
+     |
+2593 |         pygame.display.flip()
+     |                              ^
+     |
+
+Found 15 errors.
