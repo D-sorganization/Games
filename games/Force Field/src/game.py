@@ -1477,7 +1477,8 @@ class Game:
             if elapsed > duration:
                 self.intro_phase += 1
                 self.intro_start_time = 0
-                if self.renderer.intro_video:
+                # Only release video when transitioning from phase 1 to phase 2
+                if self.intro_phase == 2 and self.renderer.intro_video:
                     self.renderer.intro_video.release()
                     self.renderer.intro_video = None
 

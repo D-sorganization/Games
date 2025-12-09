@@ -980,6 +980,16 @@ class GameRenderer:
                     rect.centery -= 100
                 self.screen.blit(txt, rect)
 
+                # Add blood drip effect when color has fully faded to red
+                if (
+                    slide["text"] == "FORCE FIELD"
+                    and color[0] > 250
+                    and color[1] < 10
+                    and color[2] < 10
+                ):
+                    self.update_blood_drips(rect)
+                    self._draw_blood_drips(self.title_drips)
+
                 if "sub" in slide:
                     sub = self.subtitle_font.render(str(slide["sub"]), True, C.CYAN)
                     self.screen.blit(
