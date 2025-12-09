@@ -1401,6 +1401,7 @@ class Game:
                         self.selected_lives = (self.selected_lives % 5) + 1
 
     def handle_level_complete_events(self) -> None:
+        """Handle input events during the level complete screen."""
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
@@ -1413,6 +1414,7 @@ class Game:
                     self.state = "menu"
 
     def handle_game_over_events(self) -> None:
+        """Handle input events during the game over screen."""
         # Sequence Sound Logic
         self.game_over_timer += 1
         if self.game_over_timer == 120:
@@ -1429,6 +1431,11 @@ class Game:
                     self.state = "menu"
 
     def _update_intro_logic(self, elapsed: int) -> None:
+        """Update intro sequence logic and transitions.
+        
+        Args:
+            elapsed: Elapsed time in milliseconds since intro started.
+        """
         duration = 0
         if self.intro_phase == 0:
             duration = 3000

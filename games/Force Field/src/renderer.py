@@ -27,7 +27,12 @@ if TYPE_CHECKING:
 class GameRenderer:
     """Handles all rendering operations for the game"""
 
-    def __init__(self, screen: pygame.Surface):
+    def __init__(self, screen: pygame.Surface) -> None:
+        """Initialize the game renderer with a screen surface.
+        
+        Args:
+            screen: The pygame Surface to render to.
+        """
         self.screen = screen
 
         # Load Intro Images
@@ -271,12 +276,22 @@ class GameRenderer:
         pygame.display.flip()
 
     def _render_damage_texts(self, texts: List[Dict[str, Any]]) -> None:
+        """Render floating damage text indicators.
+        
+        Args:
+            texts: List of damage text dictionaries with 'text', 'color', 'x', and 'y' keys.
+        """
         for t in texts:
             surf = self.small_font.render(t["text"], True, t["color"])
             rect = surf.get_rect(center=(int(t["x"]), int(t["y"])))
             self.screen.blit(surf, rect)
 
     def _render_particles(self, particles: List[Dict[str, Any]]) -> None:
+        """Render particle effects including lasers and explosion particles.
+        
+        Args:
+            particles: List of particle dictionaries with type-specific properties.
+        """
         for p in particles:
             if p.get("type") == "laser":
                 alpha = int(255 * (p["timer"] / C.LASER_DURATION))
@@ -313,11 +328,21 @@ class GameRenderer:
                     continue
 
     def _render_damage_flash(self, timer: int) -> None:
+        """Render red screen flash effect when player takes damage.
+        
+        Args:
+            timer: Current damage flash timer value.
+        """
         if timer > 0:
             alpha = int(100 * (timer / 10.0))
             self.effects_surface.fill((255, 0, 0, alpha), special_flags=pygame.BLEND_RGBA_ADD)
 
     def _render_shield_effect(self, player: Player) -> None:
+        """Render shield activation visual effects and status.
+        
+        Args:
+            player: The player object to check shield state from.
+        """
         if player.shield_active:
             # Simple fill
             pygame.draw.rect(
@@ -347,6 +372,7 @@ class GameRenderer:
             self.screen.blit(ready_text, (20, C.SCREEN_HEIGHT - 120))
 
     def _render_crosshair(self) -> None:
+        """Render the aiming crosshair at the center of the screen."""
         cx = C.SCREEN_WIDTH // 2
         cy = C.SCREEN_HEIGHT // 2
         size = 12
@@ -355,6 +381,11 @@ class GameRenderer:
         pygame.draw.circle(self.screen, C.RED, (cx, cy), 2)
 
     def _render_muzzle_flash(self, weapon_name: str) -> None:
+        """Render weapon-specific muzzle flash effects.
+        
+        Args:
+            weapon_name: Name of the weapon being fired.
+        """
         flash_x = C.SCREEN_WIDTH // 2
         flash_y = C.SCREEN_HEIGHT - 210
 
@@ -372,6 +403,11 @@ class GameRenderer:
             pygame.draw.circle(self.screen, C.WHITE, (flash_x, flash_y), 8)
 
     def _render_secondary_charge(self, player: Player) -> None:
+        """Render secondary weapon charge bar.
+        
+        Args:
+            player: The player object to check secondary cooldown from.
+        """
         charge_pct = 1.0 - (player.secondary_cooldown / C.SECONDARY_COOLDOWN)
         if charge_pct < 1.0:
             bar_w = 40
@@ -383,6 +419,12 @@ class GameRenderer:
             )
 
     def _render_portal(self, portal: Dict[str, Any] | None, player: Player) -> None:
+        """Render portal visual effects if active.
+        
+        Args:
+            portal: Portal dictionary with position and state, or None if inactive.
+            player: The player object for relative positioning.
+        """
         if portal:
             sx = portal["x"] - player.x
             sy = portal["y"] - player.y
@@ -537,10 +579,14 @@ class GameRenderer:
                     lx2 = random.randint(cx - 40, cx + 40)
                     ly2 = random.randint(cy - 250, cy - 150)
                     pygame.draw.line(self.screen, C.WHITE, (lx1, ly1), (lx2, ly2), 2)
-        elif weapon == "laser":
-            pass
+        # Laser weapon rendering is handled elsewhere in the rendering pipeline
 
     def _render_hud(self, game: Game) -> None:
+        """Render the heads-up display including health, ammo, and game stats.
+        
+        Args:
+            game: The game object containing player and game state.
+        """
         hud_bottom = C.SCREEN_HEIGHT - 80
         health_width = 150
         health_height = 25
@@ -689,6 +735,7 @@ class GameRenderer:
         self.screen.blit(controls_hint, controls_hint_rect)
 
     def _render_pause_menu(self) -> None:
+        """Render the pause menu overlay with resume, save, and quit options."""
         overlay = pygame.Surface((C.SCREEN_WIDTH, C.SCREEN_HEIGHT), pygame.SRCALPHA)
         overlay.fill((0, 0, 0, 200))
         self.screen.blit(overlay, (0, 0))
@@ -707,6 +754,11 @@ class GameRenderer:
             self.screen.blit(text, (C.SCREEN_WIDTH // 2 - text.get_width() // 2, rect.y + 10))
 
     def render_level_complete(self, game: Game) -> None:
+        """Render the level complete screen with statistics.
+        
+        Args:
+            game: The game object containing level and statistics data.
+        """
         self.screen.fill(C.BLACK)
         title = self.title_font.render("SECTOR CLEARED", True, C.GREEN)
         title_rect = title.get_rect(center=(C.SCREEN_WIDTH // 2, 150))
@@ -729,6 +781,11 @@ class GameRenderer:
         pygame.display.flip()
 
     def render_game_over(self, game: Game) -> None:
+        """Render the game over screen with final statistics.
+        
+        Args:
+            game: The game object containing final statistics.
+        """
         self.screen.fill(C.BLACK)
         title = self.title_font.render("SYSTEM FAILURE", True, C.RED)
         title_rect = title.get_rect(center=(C.SCREEN_WIDTH // 2, 200))
@@ -760,6 +817,12 @@ class GameRenderer:
     def _render_stats_lines(
         self, stats: List[Tuple[str, Tuple[int, int, int]]], start_y: int
     ) -> None:
+        """Render a list of stat lines with specified colors.
+        
+        Args:
+            stats: List of tuples containing (text, color) pairs.
+            start_y: Starting Y coordinate for the first line.
+        """
         y = start_y
         for line, color in stats:
             if line:
@@ -826,6 +889,12 @@ class GameRenderer:
         pygame.display.flip()
 
     def _render_intro_slide(self, step: int, elapsed: int) -> None:
+        """Render intro slides with story text and effects.
+        
+        Args:
+            step: Current intro slide step index.
+            elapsed: Elapsed time in milliseconds for animations.
+        """
         slides = [
             {
                 "type": "distortion",

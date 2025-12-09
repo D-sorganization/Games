@@ -14,14 +14,16 @@ from src.projectile import Projectile
 import src.constants as C
 
 class TestGameLogic(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
+        """Set up test fixtures before each test method."""
         self.map = Map(30)
         # Clear center for testing
         for y in range(10, 20):
             for x in range(10, 20):
                 self.map.grid[y][x] = 0
 
-    def test_player_weapon_switching(self):
+    def test_player_weapon_switching(self) -> None:
+        """Test player weapon switching functionality."""
         player = Player(15.0, 15.0, 0.0)
 
         player.switch_weapon("rifle")
@@ -34,7 +36,8 @@ class TestGameLogic(unittest.TestCase):
         player.switch_weapon("bfg9000")
         self.assertEqual(player.current_weapon, "pistol")
 
-    def test_player_shooting_ammo(self):
+    def test_player_shooting_ammo(self) -> None:
+        """Test player shooting mechanics and ammo consumption."""
         player = Player(15.0, 15.0, 0.0)
         player.current_weapon = "pistol"
         initial_clip = player.weapon_state["pistol"]["clip"]
@@ -50,7 +53,8 @@ class TestGameLogic(unittest.TestCase):
         fired_again = player.shoot()
         self.assertFalse(fired_again)
 
-    def test_player_reload(self):
+    def test_player_reload(self) -> None:
+        """Test player weapon reload functionality."""
         player = Player(15.0, 15.0, 0.0)
         player.current_weapon = "pistol"
         player.weapon_state["pistol"]["clip"] = 0
@@ -66,7 +70,8 @@ class TestGameLogic(unittest.TestCase):
         self.assertFalse(player.weapon_state["pistol"]["reloading"])
         self.assertEqual(player.weapon_state["pistol"]["clip"], C.WEAPONS["pistol"]["clip_size"])
 
-    def test_bot_movement_and_collision(self):
+    def test_bot_movement_and_collision(self) -> None:
+        """Test bot movement towards player and collision detection."""
         # Bot at 12, 12, Player at 18, 18
         bot = Bot(12.0, 12.0, 1, enemy_type="zombie")
         player = Player(18.0, 18.0, 0.0)
@@ -81,7 +86,8 @@ class TestGameLogic(unittest.TestCase):
         # Bot should move closer
         self.assertLess(new_dist, initial_dist)
 
-    def test_bot_takes_damage(self):
+    def test_bot_takes_damage(self) -> None:
+        """Test bot damage handling and death state."""
         bot = Bot(12.0, 12.0, 1, enemy_type="zombie")
         initial_health = bot.health
 
@@ -94,7 +100,8 @@ class TestGameLogic(unittest.TestCase):
         self.assertFalse(bot.alive)
         self.assertTrue(bot.dead)
 
-    def test_projectile_update(self):
+    def test_projectile_update(self) -> None:
+        """Test projectile movement and collision with walls."""
         # Fire east
         p = Projectile(15.0, 15.0, 0.0, 10, 1.0)
 
