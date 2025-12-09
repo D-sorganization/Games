@@ -38,7 +38,7 @@ class Player:
         # Keep tracking total ammo (reserves) if we want,
         # but user request implies specific mechanics per gun
         # For now, we assume "ammo" in constants refers to reserves.
-        self.ammo: Dict[str, int] = {w: int(cast(int, C.WEAPONS[w]["ammo"])) for w in C.WEAPONS}
+        self.ammo: Dict[str, int] = {w: int(cast("int", C.WEAPONS[w]["ammo"])) for w in C.WEAPONS}
 
         self.current_weapon = "rifle"
         self.shooting = False
@@ -176,7 +176,7 @@ class Player:
             return False
 
         self.shooting = True
-        self.shoot_timer = int(cast(int, weapon_data["cooldown"]))
+        self.shoot_timer = int(cast("int", weapon_data["cooldown"]))
 
         # Consumables
         if self.current_weapon == "plasma":
@@ -222,11 +222,11 @@ class Player:
 
     def get_current_weapon_damage(self) -> int:
         """Get damage of current weapon"""
-        return int(cast(int, C.WEAPONS[self.current_weapon]["damage"]))
+        return int(cast("int", C.WEAPONS[self.current_weapon]["damage"]))
 
     def get_current_weapon_range(self) -> int:
         """Get range of current weapon"""
-        return int(cast(int, C.WEAPONS[self.current_weapon]["range"]))
+        return int(cast("int", C.WEAPONS[self.current_weapon]["range"]))
 
     def take_damage(self, damage: int) -> None:
         """Take damage"""
@@ -299,8 +299,8 @@ class Player:
                     w_state["overheat_timer"] -= 1
                     # Cool down while overheated? Or fixed penalty?
                     # Usually fixed wait. We'll linearly cool it down too so visual bar goes down
-                    penalty_time = int(cast(int, C.WEAPONS[w_name].get("overheat_penalty", 180)))
-                    cool_amount = float(cast(float, C.WEAPONS[w_name]["max_heat"])) / penalty_time
+                    penalty_time = int(cast("int", C.WEAPONS[w_name].get("overheat_penalty", 180)))
+                    cool_amount = float(cast("float", C.WEAPONS[w_name]["max_heat"])) / penalty_time
                     w_state["heat"] = max(0.0, w_state["heat"] - cool_amount)
 
                     if w_state["overheat_timer"] <= 0:
