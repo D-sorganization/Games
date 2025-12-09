@@ -47,6 +47,7 @@ class Game:
         self.level_times: List[float] = []
         self.selected_map_size = C.DEFAULT_MAP_SIZE
         self.paused = False
+        self.pause_start_time = 0
         self.total_paused_time = 0
         self.show_damage = True
         self.selected_difficulty = C.DEFAULT_DIFFICULTY
@@ -295,6 +296,7 @@ class Game:
         assert self.game_map is not None
         self.level_start_time = pygame.time.get_ticks()
         self.total_paused_time = 0
+        self.pause_start_time = 0
         self.particles = []
         self.damage_texts = []
         self.damage_flash_timer = 0
@@ -496,9 +498,14 @@ class Game:
                 if event.key == pygame.K_ESCAPE:
                     self.paused = not self.paused
                     if self.paused:
+                        self.pause_start_time = pygame.time.get_ticks()
                         pygame.mouse.set_visible(True)
                         pygame.event.set_grab(False)
                     else:
+                        if self.pause_start_time > 0:
+                            pause_duration = pygame.time.get_ticks() - self.pause_start_time
+                            self.total_paused_time += pause_duration
+                            self.pause_start_time = 0
                         pygame.mouse.set_visible(False)
                         pygame.event.set_grab(True)
 
@@ -998,10 +1005,6 @@ class Game:
         """Update game state"""
         if self.paused:
             return
-
-        # Decrement damage flash timer
-        if self.damage_flash_timer > 0:
-            self.damage_flash_timer -= 1
 
         assert self.player is not None
         if not self.player.alive:
@@ -1519,6 +1522,9 @@ class Game:
                     else:
                         self.update_game()
                     self.renderer.render_game(self)
+                    # Decrement damage flash timer after rendering to maintain correct frame count
+                    if not self.paused and self.damage_flash_timer > 0:
+                        self.damage_flash_timer -= 1
 
                 elif self.state == "level_complete":
                     self.handle_level_complete_events()
