@@ -351,11 +351,11 @@ class Raycaster:
         # 1. Body (Rounded Torso)
         # Use ellipse for more organic look
         torso_rect = pygame.Rect(
-                int(body_x),
-                int(render_y + render_height * 0.25),
-                int(render_width),
-                int(render_height * 0.5),
-            )
+            int(body_x),
+            int(render_y + render_height * 0.25),
+            int(render_width),
+            int(render_height * 0.5),
+        )
         # Draw torso
         pygame.draw.ellipse(screen, base_color, torso_rect)
 
