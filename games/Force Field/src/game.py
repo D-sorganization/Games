@@ -412,7 +412,7 @@ class Game:
         player_pos = corners[0]
         # Just in case, try to verify valid spot (though corners should be valid)
         if self.game_map.is_wall(int(player_pos[0]), int(player_pos[1])):
-             # Fallback: Find first non-wall cell in the map
+            # Fallback: Find first non-wall cell in the map
             found = False
             for y in range(self.game_map.height):
                 for x in range(self.game_map.width):
