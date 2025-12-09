@@ -781,8 +781,18 @@ class Raycaster:
         screen: pygame.Surface,
         player: Player,
         bots: List[Bot],
+        visited_cells: set[tuple[int, int]] | None = None,
+        portal: Dict[str, Any] | None = None,
     ) -> None:
-        """Render 2D minimap"""
+        """Render 2D minimap with fog of war support.
+
+        Args:
+            screen: The pygame Surface to render to.
+            player: The player object for position and direction.
+            bots: List of bots to render.
+            visited_cells: Set of (x, y) tuples representing explored cells for fog of war.
+            portal: Portal dictionary with 'x' and 'y' keys, or None if no portal.
+        """
         minimap_size = 200
         map_size = self.game_map.size
         minimap_scale = minimap_size / map_size
@@ -797,12 +807,17 @@ class Raycaster:
         )
         pygame.draw.rect(screen, C.DARK_GRAY, (minimap_x, minimap_y, minimap_size, minimap_size))
 
-        # Draw walls
+        # Draw walls (only if fog of war is disabled or cell is visited)
         for i in range(map_size):
             for j in range(map_size):
                 if self.game_map.grid[i][j] != 0:
+                    # Check fog of war: if visited_cells is provided, only show visited cells
+                    if visited_cells is not None and (j, i) not in visited_cells:
+                        continue
+
                     wall_type = self.game_map.grid[i][j]
-                    color = C.WALL_COLORS.get(wall_type, C.WHITE)
+                    # Use wall colors if available, otherwise default colors
+                    color = C.WALL_COLORS.get(wall_type, C.GRAY)
                     pygame.draw.rect(
                         screen,
                         color,
@@ -814,14 +829,33 @@ class Raycaster:
                         ),
                     )
 
-        # Draw bots
+        # Draw portal marker if portal exists and is visible (visited or fog disabled)
+        if portal:
+            portal_x = int(portal["x"])
+            portal_y = int(portal["y"])
+            if visited_cells is None or (portal_x, portal_y) in visited_cells:
+                portal_map_x = minimap_x + portal_x * minimap_scale
+                portal_map_y = minimap_y + portal_y * minimap_scale
+                # Draw portal as a cyan circle
+                pygame.draw.circle(
+                    screen, C.CYAN, (int(portal_map_x), int(portal_map_y)), int(minimap_scale * 2)
+                )
+                pygame.draw.circle(
+                    screen, C.BLUE, (int(portal_map_x), int(portal_map_y)), int(minimap_scale)
+                )
+
+        # Draw bots (only if visible through fog of war)
         for bot in bots:
             if bot.alive:
-                bot_x = minimap_x + bot.x * minimap_scale
-                bot_y = minimap_y + bot.y * minimap_scale
-                pygame.draw.circle(screen, C.RED, (int(bot_x), int(bot_y)), 3)
+                bot_cell_x = int(bot.x)
+                bot_cell_y = int(bot.y)
+                # Check fog of war
+                if visited_cells is None or (bot_cell_x, bot_cell_y) in visited_cells:
+                    bot_x = minimap_x + bot.x * minimap_scale
+                    bot_y = minimap_y + bot.y * minimap_scale
+                    pygame.draw.circle(screen, C.RED, (int(bot_x), int(bot_y)), 3)
 
-        # Draw player
+        # Draw player (always visible)
         player_x = minimap_x + player.x * minimap_scale
         player_y = minimap_y + player.y * minimap_scale
         pygame.draw.circle(screen, C.GREEN, (int(player_x), int(player_y)), 3)
