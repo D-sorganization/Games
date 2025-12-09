@@ -432,7 +432,7 @@ class Game:
                 self.player.current_weapon = "pistol"
         # Validate current weapon is unlocked (e.g. Player init sets 'rifle' but it might be locked)
         if self.player.current_weapon not in self.unlocked_weapons:
-             self.player.current_weapon = "pistol"
+            self.player.current_weapon = "pistol"
 
         # Propagate God Mode state
         self.player.god_mode = self.god_mode
@@ -2515,7 +2515,6 @@ class Game:
                     self.state = "playing"
                     pygame.mouse.set_visible(False)
                     pygame.event.set_grab(True)
-
 
                 # Check for settings clicks (Simplified: Cycle on click anywhere in top area?)
                 # We need simple hitboxes for the settings rows rendered in render_map_select
