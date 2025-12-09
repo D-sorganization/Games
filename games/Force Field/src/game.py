@@ -17,7 +17,7 @@ from .player import Player
 from .projectile import Projectile
 from .raycaster import Raycaster
 from .sound import SoundManager
-from .ui import BloodButton, Button
+from .ui import Button
 
 try:
     import cv2  # type: ignore[import-not-found]
@@ -91,6 +91,7 @@ class Game:
                 self.intro_video = cv2.VideoCapture(video_path)
 
             # Keep GIF as fallback
+            deadfish_path = os.path.join(pics_dir, "DeadFishSwimming_0.JPG")
             if os.path.exists(deadfish_path):
                 img = pygame.image.load(deadfish_path)
                 scale = min(500 / img.get_height(), 800 / img.get_width())
@@ -139,9 +140,12 @@ class Game:
         self.portal: Dict[str, Any] | None = None
         self.health = 100
         self.max_health = 100
-        self.unlocked_weapons = {"pistol", "laser"}  # Start with pistol and laser for testing/fun? Or just pistol.
+        self.unlocked_weapons = {
+            "pistol",
+            "laser",
+        }  # Start with pistol and laser for testing/fun? Or just pistol.
         # User said "we now will have a laser as weapon 4". Assuming unlocked or unlockable.
-        # Let's unlock all for testing or keep progression? 
+        # Let's unlock all for testing or keep progression?
         # "The controls section needs to be expanded..." implies they are available.
         # I'll enable pistol and laser by default or just pistol and let pickup work.
         # Given "unlocked_weapons" usually starts small, I'll stick to PISTOL but add pickups.
@@ -223,6 +227,10 @@ class Game:
 
     def switch_weapon_with_message(self, weapon_name: str) -> None:
         """Switch weapon and show a message if successful"""
+        if weapon_name not in self.unlocked_weapons:
+            self.add_message("WEAPON LOCKED", C.RED)
+            return
+
         assert self.player is not None
         if self.player.current_weapon != weapon_name:
             self.player.switch_weapon(weapon_name)
@@ -393,92 +401,89 @@ class Game:
         self.damage_flash_timer = 0
         self.visited_cells = set()  # Reset fog of war
         self.portal = None
+
+        # Player Spawn Logic - Use corners
         corners = self.get_corner_positions()
         random.shuffle(corners)
 
-        # Player spawns in first corner - ensure it's safe
-        player_pos_candidate = corners[0]
-        player_angle = player_pos_candidate[2]
-
-        # Try to find a safer spawn point
-        start_x, start_y = 0.0, 0.0
-        for _ in range(20):
-             start_x = random.randint(2, self.game_map.size - 2) + 0.5
-             start_y = random.randint(2, self.game_map.size - 2) + 0.5
-             if (
-                 not self.game_map.is_wall(int(start_x), int(start_y))
-                 and not self.game_map.is_inside_building(int(start_x), int(start_y))
-             ):
-                 # Check distance to other bots if already spawned (unlikely at start of loop but good practice)
-                 player_pos = (start_x, start_y)
-                 break
-        else:
-             player_pos = (2.5, 2.5) # Default/Fail safe
+        # Select best corner (safest)
+        player_pos = corners[0]
+        # Just in case, try to verify valid spot (though corners should be valid)
+        if self.game_map.is_wall(int(player_pos[0]), int(player_pos[1])):
+            # Fallback
+            player_pos = (2.5, 2.5, 0.0)
 
         # Preserve ammo and weapon selection from previous level if player exists
         previous_ammo = None
         previous_weapon = "pistol"
-        if self.player:
-            previous_ammo = self.player.ammo
-            previous_weapon = self.player.current_weapon
-            # Preserve unlocked weapons if restarting level or progressing?
-            # Usually keep progression.
-            # But self.unlocked_weapons is on Game, so it persists.
+        old_player = self.player
+        if old_player:
+            previous_ammo = old_player.ammo
+            previous_weapon = old_player.current_weapon
 
-        self.player = Player(player_pos[0], player_pos[1], player_angle)
+        self.player = Player(player_pos[0], player_pos[1], player_pos[2])
         if previous_ammo:
             self.player.ammo = previous_ammo
             if previous_weapon in self.unlocked_weapons:
-                 self.player.current_weapon = previous_weapon
+                self.player.current_weapon = previous_weapon
             else:
-                 self.player.current_weapon = "pistol"
-        
+                self.player.current_weapon = "pistol"
+
         # Reset Fog/Mist surface on level load
         if hasattr(self, "mist_surface"):
             del self.mist_surface
 
-        # Sync unlocked status (though Player has access to all, we restrict switching)
-        # Also sync bomb count if we tracked it on Game?
-        # Ideally Player state should persist better, but for now we just init new.
-        # Let's give default bombs if level 1, else keep? 
-        # Player __init__ gives 1 bomb.
-        pass
-
-        # Bots spawn in other three corners with varied types
+        # Bots spawn in random locations, but respect safety radius
         self.bots = []
         self.projectiles = []
-        
-        num_enemies = int(min(50, 5 + self.level * 2 * C.DIFFICULTIES[self.selected_difficulty]["score_mult"]))
-        
+
+        num_enemies = int(
+            min(50, 5 + self.level * 2 * C.DIFFICULTIES[self.selected_difficulty]["score_mult"])
+        )
+
         for _ in range(num_enemies):
             # Try to place bot
             for _ in range(20):
                 bx = random.randint(2, self.game_map.size - 2)
                 by = random.randint(2, self.game_map.size - 2)
-                
-                # Distance check
-                dist = math.sqrt((bx - player_pos[0])**2 + (by - player_pos[1])**2)
-                if dist < 10.0: # Safe zone radius
+
+                # Distance check (Increased to 20 for safety)
+                dist = math.sqrt((bx - player_pos[0]) ** 2 + (by - player_pos[1]) ** 2)
+                if dist < 20.0:  # Safe zone radius
                     continue
-                    
+
                 if not self.game_map.is_wall(bx, by):
                     # Add bot
                     enemy_type = random.choice(list(C.ENEMY_TYPES.keys()))
-                    # Filter out pickups/bosses for standard spawn list if desired, 
-                    # but current list has them mixed. I'll filter special types.
-                    while enemy_type in ["boss", "demon", "ball", "beast", "pickup_rifle", "pickup_shotgun", "pickup_plasma", "health_pack", "ammo_box", "bomb_item"]:
-                         enemy_type = random.choice(list(C.ENEMY_TYPES.keys()))
-                    
-                    self.bots.append(Bot(bx + 0.5, by + 0.5, self.level, enemy_type, difficulty=self.selected_difficulty))
+                    while enemy_type in [
+                        "boss",
+                        "demon",
+                        "ball",
+                        "beast",
+                        "pickup_rifle",
+                        "pickup_shotgun",
+                        "pickup_plasma",
+                        "health_pack",
+                        "ammo_box",
+                        "bomb_item",
+                    ]:
+                        enemy_type = random.choice(list(C.ENEMY_TYPES.keys()))
+
+                    self.bots.append(
+                        Bot(
+                            bx + 0.5,
+                            by + 0.5,
+                            self.level,
+                            enemy_type,
+                            difficulty=self.selected_difficulty,
+                        )
+                    )
                     break
 
-        # Spawn Boss & Fast Enemy (Demon) in random corner or center
-        # "At the end of each level we need a huge enemy or a fast enemy. - lets have one of each."
-        # User update: "Make there be a boss enemy at the end of every level... One will be a ball... other will be beast"
+        # Spawn Boss & Fast Enemy (Demon)
         boss_options = ["ball", "beast"]
         boss_type = random.choice(boss_options)
-        
-        # Spawn Boss
+
         upper_bound = max(2, self.game_map.size - 3)
         for attempt in range(50):
             cx = random.randint(2, upper_bound)
@@ -486,8 +491,8 @@ class Game:
             if (
                 not self.game_map.is_wall(cx, cy)
                 and not self.game_map.is_inside_building(cx, cy)
-                and math.sqrt((cx - player_pos[0]) ** 2 + (cy - player_pos[1]) ** 2) > 15
-            ):  # Far spawn
+                and math.sqrt((cx - player_pos[0]) ** 2 + (cy - player_pos[1]) ** 2) > 20
+            ):
                 self.bots.append(
                     Bot(
                         cx + 0.5,
@@ -499,14 +504,13 @@ class Game:
                 )
                 break
 
-        # Spawn Pickups (Weapons, Ammo, Bombs, Health)
-        # Weapons (Rare)
+        # Spawn Pickups
         possible_weapons = ["pickup_rifle", "pickup_shotgun", "pickup_plasma"]
         for w_pickup in possible_weapons:
-            if random.random() < 0.4: # 40% chance per level
-                 rx = random.randint(5, self.game_map.size - 5)
-                 ry = random.randint(5, self.game_map.size - 5)
-                 if not self.game_map.is_wall(rx, ry):
+            if random.random() < 0.4:  # 40% chance per level
+                rx = random.randint(5, self.game_map.size - 5)
+                ry = random.randint(5, self.game_map.size - 5)
+                if not self.game_map.is_wall(rx, ry):
                     self.bots.append(Bot(rx + 0.5, ry + 0.5, self.level, w_pickup))
 
         # Ammo / Bombs
@@ -518,10 +522,9 @@ class Game:
                 if choice < 0.2:
                     self.bots.append(Bot(rx + 0.5, ry + 0.5, self.level, "bomb_item"))
                 elif choice < 0.7:
-                     self.bots.append(Bot(rx + 0.5, ry + 0.5, self.level, "ammo_box"))
+                    self.bots.append(Bot(rx + 0.5, ry + 0.5, self.level, "ammo_box"))
                 else:
-                     self.bots.append(Bot(rx + 0.5, ry + 0.5, self.level, "health_pack"))
-                pass
+                    self.bots.append(Bot(rx + 0.5, ry + 0.5, self.level, "health_pack"))
 
         # Start Music
         music_tracks = [
@@ -532,23 +535,98 @@ class Game:
             "music_piano",
             "music_action",
         ]
-                        except Exception as e:  # noqa: BLE001
-                            print(f"Bomb Error: {e}")
-                            traceback.print_exc()
+        if hasattr(self, "sound_manager"):
+            self.sound_manager.start_music(random.choice(music_tracks))
+
+    def handle_game_events(self) -> None:
+        """Handle events during gameplay"""
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.running = False
+            elif event.type == pygame.KEYDOWN:
+                # Cheat Input Handling
+                if self.cheat_mode_active:
+                    if event.key == pygame.K_RETURN or event.key == pygame.K_ESCAPE:
+                        self.cheat_mode_active = False
+                        self.add_message("CHEAT INPUT CLOSED", C.GRAY)
+                    elif event.key == pygame.K_BACKSPACE:
+                        self.current_cheat_input = self.current_cheat_input[:-1]
+                    else:
+                        self.current_cheat_input += event.unicode
+                        # Check cheats
+                        code = self.current_cheat_input.upper()
+                        if code.endswith("IDFA"):
+                            # Unlock all weapons, full ammo
+                            self.unlocked_weapons = set(C.WEAPONS.keys())
+                            for w in self.player.ammo:
+                                self.player.ammo[w] = 999
+                            self.add_message("ALL WEAPONS UNLOCKED", C.YELLOW)
+                            self.current_cheat_input = ""
+                            self.cheat_mode_active = False
+                        elif code.endswith("IDDQD"):
+                            # God Mode
+                            self.god_mode = not self.god_mode
+                            msg = "GOD MODE ON" if self.god_mode else "GOD MODE OFF"
+                            self.add_message(msg, C.YELLOW)
+                            if self.player:
+                                self.player.health = 100
+                            self.current_cheat_input = ""
+                            self.cheat_mode_active = False
+                    continue
+
+                # Normal Controls
+                if event.key == pygame.K_ESCAPE:
+                    self.paused = not self.paused
+                    if self.paused:
+                        pygame.mouse.set_visible(True)
+                        pygame.event.set_grab(False)
+                    else:
+                        pygame.mouse.set_visible(False)
+                        pygame.event.set_grab(True)
+
+                # Activate Cheat Mode
+                elif event.key == pygame.K_c and (pygame.key.get_mods() & pygame.KMOD_CTRL):
+                    self.cheat_mode_active = True
+                    self.current_cheat_input = ""
+                    self.add_message("CHEAT MODE: TYPE CODE", C.PURPLE)
+                    continue
+
+                if not self.paused:
+                    if event.key == pygame.K_1:
+                        self.switch_weapon_with_message("pistol")
+                    elif event.key == pygame.K_2:
+                        self.switch_weapon_with_message("rifle")
+                    elif event.key == pygame.K_3:
+                        self.switch_weapon_with_message("shotgun")
+                    elif event.key == pygame.K_4:
+                        self.switch_weapon_with_message("laser")
+                    elif event.key == pygame.K_5:
+                        self.switch_weapon_with_message("plasma")
                     elif event.key == pygame.K_r:
                         assert self.player is not None
                         self.player.reload()
-                    elif event.key == pygame.K_z:  # Zoom Toggle
+                    elif event.key == pygame.K_z:
                         assert self.player is not None
                         self.player.zoomed = not self.player.zoomed
-            elif event.type == pygame.MOUSEBUTTONDOWN and not self.paused:
+                    elif event.key == pygame.K_f:
+                        # Bomb
+                        assert self.player is not None
+                        if self.player.activate_bomb():
+                            self.handle_bomb_explosion()
+
+            elif (
+                event.type == pygame.MOUSEBUTTONDOWN
+                and not self.paused
+                and not self.cheat_mode_active
+            ):
                 assert self.player is not None
-                if event.button == 1:  # Left-click to fire
+                if event.button == 1:
                     if self.player.shoot():
                         self.fire_weapon()
-                elif event.button == 3:  # Right-click to secondary fire
+                elif event.button == 3:
                     if self.player.fire_secondary():
                         self.fire_weapon(is_secondary=True)
+
             elif event.type == pygame.MOUSEMOTION and not self.paused:
                 assert self.player is not None
                 self.player.rotate(event.rel[0] * C.PLAYER_ROT_SPEED)
@@ -585,27 +663,24 @@ class Game:
             p = Projectile(
                 self.player.x,
                 self.player.y,
-                self.player.angle, # Add small random spread?
+                self.player.angle,  # Add small random spread?
                 speed=float(C.WEAPONS["stormtrooper"].get("projectile_speed", 2.0)),
                 damage=self.player.get_current_weapon_damage(),
                 is_player=True,
-                color=tuple(C.WEAPONS["stormtrooper"].get("projectile_color", (255, 0, 0))), 
+                color=tuple(C.WEAPONS["stormtrooper"].get("projectile_color", (255, 0, 0))),
                 size=0.15,
                 weapon_type="stormtrooper",
             )
-            # Add spread to projectile angle directly?
-            # Projectile.__init__ takes angle.
+            # Add spread to projectile angle directly
             spread = C.WEAPONS["stormtrooper"].get("spread", 0.08)
-            p.vx = math.cos(self.player.angle + random.uniform(-spread, spread)) * p.speed
-            p.vy = math.sin(self.player.angle + random.uniform(-spread, spread)) * p.speed
+            p.angle = self.player.angle + random.uniform(-spread, spread)
             
             self.projectiles.append(p)
             return
 
         if weapon == "laser" and not is_secondary:
-             # Hitscan with Beam Visual
-             self.check_shot_hit(is_secondary=False, is_laser=True)
-             pass
+            # Hitscan with Beam Visual
+            self.check_shot_hit(is_secondary=False, is_laser=True)
 
         if weapon == "shotgun" and not is_secondary:
             # Spread Fire
@@ -618,7 +693,9 @@ class Game:
             # Single Hitscan
             self.check_shot_hit(is_secondary=is_secondary)
 
-    def check_shot_hit(self, is_secondary: bool = False, angle_offset: float = 0.0, is_laser: bool = False) -> None:
+    def check_shot_hit(
+        self, is_secondary: bool = False, angle_offset: float = 0.0, is_laser: bool = False
+    ) -> None:
         """Check if player's shot hit a bot"""
         assert self.player is not None
         try:
@@ -1272,37 +1349,37 @@ class Game:
             if bot.alive and bot.enemy_type.startswith(("health", "ammo", "bomb", "pickup")):
                 dist = math.sqrt((bot.x - self.player.x) ** 2 + (bot.y - self.player.y) ** 2)
                 if dist < 0.8:
-                     pickup_msg = ""
-                     color = C.GREEN
-                     
-                     if bot.enemy_type == "health_pack":
+                    pickup_msg = ""
+                    color = C.GREEN
+
+                    if bot.enemy_type == "health_pack":
                         if self.player.health < 100:
                             self.player.health = min(100, self.player.health + 50)
                             pickup_msg = "HEALTH +50"
-                     elif bot.enemy_type == "ammo_box":
-                            # Give ammo for current or all? Give all.
-                            for w in self.player.ammo:
-                                self.player.ammo[w] += 20 # Arbitrary amount
-                            pickup_msg = "AMMO FOUND"
+                    elif bot.enemy_type == "ammo_box":
+                        # Give ammo for current or all? Give all.
+                        for w in self.player.ammo:
+                            self.player.ammo[w] += 20  # Arbitrary amount
+                        pickup_msg = "AMMO FOUND"
+                        color = C.YELLOW
+                    elif bot.enemy_type == "bomb_item":
+                        self.player.bombs += 1
+                        pickup_msg = "BOMB +1"
+                        color = C.ORANGE
+                    elif bot.enemy_type.startswith("pickup_"):
+                        w_name = bot.enemy_type.replace("pickup_", "")
+                        if w_name not in self.unlocked_weapons:
+                            self.unlocked_weapons.add(w_name)
+                            self.player.switch_weapon(w_name)  # Auto switch to new gun
+                            pickup_msg = f"{w_name.upper()} ACQUIRED!"
+                            color = C.CYAN
+                        else:
+                            # Just ammo
+                            self.player.ammo[w_name] += C.WEAPONS[w_name]["clip_size"] * 2
+                            pickup_msg = f"{w_name.upper()} AMMO"
                             color = C.YELLOW
-                     elif bot.enemy_type == "bomb_item":
-                            self.player.bombs += 1
-                            pickup_msg = "BOMB +1"
-                            color = C.ORANGE
-                     elif bot.enemy_type.startswith("pickup_"):
-                            w_name = bot.enemy_type.replace("pickup_", "")
-                            if w_name not in self.unlocked_weapons:
-                                self.unlocked_weapons.add(w_name)
-                                self.player.switch_weapon(w_name) # Auto switch to new gun
-                                pickup_msg = f"{w_name.upper()} ACQUIRED!"
-                                color = C.CYAN
-                            else:
-                                # Just ammo
-                                self.player.ammo[w_name] += C.WEAPONS[w_name]["clip_size"] * 2
-                                pickup_msg = f"{w_name.upper()} AMMO"
-                                color = C.YELLOW
 
-                     if pickup_msg:
+                    if pickup_msg:
                         bot.alive = False
                         bot.removed = True
                         self.damage_texts.append(
@@ -1339,8 +1416,8 @@ class Game:
                     if dist < 0.5:
                         old_health = self.player.health
                         if not self.god_mode:
-                             self.player.take_damage(projectile.damage)
-                        
+                            self.player.take_damage(projectile.damage)
+
                         if self.player.health < old_health:
                             # Hit flash
                             self.damage_flash_timer = 10
@@ -1463,21 +1540,23 @@ class Game:
         if random.random() < 0.3:  # 30% chance per frame
             x = random.randint(rect.left, rect.right)
             # Bias slightly towards centers of letters? Random is fine for now.
-            self.title_drips.append({
-                "x": x,
-                "y": rect.bottom - 5,
-                "start_y": rect.top + 5,
-                "speed": random.uniform(0.5, 2.0),
-                "size": random.randint(2, 4),
-                "color": (random.randint(180, 255), 0, 0)
-            })
+            self.title_drips.append(
+                {
+                    "x": x,
+                    "y": rect.top,  # Start at top
+                    "start_y": rect.top,
+                    "speed": random.uniform(0.5, 2.0),
+                    "size": random.randint(2, 4),
+                    "color": (random.randint(180, 255), 0, 0),
+                }
+            )
 
         # Update
         for drip in self.title_drips[:]:
             drip["y"] += drip["speed"]
             # Accelerate slightly
             drip["speed"] *= 1.02
-            
+
             # Allow to go further down
             if drip["y"] > C.SCREEN_HEIGHT:
                 self.title_drips.remove(drip)
@@ -1487,36 +1566,33 @@ class Game:
         for drip in self.title_drips:
             # Draw trail
             pygame.draw.line(
-                self.screen, 
-                drip["color"], 
-                (drip["x"], drip["start_y"]), 
-                (drip["x"], drip["y"]), 
-                drip["size"]
+                self.screen,
+                drip["color"],
+                (drip["x"], drip["start_y"]),
+                (drip["x"], drip["y"]),
+                drip["size"],
             )
             # Draw droplet at bottom
             pygame.draw.circle(
-                self.screen,
-                drip["color"],
-                (drip["x"], int(drip["y"])),
-                drip["size"] + 1
+                self.screen, drip["color"], (drip["x"], int(drip["y"])), drip["size"] + 1
             )
 
     def render_menu(self) -> None:
         """Render main menu (Title Screen)"""
         if self.intro_video and self.intro_video.isOpened():
-             # Draw transparent overlay if needed
-             pass
-        
+            # Draw transparent overlay if needed
+            pass
+
         self.screen.fill(C.BLACK)
 
         # Menu Title
         # "Force Field The Arena Awaits"
         title = self.title_font.render("FORCE FIELD", True, C.RED)
         title_rect = title.get_rect(center=(C.SCREEN_WIDTH // 2, 100))
-        
+
         sub = self.subtitle_font.render("THE ARENA AWAITS", True, C.WHITE)
         sub_rect = sub.get_rect(center=(C.SCREEN_WIDTH // 2, 160))
-        
+
         self.screen.blit(title, title_rect)
         self.screen.blit(sub, sub_rect)
 
@@ -1541,20 +1617,20 @@ class Game:
         # Title - Stylized like "From the Demented Mind" (Georgia/Distorted vibe)
         # Using subtitle_font which is Georgia
         title = self.subtitle_font.render("MISSION SETUP", True, C.RED)
-        
+
         # Add basic distortion/glow effect manual
         # Draw offsets
         for off in [(-2, 0), (2, 0), (0, -2), (0, 2)]:
-             shadow = self.subtitle_font.render("MISSION SETUP", True, (50, 0, 0))
-             s_rect = shadow.get_rect(center=(C.SCREEN_WIDTH // 2 + off[0], 100 + off[1]))
-             self.screen.blit(shadow, s_rect)
-             
+            shadow = self.subtitle_font.render("MISSION SETUP", True, (50, 0, 0))
+            s_rect = shadow.get_rect(center=(C.SCREEN_WIDTH // 2 + off[0], 100 + off[1]))
+            self.screen.blit(shadow, s_rect)
+
         title_rect = title.get_rect(center=(C.SCREEN_WIDTH // 2, 100))
         self.screen.blit(title, title_rect)
 
         mouse_pos = pygame.mouse.get_pos()
         start_y = 200
-        line_height = 80 # Matches event handler spacing
+        line_height = 80  # Matches event handler spacing
 
         settings = [
             ("Map Size", str(self.selected_map_size)),
@@ -1566,7 +1642,7 @@ class Game:
         # Draw Settings
         for i, (label, value) in enumerate(settings):
             y = start_y + i * line_height
-            
+
             # Hover effect
             color = C.WHITE
             if abs(mouse_pos[1] - y) < 20:
@@ -1577,7 +1653,7 @@ class Game:
             # I will use subtitle_font (Georgia) for labels too.
             label_surf = self.subtitle_font.render(f"{label}:", True, C.GRAY)
             label_rect = label_surf.get_rect(right=C.SCREEN_WIDTH // 2 - 20, centery=y)
-            
+
             val_surf = self.subtitle_font.render(value, True, color)
             val_rect = val_surf.get_rect(left=C.SCREEN_WIDTH // 2 + 20, centery=y)
 
@@ -1616,14 +1692,13 @@ class Game:
         # Render projectiles via raycaster
         self.raycaster.render_projectiles(self.screen, self.player, self.projectiles)
 
-        # Render Mist / Fog Overlay
-        # Simple noise or alpha blend
         if not hasattr(self, "mist_surface"):
-             self.mist_surface = pygame.Surface((C.SCREEN_WIDTH, C.SCREEN_HEIGHT), pygame.SRCALPHA)
-             self.mist_surface.fill((200, 200, 220, 5)) # Extremely light mist (was 20)
-             # Removed noise dots as per user complaint "foggy effects aren't working well"
+            self.mist_surface = pygame.Surface((C.SCREEN_WIDTH, C.SCREEN_HEIGHT), pygame.SRCALPHA)
+            # Mist removed based on feedback
+            # self.mist_surface.fill((200, 200, 220, 5))
 
-        self.screen.blit(self.mist_surface, (0, 0))
+        # Mist blit removed
+        # self.screen.blit(self.mist_surface, (0, 0))
 
         # Clear effects surface
         self.effects_surface.fill((0, 0, 0, 0))
@@ -1639,15 +1714,21 @@ class Game:
                 pygame.draw.line(self.effects_surface, color, start, end, p["width"])
                 # Horizontal spread visualization
                 center_y = (start[1] + end[1]) / 2
-                
+
                 # Draw main beam
                 pygame.draw.line(self.effects_surface, color, start, end, p["width"])
-                
+
                 # Draw horizontal spread lines (Fanning out)
                 for i in range(5):
-                    offset = (i - 2) * 20 # Scatter horizontally at target
+                    offset = (i - 2) * 20  # Scatter horizontally at target
                     target_end = (end[0] + offset, end[1])
-                    pygame.draw.line(self.effects_surface, (*p["color"], max(0, alpha - 50)), start, target_end, max(1, p["width"] // 2))
+                    pygame.draw.line(
+                        self.effects_surface,
+                        (*p["color"], max(0, alpha - 50)),
+                        start,
+                        target_end,
+                        max(1, p["width"] // 2),
+                    )
 
                 # Glow
                 pygame.draw.line(
@@ -2073,34 +2154,36 @@ class Game:
             tr = txt.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 60))
             self.screen.blit(txt, tr)
 
-            pygame.draw.rect(self.screen, C.WHITE, (heat_x, heat_y, heat_w, heat_h), 2)
+            # pygame.draw.rect(self.screen, C.WHITE, (heat_x, heat_y, heat_w, heat_h), 2)
 
         else:
             # Clip / Ammo + Bomb Count + Inventory
             assert self.player is not None
             ammo_val = self.player.ammo[self.player.current_weapon]
             ammo_text = f"{w_name}: {w_state['clip']} / {ammo_val}"
-            
+
             # Show Bombs
             bomb_text = f"BOMBS: {self.player.bombs}"
-            
+
             at = self.font.render(ammo_text, True, C.WHITE)
             bt = self.font.render(bomb_text, True, C.ORANGE)
-            
+
             at_rect = at.get_rect(bottomright=(C.SCREEN_WIDTH - 20, hud_bottom + 25))
             bt_rect = bt.get_rect(bottomright=(C.SCREEN_WIDTH - 20, hud_bottom - 15))
-            
+
             self.screen.blit(at, at_rect)
             self.screen.blit(bt, bt_rect)
-            
+
             # Inventory List
             inv_y = hud_bottom - 80
             for w in ["pistol", "rifle", "shotgun", "laser", "plasma"]:
                 color = C.GRAY
                 if w in self.unlocked_weapons:
                     color = C.GREEN if w == self.player.current_weapon else C.WHITE
-                
-                inv_txt = self.tiny_font.render(f"[{C.WEAPONS[w]['key']}] {C.WEAPONS[w]['name']}", True, color)
+
+                inv_txt = self.tiny_font.render(
+                    f"[{C.WEAPONS[w]['key']}] {C.WEAPONS[w]['name']}", True, color
+                )
                 inv_rect = inv_txt.get_rect(bottomright=(C.SCREEN_WIDTH - 20, inv_y))
                 self.screen.blit(inv_txt, inv_rect)
                 inv_y -= 25
@@ -2413,6 +2496,38 @@ class Game:
                     self.intro_video = None
                 self.state = "menu"
 
+    def handle_menu_events(self) -> None:
+        """Handle main menu events"""
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.running = False
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_RETURN or event.key == pygame.K_SPACE:
+                    self.state = "map_select"
+                elif event.key == pygame.K_ESCAPE:
+                    self.running = False
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                self.state = "map_select"
+
+    def handle_map_select_events(self) -> None:
+        """Handle map selection events"""
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.running = False
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    self.state = "menu"
+                elif event.key == pygame.K_RETURN:
+                    self.start_game()
+                    self.state = "playing"
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if self.start_button.is_clicked(event.pos):
+                    self.start_game()
+                    self.state = "playing"
+                
+                # Check for settings clicks (Simplified: Cycle on click anywhere in top area?)
+                # For now just start button interaction is critical.
+
     def render_intro(self) -> None:
         """Render Max Payne style graphic novel intro"""
         self.screen.fill(C.BLACK)
@@ -2659,7 +2774,7 @@ class Game:
                         # User wants them to STAY red. No white.
                         # "In the intro, the letters in the lines change from red to white... I want them to stay red"
                         color = C.RED
-                        
+
                         txt_surf = self.subtitle_font.render(l_text, True, color)
                         txt_rect = txt_surf.get_rect(center=(C.SCREEN_WIDTH // 2, y))
                         self.screen.blit(txt_surf, txt_rect)
@@ -2668,7 +2783,7 @@ class Game:
                 # Static / Standard
                 elif slide["type"] == "static":
                     color = cast("Tuple[int, int, int]", slide.get("color", C.WHITE))
-                    
+
                     if cast("str", slide.get("text")) == "FORCE FIELD":
                         # Fade White -> Red
                         fade_ratio = min(1.0, elapsed / duration)
@@ -2681,21 +2796,21 @@ class Game:
                         color = (cur_r, cur_g, cur_b)
 
                     txt_surf = self.title_font.render(cast("str", slide["text"]), True, color)
-                    
+
                     # Position Check: If typical static, center. If Title, match Menu position.
                     scale_y = C.SCREEN_HEIGHT // 2
                     if cast("str", slide.get("text")) == "FORCE FIELD":
                         scale_y = C.SCREEN_HEIGHT // 2 - 100
-                    
+
                     txt_rect = txt_surf.get_rect(center=(C.SCREEN_WIDTH // 2, scale_y))
                     self.screen.blit(txt_surf, txt_rect)
 
                     # Blood Effect for Intro Title
                     if cast("str", slide.get("text")) == "FORCE FIELD":
-                         # Check if color is close to red (fully faded)
-                         if color[0] > 250 and color[1] < 10 and color[2] < 10:
-                             self.update_blood_drips(txt_rect)
-                             self.draw_blood_drips()
+                        # Check if color is close to red (fully faded)
+                        if color[0] > 250 and color[1] < 10 and color[2] < 10:
+                            self.update_blood_drips(txt_rect)
+                            self.draw_blood_drips()
 
                     if "sub" in slide:
                         sub_text = cast("str", slide["sub"])
