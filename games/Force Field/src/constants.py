@@ -309,14 +309,7 @@ ENEMY_TYPES = {
         "scale": 0.5,
         "visual_style": "item",
     },
-    "pickup_stormtrooper": {
-        "color": (255, 0, 0),
-        "health_mult": 1.0,
-        "speed_mult": 0.0,
-        "damage_mult": 0.0,
-        "scale": 0.5,
-        "visual_style": "item",
-    },
+
     "ball": {
         "color": (50, 50, 50), # Metallic
         "health_mult": 3.0,

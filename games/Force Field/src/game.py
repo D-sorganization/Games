@@ -550,7 +550,7 @@ class Game:
 
         # Spawn Pickups (Weapons, Ammo, Bombs, Health)
         # Weapons (Rare)
-        possible_weapons = ["pickup_rifle", "pickup_shotgun", "pickup_plasma", "pickup_stormtrooper"]
+        possible_weapons = ["pickup_rifle", "pickup_shotgun", "pickup_plasma"]
         for w_pickup in possible_weapons:
             if random.random() < 0.4: # 40% chance per level
                  rx = random.randint(5, self.game_map.size - 5)
@@ -2309,7 +2309,7 @@ class Game:
             
             # Inventory List
             inv_y = hud_bottom - 80
-            for w in ["pistol", "rifle", "shotgun", "plasma", "stormtrooper"]:
+            for w in ["pistol", "rifle", "shotgun", "laser", "plasma"]:
                 color = C.GRAY
                 if w in self.unlocked_weapons:
                     color = C.GREEN if w == self.player.current_weapon else C.WHITE
