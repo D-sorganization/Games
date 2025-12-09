@@ -79,13 +79,13 @@ WEAPONS = {
     },
     "plasma": {
         "name": "Plasma",
-        "damage": 100, # Increased from 35
+        "damage": 100,  # Increased from 35
         "range": WEAPON_RANGE_PLASMA,
         "ammo": 999,
-        "cooldown": 8, # Faster fire rate (was 12)
-        "automatic": True, # Allow hold-to-fire
+        "cooldown": 8,  # Faster fire rate (was 12)
+        "automatic": True,  # Allow hold-to-fire
         "clip_size": 999,  # Infinite clip, uses heat
-        "heat_per_shot": 0.25, # Heats up faster (was 0.15)
+        "heat_per_shot": 0.25,  # Heats up faster (was 0.15)
         "max_heat": 1.0,
         "cooling_rate": 0.01,
         "overheat_penalty": 180,  # 3 seconds cooldown if overheated
@@ -98,7 +98,7 @@ WEAPONS = {
 # Combat settings
 HEADSHOT_THRESHOLD = 0.05
 SPAWN_SAFETY_MARGIN = 3
-PLASMA_AOE_RADIUS = 6.0 # Widened AOE (was 2.5)
+PLASMA_AOE_RADIUS = 6.0  # Widened AOE (was 2.5)
 
 # UI settings
 HINT_BG_PADDING_H = 10
@@ -141,7 +141,7 @@ FOG_START = 0.4  # Percentage of MAX_DEPTH where fog starts
 
 # Input
 JOYSTICK_DEADZONE = 0.1
-PITCH_LIMIT = 400  # Pixels up/down
+PITCH_LIMIT = 390  # Pixels up/down
 SENSITIVITY_X = 1.0
 SENSITIVITY_Y = 1.0
 
@@ -163,11 +163,11 @@ DEFAULT_MAP_SIZE = 40
 BOT_SPEED = 0.02  # Slower enemies (was 0.03)
 PLAYER_HEALTH = 100
 BASE_BOT_HEALTH = 30
-BASE_BOT_DAMAGE = 2 # Reduced from 3
+BASE_BOT_DAMAGE = 2  # Reduced from 3
 BOT_ATTACK_RANGE = 5
 BOT_ATTACK_COOLDOWN = 60
-BOT_PROJECTILE_SPEED = 0.08 # Reduced from 0.1
-BOT_PROJECTILE_DAMAGE = 5 # Reduced from 6
+BOT_PROJECTILE_SPEED = 0.08  # Reduced from 0.1
+BOT_PROJECTILE_DAMAGE = 5  # Reduced from 6
 
 # Spread (Aiming randomness)
 SPREAD_BASE = 0.05
@@ -178,9 +178,9 @@ ZOOM_FOV_MULT = 0.5  # 2x Zoom (Half FOV)
 
 # Secondary Fire
 SECONDARY_COOLDOWN = 600  # 10 seconds
-SECONDARY_DAMAGE_MULT = 10.0 # Massively destructive
-LASER_DURATION = 30 # Longer show
-LASER_WIDTH = 40 # Huge beam
+SECONDARY_DAMAGE_MULT = 10.0  # Massively destructive
+LASER_DURATION = 30  # Longer show
+LASER_WIDTH = 40  # Huge beam
 LASER_AOE_RADIUS = 8.0
 
 ZOMBIE_COLOR = (107, 138, 111)

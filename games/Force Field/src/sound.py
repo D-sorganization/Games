@@ -11,13 +11,15 @@ from typing_extensions import Self
 class SoundManager:
     """Manages sound effects and music"""
 
-    _instance = None
+    _instance: SoundManager | None = None
+    initialized: bool
 
     def __new__(cls) -> Self:
         """Create singleton instance"""
         if cls._instance is None:
             cls._instance = super().__new__(cls)
             cls._instance.initialized = False
+        assert cls._instance is not None
         return cls._instance
 
     def __init__(self) -> None:
@@ -35,7 +37,7 @@ class SoundManager:
         self.sounds: Dict[str, pygame.mixer.Sound] = {}
         self.music_channel = None
         self.sound_enabled = True
-        self.current_music = None
+        self.current_music: str | None = None
 
         # Load assets
         self.load_assets()
@@ -52,11 +54,11 @@ class SoundManager:
             "shoot_pistol": "shoot_pistol.wav",
             "shoot_rifle": "shoot_rifle.wav",
             "shoot_shotgun": "shoot_shotgun.wav",
-            "shoot_plasma": "bfg-laser-89662.mp3", # BFG Sound
+            "shoot_plasma": "bfg-laser-89662.mp3",  # BFG Sound
             "enemy_shoot": "enemy_shoot.wav",
-            "ambient": "music_loop.wav", # New spooky background
+            "ambient": "music_loop.wav",  # New spooky background
             "bomb": "bomb.wav",
-            "scream": "cartoon-scream-1-6835.mp3", # Cartoon scream
+            "scream": "cartoon-scream-1-6835.mp3",  # Cartoon scream
             "death": "death.wav",
             "heartbeat": "heartbeat.wav",
             "player_hit": "player_hit.wav",
@@ -70,7 +72,7 @@ class SoundManager:
             "water": "stream-sounds-sample-420906.mp3",
             "laugh": "possessed-laugh-94851.mp3",
             "breath": "normal-breath-loop-400151.mp3",
-            "oww": "oww.wav", # Using generated wav backup as MP3 failed
+            "oww": "oww.wav",  # Using generated wav backup as MP3 failed
             "groan": "male-groan-of-pain-357971.mp3",
             "music_intro": "creepy-untuned-music-box-427400.mp3",
             "music_loop": "creepy-halloween-bell-trap-melody-247720.mp3",
@@ -91,9 +93,7 @@ class SoundManager:
                     if "music" in name or name == "ambient":
                         self.sounds[name].set_volume(0.5)
                 except Exception as e:  # noqa: BLE001
-                    print(
-                        f"Failed to load sound {filename} (probably codec issue?): {e}"
-                    )
+                    print(f"Failed to load sound {filename} (probably codec issue?): {e}")
                     # If we fail to load a "real" sound, try to fallback
                     # to synthesized logic if possible?
                     # For now just log it.
@@ -130,7 +130,7 @@ class SoundManager:
             and self.current_music
             and self.current_music in self.sounds
         ):
-             self.sounds[self.current_music].stop()
+            self.sounds[self.current_music].stop()
 
         # Fallback
         if "ambient" in self.sounds:

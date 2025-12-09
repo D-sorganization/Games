@@ -8,6 +8,7 @@ from pathlib import Path
 sounds_dir = "games/Force Field/assets/sounds"
 Path(sounds_dir).mkdir(parents=True, exist_ok=True)
 
+
 def generate_wave(
     filename: str,
     frequency: float = 440.0,
@@ -44,6 +45,7 @@ def generate_wave(
             packed_value = struct.pack("h", value)
             wav_file.writeframes(packed_value)
 
+
 # 1. Weapon Sounds - LOUDER (Increased vol from ~0.5 to ~0.8/0.9)
 # Pistol: Sharp crack
 def gen_pistol() -> None:
@@ -58,10 +60,13 @@ def gen_pistol() -> None:
             t = i / sample_rate
             # High freq noise + sine drop
             noise = random.uniform(-1, 1) * math.exp(-t * 20)
-            tone = math.sin(2 * math.pi * (800 * math.exp(-t*10)) * t) * math.exp(-t*10)
-            val = int(0.9 * 32767 * (noise * 0.7 + tone * 0.3)) # Increased volume
+            tone = math.sin(2 * math.pi * (800 * math.exp(-t * 10)) * t) * math.exp(-t * 10)
+            val = int(0.9 * 32767 * (noise * 0.7 + tone * 0.3))  # Increased volume
             f.writeframes(struct.pack("h", val))
+
+
 gen_pistol()
+
 
 # Rifle: Short pop
 def gen_rifle() -> None:
@@ -75,9 +80,12 @@ def gen_rifle() -> None:
         for i in range(n_frames):
             t = i / sample_rate
             noise = random.uniform(-1, 1) * math.exp(-t * 30)
-            val = int(0.8 * 32767 * noise) # Increased volume
+            val = int(0.8 * 32767 * noise)  # Increased volume
             f.writeframes(struct.pack("h", val))
+
+
 gen_rifle()
+
 
 # Shotgun: Big Boom
 def gen_shotgun() -> None:
@@ -92,13 +100,14 @@ def gen_shotgun() -> None:
             t = i / sample_rate
             # Low freq sine + lots of noise
             noise = random.uniform(-1, 1) * math.exp(-t * 5)
-            boom = math.sin(2 * math.pi * (60 * math.exp(-t * 2)) * t) * math.exp(
-                -t * 5
-            )
+            boom = math.sin(2 * math.pi * (60 * math.exp(-t * 2)) * t) * math.exp(-t * 5)
             # Increased volume
             val = int(0.95 * 32767 * (noise * 0.6 + boom * 0.4))
             f.writeframes(struct.pack("h", val))
+
+
 gen_shotgun()
+
 
 # Plasma Weapon Zap
 def gen_plasma() -> None:
@@ -112,9 +121,12 @@ def gen_plasma() -> None:
         for i in range(n_frames):
             t = i / sample_rate
             freq = 2000 - t * 4000
-            val = math.sin(2 * math.pi * freq * t) * math.exp(-t*5)
-            f.writeframes(struct.pack("h", int(0.8 * 32767 * val))) # Match other weapon volumes
+            val = math.sin(2 * math.pi * freq * t) * math.exp(-t * 5)
+            f.writeframes(struct.pack("h", int(0.8 * 32767 * val)))  # Match other weapon volumes
+
+
 gen_plasma()
+
 
 # Heartbeat Boosted
 def gen_heartbeat() -> None:
@@ -136,7 +148,10 @@ def gen_heartbeat() -> None:
             val = max(-1.0, min(1.0, val))
 
             f.writeframes(struct.pack("h", int(0.98 * 32767 * val)))
+
+
 gen_heartbeat()
+
 
 # Player Hit - UGH Sound (Vocal-like formant attempt)
 def gen_hit() -> None:
@@ -167,7 +182,10 @@ def gen_hit() -> None:
             val = max(-1.0, min(1.0, val))
 
             f.writeframes(struct.pack("h", int(0.8 * 32767 * val)))
+
+
 gen_hit()
+
 
 # Enemy Scream - Lower pitch, less static
 def gen_scream() -> None:
@@ -182,14 +200,18 @@ def gen_scream() -> None:
             t = i / sample_rate
             # Monster Growl/Scream
             # Low Sawtooth/Square mix
-            freq = 150 * (1 - t/duration * 0.2) + random.uniform(-20, 20) # 150Hz base
+            freq = 150 * (1 - t / duration * 0.2) + random.uniform(-20, 20)  # 150Hz base
 
-            osc1 = (2.0 * (t * freq - math.floor(t * freq + 0.5))) # Saw
-            osc2 = 1.0 if math.sin(2 * math.pi * (freq * 0.99) * t) > 0 else -1.0 # Square (detuned)
+            osc1 = 2.0 * (t * freq - math.floor(t * freq + 0.5))  # Saw
+            osc2 = (
+                1.0 if math.sin(2 * math.pi * (freq * 0.99) * t) > 0 else -1.0
+            )  # Square (detuned)
 
             val = (osc1 + osc2) * 0.5 * math.exp(-t * 3)
 
             f.writeframes(struct.pack("h", int(0.7 * 32767 * val)))
+
+
 gen_scream()
 
 
@@ -213,6 +235,8 @@ def gen_bomb() -> None:
             val = max(-1.0, min(1.0, val))
 
             f.writeframes(struct.pack("h", int(0.9 * 32767 * val)))
+
+
 gen_bomb()
 
 
@@ -229,19 +253,21 @@ def gen_phrase(name: str, freq_base: float) -> None:
             t = i / sample_rate
             # FM Synthish
             mod = math.sin(2 * math.pi * 10 * t) * 50
-            val = math.sin(2 * math.pi * (freq_base + mod) * t) * math.exp(-t*2)
+            val = math.sin(2 * math.pi * (freq_base + mod) * t) * math.exp(-t * 2)
             f.writeframes(struct.pack("h", int(0.5 * 32767 * val)))
+
 
 gen_phrase("cool", 440)
 gen_phrase("awesome", 554)
 gen_phrase("brutal", 220)
+
 
 # Music Tracks
 def gen_music_intro() -> None:
     """Generate the intro music track."""
     filename = os.path.join(sounds_dir, "music_intro.wav")
     sample_rate = 44100
-    duration = 10.0 # Short loop or intro
+    duration = 10.0  # Short loop or intro
     n_frames = int(sample_rate * duration)
     with wave.open(filename, "w") as f:
         f.setparams((1, 2, sample_rate, n_frames, "NONE", "not compressed"))
@@ -249,7 +275,7 @@ def gen_music_intro() -> None:
         # Sequence of notes (frequencies) for music box
         # Spooky chromatic / diminished scale
         notes = [660, 587, 523, 622, 660, 784, 523, 440, 392, 440, 523, 660]
-        note_len = 0.5 # seconds
+        note_len = 0.5  # seconds
 
         for i in range(n_frames):
             t = i / sample_rate
@@ -266,33 +292,38 @@ def gen_music_intro() -> None:
             env = math.exp(-local_t * 5)
 
             # Tintinnabulation (Sine + high harmonics)
-            val = math.sin(2 * math.pi * freq * t) * 0.5 + \
-                  math.sin(2 * math.pi * freq * 2.01 * t) * 0.2 + \
-                  math.sin(2 * math.pi * freq * 3.5 * t) * 0.1
+            val = (
+                math.sin(2 * math.pi * freq * t) * 0.5
+                + math.sin(2 * math.pi * freq * 2.01 * t) * 0.2
+                + math.sin(2 * math.pi * freq * 3.5 * t) * 0.1
+            )
 
             val = val * env * 0.6
 
             f.writeframes(struct.pack("h", int(val * 32767)))
+
+
 gen_music_intro()
+
 
 def gen_music_loop() -> None:
     """Generate the looping music track."""
     filename = os.path.join(sounds_dir, "music_loop.wav")
     sample_rate = 44100
-    duration = 8.0 # Loopable
+    duration = 8.0  # Loopable
     n_frames = int(sample_rate * duration)
     with wave.open(filename, "w") as f:
         f.setparams((1, 2, sample_rate, n_frames, "NONE", "not compressed"))
 
         # Halloween Trap / Bells
         # Minor arpeggio
-        notes = [440, 523, 659, 523, 440, 392, 349, 392] # A C E C A G F G
+        notes = [440, 523, 659, 523, 440, 392, 349, 392]  # A C E C A G F G
         note_len = 0.5
 
         for i in range(n_frames):
             t = i / sample_rate
 
-            note_idx = int(t / note_len / 2) % len(notes) # Slower? No
+            note_idx = int(t / note_len / 2) % len(notes)  # Slower? No
             # Actually let's do fast arpeggios
             note_idx = int(t * 4) % len(notes)
             freq = notes[note_idx]
@@ -309,7 +340,10 @@ def gen_music_loop() -> None:
             val = (val * 0.5 + bass * 0.5) * 0.8
 
             f.writeframes(struct.pack("h", int(val * 32767)))
+
+
 gen_music_loop()
+
 
 # Backup Oww if mp3 fails
 def gen_oww_backup() -> None:
@@ -323,7 +357,9 @@ def gen_oww_backup() -> None:
         for i in range(n_frames):
             t = i / sample_rate
             # Falling pitch "ow"
-            freq = 400 * (1 - t/duration)
-            val = math.sin(2 * math.pi * freq * t) * math.exp(-t*3)
+            freq = 400 * (1 - t / duration)
+            val = math.sin(2 * math.pi * freq * t) * math.exp(-t * 3)
             f.writeframes(struct.pack("h", int(0.8 * 32767 * val)))
+
+
 gen_oww_backup()

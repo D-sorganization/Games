@@ -45,31 +45,31 @@ class TetrisRenderer:
         # Inner fill gradient (subtle)
         inner_rect = rect.inflate(-4, -4)
         if inner_rect.width > 0 and inner_rect.height > 0:
-             # Just a simple lighter center
-             center_color = tuple(min(255, c + 20) for c in color)
-             pygame.draw.rect(surface, center_color, inner_rect)
+            # Just a simple lighter center
+            center_color = tuple(min(255, c + 20) for c in color)
+            pygame.draw.rect(surface, center_color, inner_rect)
 
     def draw_grid(self, logic: TetrisLogic) -> None:
         """Draw the game grid"""
         # Draw the play area background with a subtle grid pattern
         pygame.draw.rect(
             self.screen,
-            (10, 10, 10), # Very dark gray/black
+            (10, 10, 10),  # Very dark gray/black
             (TOP_LEFT_X, TOP_LEFT_Y, PLAY_WIDTH, PLAY_HEIGHT),
         )
 
         # Draw background grid lines (faint)
         for y in range(GRID_HEIGHT + 1):
-             color = (30, 30, 30)
-             pygame.draw.line(
+            color = (30, 30, 30)
+            pygame.draw.line(
                 self.screen,
                 color,
                 (TOP_LEFT_X, TOP_LEFT_Y + y * GRID_SIZE),
                 (TOP_LEFT_X + PLAY_WIDTH, TOP_LEFT_Y + y * GRID_SIZE),
             )
         for x in range(GRID_WIDTH + 1):
-             color = (30, 30, 30)
-             pygame.draw.line(
+            color = (30, 30, 30)
+            pygame.draw.line(
                 self.screen,
                 color,
                 (TOP_LEFT_X + x * GRID_SIZE, TOP_LEFT_Y),
@@ -127,7 +127,7 @@ class TetrisRenderer:
                             1,
                         )
                     else:
-                         # Glow effect for active piece
+                        # Glow effect for active piece
                         glow_surf = pygame.Surface((GRID_SIZE + 4, GRID_SIZE + 4), pygame.SRCALPHA)
                         glow_color = (*piece.color, 100)
                         pygame.draw.rect(

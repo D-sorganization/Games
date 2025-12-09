@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import math
 import random
-from typing import TYPE_CHECKING, Any, Dict, List, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Tuple, cast
 
 import pygame
 
@@ -248,8 +248,7 @@ class Raycaster:
             # Interpolate Color to Goo
             goo_color = (50, 150, 50)
             base_color = tuple(
-                int(c * (1 - melt_pct) + g * melt_pct)
-                for c, g in zip(base_color, goo_color)
+                int(c * (1 - melt_pct) + g * melt_pct) for c, g in zip(base_color, goo_color)
             )
 
             # Squish
@@ -289,9 +288,7 @@ class Raycaster:
                 render_width,
                 render_height * 0.6,
             )
-            pygame.draw.rect(
-                screen, base_color, body_rect, border_radius=int(render_width * 0.4)
-            )
+            pygame.draw.rect(screen, base_color, body_rect, border_radius=int(render_width * 0.4))
 
             # Head (Floating slightly above)
             head_size = render_width
@@ -391,9 +388,7 @@ class Raycaster:
         if not bot.dead or bot.death_timer < 30:
             head_size = render_width * 0.6
             head_y = render_y + render_height * 0.05
-            head_rect = pygame.Rect(
-                center_x - head_size / 2, head_y, head_size, head_size
-            )
+            head_rect = pygame.Rect(center_x - head_size / 2, head_y, head_size, head_size)
             pygame.draw.rect(screen, base_color, head_rect)
 
             # Glowing Eyes
@@ -469,17 +464,13 @@ class Raycaster:
                 )
                 for i in range(4):
                     x_off = center_x - mouth_w / 2 + (i + 1) * (mouth_w / 5)
-                    pygame.draw.line(
-                        screen, (50, 0, 0), (x_off, mouth_y), (x_off, mouth_y + 10), 1
-                    )
+                    pygame.draw.line(screen, (50, 0, 0), (x_off, mouth_y), (x_off, mouth_y + 10), 1)
 
         # 3. Arms
         if not bot.dead:
             arm_y = render_y + render_height * 0.3
             # Left
-            pygame.draw.line(
-                screen, base_color, (body_x, arm_y + 10), (body_x - 15, arm_y + 30), 6
-            )
+            pygame.draw.line(screen, base_color, (body_x, arm_y + 10), (body_x - 15, arm_y + 30), 6)
             pygame.draw.polygon(
                 screen,
                 (200, 200, 200),
@@ -604,8 +595,7 @@ class Raycaster:
                     0.0,
                     min(
                         1.0,
-                        (distance - C.MAX_DEPTH * C.FOG_START)
-                        / (C.MAX_DEPTH * (1 - C.FOG_START)),
+                        (distance - C.MAX_DEPTH * C.FOG_START) / (C.MAX_DEPTH * (1 - C.FOG_START)),
                     ),
                 )
 
@@ -705,7 +695,7 @@ class Raycaster:
         horizon = C.SCREEN_HEIGHT // 2 + int(player.pitch)
 
         # Sky/Ceiling
-        ceiling_color = theme["ceiling"]
+        ceiling_color = cast("Tuple[int, int, int]", theme["ceiling"])
         pygame.draw.rect(screen, ceiling_color, (0, 0, C.SCREEN_WIDTH, horizon))
 
         # Draw stars (randomized but consistent)
@@ -735,7 +725,7 @@ class Raycaster:
                 )  # Crescent, match sky color
 
         # Floor
-        floor_color = theme["floor"]
+        floor_color = cast("Tuple[int, int, int]", theme["floor"])
         pygame.draw.rect(
             screen,
             floor_color,

@@ -20,7 +20,7 @@ from .sound import SoundManager
 from .ui import BloodButton
 
 try:
-    import cv2
+    import cv2  # type: ignore[import-not-found]
 
     HAS_CV2 = True
 except ImportError:
@@ -140,9 +140,10 @@ class Game:
         self.max_health = 100
 
         self.is_moving = False  # Track movement state for bobbing
-        self.damage_flash_timer = 0
         if not hasattr(self, "intro_video"):
             self.intro_video = None
+
+        self.game_over_timer = 0
 
         # Fonts - Modern and Stylistic
         try:
@@ -355,7 +356,7 @@ class Game:
         self.paused = False
         self.particles = []
         self.damage_texts = []
-        
+
         # Reset Combo & Atmosphere
         self.kill_combo_count = 0
         self.kill_combo_timer = 0
@@ -686,9 +687,7 @@ class Game:
                     if self.paused:
                         self.pause_start_time = pygame.time.get_ticks()
                     else:
-                        self.total_paused_time += (
-                            pygame.time.get_ticks() - self.pause_start_time
-                        )
+                        self.total_paused_time += pygame.time.get_ticks() - self.pause_start_time
                     pygame.mouse.set_visible(self.paused)
                     pygame.event.set_grab(not self.paused)
                 # Weapon switching
@@ -727,8 +726,6 @@ class Game:
                 assert self.player is not None
                 self.player.rotate(event.rel[0] * C.PLAYER_ROT_SPEED)
                 self.player.pitch_view(-event.rel[1] * C.PLAYER_ROT_SPEED * 200)
-
-
 
     def fire_weapon(self, is_secondary: bool = False) -> None:
         """Handle weapon firing (Hitscan or Projectile)"""
@@ -899,25 +896,17 @@ class Game:
                     impact_dist = closest_dist
 
                 ray_angle = self.player.angle
-                ix = self.player.x + math.cos(ray_angle) * impact_dist
-                iy = self.player.y + math.sin(ray_angle) * impact_dist
+                impact_x = self.player.x + math.cos(ray_angle) * impact_dist
+                impact_y = self.player.y + math.sin(ray_angle) * impact_dist
 
                 try:
-                    self.explode_laser(ix, iy)
+                    self.explode_laser(impact_x, impact_y)
                 except Exception as e:  # noqa: BLE001
                     print(f"Error in explode_laser: {e}")
 
                 # Visual Beam
-                cx = C.SCREEN_WIDTH // 2
-                cy = C.SCREEN_HEIGHT
-                # Draw beam from bottom right (weapon pos) to center
-                pygame.draw.line(
-                    self.screen, (255, 0, 255), (cx + 100, cy), (cx, C.SCREEN_HEIGHT // 2), 30
-                )
-                pygame.draw.line(
-                    self.screen, C.WHITE, (cx + 100, cy), (cx, C.SCREEN_HEIGHT // 2), 10
-                )
-                
+                # Visual Beam (handled by particles)
+
                 # Add laser effect
                 # For a raycaster, drawing 2D line from weapon to center is best approximation
                 self.particles.append(
@@ -967,9 +956,8 @@ class Game:
                 final_damage = int(weapon_damage * range_factor * accuracy_factor)
 
                 if is_headshot:
-                    pass # Damage handled in take_damage
+                    pass  # Damage handled in take_damage
 
-                was_alive = closest_bot.alive
                 closest_bot.take_damage(final_damage, is_headshot=is_headshot)
                 # Scream handled in kill check below
 
@@ -1026,8 +1014,6 @@ class Game:
                     self.kill_combo_timer = 180
                     self.last_death_pos = (closest_bot.x, closest_bot.y)
                     self.sound_manager.play_sound("scream")
-
-
 
         except Exception as e:  # noqa: BLE001
             # Prevent gameplay crash from targeting logic
@@ -1182,9 +1168,12 @@ class Game:
 
     def explode_plasma(self, projectile: Projectile) -> None:
         """Trigger plasma AOE explosion"""
+        assert self.player is not None
         # Visuals - Shockwave / Expanding Circle
         # Visuals - Screen Flash
-        dist_to_player = math.sqrt((projectile.x - self.player.x) ** 2 + (projectile.y - self.player.y) ** 2)
+        dist_to_player = math.sqrt(
+            (projectile.x - self.player.x) ** 2 + (projectile.y - self.player.y) ** 2
+        )
         if dist_to_player < 15:
             self.damage_flash_timer = 15  # Re-use flash timer for feedback
 
@@ -2585,7 +2574,7 @@ class Game:
                     self.intro_video = None
 
         # Phase 2: Graphic Novel / Story
-        if self.intro_phase == 2:
+        elif self.intro_phase == 2:
             # Slides Config
             slides = [
                 {

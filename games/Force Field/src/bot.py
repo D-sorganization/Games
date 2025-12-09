@@ -33,7 +33,11 @@ class Bot:
         self.x = x
         self.y = y
         self.angle: float = 0.0
-        self.enemy_type = enemy_type if enemy_type else random.choice(list(C.ENEMY_TYPES.keys()))
+        if enemy_type:
+            self.enemy_type = enemy_type
+        else:
+            options = [k for k in C.ENEMY_TYPES if k != "health_pack"]
+            self.enemy_type = random.choice(options)
         self.type_data = C.ENEMY_TYPES[self.enemy_type]
 
         diff_stats = C.DIFFICULTIES.get(difficulty, C.DIFFICULTIES["NORMAL"])
@@ -67,13 +71,13 @@ class Bot:
         self.dead = False
         self.death_timer = 0
         self.disintegrate_timer = 0
-        self.removed = False # When fully disintegrated
+        self.removed = False  # When fully disintegrated
 
     def update(self, game_map: Map, player: Player, other_bots: List[Bot]) -> Projectile | None:
         """Update bot AI"""
         if self.dead:
             self.death_timer += 1
-            if self.death_timer > 60: # Start disintegrating after 1 second
+            if self.death_timer > 60:  # Start disintegrating after 1 second
                 self.disintegrate_timer += 1
                 if self.disintegrate_timer > 100:
                     self.removed = True
@@ -191,5 +195,4 @@ class Bot:
         if self.health <= 0:
             self.health = 0
             self.dead = True
-            self.alive = False # Kept for backward compat logic usage, but we use dead/removed now
-
+            self.alive = False  # Kept for backward compat logic usage, but we use dead/removed now
