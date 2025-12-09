@@ -355,7 +355,6 @@ class Game:
         self.level_times = []
         self.paused = False
         self.particles = []
-        self.particles = []
         self.damage_texts = []
 
         # Reset Combo & Atmosphere
@@ -955,9 +954,6 @@ class Game:
                 accuracy_factor = max(0.5, 1.0 - (angle_diff / 0.15))
 
                 final_damage = int(weapon_damage * range_factor * accuracy_factor)
-
-                if is_headshot:
-                    pass  # Damage handled in take_damage
 
                 if is_headshot:
                     pass  # Damage handled in take_damage

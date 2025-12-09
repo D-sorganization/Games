@@ -695,7 +695,7 @@ class Raycaster:
         horizon = C.SCREEN_HEIGHT // 2 + int(player.pitch)
 
         # Sky/Ceiling
-        ceiling_color =  cast("Tuple[int, int, int]", theme["ceiling"])
+        ceiling_color = cast("Tuple[int, int, int]", theme["ceiling"])
         pygame.draw.rect(screen, ceiling_color, (0, 0, C.SCREEN_WIDTH, horizon))
 
         # Draw stars (randomized but consistent)

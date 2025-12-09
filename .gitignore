@@ -44,4 +44,9 @@ dist/
 *.toc
 build/
 dist/
-ruff_check_game.txt ruff_check_game_2.txt ruff_errors.txt ruff_output.txt ruff_output_ff.txt ruff_output_ff_2.txt
+ruff_check_game.txt
+ruff_check_game_2.txt
+ruff_errors.txt
+ruff_output.txt
+ruff_output_ff.txt
+ruff_output_ff_2.txt
