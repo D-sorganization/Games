@@ -91,7 +91,6 @@ class Game:
                 self.intro_video = cv2.VideoCapture(video_path)
 
             # Keep GIF as fallback
-            deadfish_path = os.path.join(pics_dir, "Deadfish.gif")
             if os.path.exists(deadfish_path):
                 img = pygame.image.load(deadfish_path)
                 scale = min(500 / img.get_height(), 800 / img.get_width())
@@ -147,6 +146,9 @@ class Game:
         # I'll enable pistol and laser by default or just pistol and let pickup work.
         # Given "unlocked_weapons" usually starts small, I'll stick to PISTOL but add pickups.
         self.unlocked_weapons = {"pistol"}
+        self.cheat_mode_active = False
+        self.current_cheat_input = ""
+        self.god_mode = False
 
         self.is_moving = False  # Track movement state for bobbing
         if not hasattr(self, "intro_video"):
@@ -395,30 +397,27 @@ class Game:
         random.shuffle(corners)
 
         # Player spawns in first corner - ensure it's safe
-        player_pos = corners[0]
-        # Double-check player spawn is safe
-        if self.game_map.is_wall(
-            player_pos[0],
-            player_pos[1],
-        ) or self.game_map.is_inside_building(player_pos[0], player_pos[1]):
-            # Find a nearby safe position
-            for attempt in range(20):
-                test_x = player_pos[0] + random.uniform(-3, 3)
-                test_y = player_pos[1] + random.uniform(-3, 3)
-                if (
-                    not self.game_map.is_wall(test_x, test_y)
-                    and not self.game_map.is_inside_building(test_x, test_y)
-                    and 2 <= test_x < self.game_map.size - 2
-                    and 2 <= test_y < self.game_map.size - 2
-                ):
-                    player_pos = (test_x, test_y, player_pos[2])
-                    break
+        player_pos_candidate = corners[0]
+        player_angle = player_pos_candidate[2]
+
+        # Try to find a safer spawn point
+        start_x, start_y = 0.0, 0.0
+        for _ in range(20):
+             start_x = random.randint(2, self.game_map.size - 2) + 0.5
+             start_y = random.randint(2, self.game_map.size - 2) + 0.5
+             if (
+                 not self.game_map.is_wall(int(start_x), int(start_y))
+                 and not self.game_map.is_inside_building(int(start_x), int(start_y))
+             ):
+                 # Check distance to other bots if already spawned (unlikely at start of loop but good practice)
+                 player_pos = (start_x, start_y)
+                 break
+        else:
+             player_pos = (2.5, 2.5) # Default/Fail safe
 
         # Preserve ammo and weapon selection from previous level if player exists
-        # Check if self.player exists and apply
-
         previous_ammo = None
-        previous_weapon = "rifle"
+        previous_weapon = "pistol"
         if self.player:
             previous_ammo = self.player.ammo
             previous_weapon = self.player.current_weapon
@@ -426,7 +425,7 @@ class Game:
             # Usually keep progression.
             # But self.unlocked_weapons is on Game, so it persists.
 
-        self.player = Player(player_pos[0], player_pos[1], player_pos[2])
+        self.player = Player(player_pos[0], player_pos[1], player_angle)
         if previous_ammo:
             self.player.ammo = previous_ammo
             if previous_weapon in self.unlocked_weapons:
@@ -434,6 +433,10 @@ class Game:
             else:
                  self.player.current_weapon = "pistol"
         
+        # Reset Fog/Mist surface on level load
+        if hasattr(self, "mist_surface"):
+            del self.mist_surface
+
         # Sync unlocked status (though Player has access to all, we restrict switching)
         # Also sync bomb count if we tracked it on Game?
         # Ideally Player state should persist better, but for now we just init new.
@@ -444,83 +447,31 @@ class Game:
         # Bots spawn in other three corners with varied types
         self.bots = []
         self.projectiles = []
-        enemies_per_corner = 4 + (self.level - 1)
+        
+        num_enemies = int(min(50, 5 + self.level * 2 * C.DIFFICULTIES[self.selected_difficulty]["score_mult"]))
+        
+        for _ in range(num_enemies):
+            # Try to place bot
+            for _ in range(20):
+                bx = random.randint(2, self.game_map.size - 2)
+                by = random.randint(2, self.game_map.size - 2)
+                
+                # Distance check
+                dist = math.sqrt((bx - player_pos[0])**2 + (by - player_pos[1])**2)
+                if dist < 10.0: # Safe zone radius
+                    continue
+                    
+                if not self.game_map.is_wall(bx, by):
+                    # Add bot
+                    enemy_type = random.choice(list(C.ENEMY_TYPES.keys()))
+                    # Filter out pickups/bosses for standard spawn list if desired, 
+                    # but current list has them mixed. I'll filter special types.
+                    while enemy_type in ["boss", "demon", "ball", "beast", "pickup_rifle", "pickup_shotgun", "pickup_plasma", "health_pack", "ammo_box", "bomb_item"]:
+                         enemy_type = random.choice(list(C.ENEMY_TYPES.keys()))
+                    
+                    self.bots.append(Bot(bx + 0.5, by + 0.5, self.level, enemy_type, difficulty=self.selected_difficulty))
+                    break
 
-        available_types = [t for t in C.ENEMY_TYPES if t != "health_pack"]
-        random.shuffle(available_types)
-
-        for i in range(1, 4):
-            bot_pos = corners[i]
-            # Use a different enemy type for each corner (cycling if we run out)
-            enemy_type = available_types[(i - 1) % len(available_types)]
-
-            # Spawn enemies around corner
-            for j in range(enemies_per_corner):
-                angle_offset = j * 2 * math.pi / enemies_per_corner
-                radius = 1.5 + (j % 2) * 0.5
-                spawn_x = bot_pos[0] + math.cos(angle_offset) * radius
-                spawn_y = bot_pos[1] + math.sin(angle_offset) * radius
-
-                if (
-                    not self.game_map.is_wall(spawn_x, spawn_y)
-                    and not self.game_map.is_inside_building(spawn_x, spawn_y)
-                    and 2 <= spawn_x < self.game_map.size - 2
-                    and 2 <= spawn_y < self.game_map.size - 2
-                ):
-                    self.bots.append(
-                        Bot(
-                            spawn_x,
-                            spawn_y,
-                            self.level,
-                            enemy_type,
-                            difficulty=self.selected_difficulty,
-                        )
-                    )
-                else:
-                    # Retry nearby
-                    found_pos = False
-                    for attempt in range(15):
-                        test_x = bot_pos[0] + random.uniform(
-                            -C.SPAWN_RETRY_RADIUS, C.SPAWN_RETRY_RADIUS
-                        )
-                        test_y = bot_pos[1] + random.uniform(
-                            -C.SPAWN_RETRY_RADIUS, C.SPAWN_RETRY_RADIUS
-                        )
-                        if (
-                            not self.game_map.is_wall(test_x, test_y)
-                            and not self.game_map.is_inside_building(test_x, test_y)
-                            and 2 <= test_x < self.game_map.size - 2
-                            and 2 <= test_y < self.game_map.size - 2
-                        ):
-                            self.bots.append(
-                                Bot(
-                                    test_x,
-                                    test_y,
-                                    self.level,
-                                    enemy_type,
-                                    difficulty=self.selected_difficulty,
-                                )
-                            )
-                            found_pos = True
-                            break
-
-                    if not found_pos:
-                        # Last resort: spawn at corner if safe, otherwise skip ONE bot (safety)
-                        if not self.game_map.is_wall(
-                            bot_pos[0], bot_pos[1]
-                        ) and not self.game_map.is_inside_building(bot_pos[0], bot_pos[1]):
-                            self.bots.append(
-                                Bot(
-                                    bot_pos[0],
-                                    bot_pos[1],
-                                    self.level,
-                                    enemy_type,
-                                    difficulty=self.selected_difficulty,
-                                )
-                            )
-
-        # Spawn Boss & Fast Enemy (Demon) in random corner or center
-        # "At the end of each level we need a huge enemy or a fast enemy. - lets have one of each."
         # Spawn Boss & Fast Enemy (Demon) in random corner or center
         # "At the end of each level we need a huge enemy or a fast enemy. - lets have one of each."
         # User update: "Make there be a boss enemy at the end of every level... One will be a ball... other will be beast"
@@ -581,170 +532,6 @@ class Game:
             "music_piano",
             "music_action",
         ]
-        track_name = music_tracks[(self.level - 1) % len(music_tracks)]
-        self.sound_manager.start_music(track_name)
-
-        self.state = "playing"
-
-        # Enable mouse capture
-        pygame.mouse.set_visible(False)
-        pygame.event.set_grab(True)
-
-    def handle_menu_events(self) -> None:
-        """Handle menu events"""
-        mouse_pos = pygame.mouse.get_pos()
-        self.start_button.update(mouse_pos)
-
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                self.running = False
-            elif event.type == pygame.MOUSEBUTTONDOWN:
-                if event.button == 1:
-                    # Allow click anywhere to start
-                    self.state = "map_select"
-
-    def handle_map_select_events(self) -> None:
-        """Handle new game setup events"""
-        mouse_pos = pygame.mouse.get_pos()
-        self.start_button.update(mouse_pos)
-
-        start_y = 200
-        line_height = 80 # Increased spacing
-
-        # Settings list matching render order
-        settings = ["Map Size", "Difficulty", "Start Level", "Lives"]
-
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                self.running = False
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
-                    self.state = "menu"
-            elif event.type == pygame.MOUSEBUTTONDOWN:
-                if event.button == 1:
-                    # START button
-                    if self.start_button.is_clicked(mouse_pos):
-                        self.start_game()
-                    else:
-                        # Check clicks on settings
-                        for i, setting in enumerate(settings):
-                            y = start_y + i * line_height
-                            # Check if click is near this row
-                            if abs(mouse_pos[1] - y) < 20:
-                                # Toggle logic
-                                if setting == "Map Size":
-                                    opts = [30, 40, 50, 60, 80]
-                                    try:
-                                        idx = opts.index(self.selected_map_size)
-                                        self.selected_map_size = opts[(idx + 1) % len(opts)]
-                                    except ValueError:
-                                        self.selected_map_size = 40
-                                elif setting == "Difficulty":
-                                    diff_opts = list(C.DIFFICULTIES.keys())
-                                    try:
-                                        idx = diff_opts.index(self.selected_difficulty)
-                                        new_idx = (idx + 1) % len(diff_opts)
-                                        self.selected_difficulty = diff_opts[new_idx]
-                                    except ValueError:
-                                        self.selected_difficulty = "NORMAL"
-                                elif setting == "Start Level":
-                                    opts = [1, 5, 10, 15, 20]
-                                    try:
-                                        idx = opts.index(self.selected_start_level)
-                                        self.selected_start_level = opts[(idx + 1) % len(opts)]
-                                    except ValueError:
-                                        self.selected_start_level = 1
-                                elif setting == "Lives":
-                                    opts = [1, 3, 5, 10, 999]
-                                    try:
-                                        idx = opts.index(self.selected_lives)
-                                        self.selected_lives = opts[(idx + 1) % len(opts)]
-                                    except ValueError:
-                                        self.selected_lives = 3
-
-    def handle_game_events(self) -> None:
-        """Handle gameplay events"""
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                self.running = False
-            elif event.type == pygame.MOUSEBUTTONDOWN and self.paused:
-                if event.button == 1:
-                    mouse_pos = pygame.mouse.get_pos()
-                    menu_items = ["RESUME", "SAVE GAME", "QUIT TO MENU"]
-                    for i, item in enumerate(menu_items):
-                        rect = pygame.Rect(
-                            C.SCREEN_WIDTH // 2 - 100,
-                            C.SCREEN_HEIGHT // 2 - 50 + i * 60,
-                            200,
-                            50,
-                        )
-                        if rect.collidepoint(mouse_pos):
-                            if item == "RESUME":
-                                self.paused = False
-                                self.total_paused_time += (
-                                    pygame.time.get_ticks() - self.pause_start_time
-                                )
-                                pygame.mouse.set_visible(False)
-                                pygame.event.set_grab(True)
-                            elif item == "SAVE GAME":
-                                try:
-                                    with open(C.SAVE_FILE_PATH, "w") as f:
-                                        f.write(f"{self.level}")
-                                except OSError as e:
-                                    print(f"Save failed: {e}")
-                                    self.damage_texts.append(
-                                        {
-                                            "x": C.SCREEN_WIDTH // 2,
-                                            "y": C.SCREEN_HEIGHT // 2,
-                                            "text": "SAVE FAILED!",
-                                            "color": C.RED,
-                                            "timer": 60,
-                                            "vy": -0.5,
-                                        }
-                                    )
-                                self.paused = False
-                                self.total_paused_time += (
-                                    pygame.time.get_ticks() - self.pause_start_time
-                                )
-                                pygame.mouse.set_visible(False)
-                                pygame.event.set_grab(True)
-                            elif item == "QUIT TO MENU":
-                                self.state = "menu"
-                                self.paused = False
-                                pygame.mouse.set_visible(True)
-                                pygame.event.set_grab(False)
-                            break  # Handle one click
-
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
-                    self.state = "menu"
-                    pygame.mouse.set_visible(True)
-                    pygame.event.set_grab(False)
-                elif event.key == pygame.K_p:
-                    self.paused = not self.paused
-                    if self.paused:
-                        self.pause_start_time = pygame.time.get_ticks()
-                    else:
-                        self.total_paused_time += pygame.time.get_ticks() - self.pause_start_time
-                    pygame.mouse.set_visible(self.paused)
-                    pygame.event.set_grab(not self.paused)
-                # Weapon switching
-                elif not self.paused:
-                    if event.key == pygame.K_1:
-                        if "pistol" in self.unlocked_weapons: self.switch_weapon_with_message("pistol")
-                    elif event.key == pygame.K_2:
-                        if "rifle" in self.unlocked_weapons: self.switch_weapon_with_message("rifle")
-                    elif event.key == pygame.K_3:
-                        if "shotgun" in self.unlocked_weapons: self.switch_weapon_with_message("shotgun")
-                    elif event.key == pygame.K_4:
-                        if "laser" in self.unlocked_weapons: self.switch_weapon_with_message("laser")
-                    elif event.key == pygame.K_5:
-                        if "plasma" in self.unlocked_weapons: self.switch_weapon_with_message("plasma")
-                    elif event.key == pygame.K_f:
-                        try:
-                            assert self.player is not None
-                            if self.player.activate_bomb():
-                                self.handle_bomb_explosion()
                         except Exception as e:  # noqa: BLE001
                             print(f"Bomb Error: {e}")
                             traceback.print_exc()
@@ -1551,7 +1338,9 @@ class Game:
                     dist = math.sqrt(dx**2 + dy**2)
                     if dist < 0.5:
                         old_health = self.player.health
-                        self.player.take_damage(projectile.damage)
+                        if not self.god_mode:
+                             self.player.take_damage(projectile.damage)
+                        
                         if self.player.health < old_health:
                             # Hit flash
                             self.damage_flash_timer = 10
@@ -1677,7 +1466,7 @@ class Game:
             self.title_drips.append({
                 "x": x,
                 "y": rect.bottom - 5,
-                "start_y": rect.bottom - 5,
+                "start_y": rect.top + 5,
                 "speed": random.uniform(0.5, 2.0),
                 "size": random.randint(2, 4),
                 "color": (random.randint(180, 255), 0, 0)
@@ -1686,9 +1475,10 @@ class Game:
         # Update
         for drip in self.title_drips[:]:
             drip["y"] += drip["speed"]
-            # Accelerate slightly?
+            # Accelerate slightly
             drip["speed"] *= 1.02
             
+            # Allow to go further down
             if drip["y"] > C.SCREEN_HEIGHT:
                 self.title_drips.remove(drip)
 
@@ -1830,12 +1620,8 @@ class Game:
         # Simple noise or alpha blend
         if not hasattr(self, "mist_surface"):
              self.mist_surface = pygame.Surface((C.SCREEN_WIDTH, C.SCREEN_HEIGHT), pygame.SRCALPHA)
-             self.mist_surface.fill((200, 200, 220, 20)) # Very light mist
-             # Add some noise dots?
-             for _ in range(1000):
-                  x = random.randint(0, C.SCREEN_WIDTH)
-                  y = random.randint(0, C.SCREEN_HEIGHT)
-                  self.mist_surface.set_at((x,y), (255, 255, 255, 40))
+             self.mist_surface.fill((200, 200, 220, 5)) # Extremely light mist (was 20)
+             # Removed noise dots as per user complaint "foggy effects aren't working well"
 
         self.screen.blit(self.mist_surface, (0, 0))
 
