@@ -140,15 +140,7 @@ class Game:
         self.portal: Dict[str, Any] | None = None
         self.health = 100
         self.max_health = 100
-        self.unlocked_weapons = {
-            "pistol",
-            "laser",
-        }  # Start with pistol and laser for testing/fun? Or just pistol.
-        # User said "we now will have a laser as weapon 4". Assuming unlocked or unlockable.
-        # Let's unlock all for testing or keep progression?
-        # "The controls section needs to be expanded..." implies they are available.
-        # I'll enable pistol and laser by default or just pistol and let pickup work.
-        # Given "unlocked_weapons" usually starts small, I'll stick to PISTOL but add pickups.
+        # Unlocked weapons tracking
         self.unlocked_weapons = {"pistol"}
         self.cheat_mode_active = False
         self.current_cheat_input = ""
@@ -1582,9 +1574,7 @@ class Game:
 
     def render_menu(self) -> None:
         """Render main menu (Title Screen)"""
-        if self.intro_video and self.intro_video.isOpened():
-            # Draw transparent overlay if needed
-            pass
+        # (Video overlay logic handled elsewhere if needed)
 
         self.screen.fill(C.BLACK)
 
@@ -1611,6 +1601,7 @@ class Game:
 
         credit = self.tiny_font.render("A Jasper Production", True, C.DARK_GRAY)
         credit_rect = credit.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT - 50))
+        self.screen.blit(credit, credit_rect)
         pygame.display.flip()
 
     def render_map_select(self) -> None:
@@ -2157,7 +2148,8 @@ class Game:
             tr = txt.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 60))
             self.screen.blit(txt, tr)
 
-            # pygame.draw.rect(self.screen, C.WHITE, (heat_x, heat_y, heat_w, heat_h), 2)
+            self.screen.blit(txt, tr)
+            # Heat bar drawing removed
 
         else:
             # Clip / Ammo + Bomb Count + Inventory

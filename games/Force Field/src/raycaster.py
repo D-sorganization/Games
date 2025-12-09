@@ -583,12 +583,10 @@ class Raycaster:
             # Update Z-Buffer for this ray's columns
             if distance > 0:
                 # Correct fisheye for Z-buffer comparison
-                corrected_dist = distance # cast_ray returns corrected?
-                # Wait, cast_ray returns corrected_wall_dist.
-                # But Z-buffer usually checks perpendicular distance?
-                # Yes, let's trust the return value is what we render with.
+                # Correct fisheye for Z-buffer comparison
+                # cast_ray returns corrected_wall_dist which is what we need for Z-buffer comparison
                 pass
-            
+
             # Map ray to screen columns
             col_start = ray * 2
             col_end = min(col_start + 2, C.SCREEN_WIDTH)
@@ -710,23 +708,24 @@ class Raycaster:
             # Column-based rendering for proper occlusion
             start_x = int(sprite_x)
             end_x = int(sprite_x + sprite_size)
-            
+
             # Optimization: Pre-calculate scaling
             tex_width = sprite_surface.get_width()
             tex_height = sprite_surface.get_height()
-            
+
             # Iterate through screen columns covered by sprite
             for x in range(start_x, end_x):
                 # Bounds check
                 if x < 0 or x >= C.SCREEN_WIDTH:
                     continue
-                
+
                 # Z-Buffer check
                 if bot_dist >= z_buffer[x]:
                     continue
-                
+
                 # Calculate corresponding column in sprite texture
-                tex_x = int((x - start_x))
+                # Calculate corresponding column in sprite texture
+                tex_x = int(x - start_x)
                 if tex_x < 0 or tex_x >= tex_width:
                     continue
 
