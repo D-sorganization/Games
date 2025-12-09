@@ -1,17 +1,17 @@
-import sys
-import os
-import unittest
 import math
-from unittest.mock import MagicMock
+import sys
+import unittest
+from pathlib import Path
 
 # Add src to path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+sys.path.append(str(Path(__file__).parent.parent.resolve()))
 
-from src.player import Player
+import src.constants as C  # noqa: N812
 from src.bot import Bot
 from src.map import Map
+from src.player import Player
 from src.projectile import Projectile
-import src.constants as C
+
 
 class TestGameLogic(unittest.TestCase):
     def setUp(self) -> None:
@@ -27,14 +27,14 @@ class TestGameLogic(unittest.TestCase):
         player = Player(15.0, 15.0, 0.0)
 
         player.switch_weapon("rifle")
-        self.assertEqual(player.current_weapon, "rifle")
+        assert player.current_weapon == "rifle"
 
         player.switch_weapon("pistol")
-        self.assertEqual(player.current_weapon, "pistol")
+        assert player.current_weapon == "pistol"
 
         # Test non-existent weapon (should not switch)
         player.switch_weapon("bfg9000")
-        self.assertEqual(player.current_weapon, "pistol")
+        assert player.current_weapon == "pistol"
 
     def test_player_shooting_ammo(self) -> None:
         """Test player shooting mechanics and ammo consumption."""
@@ -44,14 +44,14 @@ class TestGameLogic(unittest.TestCase):
 
         # Shoot
         fired = player.shoot()
-        self.assertTrue(fired)
-        self.assertEqual(player.weapon_state["pistol"]["clip"], initial_clip - 1)
-        self.assertTrue(player.shooting)
-        self.assertGreater(player.shoot_timer, 0)
+        assert fired
+        assert player.weapon_state["pistol"]["clip"] == initial_clip - 1
+        assert player.shooting
+        assert player.shoot_timer > 0
 
         # Try shoot immediately (should fail due to cooldown)
         fired_again = player.shoot()
-        self.assertFalse(fired_again)
+        assert not fired_again
 
     def test_player_reload(self) -> None:
         """Test player weapon reload functionality."""
@@ -60,15 +60,15 @@ class TestGameLogic(unittest.TestCase):
         player.weapon_state["pistol"]["clip"] = 0
 
         player.reload()
-        self.assertTrue(player.weapon_state["pistol"]["reloading"])
+        assert player.weapon_state["pistol"]["reloading"]
 
         # Simulate update cycles
         reload_time = player.weapon_state["pistol"]["reload_timer"]
         for _ in range(reload_time + 1):
             player.update()
 
-        self.assertFalse(player.weapon_state["pistol"]["reloading"])
-        self.assertEqual(player.weapon_state["pistol"]["clip"], C.WEAPONS["pistol"]["clip_size"])
+        assert not player.weapon_state["pistol"]["reloading"]
+        assert player.weapon_state["pistol"]["clip"] == C.WEAPONS["pistol"]["clip_size"]
 
     def test_bot_movement_and_collision(self) -> None:
         """Test bot movement towards player and collision detection."""
@@ -76,15 +76,15 @@ class TestGameLogic(unittest.TestCase):
         bot = Bot(12.0, 12.0, 1, enemy_type="zombie")
         player = Player(18.0, 18.0, 0.0)
 
-        initial_dist = math.sqrt((player.x - bot.x)**2 + (player.y - bot.y)**2)
+        initial_dist = math.sqrt((player.x - bot.x) ** 2 + (player.y - bot.y) ** 2)
 
         # Update bot
         bot.update(self.map, player, [])
 
-        new_dist = math.sqrt((player.x - bot.x)**2 + (player.y - bot.y)**2)
+        new_dist = math.sqrt((player.x - bot.x) ** 2 + (player.y - bot.y) ** 2)
 
         # Bot should move closer
-        self.assertLess(new_dist, initial_dist)
+        assert new_dist < initial_dist
 
     def test_bot_takes_damage(self) -> None:
         """Test bot damage handling and death state."""
@@ -92,13 +92,13 @@ class TestGameLogic(unittest.TestCase):
         initial_health = bot.health
 
         bot.take_damage(10)
-        self.assertEqual(bot.health, initial_health - 10)
-        self.assertTrue(bot.alive)
+        assert bot.health == initial_health - 10
+        assert bot.alive
 
         # Kill bot
         bot.take_damage(bot.health + 10)
-        self.assertFalse(bot.alive)
-        self.assertTrue(bot.dead)
+        assert not bot.alive
+        assert bot.dead
 
     def test_projectile_update(self) -> None:
         """Test projectile movement and collision with walls."""
@@ -106,16 +106,17 @@ class TestGameLogic(unittest.TestCase):
         p = Projectile(15.0, 15.0, 0.0, 10, 1.0)
 
         p.update(self.map)
-        self.assertAlmostEqual(p.x, 16.0)
-        self.assertAlmostEqual(p.y, 15.0)
-        self.assertTrue(p.alive)
+        assert abs(p.x - 16.0) < 0.01
+        assert abs(p.y - 15.0) < 0.01
+        assert p.alive
 
         # Hit wall
         # Place wall at 17, 15
         self.map.grid[15][17] = 1
-        p.update(self.map) # 17.0
+        p.update(self.map)  # 17.0
         # It enters the wall cell, so it should die
-        self.assertFalse(p.alive)
+        assert not p.alive
+
 
 if __name__ == "__main__":
     unittest.main()

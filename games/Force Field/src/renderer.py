@@ -3,7 +3,6 @@ from __future__ import annotations
 import math
 import os
 import random
-import traceback
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Tuple, cast
 
@@ -14,6 +13,7 @@ from .ui import Button
 
 try:
     import cv2
+
     HAS_CV2 = True
 except ImportError:
     HAS_CV2 = False
@@ -21,7 +21,6 @@ except ImportError:
 if TYPE_CHECKING:
     from .game import Game
     from .player import Player
-    from .projectile import Projectile
 
 
 class GameRenderer:
@@ -29,7 +28,7 @@ class GameRenderer:
 
     def __init__(self, screen: pygame.Surface) -> None:
         """Initialize the game renderer with a screen surface.
-        
+
         Args:
             screen: The pygame Surface to render to.
         """
@@ -72,7 +71,7 @@ class GameRenderer:
             self.small_font = pygame.font.SysFont("franklingothicmedium", 28)
             self.tiny_font = pygame.font.SysFont("consolas", 20)
             self.subtitle_font = pygame.font.SysFont("georgia", 36)
-        except Exception:
+        except Exception:  # noqa: BLE001
             self.title_font = pygame.font.Font(None, 80)
             self.font = pygame.font.Font(None, 48)
             self.small_font = pygame.font.Font(None, 32)
@@ -113,7 +112,7 @@ class GameRenderer:
                     img = pygame.transform.scale(img, new_size)
                 self.intro_images["deadfish"] = img
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(f"Failed to load assets: {e}")
 
     def render_menu(self) -> None:
@@ -277,7 +276,7 @@ class GameRenderer:
 
     def _render_damage_texts(self, texts: List[Dict[str, Any]]) -> None:
         """Render floating damage text indicators.
-        
+
         Args:
             texts: List of damage text dictionaries with 'text', 'color', 'x', and 'y' keys.
         """
@@ -288,7 +287,7 @@ class GameRenderer:
 
     def _render_particles(self, particles: List[Dict[str, Any]]) -> None:
         """Render particle effects including lasers and explosion particles.
-        
+
         Args:
             particles: List of particle dictionaries with type-specific properties.
         """
@@ -329,7 +328,7 @@ class GameRenderer:
 
     def _render_damage_flash(self, timer: int) -> None:
         """Render red screen flash effect when player takes damage.
-        
+
         Args:
             timer: Current damage flash timer value.
         """
@@ -339,7 +338,7 @@ class GameRenderer:
 
     def _render_shield_effect(self, player: Player) -> None:
         """Render shield activation visual effects and status.
-        
+
         Args:
             player: The player object to check shield state from.
         """
@@ -367,7 +366,7 @@ class GameRenderer:
                     self.effects_surface, (255, 0, 0, 50), (0, 0, C.SCREEN_WIDTH, C.SCREEN_HEIGHT)
                 )
 
-        elif (player.shield_timer == C.SHIELD_MAX_DURATION and player.shield_recharge_delay <= 0):
+        elif player.shield_timer == C.SHIELD_MAX_DURATION and player.shield_recharge_delay <= 0:
             ready_text = self.tiny_font.render("SHIELD READY", True, C.CYAN)
             self.screen.blit(ready_text, (20, C.SCREEN_HEIGHT - 120))
 
@@ -382,7 +381,7 @@ class GameRenderer:
 
     def _render_muzzle_flash(self, weapon_name: str) -> None:
         """Render weapon-specific muzzle flash effects.
-        
+
         Args:
             weapon_name: Name of the weapon being fired.
         """
@@ -404,7 +403,7 @@ class GameRenderer:
 
     def _render_secondary_charge(self, player: Player) -> None:
         """Render secondary weapon charge bar.
-        
+
         Args:
             player: The player object to check secondary cooldown from.
         """
@@ -420,7 +419,7 @@ class GameRenderer:
 
     def _render_portal(self, portal: Dict[str, Any] | None, player: Player) -> None:
         """Render portal visual effects if active.
-        
+
         Args:
             portal: Portal dictionary with position and state, or None if inactive.
             player: The player object for relative positioning.
@@ -459,7 +458,7 @@ class GameRenderer:
         w_state = player.weapon_state[weapon]
         if w_state["reloading"]:
             w_data = C.WEAPONS.get(weapon, {})
-            reload_max = cast(int, w_data.get("reload_time", 60))
+            reload_max = cast("int", w_data.get("reload_time", 60))
             if reload_max > 0:
                 pct = w_state["reload_timer"] / reload_max
                 dip = math.sin(pct * math.pi) * 150
@@ -583,7 +582,7 @@ class GameRenderer:
 
     def _render_hud(self, game: Game) -> None:
         """Render the heads-up display including health, ammo, and game stats.
-        
+
         Args:
             game: The game object containing player and game state.
         """
@@ -602,12 +601,8 @@ class GameRenderer:
         health_color = (
             C.GREEN if health_percent > 0.5 else (C.ORANGE if health_percent > 0.25 else C.RED)
         )
-        pygame.draw.rect(
-            self.screen, health_color, (health_x, health_y, fill_width, health_height)
-        )
-        pygame.draw.rect(
-            self.screen, C.WHITE, (health_x, health_y, health_width, health_height), 2
-        )
+        pygame.draw.rect(self.screen, health_color, (health_x, health_y, fill_width, health_height))
+        pygame.draw.rect(self.screen, C.WHITE, (health_x, health_y, health_width, health_height), 2)
 
         # Ammo / State
         w_state = game.player.weapon_state[game.player.current_weapon]
@@ -651,9 +646,7 @@ class GameRenderer:
             elif w == "plasma":
                 key_display = "5"
 
-            inv_txt = self.tiny_font.render(
-                f"[{key_display}] {C.WEAPONS[w]['name']}", True, color
-            )
+            inv_txt = self.tiny_font.render(f"[{key_display}] {C.WEAPONS[w]['name']}", True, color)
             inv_rect = inv_txt.get_rect(bottomright=(C.SCREEN_WIDTH - 20, inv_y))
             self.screen.blit(inv_txt, inv_rect)
             inv_y -= 25
@@ -691,9 +684,7 @@ class GameRenderer:
             C.CYAN,
             (shield_x, shield_y, int(shield_width * shield_pct), shield_height),
         )
-        pygame.draw.rect(
-            self.screen, C.WHITE, (shield_x, shield_y, shield_width, shield_height), 1
-        )
+        pygame.draw.rect(self.screen, C.WHITE, (shield_x, shield_y, shield_width, shield_height), 1)
 
         if game.player.shield_recharge_delay > 0:
             status_text = "RECHARGING" if game.player.shield_active else "COOLDOWN"
@@ -704,9 +695,7 @@ class GameRenderer:
         laser_y = shield_y - 15
         laser_pct = 1.0 - (game.player.secondary_cooldown / C.SECONDARY_COOLDOWN)
         laser_pct = max(0, min(1, laser_pct))
-        pygame.draw.rect(
-            self.screen, C.DARK_GRAY, (shield_x, laser_y, shield_width, shield_height)
-        )
+        pygame.draw.rect(self.screen, C.DARK_GRAY, (shield_x, laser_y, shield_width, shield_height))
         pygame.draw.rect(
             self.screen,
             (255, 50, 50),
@@ -755,7 +744,7 @@ class GameRenderer:
 
     def render_level_complete(self, game: Game) -> None:
         """Render the level complete screen with statistics.
-        
+
         Args:
             game: The game object containing level and statistics data.
         """
@@ -782,7 +771,7 @@ class GameRenderer:
 
     def render_game_over(self, game: Game) -> None:
         """Render the game over screen with final statistics.
-        
+
         Args:
             game: The game object containing final statistics.
         """
@@ -818,7 +807,7 @@ class GameRenderer:
         self, stats: List[Tuple[str, Tuple[int, int, int]]], start_y: int
     ) -> None:
         """Render a list of stat lines with specified colors.
-        
+
         Args:
             stats: List of tuples containing (text, color) pairs.
             start_y: Starting Y coordinate for the first line.
@@ -890,7 +879,7 @@ class GameRenderer:
 
     def _render_intro_slide(self, step: int, elapsed: int) -> None:
         """Render intro slides with story text and effects.
-        
+
         Args:
             step: Current intro slide step index.
             elapsed: Elapsed time in milliseconds for animations.

@@ -3,6 +3,7 @@ from __future__ import annotations
 import math
 import random
 import traceback
+from contextlib import suppress
 from typing import Any, Dict, List, Tuple, cast
 
 import pygame
@@ -94,7 +95,7 @@ class Game:
                 self.joystick = pygame.joystick.Joystick(0)
                 self.joystick.init()
                 print(f"Controller detected: {self.joystick.get_name()}")
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 print(f"Controller init failed: {e}")
 
         # Fog of War
@@ -299,6 +300,10 @@ class Game:
         self.damage_flash_timer = 0
         self.visited_cells = set()  # Reset fog of war
         self.portal = None
+
+        # Grab mouse for FPS gameplay
+        pygame.mouse.set_visible(False)
+        pygame.event.set_grab(True)
 
         # Player Spawn Logic - Use corners
         corners = self.get_corner_positions()
@@ -707,7 +712,7 @@ class Game:
 
                 try:
                     self.explode_laser(impact_x, impact_y)
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001
                     print(f"Error in explode_laser: {e}")
 
                 self.particles.append(
@@ -735,9 +740,7 @@ class Game:
                 )
 
             if closest_bot:
-                range_factor = max(
-                    0.3, 1.0 - (closest_dist / weapon_range)
-                )
+                range_factor = max(0.3, 1.0 - (closest_dist / weapon_range))
 
                 dx = closest_bot.x - self.player.x
                 dy = closest_bot.y - self.player.y
@@ -805,7 +808,7 @@ class Game:
                     self.last_death_pos = (closest_bot.x, closest_bot.y)
                     self.sound_manager.play_sound("scream")
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(f"Error in check_shot_hit: {e}")
 
     def handle_bomb_explosion(self) -> None:
@@ -872,7 +875,7 @@ class Game:
 
         try:
             self.sound_manager.play_sound("bomb")
-        except BaseException as e:
+        except BaseException as e:  # noqa: BLE001
             print(f"Bomb Audio Failed: {e}")
 
         self.damage_texts.append(
@@ -890,7 +893,7 @@ class Game:
         """Trigger Massive Laser Explosion at Impact Point"""
         try:
             self.sound_manager.play_sound("boom_real")
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(f"Boom sound failed: {e}")
 
         try:
@@ -908,10 +911,8 @@ class Game:
                         hits += 1
 
                         if was_alive and not bot.alive:
-                            try:
+                            with suppress(Exception):
                                 self.sound_manager.play_sound("scream")
-                            except Exception:
-                                pass
                             self.kills += 1
                             self.kill_combo_count += 1
                             self.kill_combo_timer = 180
@@ -945,7 +946,7 @@ class Game:
                         "vy": -2,
                     }
                 )
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(f"Critical Laser Error: {e}")
             traceback.print_exc()
 
@@ -997,6 +998,10 @@ class Game:
         """Update game state"""
         if self.paused:
             return
+
+        # Decrement damage flash timer
+        if self.damage_flash_timer > 0:
+            self.damage_flash_timer -= 1
 
         assert self.player is not None
         if not self.player.alive:
@@ -1184,7 +1189,7 @@ class Game:
                             pickup_msg = f"{w_name.upper()} ACQUIRED!"
                             color = C.CYAN
                         else:
-                            clip_size = int(cast(int, C.WEAPONS[w_name]["clip_size"]))
+                            clip_size = int(cast("int", C.WEAPONS[w_name]["clip_size"]))
                             self.player.ammo[w_name] += clip_size * 2
                             pickup_msg = f"{w_name.upper()} AMMO"
                             color = C.YELLOW
@@ -1432,7 +1437,7 @@ class Game:
 
     def _update_intro_logic(self, elapsed: int) -> None:
         """Update intro sequence logic and transitions.
-        
+
         Args:
             elapsed: Elapsed time in milliseconds since intro started.
         """
@@ -1447,14 +1452,15 @@ class Game:
                 duration = slides_durations[self.intro_step]
 
                 if self.intro_step == 0 and elapsed < 50:
-                     if not hasattr(self, "_laugh_played"):
-                         self.sound_manager.play_sound("laugh")
-                         self._laugh_played = True
+                    if not hasattr(self, "_laugh_played"):
+                        self.sound_manager.play_sound("laugh")
+                        self._laugh_played = True
 
                 if elapsed > duration:
                     self.intro_step += 1
                     self.intro_start_time = 0
-                    if hasattr(self, "_laugh_played"): del self._laugh_played
+                    if hasattr(self, "_laugh_played"):
+                        del self._laugh_played
             else:
                 self.state = "menu"
                 return
@@ -1469,8 +1475,8 @@ class Game:
                 self.intro_phase += 1
                 self.intro_start_time = 0
                 if self.renderer.intro_video:
-                     self.renderer.intro_video.release()
-                     self.renderer.intro_video = None
+                    self.renderer.intro_video.release()
+                    self.renderer.intro_video = None
 
     def run(self) -> None:
         """Main game loop"""
