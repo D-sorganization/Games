@@ -20,7 +20,7 @@ from .sound import SoundManager
 from .ui import Button
 
 try:
-    import cv2  # type: ignore[import-not-found]
+    import cv2
 
     HAS_CV2 = True
 except ImportError:
@@ -555,8 +555,9 @@ class Game:
                         if code.endswith("IDFA"):
                             # Unlock all weapons, full ammo
                             self.unlocked_weapons = set(C.WEAPONS.keys())
-                            for w in self.player.ammo:
-                                self.player.ammo[w] = 999
+                            if self.player:
+                                for w in self.player.ammo:
+                                    self.player.ammo[w] = 999
                             self.add_message("ALL WEAPONS UNLOCKED", C.YELLOW)
                             self.current_cheat_input = ""
                             self.cheat_mode_active = False
@@ -1357,7 +1358,8 @@ class Game:
                             color = C.CYAN
                         else:
                             # Just ammo
-                            self.player.ammo[w_name] += C.WEAPONS[w_name]["clip_size"] * 2
+                            clip_size = int(cast(int, C.WEAPONS[w_name]["clip_size"]))
+                            self.player.ammo[w_name] += clip_size * 2
                             pickup_msg = f"{w_name.upper()} AMMO"
                             color = C.YELLOW
 

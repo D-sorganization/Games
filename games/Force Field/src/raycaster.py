@@ -258,9 +258,9 @@ class Raycaster:
             current_h = render_height * scale_y
             current_w = render_width * scale_x
 
-            render_y = sprite_y + (render_height - current_h) + (render_height * 0.05)
-            render_height = current_h
-            render_width = current_w
+            render_y = int(sprite_y + (render_height - current_h) + (render_height * 0.05))
+            render_height = int(current_h)
+            render_width = int(current_w)
 
             if bot.disintegrate_timer > 0:
                 dis_pct = bot.disintegrate_timer / 100.0
@@ -283,10 +283,10 @@ class Raycaster:
             # Render Baby Style (Round, Big Head, Cute/Creepy)
             # Body
             body_rect = pygame.Rect(
-                center_x - render_width / 2,
-                render_y + render_height * 0.4,
-                render_width,
-                render_height * 0.6,
+                int(center_x - render_width / 2),
+                int(render_y + render_height * 0.4),
+                int(render_width),
+                int(render_height * 0.6),
             )
             pygame.draw.rect(screen, base_color, body_rect, border_radius=int(render_width * 0.4))
 
@@ -351,8 +351,11 @@ class Raycaster:
         # 1. Body (Rounded Torso)
         # Use ellipse for more organic look
         torso_rect = pygame.Rect(
-            body_x, render_y + render_height * 0.25, render_width, render_height * 0.5
-        )
+                int(body_x),
+                int(render_y + render_height * 0.25),
+                int(render_width),
+                int(render_height * 0.5),
+            )
         # Draw torso
         pygame.draw.ellipse(screen, base_color, torso_rect)
 
@@ -386,9 +389,9 @@ class Raycaster:
 
         # 2. Head
         if not bot.dead or bot.death_timer < 30:
-            head_size = render_width * 0.6
-            head_y = render_y + render_height * 0.05
-            head_rect = pygame.Rect(center_x - head_size / 2, head_y, head_size, head_size)
+            head_size = int(render_width * 0.6)
+            head_y = int(render_y + render_height * 0.05)
+            head_rect = pygame.Rect(center_x - head_size // 2, head_y, head_size, head_size)
             pygame.draw.rect(screen, base_color, head_rect)
 
             # Glowing Eyes
@@ -524,7 +527,7 @@ class Raycaster:
         # Select theme
         theme_idx = (level - 1) % len(C.LEVEL_THEMES)
         theme = C.LEVEL_THEMES[theme_idx]
-        wall_colors = theme["walls"]
+        wall_colors = cast("Dict[int, Tuple[int, int, int]]", theme["walls"])
 
         # Collect all bots to render as sprites
         bots_to_render = []
