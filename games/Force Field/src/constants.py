@@ -14,7 +14,7 @@ MIN_BUILDING_OFFSET = 3  # Minimum offset from map edges for building generation
 
 PLAYER_SPEED = 0.375
 PLAYER_SPRINT_SPEED = 0.575
-PLAYER_ROT_SPEED = 0.003
+PLAYER_ROT_SPEED = 0.006
 MAX_RAYCAST_STEPS = 1000  # Maximum steps for raycasting
 
 FOV = math.pi / 3  # 60 degrees

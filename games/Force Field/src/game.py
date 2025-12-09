@@ -447,9 +447,9 @@ class Game:
                 bx = random.randint(2, self.game_map.size - 2)
                 by = random.randint(2, self.game_map.size - 2)
 
-                # Distance check (Increased to 20 for safety)
+                # Distance check (Increased safety but ensuring spawns)
                 dist = math.sqrt((bx - player_pos[0]) ** 2 + (by - player_pos[1]) ** 2)
-                if dist < 20.0:  # Safe zone radius
+                if dist < 15.0:  # Safe zone radius (was 20.0, blocked too much)
                     continue
 
                 if not self.game_map.is_wall(bx, by):
@@ -491,7 +491,7 @@ class Game:
             if (
                 not self.game_map.is_wall(cx, cy)
                 and not self.game_map.is_inside_building(cx, cy)
-                and math.sqrt((cx - player_pos[0]) ** 2 + (cy - player_pos[1]) ** 2) > 20
+                and math.sqrt((cx - player_pos[0]) ** 2 + (cy - player_pos[1]) ** 2) > 15
             ):
                 self.bots.append(
                     Bot(
@@ -629,7 +629,7 @@ class Game:
 
             elif event.type == pygame.MOUSEMOTION and not self.paused:
                 assert self.player is not None
-                self.player.rotate(event.rel[0] * C.PLAYER_ROT_SPEED)
+                self.player.rotate(event.rel[0] * C.PLAYER_ROT_SPEED * C.SENSITIVITY_X)
                 self.player.pitch_view(-event.rel[1] * C.PLAYER_ROT_SPEED * 200)
 
     def fire_weapon(self, is_secondary: bool = False) -> None:
@@ -674,7 +674,7 @@ class Game:
             # Add spread to projectile angle directly
             spread = C.WEAPONS["stormtrooper"].get("spread", 0.08)
             p.angle = self.player.angle + random.uniform(-spread, spread)
-            
+
             self.projectiles.append(p)
             return
 
@@ -1188,7 +1188,10 @@ class Game:
             return
 
         # Check for enemies remaining (exclude health packs)
-        enemies_alive = [b for b in self.bots if b.alive and b.enemy_type != "health_pack"]
+        # Check for enemies remaining (exclude items)
+        enemies_alive = [
+            b for b in self.bots if b.alive and b.type_data.get("visual_style") != "item"
+        ]
 
         if not enemies_alive:
             if self.portal is None:
@@ -2524,7 +2527,7 @@ class Game:
                 if self.start_button.is_clicked(event.pos):
                     self.start_game()
                     self.state = "playing"
-                
+
                 # Check for settings clicks (Simplified: Cycle on click anywhere in top area?)
                 # For now just start button interaction is critical.
 
