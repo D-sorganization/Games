@@ -17,7 +17,7 @@ from .player import Player
 from .projectile import Projectile
 from .raycaster import Raycaster
 from .sound import SoundManager
-from .ui import BloodButton
+from .ui import BloodButton, Button
 
 try:
     import cv2  # type: ignore[import-not-found]
@@ -32,7 +32,9 @@ class Game:
 
     def __init__(self) -> None:
         """Initialize game"""
-        self.screen = pygame.display.set_mode((C.SCREEN_WIDTH, C.SCREEN_HEIGHT))
+        # Allow resizing and maximizing (SCALED requires pygame 2.0+)
+        flags = pygame.SCALED | pygame.RESIZABLE
+        self.screen = pygame.display.set_mode((C.SCREEN_WIDTH, C.SCREEN_HEIGHT), flags)
         pygame.display.set_caption("Force Field - Arena Combat")
         self.clock = pygame.time.Clock()
         self.running = True
@@ -138,12 +140,20 @@ class Game:
         self.portal: Dict[str, Any] | None = None
         self.health = 100
         self.max_health = 100
+        self.unlocked_weapons = {"pistol", "laser"}  # Start with pistol and laser for testing/fun? Or just pistol.
+        # User said "we now will have a laser as weapon 4". Assuming unlocked or unlockable.
+        # Let's unlock all for testing or keep progression? 
+        # "The controls section needs to be expanded..." implies they are available.
+        # I'll enable pistol and laser by default or just pistol and let pickup work.
+        # Given "unlocked_weapons" usually starts small, I'll stick to PISTOL but add pickups.
+        self.unlocked_weapons = {"pistol"}
 
         self.is_moving = False  # Track movement state for bobbing
         if not hasattr(self, "intro_video"):
             self.intro_video = None
 
         self.game_over_timer = 0
+        self.title_drips: List[Dict[str, Any]] = []
 
         # Fonts - Modern and Stylistic
         try:
@@ -167,13 +177,13 @@ class Game:
 
         # Menu buttons
         # Buttons will be created dynamically or just defined in render
-        self.start_button = BloodButton(
+        self.start_button = Button(
             C.SCREEN_WIDTH // 2 - 250,
             C.SCREEN_HEIGHT - 120,
             500,
             70,
-            "ENTER THE NIGHTMARE",  # More dramatic
-            C.DARK_RED,  # Default red
+            "ENTER THE NIGHTMARE",
+            C.DARK_RED,
         )
 
         # Audio
@@ -412,11 +422,24 @@ class Game:
         if self.player:
             previous_ammo = self.player.ammo
             previous_weapon = self.player.current_weapon
+            # Preserve unlocked weapons if restarting level or progressing?
+            # Usually keep progression.
+            # But self.unlocked_weapons is on Game, so it persists.
 
         self.player = Player(player_pos[0], player_pos[1], player_pos[2])
         if previous_ammo:
             self.player.ammo = previous_ammo
-            self.player.current_weapon = previous_weapon
+            if previous_weapon in self.unlocked_weapons:
+                 self.player.current_weapon = previous_weapon
+            else:
+                 self.player.current_weapon = "pistol"
+        
+        # Sync unlocked status (though Player has access to all, we restrict switching)
+        # Also sync bomb count if we tracked it on Game?
+        # Ideally Player state should persist better, but for now we just init new.
+        # Let's give default bombs if level 1, else keep? 
+        # Player __init__ gives 1 bomb.
+        pass
 
         # Bots spawn in other three corners with varied types
         self.bots = []
@@ -498,38 +521,56 @@ class Game:
 
         # Spawn Boss & Fast Enemy (Demon) in random corner or center
         # "At the end of each level we need a huge enemy or a fast enemy. - lets have one of each."
-        boss_types = ["boss", "demon"]
-        for b_type in boss_types:
-            # Find safe spot
-            upper_bound = max(2, self.game_map.size - 3)
-            for attempt in range(50):
-                cx = random.randint(2, upper_bound)
-                cy = random.randint(2, upper_bound)
-                if (
-                    not self.game_map.is_wall(cx, cy)
-                    and not self.game_map.is_inside_building(cx, cy)
-                    and math.sqrt((cx - player_pos[0]) ** 2 + (cy - player_pos[1]) ** 2) > 10
-                ):  # Far spawn
-
-                    self.bots.append(
-                        Bot(
-                            cx + 0.5,
-                            cy + 0.5,
-                            self.level,
-                            enemy_type=b_type,
-                            difficulty=self.selected_difficulty,
-                        )
+        # Spawn Boss & Fast Enemy (Demon) in random corner or center
+        # "At the end of each level we need a huge enemy or a fast enemy. - lets have one of each."
+        # User update: "Make there be a boss enemy at the end of every level... One will be a ball... other will be beast"
+        boss_options = ["ball", "beast"]
+        boss_type = random.choice(boss_options)
+        
+        # Spawn Boss
+        upper_bound = max(2, self.game_map.size - 3)
+        for attempt in range(50):
+            cx = random.randint(2, upper_bound)
+            cy = random.randint(2, upper_bound)
+            if (
+                not self.game_map.is_wall(cx, cy)
+                and not self.game_map.is_inside_building(cx, cy)
+                and math.sqrt((cx - player_pos[0]) ** 2 + (cy - player_pos[1]) ** 2) > 15
+            ):  # Far spawn
+                self.bots.append(
+                    Bot(
+                        cx + 0.5,
+                        cy + 0.5,
+                        self.level,
+                        enemy_type=boss_type,
+                        difficulty=self.selected_difficulty,
                     )
-                    break
+                )
+                break
 
-        # Spawn Health Pack (Fewer and scattered)
-        # Attempt fewer times (10 instead of 50) to make it scarce
-        for _ in range(10):
+        # Spawn Pickups (Weapons, Ammo, Bombs, Health)
+        # Weapons (Rare)
+        possible_weapons = ["pickup_rifle", "pickup_shotgun", "pickup_plasma", "pickup_stormtrooper"]
+        for w_pickup in possible_weapons:
+            if random.random() < 0.4: # 40% chance per level
+                 rx = random.randint(5, self.game_map.size - 5)
+                 ry = random.randint(5, self.game_map.size - 5)
+                 if not self.game_map.is_wall(rx, ry):
+                    self.bots.append(Bot(rx + 0.5, ry + 0.5, self.level, w_pickup))
+
+        # Ammo / Bombs
+        for _ in range(8):
             rx = random.randint(5, self.game_map.size - 5)
             ry = random.randint(5, self.game_map.size - 5)
             if not self.game_map.is_wall(rx, ry):
-                self.bots.append(Bot(rx + 0.5, ry + 0.5, self.level, "health_pack"))
-                break
+                choice = random.random()
+                if choice < 0.2:
+                    self.bots.append(Bot(rx + 0.5, ry + 0.5, self.level, "bomb_item"))
+                elif choice < 0.7:
+                     self.bots.append(Bot(rx + 0.5, ry + 0.5, self.level, "ammo_box"))
+                else:
+                     self.bots.append(Bot(rx + 0.5, ry + 0.5, self.level, "health_pack"))
+                pass
 
         # Start Music
         music_tracks = [
@@ -567,11 +608,8 @@ class Game:
         mouse_pos = pygame.mouse.get_pos()
         self.start_button.update(mouse_pos)
 
-        # Defining clickable areas for settings by coordinate ranges
-        # This is a bit hacky without a UI library, but functional.
-        # We'll just check Y coordinates relative to center
         start_y = 200
-        line_height = 50
+        line_height = 80 # Increased spacing
 
         # Settings list matching render order
         settings = ["Map Size", "Difficulty", "Start Level", "Lives"]
@@ -693,13 +731,15 @@ class Game:
                 # Weapon switching
                 elif not self.paused:
                     if event.key == pygame.K_1:
-                        self.switch_weapon_with_message("pistol")
+                        if "pistol" in self.unlocked_weapons: self.switch_weapon_with_message("pistol")
                     elif event.key == pygame.K_2:
-                        self.switch_weapon_with_message("rifle")
+                        if "rifle" in self.unlocked_weapons: self.switch_weapon_with_message("rifle")
                     elif event.key == pygame.K_3:
-                        self.switch_weapon_with_message("shotgun")
+                        if "shotgun" in self.unlocked_weapons: self.switch_weapon_with_message("shotgun")
                     elif event.key == pygame.K_4:
-                        self.switch_weapon_with_message("plasma")
+                        if "laser" in self.unlocked_weapons: self.switch_weapon_with_message("laser")
+                    elif event.key == pygame.K_5:
+                        if "plasma" in self.unlocked_weapons: self.switch_weapon_with_message("plasma")
                     elif event.key == pygame.K_f:
                         try:
                             assert self.player is not None
@@ -747,11 +787,38 @@ class Game:
                 damage=self.player.get_current_weapon_damage(),
                 is_player=True,
                 color=tuple(C.WEAPONS["plasma"].get("projectile_color", (0, 255, 255))),  # type: ignore[arg-type]
-                size=0.3,
+                size=0.225,  # 3/4 of original 0.3
                 weapon_type="plasma",
             )
             self.projectiles.append(p)
             return
+
+        if weapon == "stormtrooper" and not is_secondary:
+            # Spawn Stormtrooper Projectile
+            p = Projectile(
+                self.player.x,
+                self.player.y,
+                self.player.angle, # Add small random spread?
+                speed=float(C.WEAPONS["stormtrooper"].get("projectile_speed", 2.0)),
+                damage=self.player.get_current_weapon_damage(),
+                is_player=True,
+                color=tuple(C.WEAPONS["stormtrooper"].get("projectile_color", (255, 0, 0))), 
+                size=0.15,
+                weapon_type="stormtrooper",
+            )
+            # Add spread to projectile angle directly?
+            # Projectile.__init__ takes angle.
+            spread = C.WEAPONS["stormtrooper"].get("spread", 0.08)
+            p.vx = math.cos(self.player.angle + random.uniform(-spread, spread)) * p.speed
+            p.vy = math.sin(self.player.angle + random.uniform(-spread, spread)) * p.speed
+            
+            self.projectiles.append(p)
+            return
+
+        if weapon == "laser" and not is_secondary:
+             # Hitscan with Beam Visual
+             self.check_shot_hit(is_secondary=False, is_laser=True)
+             pass
 
         if weapon == "shotgun" and not is_secondary:
             # Spread Fire
@@ -764,7 +831,7 @@ class Game:
             # Single Hitscan
             self.check_shot_hit(is_secondary=is_secondary)
 
-    def check_shot_hit(self, is_secondary: bool = False, angle_offset: float = 0.0) -> None:
+    def check_shot_hit(self, is_secondary: bool = False, angle_offset: float = 0.0, is_laser: bool = False) -> None:
         """Check if player's shot hit a bot"""
         assert self.player is not None
         try:
@@ -921,6 +988,20 @@ class Game:
                 )
                 return
 
+            if is_laser:
+                # Laser Beam visual (Red, thinner)
+                self.particles.append(
+                    {
+                        "type": "laser",
+                        "start": (C.SCREEN_WIDTH - 200, C.SCREEN_HEIGHT - 180),
+                        "end": (C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2),
+                        "color": (255, 0, 0),
+                        "timer": 5,
+                        "width": 3,
+                    }
+                )
+                return
+
             if closest_bot:
                 # Calculate hit position for blood
 
@@ -1031,23 +1112,24 @@ class Game:
                 "dx": 0,
                 "dy": 0,
                 "color": C.WHITE,
-                "timer": 20,  # longer flash
-                "size": 2000,  # huge
+                "timer": 40,  # longer flash
+                "size": 3000,  # huge
             }
         )
-        # 2. Fireball Particles (Lots of them)
-        for _ in range(100):
+        # 2. Fireball Particles (Michael Bay style - More, Faster, Chaos)
+        for _ in range(300):
             angle = random.uniform(0, 2 * math.pi)
-            speed = random.uniform(2, 10)
+            speed = random.uniform(5, 25)
+            color = random.choice([C.ORANGE, C.RED, C.YELLOW, C.DARK_RED, (50, 50, 50)])
             self.particles.append(
                 {
                     "x": C.SCREEN_WIDTH // 2,
                     "y": C.SCREEN_HEIGHT // 2,
                     "dx": math.cos(angle) * speed,
                     "dy": math.sin(angle) * speed,
-                    "color": random.choice([C.ORANGE, C.RED, C.YELLOW]),
-                    "timer": random.randint(30, 60),
-                    "size": random.randint(5, 15),
+                    "color": color,
+                    "timer": random.randint(40, 100),
+                    "size": random.randint(5, 25),
                 }
             )
 
@@ -1399,20 +1481,49 @@ class Game:
                 self.projectiles.append(projectile)
                 self.sound_manager.play_sound("enemy_shoot")
 
-            # Health Pack Pickup
-            if bot.enemy_type == "health_pack" and bot.alive:
+            # Item Pickup Logic
+            if bot.alive and bot.enemy_type.startswith(("health", "ammo", "bomb", "pickup")):
                 dist = math.sqrt((bot.x - self.player.x) ** 2 + (bot.y - self.player.y) ** 2)
                 if dist < 0.8:
-                    if self.player.health < 100:
-                        self.player.health = min(100, self.player.health + 50)
+                     pickup_msg = ""
+                     color = C.GREEN
+                     
+                     if bot.enemy_type == "health_pack":
+                        if self.player.health < 100:
+                            self.player.health = min(100, self.player.health + 50)
+                            pickup_msg = "HEALTH +50"
+                     elif bot.enemy_type == "ammo_box":
+                            # Give ammo for current or all? Give all.
+                            for w in self.player.ammo:
+                                self.player.ammo[w] += 20 # Arbitrary amount
+                            pickup_msg = "AMMO FOUND"
+                            color = C.YELLOW
+                     elif bot.enemy_type == "bomb_item":
+                            self.player.bombs += 1
+                            pickup_msg = "BOMB +1"
+                            color = C.ORANGE
+                     elif bot.enemy_type.startswith("pickup_"):
+                            w_name = bot.enemy_type.replace("pickup_", "")
+                            if w_name not in self.unlocked_weapons:
+                                self.unlocked_weapons.add(w_name)
+                                self.player.switch_weapon(w_name) # Auto switch to new gun
+                                pickup_msg = f"{w_name.upper()} ACQUIRED!"
+                                color = C.CYAN
+                            else:
+                                # Just ammo
+                                self.player.ammo[w_name] += C.WEAPONS[w_name]["clip_size"] * 2
+                                pickup_msg = f"{w_name.upper()} AMMO"
+                                color = C.YELLOW
+
+                     if pickup_msg:
                         bot.alive = False
                         bot.removed = True
                         self.damage_texts.append(
                             {
                                 "x": C.SCREEN_WIDTH // 2,
                                 "y": C.SCREEN_HEIGHT // 2 - 50,
-                                "text": "HEALTH +50",
-                                "color": C.GREEN,
+                                "text": pickup_msg,
+                                "color": color,
                                 "timer": 60,
                                 "vy": -1,
                             }
@@ -1557,6 +1668,49 @@ class Game:
                     )
                 self.kill_combo_count = 0
 
+    def update_blood_drips(self, rect: pygame.Rect) -> None:
+        """Spawn and update blood drips interacting with text rect"""
+        # Spawn
+        if random.random() < 0.3:  # 30% chance per frame
+            x = random.randint(rect.left, rect.right)
+            # Bias slightly towards centers of letters? Random is fine for now.
+            self.title_drips.append({
+                "x": x,
+                "y": rect.bottom - 5,
+                "start_y": rect.bottom - 5,
+                "speed": random.uniform(0.5, 2.0),
+                "size": random.randint(2, 4),
+                "color": (random.randint(180, 255), 0, 0)
+            })
+
+        # Update
+        for drip in self.title_drips[:]:
+            drip["y"] += drip["speed"]
+            # Accelerate slightly?
+            drip["speed"] *= 1.02
+            
+            if drip["y"] > C.SCREEN_HEIGHT:
+                self.title_drips.remove(drip)
+
+    def draw_blood_drips(self) -> None:
+        """Draw the blood drips"""
+        for drip in self.title_drips:
+            # Draw trail
+            pygame.draw.line(
+                self.screen, 
+                drip["color"], 
+                (drip["x"], drip["start_y"]), 
+                (drip["x"], drip["y"]), 
+                drip["size"]
+            )
+            # Draw droplet at bottom
+            pygame.draw.circle(
+                self.screen,
+                drip["color"],
+                (drip["x"], int(drip["y"])),
+                drip["size"] + 1
+            )
+
     def render_menu(self) -> None:
         """Render main menu (Title Screen)"""
         self.screen.fill(C.BLACK)
@@ -1569,10 +1723,14 @@ class Game:
         shadow_rect = shadow.get_rect(center=(C.SCREEN_WIDTH // 2 + 4, title_y + 4))
         self.screen.blit(shadow, shadow_rect)
 
-        # Main Title
-        title = self.title_font.render(title_text, True, C.WHITE)
+        # Main Title (RED style for continuity)
+        title = self.title_font.render(title_text, True, C.RED)
         title_rect = title.get_rect(center=(C.SCREEN_WIDTH // 2, title_y))
         self.screen.blit(title, title_rect)
+
+        # Blood Drips (Persistant)
+        self.update_blood_drips(title_rect)
+        self.draw_blood_drips()
 
         subtitle = self.subtitle_font.render("MAXIMUM CARNAGE EDITION", True, C.RED)
         subtitle_rect = subtitle.get_rect(center=(C.SCREEN_WIDTH // 2, title_y + 80))
@@ -1586,23 +1744,29 @@ class Game:
 
         credit = self.tiny_font.render("A Jasper Production", True, C.DARK_GRAY)
         credit_rect = credit.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT - 50))
-        self.screen.blit(credit, credit_rect)
-
         pygame.display.flip()
 
     def render_map_select(self) -> None:
-        """Render new game setup screen"""
+        """Render map select / mission setup screen"""
         self.screen.fill(C.BLACK)
 
-        # Max Payne style: Red Title, Gritty
-        title = self.title_font.render("MISSION SETUP", True, C.RED)
-        title_rect = title.get_rect(center=(C.SCREEN_WIDTH // 2, 80))
+        # Title - Stylized like "From the Demented Mind" (Georgia/Distorted vibe)
+        # Using subtitle_font which is Georgia
+        title = self.subtitle_font.render("MISSION SETUP", True, C.RED)
+        
+        # Add basic distortion/glow effect manual
+        # Draw offsets
+        for off in [(-2, 0), (2, 0), (0, -2), (0, 2)]:
+             shadow = self.subtitle_font.render("MISSION SETUP", True, (50, 0, 0))
+             s_rect = shadow.get_rect(center=(C.SCREEN_WIDTH // 2 + off[0], 100 + off[1]))
+             self.screen.blit(shadow, s_rect)
+             
+        title_rect = title.get_rect(center=(C.SCREEN_WIDTH // 2, 100))
         self.screen.blit(title, title_rect)
 
-        # Draw settings listing
-        center_x = C.SCREEN_WIDTH // 2
+        mouse_pos = pygame.mouse.get_pos()
         start_y = 200
-        line_height = 50
+        line_height = 80 # Matches event handler spacing
 
         settings = [
             ("Map Size", str(self.selected_map_size)),
@@ -1611,26 +1775,29 @@ class Game:
             ("Lives", str(self.selected_lives)),
         ]
 
-        mouse_pos = pygame.mouse.get_pos()
-
+        # Draw Settings
         for i, (label, value) in enumerate(settings):
             y = start_y + i * line_height
-
+            
             # Hover effect
-            is_hovered = abs(mouse_pos[1] - y) < 20
-            color_label = C.RED if is_hovered else C.GRAY
-            color_value = C.WHITE if is_hovered else C.DARK_GRAY
+            color = C.WHITE
+            if abs(mouse_pos[1] - y) < 20:
+                color = C.YELLOW
 
-            # Label
-            lbl_surf = self.font.render(label, True, color_label)
-            lbl_rect = lbl_surf.get_rect(topright=(center_x - 20, y - 20))
-            self.screen.blit(lbl_surf, lbl_rect)
+            # Use stylized font for items too? Or cleaner font for readability.
+            # User said "Mission Setup screen... use same type of font".
+            # I will use subtitle_font (Georgia) for labels too.
+            label_surf = self.subtitle_font.render(f"{label}:", True, C.GRAY)
+            label_rect = label_surf.get_rect(right=C.SCREEN_WIDTH // 2 - 20, center_y=y)
+            
+            val_surf = self.subtitle_font.render(value, True, color)
+            val_rect = val_surf.get_rect(left=C.SCREEN_WIDTH // 2 + 20, center_y=y)
 
-            # Value
-            val_surf = self.font.render(value, True, color_value)
-            val_rect = val_surf.get_rect(topleft=(center_x + 20, y - 20))
+            self.screen.blit(label_surf, label_rect)
             self.screen.blit(val_surf, val_rect)
 
+        # Draw Start Button
+        # It's a standard button now (no blood)
         self.start_button.draw(self.screen, self.font)
 
         instructions = [
@@ -1661,6 +1828,19 @@ class Game:
         # Render projectiles via raycaster
         self.raycaster.render_projectiles(self.screen, self.player, self.projectiles)
 
+        # Render Mist / Fog Overlay
+        # Simple noise or alpha blend
+        if not hasattr(self, "mist_surface"):
+             self.mist_surface = pygame.Surface((C.SCREEN_WIDTH, C.SCREEN_HEIGHT), pygame.SRCALPHA)
+             self.mist_surface.fill((200, 200, 220, 20)) # Very light mist
+             # Add some noise dots?
+             for _ in range(1000):
+                  x = random.randint(0, C.SCREEN_WIDTH)
+                  y = random.randint(0, C.SCREEN_HEIGHT)
+                  self.mist_surface.set_at((x,y), (255, 255, 255, 40))
+
+        self.screen.blit(self.mist_surface, (0, 0))
+
         # Clear effects surface
         self.effects_surface.fill((0, 0, 0, 0))
 
@@ -1673,6 +1853,18 @@ class Game:
                 color = (*p["color"], alpha)
                 # Draw on shared surface
                 pygame.draw.line(self.effects_surface, color, start, end, p["width"])
+                # Horizontal spread visualization
+                center_y = (start[1] + end[1]) / 2
+                
+                # Draw main beam
+                pygame.draw.line(self.effects_surface, color, start, end, p["width"])
+                
+                # Draw horizontal spread lines (Fanning out)
+                for i in range(5):
+                    offset = (i - 2) * 20 # Scatter horizontally at target
+                    target_end = (end[0] + offset, end[1])
+                    pygame.draw.line(self.effects_surface, (*p["color"], max(0, alpha - 50)), start, target_end, max(1, p["width"] // 2))
+
                 # Glow
                 pygame.draw.line(
                     self.effects_surface, (*p["color"], alpha // 2), start, end, p["width"] * 3
@@ -2097,31 +2289,37 @@ class Game:
             tr = txt.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 60))
             self.screen.blit(txt, tr)
 
-        # Ammo Count
-        if self.player.current_weapon == "plasma":
-            # Heat Bar
-            heat_w = 150
-            heat_h = 25
-            heat_x = C.SCREEN_WIDTH - 20 - heat_w
-            heat_y = hud_bottom
-
-            pygame.draw.rect(self.screen, C.DARK_GRAY, (heat_x, heat_y, heat_w, heat_h))
-            heat_fill = min(1.0, w_state["heat"] / C.WEAPONS["plasma"].get("max_heat", 1.0))
-            pygame.draw.rect(
-                self.screen,
-                C.CYAN if not w_state["overheated"] else C.RED,
-                (heat_x, heat_y, int(heat_w * heat_fill), heat_h),
-            )
             pygame.draw.rect(self.screen, C.WHITE, (heat_x, heat_y, heat_w, heat_h), 2)
 
         else:
-            # Clip / Ammo
+            # Clip / Ammo + Bomb Count + Inventory
             assert self.player is not None
             ammo_val = self.player.ammo[self.player.current_weapon]
             ammo_text = f"{w_name}: {w_state['clip']} / {ammo_val}"
+            
+            # Show Bombs
+            bomb_text = f"BOMBS: {self.player.bombs}"
+            
             at = self.font.render(ammo_text, True, C.WHITE)
+            bt = self.font.render(bomb_text, True, C.ORANGE)
+            
             at_rect = at.get_rect(bottomright=(C.SCREEN_WIDTH - 20, hud_bottom + 25))
+            bt_rect = bt.get_rect(bottomright=(C.SCREEN_WIDTH - 20, hud_bottom - 15))
+            
             self.screen.blit(at, at_rect)
+            self.screen.blit(bt, bt_rect)
+            
+            # Inventory List
+            inv_y = hud_bottom - 80
+            for w in ["pistol", "rifle", "shotgun", "plasma", "stormtrooper"]:
+                color = C.GRAY
+                if w in self.unlocked_weapons:
+                    color = C.GREEN if w == self.player.current_weapon else C.WHITE
+                
+                inv_txt = self.tiny_font.render(f"[{C.WEAPONS[w]['key']}] {C.WEAPONS[w]['name']}", True, color)
+                inv_rect = inv_txt.get_rect(bottomright=(C.SCREEN_WIDTH - 20, inv_y))
+                self.screen.blit(inv_txt, inv_rect)
+                inv_y -= 25
 
         # Game Stats (Top Right)
         level_text = self.small_font.render(f"Level: {self.level}", True, C.YELLOW)
@@ -2214,7 +2412,7 @@ class Game:
         laser_pct = min(laser_pct, 1)
 
         pygame.draw.rect(self.screen, C.DARK_GRAY, (shield_x, laser_y, shield_width, shield_height))
-        controls_hint_text = "WASD:Move | Shift:Sprint | ESC:Menu"
+        controls_hint_text = "WASD:Move | 1-5:Wpn | R:Reload | F:Bomb | SPACE:Shield | ESC:Menu"
         controls_hint = self.tiny_font.render(controls_hint_text, True, C.WHITE)
         controls_hint_rect = controls_hint.get_rect(topleft=(10, 10))
         bg_surface = pygame.Surface(
@@ -2472,7 +2670,7 @@ class Game:
 
         # Phase 1: Upstream Drift Studios
         elif self.intro_phase == 1:
-            duration = 5000  # User requested 5 seconds
+            duration = 3000  # User requested 2 seconds less (was 5000)
 
             # Play Water Sound once
             if elapsed < 50:  # Play at start
@@ -2606,7 +2804,7 @@ class Game:
                     "text": "FORCE FIELD",
                     "sub": "THE ARENA AWAITS",
                     "duration": 4000,
-                    "color": C.WHITE,
+                    "color": C.WHITE,  # Will fade to RED
                 },
             ]
 
@@ -2686,9 +2884,34 @@ class Game:
                 # Static / Standard
                 elif slide["type"] == "static":
                     color = cast("Tuple[int, int, int]", slide.get("color", C.WHITE))
+                    
+                    if cast("str", slide.get("text")) == "FORCE FIELD":
+                        # Fade White -> Red
+                        fade_ratio = min(1.0, elapsed / duration)
+                        # Linear interpolation White (255,255,255) -> Red (255,0,0)
+                        start_c = (255, 255, 255)
+                        end_c = (255, 0, 0)
+                        cur_r = int(start_c[0] + (end_c[0] - start_c[0]) * fade_ratio)
+                        cur_g = int(start_c[1] + (end_c[1] - start_c[1]) * fade_ratio)
+                        cur_b = int(start_c[2] + (end_c[2] - start_c[2]) * fade_ratio)
+                        color = (cur_r, cur_g, cur_b)
+
                     txt_surf = self.title_font.render(cast("str", slide["text"]), True, color)
-                    txt_rect = txt_surf.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2))
+                    
+                    # Position Check: If typical static, center. If Title, match Menu position.
+                    scale_y = C.SCREEN_HEIGHT // 2
+                    if cast("str", slide.get("text")) == "FORCE FIELD":
+                        scale_y = C.SCREEN_HEIGHT // 2 - 100
+                    
+                    txt_rect = txt_surf.get_rect(center=(C.SCREEN_WIDTH // 2, scale_y))
                     self.screen.blit(txt_surf, txt_rect)
+
+                    # Blood Effect for Intro Title
+                    if cast("str", slide.get("text")) == "FORCE FIELD":
+                         # Check if color is close to red (fully faded)
+                         if color[0] > 250 and color[1] < 10 and color[2] < 10:
+                             self.update_blood_drips(txt_rect)
+                             self.draw_blood_drips()
 
                     if "sub" in slide:
                         sub_text = cast("str", slide["sub"])

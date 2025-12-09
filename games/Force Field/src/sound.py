@@ -51,10 +51,14 @@ class SoundManager:
         # Map logical names to filenames
         sound_files = {
             "shoot": "shoot.wav",
-            "shoot_pistol": "shoot_pistol.wav",
+            "shoot_pistol": "pistol-shot-233473.mp3",
+            "reload_pistol": "gun-reload-2-395177.mp3",
             "shoot_rifle": "shoot_rifle.wav",
-            "shoot_shotgun": "shoot_shotgun.wav",
+            "reload_rifle": "gun-reload-2-395177.mp3",
+            "shoot_shotgun": "shotgun-firing-3-14483.mp3",
+            "reload_shotgun": "realistic-shotgun-cocking-sound-38640.mp3",
             "shoot_plasma": "bfg-laser-89662.mp3",  # BFG Sound
+            "shoot_stormtrooper": "sci-fi-weapon-laser-shot-04-316416.mp3",
             "enemy_shoot": "enemy_shoot.wav",
             "ambient": "music_loop.wav",  # New spooky background
             "bomb": "bomb.wav",

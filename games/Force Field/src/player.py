@@ -48,6 +48,7 @@ class Player:
         self.shield_timer = C.SHIELD_MAX_DURATION
         self.shield_recharge_delay = 0
         self.bomb_cooldown = 0
+        self.bombs = 1  # Start with 1 bomb
         self.secondary_cooldown = 0
         self.zoomed = False
 
@@ -185,6 +186,10 @@ class Player:
         else:
             w_state["clip"] -= 1
 
+        # Auto-reload if empty (Shotgun/others)
+        if self.current_weapon != "plasma" and w_state["clip"] <= 0:
+            self.reload()
+
         return True
 
     def reload(self) -> None:
@@ -233,7 +238,8 @@ class Player:
 
     def activate_bomb(self) -> bool:
         """Try to drop a bomb"""
-        if self.bomb_cooldown <= 0:
+        if self.bomb_cooldown <= 0 and self.bombs > 0:
+            self.bombs -= 1
             self.bomb_cooldown = C.BOMB_COOLDOWN
             self.shield_active = True  # Auto activate shield
             return True
@@ -276,6 +282,15 @@ class Player:
                 if w_state["reload_timer"] <= 0:
                     w_state["reloading"] = False
                     w_state["clip"] = C.WEAPONS[w_name]["clip_size"]
+
+            # Auto-reload if current weapon is empty and not doing anything
+            if (
+                w_name == self.current_weapon
+                and w_name != "plasma"
+                and w_state["clip"] <= 0
+                and not w_state["reloading"]
+            ):
+                self.reload()
 
             # Plasma Heat / Overheat
             if w_name == "plasma":

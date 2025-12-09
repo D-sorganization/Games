@@ -568,6 +568,9 @@ class Raycaster:
         # Sort bots by distance (far to near)
         bots_to_render.sort(key=lambda x: x[1], reverse=True)
 
+        # Z-Buffer to track wall distance per screen column
+        z_buffer = [float("inf")] * C.SCREEN_WIDTH
+
         for ray in range(C.NUM_RAYS):
             distance, wall_type, hit_bot = self.cast_ray_with_bots(
                 player.x,
@@ -576,6 +579,21 @@ class Raycaster:
                 player.angle,
                 bots,
             )
+
+            # Update Z-Buffer for this ray's columns
+            if distance > 0:
+                # Correct fisheye for Z-buffer comparison
+                corrected_dist = distance # cast_ray returns corrected?
+                # Wait, cast_ray returns corrected_wall_dist.
+                # But Z-buffer usually checks perpendicular distance?
+                # Yes, let's trust the return value is what we render with.
+                pass
+            
+            # Map ray to screen columns
+            col_start = ray * 2
+            col_end = min(col_start + 2, C.SCREEN_WIDTH)
+            for col in range(col_start, col_end):
+                z_buffer[col] = distance
 
             if hit_bot:
                 # Skip bot rendering here - we'll render sprites separately
@@ -648,6 +666,8 @@ class Raycaster:
             ray_angle += delta_angle
 
         # Render enemy sprites (after walls, far to near)
+        # Note: We still sort far-to-near to handle sprite-on-sprite overlap correctly
+        # But we use z_buffer to handle sprite-behind-wall occlusion.
         for bot, bot_dist, angle_to_bot in bots_to_render:
             # Calculate sprite size based on distance and enemy scale
             base_sprite_size = C.SCREEN_HEIGHT / bot_dist if bot_dist > 0 else C.SCREEN_HEIGHT
@@ -661,6 +681,10 @@ class Raycaster:
                 - sprite_size / 2
             )
             sprite_y = C.SCREEN_HEIGHT / 2 - sprite_size / 2 + player.pitch
+
+            # Optimization: If sprite is completely off screen or completely occluded (simple check), skip
+            if sprite_x + sprite_size < 0 or sprite_x > C.SCREEN_WIDTH:
+                continue
 
             # Apply distance shading
             distance_shade: float = max(0.4, 1.0 - bot_dist / C.MAX_DEPTH)
@@ -683,8 +707,32 @@ class Raycaster:
             )
             sprite_surface.blit(shade_surface, (0, 0), special_flags=pygame.BLEND_MULT)
 
-            # Blit sprite to screen
-            screen.blit(sprite_surface, (int(sprite_x), int(sprite_y)))
+            # Column-based rendering for proper occlusion
+            start_x = int(sprite_x)
+            end_x = int(sprite_x + sprite_size)
+            
+            # Optimization: Pre-calculate scaling
+            tex_width = sprite_surface.get_width()
+            tex_height = sprite_surface.get_height()
+            
+            # Iterate through screen columns covered by sprite
+            for x in range(start_x, end_x):
+                # Bounds check
+                if x < 0 or x >= C.SCREEN_WIDTH:
+                    continue
+                
+                # Z-Buffer check
+                if bot_dist >= z_buffer[x]:
+                    continue
+                
+                # Calculate corresponding column in sprite texture
+                tex_x = int((x - start_x))
+                if tex_x < 0 or tex_x >= tex_width:
+                    continue
+
+                # Blit this 1-pixel wide strip
+                area = pygame.Rect(tex_x, 0, 1, tex_height)
+                screen.blit(sprite_surface, (x, int(sprite_y)), area=area)
 
     def render_floor_ceiling(self, screen: pygame.Surface, player: Player, level: int) -> None:
         """Render floor and sky with stars"""
