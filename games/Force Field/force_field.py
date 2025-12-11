@@ -5,6 +5,7 @@ Refactored into modules.
 """
 
 # Make sure src is in path if running directly from this directory
+import logging
 import os
 import sys
 
@@ -17,6 +18,12 @@ from src.game import Game
 
 def main() -> None:
     """Entry point of the FPS Shooter application."""
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        handlers=[logging.StreamHandler()],
+    )
+
     pygame.init()
     game = Game()
     game.run()

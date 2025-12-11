@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import math
 import random
 import traceback
@@ -16,6 +17,8 @@ from .projectile import Projectile
 from .raycaster import Raycaster
 from .renderer import GameRenderer
 from .sound import SoundManager
+
+logger = logging.getLogger(__name__)
 
 
 class Game:
@@ -95,9 +98,9 @@ class Game:
             try:
                 self.joystick = pygame.joystick.Joystick(0)
                 self.joystick.init()
-                print(f"Controller detected: {self.joystick.get_name()}")
+                logger.info("Controller detected: %s", self.joystick.get_name())
             except Exception as e:  # noqa: BLE001
-                print(f"Controller init failed: {e}")
+                logger.error("Controller init failed: %s", e)
 
         # Fog of War
         self.visited_cells: set[tuple[int, int]] = set()
@@ -604,6 +607,7 @@ class Game:
     ) -> None:
         """Check if player's shot hit a bot"""
         assert self.player is not None
+        assert self.raycaster is not None
         try:
             weapon_range = self.player.get_current_weapon_range()
             if is_secondary:
@@ -611,73 +615,33 @@ class Game:
 
             weapon_damage = self.player.get_current_weapon_damage()
 
+            # Aim Logic
+            current_spread = C.SPREAD_ZOOM if self.player.zoomed else C.SPREAD_BASE
+            if angle_offset == 0.0:
+                spread_offset = random.uniform(-current_spread, current_spread)
+                aim_angle = self.player.angle + spread_offset
+            else:
+                aim_angle = self.player.angle + angle_offset
+
+            aim_angle %= 2 * math.pi
+
+            # 1. Cast ray to find wall distance
+            # Use Raycaster to avoid code duplication
+            wall_dist, _, _ = self.raycaster.cast_ray(self.player.x, self.player.y, aim_angle)
+
+            # Cap at weapon range
+            if wall_dist > weapon_range:
+                wall_dist = float(weapon_range)
+
             closest_bot = None
             closest_dist = float("inf")
             is_headshot = False
 
-            ray_angle = self.player.angle + angle_offset
-            sin_a = math.sin(ray_angle)
-            cos_a = math.cos(ray_angle)
-
-            rx, ry = self.player.x, self.player.y
-            map_x, map_y = int(rx), int(ry)
-
-            delta_dist_x = abs(1 / cos_a) if cos_a != 0 else 1e30
-            delta_dist_y = abs(1 / sin_a) if sin_a != 0 else 1e30
-
-            if cos_a < 0:
-                step_x = -1
-                side_dist_x = (rx - map_x) * delta_dist_x
-            else:
-                step_x = 1
-                side_dist_x = (map_x + 1.0 - rx) * delta_dist_x
-
-            if sin_a < 0:
-                step_y = -1
-                side_dist_y = (ry - map_y) * delta_dist_y
-            else:
-                step_y = 1
-                side_dist_y = (map_y + 1.0 - ry) * delta_dist_y
-
-            wall_dist: float = float(weapon_range)
-            hit_wall = False
-            steps = 0
-            max_raycast_steps = C.MAX_RAYCAST_STEPS
-
-            while not hit_wall and steps < max_raycast_steps:
-                steps += 1
-                if side_dist_x < side_dist_y:
-                    side_dist_x += delta_dist_x
-                    map_x += step_x
-                    dist = side_dist_x - delta_dist_x
-                else:
-                    side_dist_y += delta_dist_y
-                    map_y += step_y
-                    dist = side_dist_y - delta_dist_y
-
-                if dist > weapon_range:
-                    break
-
-                assert self.game_map is not None
-                if (
-                    map_x < 0
-                    or map_x >= self.game_map.size
-                    or map_y < 0
-                    or map_y >= self.game_map.size
-                ):
-                    hit_wall = True
-                    wall_dist = dist
-                    break
-
-                if self.game_map.is_wall(map_x, map_y):
-                    wall_dist = dist
-                    hit_wall = True
-
+            # 2. Check bots
             for bot in self.bots:
                 if not bot.alive:
                     continue
 
-                assert self.player is not None
                 dx = bot.x - self.player.x
                 dy = bot.y - self.player.y
                 distance = math.sqrt(dx**2 + dy**2)
@@ -687,16 +651,6 @@ class Game:
 
                 bot_angle = math.atan2(dy, dx)
                 bot_angle_norm = bot_angle if bot_angle >= 0 else bot_angle + 2 * math.pi
-
-                current_spread = C.SPREAD_ZOOM if self.player.zoomed else C.SPREAD_BASE
-
-                if angle_offset == 0.0:
-                    spread_offset = random.uniform(-current_spread, current_spread)
-                    aim_angle = self.player.angle + spread_offset
-                else:
-                    aim_angle = self.player.angle + angle_offset
-
-                aim_angle %= 2 * math.pi
 
                 angle_diff = abs(bot_angle_norm - aim_angle)
                 if angle_diff > math.pi:
@@ -816,7 +770,7 @@ class Game:
                     self.sound_manager.play_sound("scream")
 
         except Exception as e:  # noqa: BLE001
-            print(f"Error in check_shot_hit: {e}")
+            logger.error("Error in check_shot_hit: %s", e)
 
     def handle_bomb_explosion(self) -> None:
         """Handle bomb explosion logic"""
@@ -883,7 +837,7 @@ class Game:
         try:
             self.sound_manager.play_sound("bomb")
         except BaseException as e:  # noqa: BLE001
-            print(f"Bomb Audio Failed: {e}")
+            logger.error("Bomb Audio Failed: %s", e)
 
         self.damage_texts.append(
             {
@@ -901,7 +855,7 @@ class Game:
         try:
             self.sound_manager.play_sound("boom_real")
         except Exception as e:  # noqa: BLE001
-            print(f"Boom sound failed: {e}")
+            logger.error("Boom sound failed: %s", e)
 
         try:
             hits = 0
@@ -954,8 +908,8 @@ class Game:
                     }
                 )
         except Exception as e:  # noqa: BLE001
-            print(f"Critical Laser Error: {e}")
-            traceback.print_exc()
+            logger.error("Critical Laser Error: %s", e)
+            logger.error(traceback.format_exc())
 
     def explode_plasma(self, projectile: Projectile) -> None:
         """Trigger plasma AOE explosion"""
@@ -1539,5 +1493,5 @@ class Game:
         except Exception as e:
             with open("crash_log.txt", "w") as f:
                 f.write(traceback.format_exc())
-            print(f"CRASH: {e}")
+            logger.critical("CRASH: %s", e)
             raise

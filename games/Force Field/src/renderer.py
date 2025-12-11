@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import math
 import os
 import random
@@ -21,6 +22,8 @@ except ImportError:
 if TYPE_CHECKING:
     from .game import Game
     from .player import Player
+
+logger = logging.getLogger(__name__)
 
 
 class GameRenderer:
@@ -113,7 +116,7 @@ class GameRenderer:
                 self.intro_images["deadfish"] = img
 
         except Exception as e:  # noqa: BLE001
-            print(f"Failed to load assets: {e}")
+            logger.error("Failed to load assets: %s", e)
 
     def render_menu(self) -> None:
         """Render main menu"""
