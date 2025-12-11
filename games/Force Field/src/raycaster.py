@@ -714,7 +714,14 @@ class Raycaster:
 
                 # Cache it (limit cache size)
                 if len(self.sprite_cache) > 500:
-                    self.sprite_cache.clear()
+                    # Evict oldest entries
+                    # Dictionary is insertion-ordered in Python 3.7+
+                    # Remove ~10% of cache to amortize cost
+                    for _ in range(50):
+                        if not self.sprite_cache:
+                            break
+                        self.sprite_cache.pop(next(iter(self.sprite_cache)))
+
                 self.sprite_cache[cache_key] = sprite_surface
                 sprite_surface = sprite_surface.copy()
 
@@ -732,9 +739,8 @@ class Raycaster:
                 int(255 * distance_shade),
                 int(255 * distance_shade),
             )
-            # Use RGBA for fill with BLEND_MULT to respect alpha?
-            # BLEND_MULT multiplies channels. If alpha is 0, mult by anything keeps it 0 (usually).
-            # But we want to darken the RGB channels.
+            # Use RGBA for fill with BLEND_MULT to darken RGB channels while preserving alpha.
+            # BLEND_MULT multiplies each channel; alpha is preserved, and RGB channels are darkened as intended.
             sprite_surface.fill(shade_color, special_flags=pygame.BLEND_MULT)
 
             # Column-based rendering for proper occlusion

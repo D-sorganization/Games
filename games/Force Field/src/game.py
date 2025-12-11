@@ -576,10 +576,10 @@ class Game:
                 self.player.x,
                 self.player.y,
                 self.player.angle,
-                speed=float(C.WEAPONS["plasma"].get("projectile_speed", 0.5)),
+                speed=float(cast(float, C.WEAPONS["plasma"].get("projectile_speed", 0.5))),
                 damage=self.player.get_current_weapon_damage(),
                 is_player=True,
-                color=tuple(C.WEAPONS["plasma"].get("projectile_color", (0, 255, 255))),
+                color=cast(Tuple[int, int, int], C.WEAPONS["plasma"].get("projectile_color", (0, 255, 255))),
                 size=0.225,
                 weapon_type="plasma",
             )
@@ -593,8 +593,8 @@ class Game:
 
         if weapon == "shotgun" and not is_secondary:
             # Spread Fire
-            pellets = int(C.WEAPONS["shotgun"].get("pellets", 8))
-            spread = float(C.WEAPONS["shotgun"].get("spread", 0.15))
+            pellets = int(cast(int, C.WEAPONS["shotgun"].get("pellets", 8)))
+            spread = float(cast(float, C.WEAPONS["shotgun"].get("spread", 0.15)))
             for _ in range(pellets):
                 angle_off = random.uniform(-spread, spread)
                 self.check_shot_hit(angle_offset=angle_off)

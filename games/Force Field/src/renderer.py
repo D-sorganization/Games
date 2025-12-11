@@ -589,6 +589,9 @@ class GameRenderer:
         Args:
             game: The game object containing player and game state.
         """
+        assert game.player is not None
+        assert game.raycaster is not None
+
         hud_bottom = C.SCREEN_HEIGHT - 80
         health_width = 150
         health_height = 25
@@ -924,7 +927,7 @@ class GameRenderer:
 
         if step < len(slides):
             slide = slides[step]
-            duration = int(slide["duration"])
+            duration = int(cast(int, slide["duration"]))
 
             if slide["type"] == "distortion":
                 font = (
