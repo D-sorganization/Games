@@ -740,7 +740,8 @@ class Raycaster:
                 int(255 * distance_shade),
             )
             # Use RGBA for fill with BLEND_MULT to darken RGB channels while preserving alpha.
-            # BLEND_MULT multiplies each channel; alpha is preserved, and RGB channels are darkened as intended.
+            # BLEND_MULT multiplies each channel; alpha is preserved,
+            # and RGB channels are darkened as intended.
             sprite_surface.fill(shade_color, special_flags=pygame.BLEND_MULT)
 
             # Column-based rendering for proper occlusion

@@ -927,7 +927,7 @@ class GameRenderer:
 
         if step < len(slides):
             slide = slides[step]
-            duration = int(cast(int, slide["duration"]))
+            duration = int(cast("int", slide["duration"]))
 
             if slide["type"] == "distortion":
                 font = (
