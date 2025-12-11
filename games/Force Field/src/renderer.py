@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import math
 import os
 import random
@@ -21,6 +22,8 @@ except ImportError:
 if TYPE_CHECKING:
     from .game import Game
     from .player import Player
+
+logger = logging.getLogger(__name__)
 
 
 class GameRenderer:
@@ -112,8 +115,8 @@ class GameRenderer:
                     img = pygame.transform.scale(img, new_size)
                 self.intro_images["deadfish"] = img
 
-        except Exception as e:  # noqa: BLE001
-            print(f"Failed to load assets: {e}")
+        except Exception:
+            logger.exception("Failed to load assets")
 
     def render_menu(self) -> None:
         """Render main menu"""
@@ -248,7 +251,7 @@ class GameRenderer:
         # 2. Effects
         self.effects_surface.fill((0, 0, 0, 0))
         self._render_particles(game.particles)
-        self._render_particles(game.particles)
+
         self._render_low_health_tint(game.player)
         self._render_damage_flash(game.damage_flash_timer)
         self._render_shield_effect(game.player)
@@ -596,6 +599,9 @@ class GameRenderer:
         Args:
             game: The game object containing player and game state.
         """
+        assert game.player is not None
+        assert game.raycaster is not None
+
         hud_bottom = C.SCREEN_HEIGHT - 80
         health_width = 150
         health_height = 25
@@ -940,7 +946,7 @@ class GameRenderer:
 
         if step < len(slides):
             slide = slides[step]
-            duration = int(slide["duration"])
+            duration = int(cast("int", slide["duration"]))
 
             if slide["type"] == "distortion":
                 font = (

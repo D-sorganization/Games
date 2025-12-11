@@ -10,6 +10,10 @@ MAP_SIZE = 40  # Will be set by user
 TILE_SIZE = 64
 MIN_BUILDING_OFFSET = 3  # Minimum offset from map edges for building generation
 
+# Rendering Quality
+# 1 = Ultra (Full Res), 2 = High (Half Res), 4 = Medium/Retro (Quarter Res), 8 = Low (Blocky)
+RENDER_SCALE = 4
+
 # Player settings
 # Speeds reduced to improve game pacing
 PLAYER_SPEED = 0.375
@@ -20,9 +24,11 @@ MAX_RAYCAST_STEPS = 1000  # Maximum steps for raycasting
 
 FOV = math.pi / 3  # 60 degrees
 HALF_FOV = FOV / 2
-NUM_RAYS = SCREEN_WIDTH // 2
-MAX_DEPTH = 100  # Increased render distance (2x)
+
+# Raycasting calculations based on Render Scale
+NUM_RAYS = SCREEN_WIDTH // RENDER_SCALE
 DELTA_ANGLE = FOV / NUM_RAYS
+MAX_DEPTH = 100  # Increased render distance (2x)
 
 DEFAULT_PLAYER_SPAWN = (2.5, 2.5, 0.0)
 SPAWN_SAFE_ZONE_RADIUS = 15.0
@@ -161,7 +167,6 @@ FOG_START = 0.4  # Percentage of MAX_DEPTH where fog starts
 # Input
 JOYSTICK_DEADZONE = 0.1
 PITCH_LIMIT = 390  # Pixels up/down
-SENSITIVITY_X = 1.0
 SENSITIVITY_Y = 1.0
 
 # Shield Settings

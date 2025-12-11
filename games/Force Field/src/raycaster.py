@@ -33,6 +33,9 @@ class Raycaster:
                 )
             )
 
+        # Sprite cache
+        self.sprite_cache: Dict[str, pygame.Surface] = {}
+
     def cast_ray(
         self,
         origin_x: float,
@@ -584,10 +587,11 @@ class Raycaster:
             # Update Z-Buffer for this ray's columns
 
             # Map ray to screen columns
-            col_start = ray * 2
-            col_end = min(col_start + 2, C.SCREEN_WIDTH)
+            col_start = ray * C.RENDER_SCALE
+            col_end = min(col_start + C.RENDER_SCALE, C.SCREEN_WIDTH)
             for col in range(col_start, col_end):
                 z_buffer[col] = distance
+
 
             if wall_type > 0:
                 # Render wall with texture
@@ -625,31 +629,33 @@ class Raycaster:
                 wall_top = (C.SCREEN_HEIGHT - wall_height) // 2 + player.pitch
 
                 # Draw base wall color
-                pygame.draw.rect(screen, color, (ray * 2, wall_top, 2, wall_height))
+                pygame.draw.rect(screen, color, (col_start, wall_top, C.RENDER_SCALE, wall_height))
 
                 # Add texture pattern based on wall type and position
                 texture_pattern = (ray + int(distance * 10)) % 8
                 if texture_pattern < 4:  # Add texture stripes
                     darker_color = tuple(max(0, c - 20) for c in color)
                     # Vertical stripes for texture
-                    for stripe_y in range(int(wall_top), int(wall_top + wall_height), 4):
+                    step = 4 if C.RENDER_SCALE <= 2 else 8
+                    for stripe_y in range(int(wall_top), int(wall_top + wall_height), step):
                         pygame.draw.line(
                             screen,
                             darker_color,
-                            (ray * 2, stripe_y),
-                            (ray * 2, min(stripe_y + 2, int(wall_top + wall_height))),
+                            (col_start, stripe_y),
+                            (col_start, min(stripe_y + step // 2, int(wall_top + wall_height))),
                             1,
                         )
 
                 # Add horizontal texture lines
                 if wall_type == 2 or wall_type == 3:  # Building walls get brick pattern
-                    for brick_y in range(int(wall_top), int(wall_top + wall_height), 8):
+                    step = 8 if C.RENDER_SCALE <= 2 else 16
+                    for brick_y in range(int(wall_top), int(wall_top + wall_height), step):
                         darker_color = tuple(max(0, c - 15) for c in color)
                         pygame.draw.line(
                             screen,
                             darker_color,
-                            (ray * 2, brick_y),
-                            (ray * 2 + 2, brick_y),
+                            (col_start, brick_y),
+                            (col_start + C.RENDER_SCALE, brick_y),
                             1,
                         )
 
@@ -679,23 +685,58 @@ class Raycaster:
             # Apply distance shading
             distance_shade: float = max(0.4, 1.0 - bot_dist / C.MAX_DEPTH)
 
-            # Create a temporary surface for the sprite
-            sprite_surface = pygame.Surface(
-                (int(sprite_size), int(sprite_size)),
-                pygame.SRCALPHA,
-            )
-            self.render_enemy_sprite(sprite_surface, bot, 0, 0, sprite_size)
+            # Caching Key
+            # Round sprite_size to nearest 5 to avoid too many cache entries
+            cached_size = int(round(sprite_size / 5.0) * 5.0)
+            cached_size = max(cached_size, 5)
 
-            # Apply shading by creating a dark overlay
-            shade_surface = pygame.Surface((int(sprite_size), int(sprite_size)))
-            shade_surface.fill(
-                (
-                    int(255 * distance_shade),
-                    int(255 * distance_shade),
-                    int(255 * distance_shade),
-                ),
+            cache_key = (
+                f"{bot.enemy_type}_{bot.type_data.get('visual_style')}_"
+                f"{int(bot.walk_animation * 5)}_{int(bot.shoot_animation * 5)}_"
+                f"{bot.dead}_{int(bot.death_timer // 5)}_{cached_size}"
             )
-            sprite_surface.blit(shade_surface, (0, 0), special_flags=pygame.BLEND_MULT)
+
+            if cache_key in self.sprite_cache:
+                sprite_surface = self.sprite_cache[cache_key].copy()
+            else:
+                # Create a temporary surface for the sprite
+                sprite_surface = pygame.Surface(
+                    (cached_size, cached_size),
+                    pygame.SRCALPHA,
+                )
+                self.render_enemy_sprite(sprite_surface, bot, 0, 0, cached_size)
+
+                # Cache it (limit cache size)
+                if len(self.sprite_cache) > 500:
+                    # Evict oldest entries
+                    # Dictionary is insertion-ordered in Python 3.7+
+                    # Remove ~10% of cache to amortize cost
+                    for _ in range(50):
+                        if not self.sprite_cache:
+                            break
+                        self.sprite_cache.pop(next(iter(self.sprite_cache)))
+
+                self.sprite_cache[cache_key] = sprite_surface
+                sprite_surface = sprite_surface.copy()
+
+            # Update size and position based on cached size
+            sprite_size = cached_size
+            sprite_x = (
+                C.SCREEN_WIDTH / 2
+                + (angle_to_bot / half_fov) * C.SCREEN_WIDTH / 2
+                - sprite_size / 2
+            )
+
+            # Apply shading efficiently
+            shade_color = (
+                int(255 * distance_shade),
+                int(255 * distance_shade),
+                int(255 * distance_shade),
+            )
+            # Use RGBA for fill with BLEND_MULT to darken RGB channels while preserving alpha.
+            # BLEND_MULT multiplies each channel; alpha is preserved,
+            # and RGB channels are darkened as intended.
+            sprite_surface.fill(shade_color, special_flags=pygame.BLEND_MULT)
 
             # Column-based rendering for proper occlusion
             start_x = int(sprite_x)

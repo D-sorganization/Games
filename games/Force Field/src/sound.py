@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import contextlib
+import logging
 from pathlib import Path
 from typing import Dict
 
 import pygame
+
+logger = logging.getLogger(__name__)
 
 
 class SoundManager:
@@ -96,13 +99,13 @@ class SoundManager:
                     # Lower volume for ambient to be background
                     if "music" in name or name == "ambient":
                         self.sounds[name].set_volume(0.5)
-                except Exception as e:  # noqa: BLE001
-                    print(f"Failed to load sound {filename} (probably codec issue?): {e}")
+                except Exception:
+                    logger.exception("Failed to load sound %s (probably codec issue?)", filename)
                     # If we fail to load a "real" sound, try to fallback
                     # to synthesized logic if possible?
                     # For now just log it.
             else:
-                print(f"Sound file not found: {path} (Current Dir: {Path.cwd()})")
+                logger.warning("Sound file not found: %s (Current Dir: %s)", path, Path.cwd())
 
     def play_sound(self, name: str) -> None:
         """Play a sound effect"""
@@ -112,8 +115,8 @@ class SoundManager:
         if name in self.sounds:
             try:
                 self.sounds[name].play()
-            except BaseException as e:  # noqa: BLE001
-                print(f"Sound play failed for {name}: {e}")
+            except BaseException:
+                logger.exception("Sound play failed for %s", name)
 
     def start_music(self, name: str = "music_loop") -> None:
         """Start ambient music loop"""

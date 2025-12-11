@@ -19,10 +19,7 @@ class InputManager:
         "reload": pygame.K_r,
         "zoom": pygame.K_z,
         "bomb": pygame.K_f,
-        "shield": pygame.K_LSHIFT, # Shield logic often on Space, but if Space is shoot... we need to decide. 
-                                   # Original game: Space=Shield. Plan says Space=Shoot. 
-                                   # Let's support multiple keys or context.
-                                   # For now, let's stick to user request: "number pad zero to shoot"
+        "shield": pygame.K_LSHIFT, # Shield is bound to Left Shift; shoot is bound to Space and Numpad 0.
         "shoot_alt": pygame.K_KP0,
         "pause": pygame.K_ESCAPE,
         "interact": pygame.K_e,
