@@ -757,9 +757,7 @@ class GameRenderer:
         for i, item in enumerate(menu_items):
             color = C.WHITE
             # Resume: 350, Save: 410, Controls: 470, Quit: 530
-            rect = pygame.Rect(
-                C.SCREEN_WIDTH // 2 - 100, 350 + i * 60, 200, 50
-            )
+            rect = pygame.Rect(C.SCREEN_WIDTH // 2 - 100, 350 + i * 60, 200, 50)
             if rect.collidepoint(mouse_pos):
                 color = C.YELLOW
                 pygame.draw.rect(self.screen, (50, 0, 0), rect)
@@ -1039,7 +1037,7 @@ class GameRenderer:
         # Actions to show (skip raw debug ones if any)
         actions = sorted(bindings.keys())
 
-        limit = 12 # Items per column
+        limit = 12  # Items per column
 
         for i, action in enumerate(actions):
             col = 0 if i < limit else 1
@@ -1071,6 +1069,3 @@ class GameRenderer:
         self.screen.blit(back_txt, back_rect)
         if back_rect.collidepoint(pygame.mouse.get_pos()):
             pygame.draw.rect(self.screen, C.RED, back_rect, 2)
-
-
-

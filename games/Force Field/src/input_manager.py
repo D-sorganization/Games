@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 import json
 import os
-from typing import Dict
+from typing import ClassVar, Dict
 
 import pygame
 
@@ -8,7 +10,7 @@ import pygame
 class InputManager:
     """Manages input bindings and state."""
 
-    DEFAULT_BINDINGS = {
+    DEFAULT_BINDINGS: ClassVar[Dict[str, int]] = {
         "move_forward": pygame.K_w,
         "move_backward": pygame.K_s,
         "strafe_left": pygame.K_a,
@@ -17,12 +19,11 @@ class InputManager:
         "turn_right": pygame.K_RIGHT,
         "look_up": pygame.K_UP,
         "look_down": pygame.K_DOWN,
-        "shoot": pygame.K_SPACE, # Primary shoot (also Mouse 1)
+        "shoot": pygame.K_SPACE,  # Primary shoot (also Mouse 1)
         "reload": pygame.K_r,
         "zoom": pygame.K_z,
         "bomb": pygame.K_f,
-
-        "shield": pygame.K_x, # Changed from LSHIFT to avoid sprint conflict
+        "shield": pygame.K_x,  # Changed from LSHIFT to avoid sprint conflict
         "sprint": pygame.K_LSHIFT,
         "shoot_alt": pygame.K_KP0,
         "pause": pygame.K_ESCAPE,
@@ -36,7 +37,7 @@ class InputManager:
 
     def __init__(self, config_file: str = "keybindings.json"):
         """Initialize the input manager.
-        
+
         Args:
             config_file: Path to the keybindings JSON file.
         """
@@ -58,7 +59,7 @@ class InputManager:
                     for action, key in data.get("bindings", {}).items():
                         if action in self.bindings:
                             self.bindings[action] = key
-            except Exception as e:
+            except (OSError, json.JSONDecodeError) as e:
                 print(f"Failed to load keybindings: {e}")
 
     def save_config(self) -> None:
@@ -66,7 +67,7 @@ class InputManager:
         try:
             with open(self.config_file, "w") as f:
                 json.dump({"bindings": self.bindings}, f, indent=4)
-        except Exception as e:
+        except OSError as e:
             print(f"Failed to save keybindings: {e}")
 
     def is_action_pressed(self, action: str) -> bool:

@@ -592,7 +592,6 @@ class Raycaster:
             for col in range(col_start, col_end):
                 z_buffer[col] = distance
 
-
             if wall_type > 0:
                 # Render wall with texture
                 if distance > 0:

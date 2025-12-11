@@ -555,13 +555,9 @@ class Game:
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if self.paused:
                     # Handle Pause Menu Clicks
-                    # Resume: (500, 350, 200, 50)
-                    # Save: (500, 410, 200, 50)
-                    # Controls: (500, 470, 200, 50)
-                    # Quit: (500, 530, 200, 50)
                     mx, my = event.pos
                     if 500 <= mx <= 700:
-                        if 350 <= my <= 400: # Resume
+                        if 350 <= my <= 400:  # Resume
                             self.paused = False
                             if self.pause_start_time > 0:
                                 pause_duration = pygame.time.get_ticks() - self.pause_start_time
@@ -569,16 +565,16 @@ class Game:
                                 self.pause_start_time = 0
                             pygame.mouse.set_visible(False)
                             pygame.event.set_grab(True)
-                        elif 410 <= my <= 460: # Save
+                        elif 410 <= my <= 460:  # Save
                             self.save_game()
                             self.add_message("GAME SAVED", C.GREEN)
-                        elif 470 <= my <= 520: # Controls
+                        elif 470 <= my <= 520:  # Controls
                             self.state = "key_config"
-                            self.binding_action = None # Initialize binding state
-                        elif 530 <= my <= 580: # Quit to Menu
+                            self.binding_action = None  # Initialize binding state
+                        elif 530 <= my <= 580:  # Quit to Menu
                             self.state = "menu"
                             self.paused = False
-                            self.sound_manager.play_music("music_loop")
+                            self.sound_manager.start_music("music_loop")
 
                 elif not self.cheat_mode_active:
                     assert self.player is not None
@@ -604,7 +600,7 @@ class Game:
         try:
             with open(filename, "w") as f:
                 f.write(f"{self.level}")
-        except Exception as e:
+        except OSError as e:
             print(f"Save failed: {e}")
 
     def fire_weapon(self, is_secondary: bool = False) -> None:
@@ -1165,7 +1161,6 @@ class Game:
         if self.input_manager.is_action_pressed("look_down"):
             self.player.pitch_view(-5)
 
-
         self.player.update()
 
         for bot in self.bots:
@@ -1223,7 +1218,6 @@ class Game:
         assert self.game_map is not None
         assert self.player is not None
         for projectile in self.projectiles[:]:
-
             was_alive = projectile.alive
             projectile.update(self.game_map)
 
