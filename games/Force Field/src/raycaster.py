@@ -578,12 +578,10 @@ class Raycaster:
         z_buffer = [float("inf")] * C.SCREEN_WIDTH
 
         for ray in range(C.NUM_RAYS):
-            distance, wall_type, hit_bot = self.cast_ray_with_bots(
+            distance, wall_type, _ = self.cast_ray(
                 player.x,
                 player.y,
                 ray_angle,
-                player.angle,
-                bots,
             )
 
             # Update Z-Buffer for this ray's columns
@@ -594,15 +592,12 @@ class Raycaster:
             for col in range(col_start, col_end):
                 z_buffer[col] = distance
 
-            if hit_bot:
-                # Skip bot rendering here - we'll render sprites separately
-                ray_angle += delta_angle
-                continue
-
             if wall_type > 0:
                 # Render wall with texture
                 if distance > 0:
-                    wall_height = min(C.SCREEN_HEIGHT, (C.SCREEN_HEIGHT / distance))
+                    # Fisheye correction
+                    corrected_dist = distance * math.cos(player.angle - ray_angle)
+                    wall_height = min(C.SCREEN_HEIGHT, (C.SCREEN_HEIGHT / corrected_dist))
                 else:
                     wall_height = C.SCREEN_HEIGHT
 
@@ -887,7 +882,11 @@ class Raycaster:
 
         # Draw bots (only if visible through fog of war)
         for bot in bots:
-            if bot.alive:
+            if (
+                bot.alive
+                and bot.enemy_type != "health_pack"
+                and C.ENEMY_TYPES[bot.enemy_type].get("visual_style") != "item"
+            ):
                 bot_cell_x = int(bot.x)
                 bot_cell_y = int(bot.y)
                 # Check fog of war
