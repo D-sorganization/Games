@@ -248,6 +248,8 @@ class GameRenderer:
         # 2. Effects
         self.effects_surface.fill((0, 0, 0, 0))
         self._render_particles(game.particles)
+        self._render_particles(game.particles)
+        self._render_low_health_tint(game.player)
         self._render_damage_flash(game.damage_flash_timer)
         self._render_shield_effect(game.player)
         self.screen.blit(self.effects_surface, (0, 0))
@@ -369,6 +371,14 @@ class GameRenderer:
         elif player.shield_timer == C.SHIELD_MAX_DURATION and player.shield_recharge_delay <= 0:
             ready_text = self.tiny_font.render("SHIELD READY", True, C.CYAN)
             self.screen.blit(ready_text, (20, C.SCREEN_HEIGHT - 120))
+
+    def _render_low_health_tint(self, player: Player) -> None:
+        """Render red screen tint when health is low."""
+        if player.health < 50:
+            # Alpha increases as health drops from 50 to 0
+            # Max alpha at 0 health = 100 (pretty strong but see-through)
+            alpha = int(100 * (1.0 - (player.health / 50.0)))
+            self.effects_surface.fill((255, 0, 0, alpha), special_flags=pygame.BLEND_RGBA_ADD)
 
     def _render_crosshair(self) -> None:
         """Render the aiming crosshair at the center of the screen."""
@@ -731,18 +741,27 @@ class GameRenderer:
         overlay.fill((0, 0, 0, 200))
         self.screen.blit(overlay, (0, 0))
 
-        menu_items = ["RESUME", "SAVE GAME", "QUIT TO MENU"]
+        title = self.title_font.render("PAUSED", True, C.RED)
+        title_rect = title.get_rect(center=(C.SCREEN_WIDTH // 2, 150))
+        self.screen.blit(title, title_rect)
+
+        menu_items = ["RESUME", "SAVE GAME", "CONTROLS", "QUIT TO MENU"]
         mouse_pos = pygame.mouse.get_pos()
 
         for i, item in enumerate(menu_items):
             color = C.WHITE
+            # Resume: 350, Save: 410, Controls: 470, Quit: 530
             rect = pygame.Rect(
-                C.SCREEN_WIDTH // 2 - 100, C.SCREEN_HEIGHT // 2 - 50 + i * 60, 200, 50
+                C.SCREEN_WIDTH // 2 - 100, 350 + i * 60, 200, 50
             )
             if rect.collidepoint(mouse_pos):
                 color = C.YELLOW
-            text = self.font.render(item, True, color)
-            self.screen.blit(text, (C.SCREEN_WIDTH // 2 - text.get_width() // 2, rect.y + 10))
+                pygame.draw.rect(self.screen, (50, 0, 0), rect)
+                pygame.draw.rect(self.screen, C.RED, rect, 2)
+            
+            text = self.subtitle_font.render(item, True, color)
+            text_rect = text.get_rect(center=rect.center)
+            self.screen.blit(text, text_rect)
 
     def render_level_complete(self, game: Game) -> None:
         """Render the level complete screen with statistics.
@@ -977,7 +996,7 @@ class GameRenderer:
                 txt = self.title_font.render(str(slide["text"]), True, color)
                 rect = txt.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2))
                 if slide["text"] == "FORCE FIELD":
-                    rect.centery -= 100
+                    rect.centery = 100  # Match Main Menu title position
                 self.screen.blit(txt, rect)
 
                 # Add blood drip effect when color has fully faded to red
@@ -996,3 +1015,88 @@ class GameRenderer:
                         sub,
                         sub.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 60)),
                     )
+
+    def render_key_config(self, game: Any) -> None:
+        """Render the key configuration menu."""
+        self.screen.fill(C.BLACK)
+        
+        # Title
+        title = self.title_font.render("CONTROLS", True, C.RED)
+        self.screen.blit(title, title.get_rect(center=(C.SCREEN_WIDTH // 2, 50)))
+        
+        # Scroll/List logic would be complex. Let's do a simple 2-column layout.
+        bindings = game.input_manager.bindings
+        start_y = 120
+        col_1_x = C.SCREEN_WIDTH // 4
+        col_2_x = C.SCREEN_WIDTH * 3 // 4
+        
+        # Actions to show (skip raw debug ones if any)
+        actions = sorted(list(bindings.keys()))
+        
+        limit = 12 # Items per column
+        
+        for i, action in enumerate(actions):
+            col = 0 if i < limit else 1
+            idx = i if i < limit else i - limit
+            x = col_1_x if col == 0 else col_2_x
+            y = start_y + idx * 40
+            
+            # Action Name
+            name_str = action.replace("_", " ").upper()
+            color = C.WHITE
+            if game.binding_action == action:
+                color = C.YELLOW
+                key_text = "PRESS ANY KEY..."
+            else:
+                key_text = game.input_manager.get_key_name(action)
+                
+            name_txt = self.tiny_font.render(f"{name_str}:", True, C.GRAY)
+            key_txt = self.tiny_font.render(key_text, True, color)
+            
+            # Right align key, Left align name
+            self.screen.blit(name_txt, (x - 150, y))
+            self.screen.blit(key_txt, (x + 20, y))
+            
+            # Hitbox for clicking (stored in logic usually, but here just visual)
+        
+        # Back Button
+        back_txt = self.subtitle_font.render("BACK", True, C.WHITE)
+        back_rect = back_txt.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT - 60))
+        self.screen.blit(back_txt, back_rect)
+        if back_rect.collidepoint(pygame.mouse.get_pos()):
+            pygame.draw.rect(self.screen, C.RED, back_rect, 2)
+
+    def _render_pause_menu(self) -> None:
+        """Render the pause menu overlay."""
+        s = pygame.Surface((C.SCREEN_WIDTH, C.SCREEN_HEIGHT), pygame.SRCALPHA)
+        s.fill((0, 0, 0, 150))
+        self.screen.blit(s, (0, 0))
+
+        title = self.title_font.render("PAUSED", True, C.RED)
+        title_rect = title.get_rect(center=(C.SCREEN_WIDTH // 2, 150))
+        self.screen.blit(title, title_rect)
+
+        # Menu Options
+        # Updated list with CONTROLS
+        menu_items = ["RESUME", "SAVE GAME", "CONTROLS", "QUIT TO MENU"]
+        mouse_pos = pygame.mouse.get_pos()
+
+        for i, item in enumerate(menu_items):
+            color = C.WHITE
+            # Resume: 350, Save: 410, Controls: 470, Quit: 530
+            rect = pygame.Rect(
+                C.SCREEN_WIDTH // 2 - 100,
+                350 + i * 60,
+                200,
+                50,
+            )
+            
+            if rect.collidepoint(mouse_pos):
+                color = C.YELLOW
+                pygame.draw.rect(self.screen, (50, 0, 0), rect)
+                pygame.draw.rect(self.screen, C.RED, rect, 2)
+
+            text = self.subtitle_font.render(item, True, color)
+            text_rect = text.get_rect(center=rect.center)
+            self.screen.blit(text, text_rect)
+

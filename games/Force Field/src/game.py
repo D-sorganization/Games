@@ -15,7 +15,9 @@ from .player import Player
 from .projectile import Projectile
 from .raycaster import Raycaster
 from .renderer import GameRenderer
+from .renderer import GameRenderer
 from .sound import SoundManager
+from .input_manager import InputManager
 
 
 class Game:
@@ -101,6 +103,10 @@ class Game:
 
         # Fog of War
         self.visited_cells: set[tuple[int, int]] = set()
+
+        # Input Manager
+        self.input_manager = InputManager()
+        self.binding_action: str | None = None
 
     def add_message(self, text: str, color: tuple[int, int, int]) -> None:
         """Add a temporary message to the center of the screen"""
@@ -494,8 +500,8 @@ class Game:
                             self.cheat_mode_active = False
                     continue
 
-                # Normal Controls
-                if event.key == pygame.K_ESCAPE:
+                # Pause Toggle
+                if self.input_manager.is_action_just_pressed(event, "pause"):
                     self.paused = not self.paused
                     if self.paused:
                         self.pause_start_time = pygame.time.get_ticks()
@@ -515,47 +521,85 @@ class Game:
                     self.current_cheat_input = ""
                     self.add_message("CHEAT MODE: TYPE CODE", C.PURPLE)
                     continue
-
+                
+                # Single press actions (switches, reload, etc)
                 if not self.paused:
-                    if event.key == pygame.K_1:
+                    if self.input_manager.is_action_just_pressed(event, "weapon_1"):
                         self.switch_weapon_with_message("pistol")
-                    elif event.key == pygame.K_2:
+                    elif self.input_manager.is_action_just_pressed(event, "weapon_2"):
                         self.switch_weapon_with_message("rifle")
-                    elif event.key == pygame.K_3:
+                    elif self.input_manager.is_action_just_pressed(event, "weapon_3"):
                         self.switch_weapon_with_message("shotgun")
-                    elif event.key == pygame.K_4:
+                    elif self.input_manager.is_action_just_pressed(event, "weapon_4"):
                         self.switch_weapon_with_message("laser")
-                    elif event.key == pygame.K_5:
+                    elif self.input_manager.is_action_just_pressed(event, "weapon_5"):
                         self.switch_weapon_with_message("plasma")
-                    elif event.key == pygame.K_r:
+                    elif self.input_manager.is_action_just_pressed(event, "reload"):
                         assert self.player is not None
                         self.player.reload()
-                    elif event.key == pygame.K_z:
+                    elif self.input_manager.is_action_just_pressed(event, "zoom"):
                         assert self.player is not None
                         self.player.zoomed = not self.player.zoomed
-                    elif event.key == pygame.K_f:
-                        # Bomb
+                    elif self.input_manager.is_action_just_pressed(event, "bomb"):
                         assert self.player is not None
                         if self.player.activate_bomb():
                             self.handle_bomb_explosion()
+                    # Alt Shoot (e.g. Numpad 0)
+                    elif self.input_manager.is_action_just_pressed(event, "shoot_alt"):
+                        assert self.player is not None
+                        if self.player.shoot():
+                            self.fire_weapon()
 
-            elif (
-                event.type == pygame.MOUSEBUTTONDOWN
-                and not self.paused
-                and not self.cheat_mode_active
-            ):
-                assert self.player is not None
-                if event.button == 1:
-                    if self.player.shoot():
-                        self.fire_weapon()
-                elif event.button == 3:
-                    if self.player.fire_secondary():
-                        self.fire_weapon(is_secondary=True)
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if self.paused:
+                    # Handle Pause Menu Clicks
+                    # Resume: (500, 350, 200, 50)
+                    # Save: (500, 410, 200, 50)
+                    # Controls: (500, 470, 200, 50)
+                    # Quit: (500, 530, 200, 50)
+                    mx, my = event.pos
+                    if 500 <= mx <= 700:
+                        if 350 <= my <= 400: # Resume
+                            self.paused = False
+                            if self.pause_start_time > 0:
+                                pause_duration = pygame.time.get_ticks() - self.pause_start_time
+                                self.total_paused_time += pause_duration
+                                self.pause_start_time = 0
+                            pygame.mouse.set_visible(False)
+                            pygame.event.set_grab(True)
+                        elif 410 <= my <= 460: # Save
+                            self.save_game() 
+                            self.add_message("GAME SAVED", C.GREEN)
+                        elif 470 <= my <= 520: # Controls
+                            self.state = "key_config"
+                            self.binding_action = None # Initialize binding state
+                        elif 530 <= my <= 580: # Quit to Menu
+                            self.state = "menu"
+                            self.paused = False
+                            self.sound_manager.play_music("music_loop")
+
+                elif not self.cheat_mode_active:
+                    assert self.player is not None
+                    if event.button == 1:
+                        if self.player.shoot():
+                            self.fire_weapon()
+                    elif event.button == 3:
+                        if self.player.fire_secondary():
+                            self.fire_weapon(is_secondary=True)
 
             elif event.type == pygame.MOUSEMOTION and not self.paused:
                 assert self.player is not None
                 self.player.rotate(event.rel[0] * C.PLAYER_ROT_SPEED * C.SENSITIVITY_X)
                 self.player.pitch_view(-event.rel[1] * C.PLAYER_ROT_SPEED * 200)
+
+    def save_game(self) -> None:
+        """Save game state to file."""
+        # Simple save implementation
+        try:
+             with open("savegame.txt", "w") as f:
+                 f.write(f"{self.level}")
+        except Exception as e:
+            print(f"Save failed: {e}")
 
     def fire_weapon(self, is_secondary: bool = False) -> None:
         """Handle weapon firing (Hitscan or Projectile)"""
@@ -1061,7 +1105,7 @@ class Game:
         assert self.game_map is not None
         keys = pygame.key.get_pressed()
 
-        shield_active = keys[pygame.K_SPACE]
+        shield_active = self.input_manager.is_action_pressed("shield")
 
         if self.joystick and not self.paused and self.player and self.player.alive:
             axis_x = self.joystick.get_axis(0)
@@ -1438,6 +1482,52 @@ class Game:
                 elif event.key == pygame.K_ESCAPE:
                     self.state = "menu"
 
+    def handle_key_config_events(self) -> None:
+        """Handle input events in Key Config menu."""
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.running = False
+            
+            elif event.type == pygame.KEYDOWN:
+                if self.binding_action:
+                    # Bind the key
+                    if event.key != pygame.K_ESCAPE:
+                        self.input_manager.bind_key(self.binding_action, event.key)
+                    self.binding_action = None
+                else:
+                    if event.key == pygame.K_ESCAPE:
+                        self.state = "playing" if self.paused else "menu"
+            
+            elif event.type == pygame.MOUSEBUTTONDOWN and not self.binding_action:
+                mx, my = event.pos
+                
+                # Check clicks on bindings
+                bindings = self.input_manager.bindings
+                actions = sorted(list(bindings.keys()))
+                start_y = 120
+                col_1_x = C.SCREEN_WIDTH // 4
+                col_2_x = C.SCREEN_WIDTH * 3 // 4
+                limit = 12
+                
+                for i, action in enumerate(actions):
+                    col = 0 if i < limit else 1
+                    idx = i if i < limit else i - limit
+                    x = col_1_x if col == 0 else col_2_x
+                    y = start_y + idx * 40
+                    
+                    # Approximate hit box (Name + Key)
+                    # Name ends at x-150, Key starts at x+20. 
+                    # Let's say click area is x-150 to x+150, height 30.
+                    rect = pygame.Rect(x - 150, y, 300, 30)
+                    if rect.collidepoint(mx, my):
+                         self.binding_action = action
+                         return
+                
+                # Back Button
+                back_rect = pygame.Rect(C.SCREEN_WIDTH // 2 - 50, C.SCREEN_HEIGHT - 80, 100, 40)
+                if back_rect.collidepoint(mx, my):
+                    self.state = "playing" if self.paused else "menu"
+
     def _update_intro_logic(self, elapsed: int) -> None:
         """Update intro sequence logic and transitions.
 
@@ -1498,6 +1588,10 @@ class Game:
                 elif self.state == "menu":
                     self.handle_menu_events()
                     self.renderer.render_menu()
+                
+                elif self.state == "key_config":
+                    self.handle_key_config_events()
+                    self.renderer.render_key_config(self)
 
                 elif self.state == "map_select":
                     self.handle_map_select_events()
