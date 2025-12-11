@@ -1072,37 +1072,5 @@ class GameRenderer:
         if back_rect.collidepoint(pygame.mouse.get_pos()):
             pygame.draw.rect(self.screen, C.RED, back_rect, 2)
 
-    def _render_pause_menu(self) -> None:
-        """Render the pause menu overlay."""
-        s = pygame.Surface((C.SCREEN_WIDTH, C.SCREEN_HEIGHT), pygame.SRCALPHA)
-        s.fill((0, 0, 0, 150))
-        self.screen.blit(s, (0, 0))
 
-        title = self.title_font.render("PAUSED", True, C.RED)
-        title_rect = title.get_rect(center=(C.SCREEN_WIDTH // 2, 150))
-        self.screen.blit(title, title_rect)
-
-        # Menu Options
-        # Updated list with CONTROLS
-        menu_items = ["RESUME", "SAVE GAME", "CONTROLS", "QUIT TO MENU"]
-        mouse_pos = pygame.mouse.get_pos()
-
-        for i, item in enumerate(menu_items):
-            color = C.WHITE
-            # Resume: 350, Save: 410, Controls: 470, Quit: 530
-            rect = pygame.Rect(
-                C.SCREEN_WIDTH // 2 - 100,
-                350 + i * 60,
-                200,
-                50,
-            )
-            
-            if rect.collidepoint(mouse_pos):
-                color = C.YELLOW
-                pygame.draw.rect(self.screen, (50, 0, 0), rect)
-                pygame.draw.rect(self.screen, C.RED, rect, 2)
-
-            text = self.subtitle_font.render(item, True, color)
-            text_rect = text.get_rect(center=rect.center)
-            self.screen.blit(text, text_rect)
 

@@ -603,8 +603,8 @@ class Game:
         """
         # Simple save implementation
         try:
-             with open(filename, "w") as f:
-                 f.write(f"{self.level}")
+            with open(filename, "w") as f:
+                f.write(f"{self.level}")
         except Exception as e:
             print(f"Save failed: {e}")
 
@@ -1486,11 +1486,11 @@ class Game:
                     # Let's say click area is x-150 to x+150, height 30.
                     rect = pygame.Rect(x - 150, y, 300, 30)
                     if rect.collidepoint(mx, my):
-                         self.binding_action = action
-                         return
+                        self.binding_action = action
+                        return
                 
                 # Back Button
-                back_rect = pygame.Rect(C.SCREEN_WIDTH // 2 - 50, C.SCREEN_HEIGHT - 80, 100, 40)
+                back_rect = pygame.Rect(C.SCREEN_WIDTH // 2 - 50, C.SCREEN_HEIGHT - 60, 100, 40)
                 if back_rect.collidepoint(mx, my):
                     self.state = "playing" if self.paused else "menu"
 

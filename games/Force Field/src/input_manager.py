@@ -19,7 +19,7 @@ class InputManager:
         "reload": pygame.K_r,
         "zoom": pygame.K_z,
         "bomb": pygame.K_f,
-        "bomb": pygame.K_f,
+
         "shield": pygame.K_x, # Changed from LSHIFT to avoid sprint conflict
         "sprint": pygame.K_LSHIFT,
         "shoot_alt": pygame.K_KP0,
