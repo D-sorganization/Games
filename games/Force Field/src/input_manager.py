@@ -19,7 +19,9 @@ class InputManager:
         "reload": pygame.K_r,
         "zoom": pygame.K_z,
         "bomb": pygame.K_f,
-        "shield": pygame.K_LSHIFT, # Shield is bound to Left Shift; shoot is bound to Space and Numpad 0.
+        "bomb": pygame.K_f,
+        "shield": pygame.K_x, # Changed from LSHIFT to avoid sprint conflict
+        "sprint": pygame.K_LSHIFT,
         "shoot_alt": pygame.K_KP0,
         "pause": pygame.K_ESCAPE,
         "interact": pygame.K_e,
@@ -31,6 +33,11 @@ class InputManager:
     }
 
     def __init__(self, config_file: str = "keybindings.json"):
+        """Initialize the input manager.
+        
+        Args:
+            config_file: Path to the keybindings JSON file.
+        """
         self.config_file = config_file
         self.bindings: Dict[str, int] = self.DEFAULT_BINDINGS.copy()
         self.load_config()

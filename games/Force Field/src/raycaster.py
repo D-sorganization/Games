@@ -596,7 +596,9 @@ class Raycaster:
             if wall_type > 0:
                 # Render wall with texture
                 if distance > 0:
-                    wall_height = min(C.SCREEN_HEIGHT, (C.SCREEN_HEIGHT / distance))
+                    # Fisheye correction
+                    corrected_dist = distance * math.cos(player.angle - ray_angle)
+                    wall_height = min(C.SCREEN_HEIGHT, (C.SCREEN_HEIGHT / corrected_dist))
                 else:
                     wall_height = C.SCREEN_HEIGHT
 

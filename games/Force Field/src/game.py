@@ -1137,29 +1137,35 @@ class Game:
             if t["timer"] <= 0:
                 self.damage_texts.remove(t)
 
-        is_sprinting = keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]
+        is_sprinting = self.input_manager.is_action_pressed("sprint")
         current_speed = C.PLAYER_SPRINT_SPEED if is_sprinting else C.PLAYER_SPEED
 
         moving = False
 
-        if keys[pygame.K_w]:
+        if self.input_manager.is_action_pressed("move_forward"):
             self.player.move(self.game_map, self.bots, forward=True, speed=current_speed)
             moving = True
-        if keys[pygame.K_s]:
+        if self.input_manager.is_action_pressed("move_backward"):
             self.player.move(self.game_map, self.bots, forward=False, speed=current_speed)
             moving = True
-        if keys[pygame.K_a]:
+        if self.input_manager.is_action_pressed("strafe_left"):
             self.player.strafe(self.game_map, self.bots, right=False, speed=current_speed)
             moving = True
-        if keys[pygame.K_d]:
+        if self.input_manager.is_action_pressed("strafe_right"):
             self.player.strafe(self.game_map, self.bots, right=True, speed=current_speed)
+            moving = True
 
         self.player.is_moving = moving
 
-        if keys[pygame.K_LEFT]:
+        if self.input_manager.is_action_pressed("turn_left"):
             self.player.rotate(-0.05)
-        if keys[pygame.K_RIGHT]:
+        if self.input_manager.is_action_pressed("turn_right"):
             self.player.rotate(0.05)
+        if self.input_manager.is_action_pressed("look_up"):
+            self.player.pitch_view(5)
+        if self.input_manager.is_action_pressed("look_down"):
+            self.player.pitch_view(-5)
+
 
         self.player.update()
 
