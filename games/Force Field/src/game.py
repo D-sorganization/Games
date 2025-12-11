@@ -99,8 +99,8 @@ class Game:
                 self.joystick = pygame.joystick.Joystick(0)
                 self.joystick.init()
                 logger.info("Controller detected: %s", self.joystick.get_name())
-            except Exception as e:  # noqa: BLE001
-                logger.error("Controller init failed: %s", e)
+            except Exception:
+                logger.exception("Controller init failed")
 
         # Fog of War
         self.visited_cells: set[tuple[int, int]] = set()
@@ -769,8 +769,8 @@ class Game:
                     self.last_death_pos = (closest_bot.x, closest_bot.y)
                     self.sound_manager.play_sound("scream")
 
-        except Exception as e:  # noqa: BLE001
-            logger.error("Error in check_shot_hit: %s", e)
+        except Exception:
+            logger.exception("Error in check_shot_hit")
 
     def handle_bomb_explosion(self) -> None:
         """Handle bomb explosion logic"""
@@ -836,8 +836,8 @@ class Game:
 
         try:
             self.sound_manager.play_sound("bomb")
-        except BaseException as e:  # noqa: BLE001
-            logger.error("Bomb Audio Failed: %s", e)
+        except BaseException:
+            logger.exception("Bomb Audio Failed")
 
         self.damage_texts.append(
             {
@@ -854,8 +854,8 @@ class Game:
         """Trigger Massive Laser Explosion at Impact Point"""
         try:
             self.sound_manager.play_sound("boom_real")
-        except Exception as e:  # noqa: BLE001
-            logger.error("Boom sound failed: %s", e)
+        except Exception:
+            logger.exception("Boom sound failed")
 
         try:
             hits = 0
@@ -907,9 +907,8 @@ class Game:
                         "vy": -2,
                     }
                 )
-        except Exception as e:  # noqa: BLE001
-            logger.error("Critical Laser Error: %s", e)
-            logger.error(traceback.format_exc())
+        except Exception:
+            logger.exception("Critical Laser Error")
 
     def explode_plasma(self, projectile: Projectile) -> None:
         """Trigger plasma AOE explosion"""

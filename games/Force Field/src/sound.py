@@ -99,8 +99,8 @@ class SoundManager:
                     # Lower volume for ambient to be background
                     if "music" in name or name == "ambient":
                         self.sounds[name].set_volume(0.5)
-                except Exception as e:  # noqa: BLE001
-                    logger.error("Failed to load sound %s (probably codec issue?): %s", filename, e)
+                except Exception:
+                    logger.exception("Failed to load sound %s (probably codec issue?)", filename)
                     # If we fail to load a "real" sound, try to fallback
                     # to synthesized logic if possible?
                     # For now just log it.
@@ -115,8 +115,8 @@ class SoundManager:
         if name in self.sounds:
             try:
                 self.sounds[name].play()
-            except BaseException as e:  # noqa: BLE001
-                logger.error("Sound play failed for %s: %s", name, e)
+            except BaseException:
+                logger.exception("Sound play failed for %s", name)
 
     def start_music(self, name: str = "music_loop") -> None:
         """Start ambient music loop"""

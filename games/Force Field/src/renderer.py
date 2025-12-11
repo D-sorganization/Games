@@ -115,8 +115,8 @@ class GameRenderer:
                     img = pygame.transform.scale(img, new_size)
                 self.intro_images["deadfish"] = img
 
-        except Exception as e:  # noqa: BLE001
-            logger.error("Failed to load assets: %s", e)
+        except Exception:
+            logger.exception("Failed to load assets")
 
     def render_menu(self) -> None:
         """Render main menu"""
