@@ -1,11 +1,13 @@
-import pygame
 import json
 import os
-from typing import Dict, Any
+from typing import Dict
+
+import pygame
+
 
 class InputManager:
     """Manages input bindings and state."""
-    
+
     DEFAULT_BINDINGS = {
         "move_forward": pygame.K_w,
         "move_backward": pygame.K_s,
@@ -41,7 +43,7 @@ class InputManager:
         self.config_file = config_file
         self.bindings: Dict[str, int] = self.DEFAULT_BINDINGS.copy()
         self.load_config()
-        
+
         # Mouse settings
         self.mouse_sensitivity = 1.0
         self.invert_y = False
@@ -50,7 +52,7 @@ class InputManager:
         """Load bindings from disk."""
         if os.path.exists(self.config_file):
             try:
-                with open(self.config_file, "r") as f:
+                with open(self.config_file) as f:
                     data = json.load(f)
                     # Merge with defaults to ensure all keys exist
                     for action, key in data.get("bindings", {}).items():
@@ -81,7 +83,7 @@ class InputManager:
             if event.key == self.bindings.get(action):
                 return True
         return False
-    
+
     def get_key_name(self, action: str) -> str:
         """Get human-readable name of the key bound to an action."""
         key_code = self.bindings.get(action)

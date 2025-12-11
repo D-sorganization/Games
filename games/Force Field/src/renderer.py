@@ -764,7 +764,7 @@ class GameRenderer:
                 color = C.YELLOW
                 pygame.draw.rect(self.screen, (50, 0, 0), rect)
                 pygame.draw.rect(self.screen, C.RED, rect, 2)
-            
+
             text = self.subtitle_font.render(item, True, color)
             text_rect = text.get_rect(center=rect.center)
             self.screen.blit(text, text_rect)
@@ -1025,28 +1025,28 @@ class GameRenderer:
     def render_key_config(self, game: Any) -> None:
         """Render the key configuration menu."""
         self.screen.fill(C.BLACK)
-        
+
         # Title
         title = self.title_font.render("CONTROLS", True, C.RED)
         self.screen.blit(title, title.get_rect(center=(C.SCREEN_WIDTH // 2, 50)))
-        
+
         # Scroll/List logic would be complex. Let's do a simple 2-column layout.
         bindings = game.input_manager.bindings
         start_y = 120
         col_1_x = C.SCREEN_WIDTH // 4
         col_2_x = C.SCREEN_WIDTH * 3 // 4
-        
+
         # Actions to show (skip raw debug ones if any)
-        actions = sorted(list(bindings.keys()))
-        
+        actions = sorted(bindings.keys())
+
         limit = 12 # Items per column
-        
+
         for i, action in enumerate(actions):
             col = 0 if i < limit else 1
             idx = i if i < limit else i - limit
             x = col_1_x if col == 0 else col_2_x
             y = start_y + idx * 40
-            
+
             # Action Name
             name_str = action.replace("_", " ").upper()
             color = C.WHITE
@@ -1055,16 +1055,16 @@ class GameRenderer:
                 key_text = "PRESS ANY KEY..."
             else:
                 key_text = game.input_manager.get_key_name(action)
-                
+
             name_txt = self.tiny_font.render(f"{name_str}:", True, C.GRAY)
             key_txt = self.tiny_font.render(key_text, True, color)
-            
+
             # Right align key, Left align name
             self.screen.blit(name_txt, (x - 150, y))
             self.screen.blit(key_txt, (x + 20, y))
-            
+
             # Hitbox for clicking (stored in logic usually, but here just visual)
-        
+
         # Back Button
         back_txt = self.subtitle_font.render("BACK", True, C.WHITE)
         back_rect = back_txt.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT - 60))

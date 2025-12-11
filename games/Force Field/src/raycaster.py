@@ -883,7 +883,11 @@ class Raycaster:
 
         # Draw bots (only if visible through fog of war)
         for bot in bots:
-            if bot.alive and bot.enemy_type != "health_pack" and C.ENEMY_TYPES[bot.enemy_type].get("visual_style") != "item":
+            if (
+                bot.alive
+                and bot.enemy_type != "health_pack"
+                and C.ENEMY_TYPES[bot.enemy_type].get("visual_style") != "item"
+            ):
                 bot_cell_x = int(bot.x)
                 bot_cell_y = int(bot.y)
                 # Check fog of war

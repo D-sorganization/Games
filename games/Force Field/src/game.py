@@ -11,14 +11,13 @@ import pygame
 
 from . import constants as C  # noqa: N812
 from .bot import Bot
+from .input_manager import InputManager
 from .map import Map
 from .player import Player
 from .projectile import Projectile
 from .raycaster import Raycaster
 from .renderer import GameRenderer
-
 from .sound import SoundManager
-from .input_manager import InputManager
 
 logger = logging.getLogger(__name__)
 
@@ -524,7 +523,7 @@ class Game:
                     self.current_cheat_input = ""
                     self.add_message("CHEAT MODE: TYPE CODE", C.PURPLE)
                     continue
-                
+
                 # Single press actions (switches, reload, etc)
                 if not self.paused:
                     if self.input_manager.is_action_just_pressed(event, "weapon_1"):
@@ -571,7 +570,7 @@ class Game:
                             pygame.mouse.set_visible(False)
                             pygame.event.set_grab(True)
                         elif 410 <= my <= 460: # Save
-                            self.save_game() 
+                            self.save_game()
                             self.add_message("GAME SAVED", C.GREEN)
                         elif 470 <= my <= 520: # Controls
                             self.state = "key_config"
@@ -1137,7 +1136,7 @@ class Game:
             if t["timer"] <= 0:
                 self.damage_texts.remove(t)
 
-        is_sprinting = self.input_manager.is_action_pressed("sprint")
+        is_sprinting = self.input_manager.is_action_pressed("sprint") or keys[pygame.K_RSHIFT]
         current_speed = C.PLAYER_SPRINT_SPEED if is_sprinting else C.PLAYER_SPEED
 
         moving = False
@@ -1453,44 +1452,43 @@ class Game:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
-            
+
             elif event.type == pygame.KEYDOWN:
                 if self.binding_action:
                     # Bind the key
                     if event.key != pygame.K_ESCAPE:
                         self.input_manager.bind_key(self.binding_action, event.key)
                     self.binding_action = None
-                else:
-                    if event.key == pygame.K_ESCAPE:
-                        self.state = "playing" if self.paused else "menu"
-            
+                elif event.key == pygame.K_ESCAPE:
+                    self.state = "playing" if self.paused else "menu"
+
             elif event.type == pygame.MOUSEBUTTONDOWN and not self.binding_action:
                 mx, my = event.pos
-                
+
                 # Check clicks on bindings
                 bindings = self.input_manager.bindings
-                actions = sorted(list(bindings.keys()))
+                actions = sorted(bindings.keys())
                 start_y = 120
                 col_1_x = C.SCREEN_WIDTH // 4
                 col_2_x = C.SCREEN_WIDTH * 3 // 4
                 limit = 12
-                
+
                 for i, action in enumerate(actions):
                     col = 0 if i < limit else 1
                     idx = i if i < limit else i - limit
                     x = col_1_x if col == 0 else col_2_x
                     y = start_y + idx * 40
-                    
+
                     # Approximate hit box (Name + Key)
-                    # Name ends at x-150, Key starts at x+20. 
+                    # Name ends at x-150, Key starts at x+20.
                     # Let's say click area is x-150 to x+150, height 30.
                     rect = pygame.Rect(x - 150, y, 300, 30)
                     if rect.collidepoint(mx, my):
                         self.binding_action = action
                         return
-                
+
                 # Back Button
-                back_rect = pygame.Rect(C.SCREEN_WIDTH // 2 - 50, C.SCREEN_HEIGHT - 60, 100, 40)
+                back_rect = pygame.Rect(C.SCREEN_WIDTH // 2 - 50, C.SCREEN_HEIGHT - 80, 100, 40)
                 if back_rect.collidepoint(mx, my):
                     self.state = "playing" if self.paused else "menu"
 
@@ -1554,7 +1552,7 @@ class Game:
                 elif self.state == "menu":
                     self.handle_menu_events()
                     self.renderer.render_menu()
-                
+
                 elif self.state == "key_config":
                     self.handle_key_config_events()
                     self.renderer.render_key_config(self)
