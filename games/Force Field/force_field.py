@@ -5,22 +5,24 @@ Refactored into modules.
 """
 
 import logging
-import os
 import sys
+from pathlib import Path
 
 import pygame
 
-# Make sure the game directory is in path to import 'src'
-# This allows running the script from any directory
-GAME_DIR = os.path.dirname(os.path.abspath(__file__))
-if GAME_DIR not in sys.path:
-    sys.path.insert(0, GAME_DIR)
-
-from src.game import Game
+logger = logging.getLogger(__name__)
 
 
 def main() -> None:
     """Entry point of the FPS Shooter application."""
+    # Make sure the game directory is in path to import 'src'
+    # This allows running the script from any directory
+    game_dir = Path(__file__).resolve().parent
+    if str(game_dir) not in sys.path:
+        sys.path.insert(0, str(game_dir))
+
+    from src.game import Game  # noqa: PLC0415
+
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -32,7 +34,7 @@ def main() -> None:
         game = Game()
         game.run()
     except KeyboardInterrupt:
-        logging.info("Game interrupted by user")
+        logger.info("Game interrupted by user")
     finally:
         pygame.quit()
         sys.exit()
