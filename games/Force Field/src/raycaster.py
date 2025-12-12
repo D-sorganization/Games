@@ -513,7 +513,8 @@ class Raycaster:
                     step = max(2, step)
                     darker_color = tuple(max(0, c - 30) for c in color)
                     for y in range(int(wall_top), int(wall_top + wall_height), step):
-                        self.view_surface.set_at((ray, y), darker_color)
+                        if 0 <= y < C.SCREEN_HEIGHT:
+                            self.view_surface.set_at((ray, y), darker_color)
 
             ray_angle += delta_angle
 
@@ -606,7 +607,11 @@ class Raycaster:
             sprite_surface = pygame.Surface((cached_size, cached_size), pygame.SRCALPHA)
             self.render_enemy_sprite(sprite_surface, bot, 0, 0, cached_size)
             if len(self.sprite_cache) > 300:
-                self.sprite_cache.clear()
+                # LRU-like eviction: remove oldest items (first ~10%)
+                # dict retains insertion order since Python 3.7
+                keys_to_remove = list(self.sprite_cache.keys())[:30]
+                for k in keys_to_remove:
+                    del self.sprite_cache[k]
             self.sprite_cache[cache_key] = sprite_surface
 
         distance_shade = max(0.4, 1.0 - dist / C.MAX_DEPTH)
@@ -629,6 +634,10 @@ class Raycaster:
 
         tex_width = current_sprite_surf.get_width()
         tex_height = current_sprite_surf.get_height()
+
+        if sprite_ray_width < 0.1:
+            return
+
         tex_scale = tex_width / sprite_ray_width
 
         for r in range(start_r, end_r):
@@ -790,7 +799,9 @@ class Raycaster:
                 proj_y = C.SCREEN_HEIGHT / 2 + player.pitch + view_offset_y
 
                 # Simple Z-Check
-                ray_idx = int(proj_x / C.RENDER_SCALE)
+                # Map angle to ray index
+                center_ray = C.NUM_RAYS // 2
+                ray_idx = int(center_ray + (angle_to_proj / C.HALF_FOV) * center_ray)
 
                 # Check bounds and Z-Buffer
                 if 0 <= ray_idx < C.NUM_RAYS:
