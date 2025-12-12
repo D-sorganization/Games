@@ -243,10 +243,21 @@ class GameRenderer:
         assert game.raycaster is not None
         assert game.player is not None
 
+        # Calculate Head Bob
+        bob_offset = 0.0
+        if game.player.is_moving:
+            bob_offset = math.sin(pygame.time.get_ticks() * 0.015) * 15.0
+
         # 1. 3D World (Raycaster)
-        game.raycaster.render_floor_ceiling(self.screen, game.player, game.level)
-        game.raycaster.render_3d(self.screen, game.player, game.bots, game.level)
-        game.raycaster.render_projectiles(self.screen, game.player, game.projectiles)
+        game.raycaster.render_floor_ceiling(
+            self.screen, game.player, game.level, view_offset_y=bob_offset
+        )
+        game.raycaster.render_3d(
+            self.screen, game.player, game.bots, game.level, view_offset_y=bob_offset
+        )
+        game.raycaster.render_projectiles(
+            self.screen, game.player, game.projectiles, view_offset_y=bob_offset
+        )
 
         # 2. Effects
         self.effects_surface.fill((0, 0, 0, 0))

@@ -4,20 +4,25 @@ First-Person Shooter Game
 Refactored into modules.
 """
 
-# Make sure src is in path if running directly from this directory
 import logging
-import os
 import sys
+from pathlib import Path
 
 import pygame
 
-sys.path.append(os.path.dirname(__file__))
-
-from src.game import Game
+logger = logging.getLogger(__name__)
 
 
 def main() -> None:
     """Entry point of the FPS Shooter application."""
+    # Make sure the game directory is in path to import 'src'
+    # This allows running the script from any directory
+    game_dir = Path(__file__).resolve().parent
+    if str(game_dir) not in sys.path:
+        sys.path.insert(0, str(game_dir))
+
+    from src.game import Game
+
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -25,10 +30,14 @@ def main() -> None:
     )
 
     pygame.init()
-    game = Game()
-    game.run()
-    pygame.quit()
-    sys.exit()
+    try:
+        game = Game()
+        game.run()
+    except KeyboardInterrupt:
+        logger.info("Game interrupted by user")
+    finally:
+        pygame.quit()
+        sys.exit()
 
 
 if __name__ == "__main__":
