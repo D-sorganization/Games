@@ -37,9 +37,7 @@ class Raycaster:
         self.sprite_cache: Dict[str, pygame.Surface] = {}
 
         # Offscreen surface for low-res rendering (Optimization)
-        self.view_surface = pygame.Surface(
-            (C.NUM_RAYS, C.SCREEN_HEIGHT), pygame.SRCALPHA
-        )
+        self.view_surface = pygame.Surface((C.NUM_RAYS, C.SCREEN_HEIGHT), pygame.SRCALPHA)
 
         # Z-Buffer for occlusion (Euclidean distance)
         self.z_buffer: List[float] = [float("inf")] * C.NUM_RAYS
@@ -561,9 +559,7 @@ class Raycaster:
         bots_to_render.sort(key=lambda x: x[1], reverse=True)
 
         for bot, bot_dist, angle_to_bot in bots_to_render:
-            self._draw_single_sprite(
-                player, bot, bot_dist, angle_to_bot, half_fov, view_offset_y
-            )
+            self._draw_single_sprite(player, bot, bot_dist, angle_to_bot, half_fov, view_offset_y)
 
     def _draw_single_sprite(
         self,
@@ -659,7 +655,7 @@ class Raycaster:
             column = current_sprite_surf.subsurface(area)
             target_height = int(sprite_size)
             if target_height != tex_height:
-                 column = pygame.transform.scale(column, (1, target_height))
+                column = pygame.transform.scale(column, (1, target_height))
 
             self.view_surface.blit(column, dest_pos)
 
@@ -693,9 +689,7 @@ class Raycaster:
         if -100 < moon_x < C.SCREEN_WIDTH + 100:
             if 0 <= moon_y < horizon + 40:
                 pygame.draw.circle(screen, (220, 220, 200), (int(moon_x), moon_y), 40)
-                pygame.draw.circle(
-                    screen, ceiling_color, (int(moon_x) - 10, moon_y), 40
-                )
+                pygame.draw.circle(screen, ceiling_color, (int(moon_x) - 10, moon_y), 40)
 
         floor_color = cast("Tuple[int, int, int]", theme["floor"])
         pygame.draw.rect(
