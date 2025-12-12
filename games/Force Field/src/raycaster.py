@@ -656,7 +656,12 @@ class Raycaster:
             area = pygame.Rect(tex_x, 0, 1, tex_height)
             dest_pos = (r, int(sprite_y))
 
-            self.view_surface.blit(current_sprite_surf, dest_pos, area, special_flags=0)
+            column = current_sprite_surf.subsurface(area)
+            target_height = int(sprite_size)
+            if target_height != tex_height:
+                 column = pygame.transform.scale(column, (1, target_height))
+
+            self.view_surface.blit(column, dest_pos)
 
     def render_floor_ceiling(
         self, screen: pygame.Surface, player: Player, level: int, view_offset_y: float = 0.0
@@ -779,6 +784,9 @@ class Raycaster:
         view_offset_y: float = 0.0,
     ) -> None:
         """Render bot projectiles"""
+        current_fov = C.FOV * (C.ZOOM_FOV_MULT if player.zoomed else 1.0)
+        half_fov = current_fov / 2
+
         for projectile in projectiles:
             if not projectile.alive:
                 continue
@@ -798,15 +806,15 @@ class Raycaster:
             while angle_to_proj < -math.pi:
                 angle_to_proj += 2 * math.pi
 
-            if abs(angle_to_proj) < C.HALF_FOV:
+            if abs(angle_to_proj) < half_fov:
                 proj_size = max(2, 10 / proj_dist) if proj_dist > 0 else 10
-                proj_x = C.SCREEN_WIDTH / 2 + (angle_to_proj / C.HALF_FOV) * C.SCREEN_WIDTH / 2
+                proj_x = C.SCREEN_WIDTH / 2 + (angle_to_proj / half_fov) * C.SCREEN_WIDTH / 2
                 proj_y = C.SCREEN_HEIGHT / 2 + player.pitch + view_offset_y
 
                 # Simple Z-Check
                 # Map angle to ray index
                 center_ray = C.NUM_RAYS // 2
-                ray_idx = int(center_ray + (angle_to_proj / C.HALF_FOV) * center_ray)
+                ray_idx = int(center_ray + (angle_to_proj / half_fov) * center_ray)
 
                 # Check bounds and Z-Buffer
                 if 0 <= ray_idx < C.NUM_RAYS:
