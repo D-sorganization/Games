@@ -21,7 +21,7 @@ def main() -> None:
     if str(game_dir) not in sys.path:
         sys.path.insert(0, str(game_dir))
 
-    from src.game import Game  # noqa: PLC0415
+    from src.game import Game
 
     logging.basicConfig(
         level=logging.INFO,

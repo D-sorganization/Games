@@ -75,6 +75,7 @@ exclude = [
     "S101",
     "PLR2004", 
 ]
+"games/Force Field/force_field.py" = ["PLC0415"]
 
 [lint.mccabe]
 max-complexity = 20  # Increased for game logic
