@@ -574,6 +574,11 @@ class Raycaster:
         half_fov: float,
         view_offset_y: float = 0.0,
     ) -> None:
+        """Draw a single sprite to the view surface.
+
+        Calculates sprite position, scaling, and occlusion, then blits z-buffered
+        vertical strips to the offscreen view surface.
+        """
         safe_dist = max(0.01, dist)
         base_sprite_size = C.SCREEN_HEIGHT / safe_dist
 
