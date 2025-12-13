@@ -21,6 +21,10 @@ class Raycaster:
     def __init__(self, game_map: Map):
         """Initialize raycaster"""
         self.game_map = game_map
+        # Optimization: Cache grid for faster access
+        self.grid = game_map.grid
+        self.map_size = game_map.size
+
         # Pre-generate stars
         self.stars = []
         for _ in range(100):
@@ -84,6 +88,10 @@ class Raycaster:
         # Max depth check to prevent infinite loop
         max_steps = int(C.MAX_DEPTH * 1.5)
 
+        # Local variable access for speed
+        grid = self.grid
+        map_size = self.map_size
+
         for _ in range(max_steps):
             if side_dist_x < side_dist_y:
                 side_dist_x += delta_dist_x
@@ -94,10 +102,15 @@ class Raycaster:
                 map_y += step_y
                 side = 1
 
-            # Check if wall hit
-            if self.game_map.is_wall(map_x, map_y):
+            # Optimization: Inline boundary and wall check
+            if map_x < 0 or map_x >= map_size or map_y < 0 or map_y >= map_size:
                 hit = True
-                wall_type = self.game_map.get_wall_type(map_x, map_y)
+                wall_type = 1  # Treat out of bounds as wall (or void)
+                break
+
+            if grid[map_y][map_x] > 0:
+                hit = True
+                wall_type = grid[map_y][map_x]
                 break
 
         if hit:
@@ -481,7 +494,8 @@ class Raycaster:
                 )
 
                 # Local lighting (Shade)
-                shade = max(0.4, 1.0 - distance / 20.0)
+                # Adjusted to be a bit darker for atmosphere
+                shade = max(0.2, 1.0 - distance / 50.0)
 
                 lit_r = base_color[0] * shade
                 lit_g = base_color[1] * shade
@@ -596,36 +610,36 @@ class Raycaster:
         cached_size = int(round(cache_display_size / 10.0) * 10.0)
         cached_size = max(cached_size, 10)
 
+        # Calculate shade level (0-20)
+        distance_shade = max(0.2, 1.0 - dist / 50.0)  # Match wall shading intensity
+        shade_level = int(distance_shade * 20)
+
         cache_key = (
             f"{bot.enemy_type}_{bot.type_data.get('visual_style')}_"
             f"{int(bot.walk_animation * 5)}_{int(bot.shoot_animation * 5)}_"
-            f"{bot.dead}_{int(bot.death_timer // 5)}_{cached_size}"
+            f"{bot.dead}_{int(bot.death_timer // 5)}_{cached_size}_{shade_level}"
         )
 
         if cache_key in self.sprite_cache:
             sprite_surface = self.sprite_cache[cache_key]
         else:
+            # Create base surface
             sprite_surface = pygame.Surface((cached_size, cached_size), pygame.SRCALPHA)
             self.render_enemy_sprite(sprite_surface, bot, 0, 0, cached_size)
-            if len(self.sprite_cache) > 300:
-                # LRU-like eviction: remove oldest items (first ~10%)
-                # dict retains insertion order since Python 3.7
-                keys_to_remove = list(self.sprite_cache.keys())[:30]
+
+            # Apply shading cache
+            shade_val = int(255 * distance_shade)
+            shade_color = (shade_val, shade_val, shade_val)
+
+            if shade_color != (255, 255, 255):
+                sprite_surface.fill(shade_color, special_flags=pygame.BLEND_MULT)
+
+            if len(self.sprite_cache) > 400:
+                # Evict oldest
+                keys_to_remove = list(self.sprite_cache.keys())[:40]
                 for k in keys_to_remove:
                     del self.sprite_cache[k]
             self.sprite_cache[cache_key] = sprite_surface
-
-        distance_shade = max(0.4, 1.0 - dist / C.MAX_DEPTH)
-        shade_color = (
-            int(255 * distance_shade),
-            int(255 * distance_shade),
-            int(255 * distance_shade),
-        )
-
-        current_sprite_surf = sprite_surface
-        if shade_color != (255, 255, 255):
-            current_sprite_surf = sprite_surface.copy()
-            current_sprite_surf.fill(shade_color, special_flags=pygame.BLEND_MULT)
 
         start_r = int(max(0, sprite_ray_x))
         end_r = int(min(C.NUM_RAYS, sprite_ray_x + sprite_ray_width))
@@ -633,8 +647,8 @@ class Raycaster:
         if start_r >= end_r:
             return
 
-        tex_width = current_sprite_surf.get_width()
-        tex_height = current_sprite_surf.get_height()
+        tex_width = sprite_surface.get_width()
+        tex_height = sprite_surface.get_height()
 
         if sprite_ray_width < 0.1:
             return
@@ -652,7 +666,7 @@ class Raycaster:
             area = pygame.Rect(tex_x, 0, 1, tex_height)
             dest_pos = (r, int(sprite_y))
 
-            column = current_sprite_surf.subsurface(area)
+            column = sprite_surface.subsurface(area)
             target_height = int(sprite_size)
             if target_height != tex_height:
                 column = pygame.transform.scale(column, (1, target_height))
@@ -722,11 +736,11 @@ class Raycaster:
 
         for i in range(map_size):
             for j in range(map_size):
-                if self.game_map.grid[i][j] != 0:
+                if self.grid[i][j] != 0:
                     if visited_cells is not None and (j, i) not in visited_cells:
                         continue
 
-                    wall_type = self.game_map.grid[i][j]
+                    wall_type = self.grid[i][j]
                     color = C.WALL_COLORS.get(wall_type, C.GRAY)
                     pygame.draw.rect(
                         screen,
