@@ -159,6 +159,3 @@ class Map:
             return self.grid[map_y][map_x]
         return 1
 
-    def is_inside_building(self, x: float, y: float) -> bool:
-        """Deprecated: Always return False as generation is organic now"""
-        return False
