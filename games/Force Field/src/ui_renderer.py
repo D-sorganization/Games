@@ -5,7 +5,7 @@ import math
 import os
 import random
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Tuple, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, cast
 
 import pygame
 
@@ -35,7 +35,7 @@ class UIRenderer:
 
         # Load Intro Images
         self.intro_images: Dict[str, pygame.Surface] = {}
-        self.intro_video = None
+        self.intro_video: Optional[Any] = None
         self._load_assets()
 
         # Fonts
@@ -65,9 +65,8 @@ class UIRenderer:
             self.small_font = pygame.font.SysFont("franklingothicmedium", 28)
             self.tiny_font = pygame.font.SysFont("consolas", 20)
             self.subtitle_font = pygame.font.SysFont("georgia", 36)
-            # 'chiller' is a non-standard font used for intro slides;
-            # may not be available on all systems.
-            # If unavailable, falls back to title_font in the exception handler below.
+            # 'chiller' is a non-standard font used for intro slides.
+            # If unavailable, it falls back to title_font in the exception handler.
             self.chiller_font = pygame.font.SysFont("chiller", 70)
         except Exception:  # noqa: BLE001
             self.title_font = pygame.font.Font(None, 80)

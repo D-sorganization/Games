@@ -105,7 +105,7 @@ class Raycaster:
             # Optimization: Inline boundary and wall check
             if map_x < 0 or map_x >= map_size or map_y < 0 or map_y >= map_size:
                 hit = True
-                wall_type = 1 # Treat out of bounds as wall (or void)
+                wall_type = 1  # Treat out of bounds as wall (or void)
                 break
 
             if grid[map_y][map_x] > 0:
@@ -632,7 +632,7 @@ class Raycaster:
             shade_color = (shade_val, shade_val, shade_val)
 
             if shade_color != (255, 255, 255):
-                 sprite_surface.fill(shade_color, special_flags=pygame.BLEND_MULT)
+                sprite_surface.fill(shade_color, special_flags=pygame.BLEND_MULT)
 
             if len(self.sprite_cache) > 400:
                 # Evict oldest

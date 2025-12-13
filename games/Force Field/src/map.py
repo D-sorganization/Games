@@ -158,4 +158,3 @@ class Map:
         if 0 <= map_x < self.size and 0 <= map_y < self.size:
             return self.grid[map_y][map_x]
         return 1
-
