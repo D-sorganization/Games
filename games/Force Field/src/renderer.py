@@ -64,6 +64,8 @@ class GameRenderer:
         if hasattr(game, "ui_renderer"):
             game.ui_renderer.render_hud(game)
 
+        pygame.display.flip()
+
     def _render_particles(self, particles: List[Dict[str, Any]]) -> None:
         """Render particle effects including lasers and explosion particles.
 

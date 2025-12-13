@@ -65,6 +65,9 @@ class UIRenderer:
             self.small_font = pygame.font.SysFont("franklingothicmedium", 28)
             self.tiny_font = pygame.font.SysFont("consolas", 20)
             self.subtitle_font = pygame.font.SysFont("georgia", 36)
+            # 'chiller' is a non-standard font used for intro slides;
+            # may not be available on all systems.
+            # If unavailable, falls back to title_font in the exception handler below.
             self.chiller_font = pygame.font.SysFont("chiller", 70)
         except Exception:  # noqa: BLE001
             self.title_font = pygame.font.Font(None, 80)
@@ -758,3 +761,5 @@ class UIRenderer:
         self.screen.blit(back_txt, back_rect)
         if back_rect.collidepoint(pygame.mouse.get_pos()):
             pygame.draw.rect(self.screen, C.RED, back_rect, 2)
+
+        pygame.display.flip()

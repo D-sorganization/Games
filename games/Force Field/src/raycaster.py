@@ -611,7 +611,7 @@ class Raycaster:
         cached_size = max(cached_size, 10)
 
         # Calculate shade level (0-20)
-        distance_shade = max(0.2, 1.0 - dist / 50.0) # Match wall shading roughly
+        distance_shade = max(0.2, 1.0 - dist / 50.0)  # Match wall shading intensity
         shade_level = int(distance_shade * 20)
 
         cache_key = (
