@@ -5,7 +5,7 @@ import math
 import os
 import random
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Tuple, cast
 
 import pygame
 
@@ -35,7 +35,7 @@ class UIRenderer:
 
         # Load Intro Images
         self.intro_images: Dict[str, pygame.Surface] = {}
-        self.intro_video: Optional[Any] = None
+        self.intro_video: Any | None = None
         self._load_assets()
 
         # Fonts
@@ -332,9 +332,16 @@ class UIRenderer:
         kills_rect = kills_text.get_rect(topright=(C.SCREEN_WIDTH - 20, 50))
         self.screen.blit(kills_text, kills_rect)
 
-        game.raycaster.render_minimap(
-            self.screen, game.player, game.bots, game.visited_cells, game.portal
-        )
+        # Score
+        score = game.kills * 100
+        score_text = self.small_font.render(f"Score: {score}", True, C.YELLOW)
+        score_rect = score_text.get_rect(topright=(C.SCREEN_WIDTH - 20, 80))
+        self.screen.blit(score_text, score_rect)
+
+        if game.show_minimap:
+            game.raycaster.render_minimap(
+                self.screen, game.player, game.bots, game.visited_cells, game.portal
+            )
 
         # Shield Bar
         shield_width = 150
@@ -369,8 +376,25 @@ class UIRenderer:
             (shield_x, laser_y, int(shield_width * laser_pct), shield_height),
         )
 
+        # Stamina Bar
+        stamina_y = laser_y - 15
+        stamina_pct = game.player.stamina / game.player.max_stamina
+        pygame.draw.rect(
+            self.screen, C.DARK_GRAY, (shield_x, stamina_y, shield_width, shield_height)
+        )
+        pygame.draw.rect(
+            self.screen,
+            (255, 255, 0),
+            (shield_x, stamina_y, int(shield_width * stamina_pct), shield_height),
+        )
+        if stamina_pct < 1.0:
+            s_txt = self.tiny_font.render("STAMINA", True, C.WHITE)
+            self.screen.blit(s_txt, (shield_x + shield_width + 5, stamina_y - 2))
+
         controls_hint = self.tiny_font.render(
-            "WASD:Move | 1-5:Wpn | R:Reload | F:Bomb | SPACE:Shield | ESC:Menu", True, C.WHITE
+            "WASD:Move | 1-5:Wpn | R:Reload | F:Bomb | SPACE:Shield | M:Map | ESC:Menu",
+            True,
+            C.WHITE,
         )
         controls_hint_rect = controls_hint.get_rect(topleft=(10, 10))
         bg_surface = pygame.Surface(

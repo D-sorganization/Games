@@ -90,7 +90,6 @@ class Raycaster:
 
         # Local variable access for speed
         grid = self.grid
-        map_size = self.map_size
 
         for _ in range(max_steps):
             if side_dist_x < side_dist_y:
@@ -101,12 +100,6 @@ class Raycaster:
                 side_dist_y += delta_dist_y
                 map_y += step_y
                 side = 1
-
-            # Optimization: Inline boundary and wall check
-            if map_x < 0 or map_x >= map_size or map_y < 0 or map_y >= map_size:
-                hit = True
-                wall_type = 1  # Treat out of bounds as wall (or void)
-                break
 
             if grid[map_y][map_x] > 0:
                 hit = True
@@ -655,23 +648,52 @@ class Raycaster:
 
         tex_scale = tex_width / sprite_ray_width
 
-        for r in range(start_r, end_r):
+        r = start_r
+        while r < end_r:
+            # Skip occluded rays
             if dist > self.z_buffer[r]:
+                r += 1
                 continue
 
-            tex_x = int((r - sprite_ray_x) * tex_scale)
-            if tex_x < 0 or tex_x >= tex_width:
+            # Found start of visible run
+            run_start = r
+            r += 1
+            while r < end_r and dist <= self.z_buffer[r]:
+                r += 1
+
+            # Run is [run_start, r)
+            run_width = r - run_start
+
+            # Calculate texture slice
+            tex_x_start = int((run_start - sprite_ray_x) * tex_scale)
+            tex_x_end = int((r - sprite_ray_x) * tex_scale)
+
+            # Clamp
+            tex_x_start = max(0, min(tex_width, tex_x_start))
+            tex_x_end = max(0, min(tex_width, tex_x_end))
+
+            w = tex_x_end - tex_x_start
+            if w <= 0:
                 continue
 
-            area = pygame.Rect(tex_x, 0, 1, tex_height)
-            dest_pos = (r, int(sprite_y))
+            # Blit visible slice
+            area = pygame.Rect(tex_x_start, 0, w, tex_height)
+            try:
+                # We need to scale this area to (run_width, sprite_size)
+                # Note: sprite_size is the height. run_width is width.
+                target_height = int(sprite_size)
 
-            column = sprite_surface.subsurface(area)
-            target_height = int(sprite_size)
-            if target_height != tex_height:
-                column = pygame.transform.scale(column, (1, target_height))
+                # Taking subsurface
+                # Handle edge case where area is outside surface (should be covered by clamps)
+                if area.x + area.w > tex_width:
+                    area.w = tex_width - area.x
 
-            self.view_surface.blit(column, dest_pos)
+                if area.w > 0:
+                    slice_surf = sprite_surface.subsurface(area)
+                    scaled_slice = pygame.transform.scale(slice_surf, (run_width, target_height))
+                    self.view_surface.blit(scaled_slice, (run_start, int(sprite_y)))
+            except (ValueError, pygame.error):
+                continue
 
     def render_floor_ceiling(
         self, screen: pygame.Surface, player: Player, level: int, view_offset_y: float = 0.0

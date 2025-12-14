@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 from typing import ClassVar, Dict
 
 import pygame
+
+logger = logging.getLogger(__name__)
 
 
 class InputManager:
@@ -59,16 +62,16 @@ class InputManager:
                     for action, key in data.get("bindings", {}).items():
                         if action in self.bindings:
                             self.bindings[action] = key
-            except (OSError, json.JSONDecodeError) as e:
-                print(f"Failed to load keybindings: {e}")
+            except (OSError, json.JSONDecodeError):
+                logger.exception("Failed to load keybindings")
 
     def save_config(self) -> None:
         """Save bindings to disk."""
         try:
             with open(self.config_file, "w") as f:
                 json.dump({"bindings": self.bindings}, f, indent=4)
-        except OSError as e:
-            print(f"Failed to save keybindings: {e}")
+        except OSError:
+            logger.exception("Failed to save keybindings")
 
     def is_action_pressed(self, action: str) -> bool:
         """Check if the key for an action is currently held down."""
