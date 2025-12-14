@@ -53,6 +53,11 @@ class Player:
         self.zoomed = False
         self.god_mode = False
 
+        # Stamina
+        self.stamina = 100.0
+        self.max_stamina = 100.0
+        self.stamina_recharge_delay = 0
+
     def move(
         self,
         game_map: Map,
@@ -259,6 +264,12 @@ class Player:
 
         if self.secondary_cooldown > 0:
             self.secondary_cooldown -= 1
+
+        # Stamina Regen
+        if self.stamina_recharge_delay > 0:
+            self.stamina_recharge_delay -= 1
+        elif self.stamina < self.max_stamina:
+            self.stamina = min(self.max_stamina, self.stamina + 0.5)
 
         # Shield Logic
         if self.shield_active:

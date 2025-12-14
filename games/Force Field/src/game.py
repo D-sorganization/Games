@@ -107,6 +107,7 @@ class Game:
 
         # Fog of War
         self.visited_cells: set[tuple[int, int]] = set()
+        self.show_minimap = True
 
         # Input Manager
         self.input_manager = InputManager()
@@ -545,6 +546,8 @@ class Game:
                         assert self.player is not None
                         if self.player.shoot():
                             self.fire_weapon()
+                    elif event.key == pygame.K_m:
+                        self.show_minimap = not self.show_minimap
 
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if self.paused:
@@ -594,8 +597,8 @@ class Game:
         try:
             with open(filename, "w") as f:
                 f.write(f"{self.level}")
-        except OSError as e:
-            print(f"Save failed: {e}")
+        except OSError:
+            logger.exception("Save failed")
 
     def fire_weapon(self, is_secondary: bool = False) -> None:
         """Handle weapon firing (Hitscan or Projectile)"""
@@ -713,8 +716,8 @@ class Game:
 
                 try:
                     self.explode_laser(impact_x, impact_y)
-                except Exception as e:  # noqa: BLE001
-                    print(f"Error in explode_laser: {e}")
+                except Exception:
+                    logger.exception("Error in explode_laser")
 
                 self.particles.append(
                     {
@@ -1127,7 +1130,12 @@ class Game:
                 self.damage_texts.remove(t)
 
         is_sprinting = self.input_manager.is_action_pressed("sprint") or keys[pygame.K_RSHIFT]
-        current_speed = C.PLAYER_SPRINT_SPEED if is_sprinting else C.PLAYER_SPEED
+        if is_sprinting and self.player.stamina > 0:
+            current_speed = C.PLAYER_SPRINT_SPEED
+            self.player.stamina -= 1
+            self.player.stamina_recharge_delay = 60
+        else:
+            current_speed = C.PLAYER_SPEED
 
         moving = False
 
