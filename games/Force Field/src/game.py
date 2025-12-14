@@ -18,6 +18,7 @@ from .projectile import Projectile
 from .raycaster import Raycaster
 from .renderer import GameRenderer
 from .sound import SoundManager
+from .ui_renderer import UIRenderer
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +36,7 @@ class Game:
 
         # Initialize Renderer
         self.renderer = GameRenderer(self.screen)
+        self.ui_renderer = UIRenderer(self.screen)
 
         # Game state
         self.state = "intro"
@@ -188,11 +190,8 @@ class Game:
                     if test_x < 2 or test_x >= map_size - 2 or test_y < 2 or test_y >= map_size - 2:
                         continue
 
-                    # Check if not in building and not a wall
-                    if not self.game_map.is_wall(
-                        test_x,
-                        test_y,
-                    ) and not self.game_map.is_inside_building(test_x, test_y):
+                    # Check if not a wall
+                    if not self.game_map.is_wall(test_x, test_y):
                         return (test_x, test_y, angle)
 
             # Fallback to base position if all attempts fail
@@ -232,16 +231,12 @@ class Game:
         player_pos = corners[0]
 
         # Check safety
-        if self.game_map.is_wall(player_pos[0], player_pos[1]) or self.game_map.is_inside_building(
-            player_pos[0], player_pos[1]
-        ):
+        if self.game_map.is_wall(player_pos[0], player_pos[1]):
             # Find nearby
             for attempt in range(20):
                 test_x = player_pos[0] + random.uniform(-3, 3)
                 test_y = player_pos[1] + random.uniform(-3, 3)
-                if not self.game_map.is_wall(
-                    test_x, test_y
-                ) and not self.game_map.is_inside_building(test_x, test_y):
+                if not self.game_map.is_wall(test_x, test_y):
                     player_pos = (test_x, test_y, player_pos[2])
                     break
 
@@ -416,7 +411,6 @@ class Game:
             cy = random.randint(2, upper_bound)
             if (
                 not self.game_map.is_wall(cx, cy)
-                and not self.game_map.is_inside_building(cx, cy)
                 and math.sqrt((cx - player_pos[0]) ** 2 + (cy - player_pos[1]) ** 2) > 15
             ):
                 self.bots.append(
@@ -1339,20 +1333,20 @@ class Game:
         """Handle intro screen events"""
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                if self.renderer.intro_video:
-                    self.renderer.intro_video.release()
-                    self.renderer.intro_video = None
+                if self.ui_renderer.intro_video:
+                    self.ui_renderer.intro_video.release()
+                    self.ui_renderer.intro_video = None
                 self.running = False
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE or event.key == pygame.K_ESCAPE:
-                    if self.renderer.intro_video:
-                        self.renderer.intro_video.release()
-                        self.renderer.intro_video = None
+                    if self.ui_renderer.intro_video:
+                        self.ui_renderer.intro_video.release()
+                        self.ui_renderer.intro_video = None
                     self.state = "menu"
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                if self.renderer.intro_video:
-                    self.renderer.intro_video.release()
-                    self.renderer.intro_video = None
+                if self.ui_renderer.intro_video:
+                    self.ui_renderer.intro_video.release()
+                    self.ui_renderer.intro_video = None
                 self.state = "menu"
 
     def handle_menu_events(self) -> None:
@@ -1370,7 +1364,7 @@ class Game:
 
     def handle_map_select_events(self) -> None:
         """Handle map selection events"""
-        self.renderer.start_button.update(pygame.mouse.get_pos())
+        self.ui_renderer.start_button.update(pygame.mouse.get_pos())
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
@@ -1383,7 +1377,7 @@ class Game:
                     pygame.mouse.set_visible(False)
                     pygame.event.set_grab(True)
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                if self.renderer.start_button.is_clicked(event.pos):
+                if self.ui_renderer.start_button.is_clicked(event.pos):
                     self.start_game()
                     self.state = "playing"
                     pygame.mouse.set_visible(False)
@@ -1526,9 +1520,9 @@ class Game:
                 self.intro_phase += 1
                 self.intro_start_time = 0
                 # Only release video when transitioning from phase 1 to phase 2
-                if self.intro_phase == 2 and self.renderer.intro_video:
-                    self.renderer.intro_video.release()
-                    self.renderer.intro_video = None
+                if self.intro_phase == 2 and self.ui_renderer.intro_video:
+                    self.ui_renderer.intro_video.release()
+                    self.ui_renderer.intro_video = None
 
     def run(self) -> None:
         """Main game loop"""
@@ -1540,20 +1534,20 @@ class Game:
                         self.intro_start_time = pygame.time.get_ticks()
                     elapsed = pygame.time.get_ticks() - self.intro_start_time
 
-                    self.renderer.render_intro(self.intro_phase, self.intro_step, elapsed)
+                    self.ui_renderer.render_intro(self.intro_phase, self.intro_step, elapsed)
                     self._update_intro_logic(elapsed)
 
                 elif self.state == "menu":
                     self.handle_menu_events()
-                    self.renderer.render_menu()
+                    self.ui_renderer.render_menu()
 
                 elif self.state == "key_config":
                     self.handle_key_config_events()
-                    self.renderer.render_key_config(self)
+                    self.ui_renderer.render_key_config(self)
 
                 elif self.state == "map_select":
                     self.handle_map_select_events()
-                    self.renderer.render_map_select(self)
+                    self.ui_renderer.render_map_select(self)
 
                 elif self.state == "playing":
                     self.handle_game_events()
@@ -1581,11 +1575,11 @@ class Game:
 
                 elif self.state == "level_complete":
                     self.handle_level_complete_events()
-                    self.renderer.render_level_complete(self)
+                    self.ui_renderer.render_level_complete(self)
 
                 elif self.state == "game_over":
                     self.handle_game_over_events()
-                    self.renderer.render_game_over(self)
+                    self.ui_renderer.render_game_over(self)
 
                 self.clock.tick(C.FPS)
         except Exception as e:
