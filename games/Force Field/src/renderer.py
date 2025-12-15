@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import math
 import random
-from typing import TYPE_CHECKING, Any, Dict, List, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Tuple, cast
 
 import pygame
 
@@ -56,9 +56,10 @@ class GameRenderer:
         self._render_portal(game.portal, game.player)
 
         # 4. Weapon Model
-        self._render_weapon(game.player)
+        # 4. Weapon Model
+        weapon_pos = self._render_weapon(game.player)
         if game.player.shooting:
-            self._render_muzzle_flash(game.player.current_weapon)
+            self._render_muzzle_flash(game.player.current_weapon, weapon_pos)
 
         # 5. UI / HUD
         if hasattr(game, "ui_renderer"):
@@ -134,16 +135,25 @@ class GameRenderer:
                     pygame.draw.circle(self.screen, color, (screen_x, screen_y), size // 2, 2)
                     pygame.draw.circle(self.screen, C.WHITE, (screen_x, screen_y), size // 4, 1)
 
-    def _render_weapon(self, player: Player) -> None:
-        """Render weapon model"""
+    def _render_weapon(self, player: Player) -> Tuple[int, int]:
+        """Render weapon model and return its screen position (cx, cy)"""
         weapon = player.current_weapon
         cx = C.SCREEN_WIDTH // 2
         cy = C.SCREEN_HEIGHT
+
+        # Weapon Sway (Horizontal lag)
+        # sway_amount is in radians. 0.1 rad is significant.
+        # Scale it up to pixels.
+        sway_x = int(player.sway_amount * -300.0)
+        cx += sway_x
 
         # Bobbing
         bob_y = 0
         if player.is_moving:
             bob_y = int(math.sin(pygame.time.get_ticks() * 0.012) * 15)
+            # Add some horizontal bob too
+            bob_x = int(math.cos(pygame.time.get_ticks() * 0.006) * 10)
+            cx += bob_x
 
         w_state = player.weapon_state[weapon]
         if w_state["reloading"]:
@@ -269,10 +279,15 @@ class GameRenderer:
                     ly2 = random.randint(cy - 250, cy - 150)
                     pygame.draw.line(self.screen, C.WHITE, (lx1, ly1), (lx2, ly2), 2)
 
-    def _render_muzzle_flash(self, weapon_name: str) -> None:
+        return cx, cy
+
+    def _render_muzzle_flash(self, weapon_name: str, weapon_pos: Tuple[int, int]) -> None:
         """Render weapon-specific muzzle flash effects."""
-        flash_x = C.SCREEN_WIDTH // 2
-        flash_y = C.SCREEN_HEIGHT - 210
+        flash_x = weapon_pos[0]
+        # Base offset from weapon anchor (screen height)
+        # Using the same offset logic as before (SCREEN_HEIGHT - 210 vs cy - 210)
+        # assuming weapon_pos[1] corresponds to the weapon's base y (mostly SCREEN_HEIGHT + bob)
+        flash_y = weapon_pos[1] - 210
 
         if weapon_name == "plasma":
             pygame.draw.circle(self.screen, C.CYAN, (flash_x, flash_y), 30)
