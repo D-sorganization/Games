@@ -142,7 +142,7 @@ class GameRenderer:
         cy = C.SCREEN_HEIGHT
 
         # Weapon Sway (Horizontal lag)
-        # sway_amount is in radians (roughly). 0.1 rad is significant.
+        # sway_amount is in radians. 0.1 rad is significant.
         # Scale it up to pixels.
         sway_x = int(player.sway_amount * -300.0)
         cx += sway_x
