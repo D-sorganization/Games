@@ -8,6 +8,10 @@ import pygame
 
 from . import constants as C  # noqa: N812
 
+# Sprite Rendering thresholds
+STRIP_VISIBILITY_THRESHOLD = 0.3
+LARGE_SPRITE_THRESHOLD = 200
+
 if TYPE_CHECKING:
     from .bot import Bot
     from .map import Map
@@ -664,7 +668,7 @@ class Raycaster:
                 r += 1
 
             visible_runs.append((run_start, r))
-            total_visible_pixels += (r - run_start)
+            total_visible_pixels += r - run_start
 
         if not visible_runs:
             return
@@ -673,7 +677,10 @@ class Raycaster:
         # If the sprite is mostly visible or small, scale the whole surface once.
         # This avoids calling pygame.transform.scale many times for small strips.
         scale_whole = True
-        if total_visible_pixels < target_width * 0.3 and target_width > 200:
+        if (
+            total_visible_pixels < target_width * STRIP_VISIBILITY_THRESHOLD
+            and target_width > LARGE_SPRITE_THRESHOLD
+        ):
             # If only a small fraction is visible and it's large, maybe strip scaling is better?
             # But strip scaling involves creating subsurfaces which has overhead too.
             # Modern Pygame/SDL is fast at scaling. Let's default to scale_whole for simplicity.
@@ -691,7 +698,7 @@ class Raycaster:
             for run_start, run_end in visible_runs:
                 # Calculate x offset in the scaled sprite
                 # sprite_ray_x corresponds to 0
-                x_offset = run_start - int(sprite_ray_x)
+                x_offset = int(run_start - sprite_ray_x)
                 width = run_end - run_start
 
                 # Clamp (just in case float math drifted)

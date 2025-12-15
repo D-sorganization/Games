@@ -260,8 +260,7 @@ class Player:
         """Update player state (timers, etc)"""
         # Update Sway
         # Smoothly interpolate sway for better feel
-        target_sway = self.frame_turn
-        self.sway_amount = self.sway_amount * 0.8 + target_sway * 0.2
+        self.sway_amount = self.sway_amount * 0.8 + self.frame_turn * 0.2
         self.frame_turn = 0.0  # Reset for next frame accumulation
 
         # Global shoot timer
