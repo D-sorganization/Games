@@ -53,6 +53,10 @@ class Player:
         self.zoomed = False
         self.god_mode = False
 
+        # Weapon Sway / Turn tracking
+        self.frame_turn = 0.0
+        self.sway_amount = 0.0
+
         # Stamina
         self.stamina = 100.0
         self.max_stamina = 100.0
@@ -154,6 +158,7 @@ class Player:
         """Rotate player view"""
         self.angle += delta
         self.angle %= 2 * math.pi
+        self.frame_turn += delta
 
     def pitch_view(self, delta: float) -> None:
         """Change vertical view angle (pitch)"""
@@ -253,6 +258,12 @@ class Player:
 
     def update(self) -> None:
         """Update player state (timers, etc)"""
+        # Update Sway
+        # Smoothly interpolate sway for better feel
+        target_sway = self.frame_turn
+        self.sway_amount = self.sway_amount * 0.8 + target_sway * 0.2
+        self.frame_turn = 0.0  # Reset for next frame accumulation
+
         # Global shoot timer
         if self.shoot_timer > 0:
             self.shoot_timer -= 1

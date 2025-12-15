@@ -512,14 +512,10 @@ class Raycaster:
                     (ray, int(wall_top + wall_height)),
                 )
 
-                # Horizontal lines (Brick effect)
-                if wall_type == 2 or wall_type == 3:
-                    step = int(80 / safe_dist) if safe_dist > 0 else 8
-                    step = max(2, step)
-                    darker_color = tuple(max(0, c - 30) for c in color)
-                    for y in range(int(wall_top), int(wall_top + wall_height), step):
-                        if 0 <= y < C.SCREEN_HEIGHT:
-                            self.view_surface.set_at((ray, y), darker_color)
+            # Horizontal lines (Brick effect) - Removed for performance
+            # The set_at loop was causing significant performance drops.
+            # If needed, this should be implemented via a pre-generated texture pattern
+            # or a faster line drawing method, but doing it per-ray per-line in Python is too slow.
 
             ray_angle += delta_angle
 
@@ -640,60 +636,101 @@ class Raycaster:
         if start_r >= end_r:
             return
 
-        tex_width = sprite_surface.get_width()
-        tex_height = sprite_surface.get_height()
+        # Optimization: Pre-calculate target size
+        target_width = int(sprite_ray_width)
+        target_height = int(sprite_size)
 
-        if sprite_ray_width < 0.1:
+        if target_width <= 0 or target_height <= 0:
             return
 
-        tex_scale = tex_width / sprite_ray_width
-
+        # Collect visible runs first to decide on scaling strategy
+        visible_runs = []
         r = start_r
+        total_visible_pixels = 0
+
+        # Local lookup for speed
+        z_buffer = self.z_buffer
+
         while r < end_r:
             # Skip occluded rays
-            if dist > self.z_buffer[r]:
+            if dist > z_buffer[r]:
                 r += 1
                 continue
 
             # Found start of visible run
             run_start = r
             r += 1
-            while r < end_r and dist <= self.z_buffer[r]:
+            while r < end_r and dist <= z_buffer[r]:
                 r += 1
 
-            # Run is [run_start, r)
-            run_width = r - run_start
+            visible_runs.append((run_start, r))
+            total_visible_pixels += (r - run_start)
 
-            # Calculate texture slice
-            tex_x_start = int((run_start - sprite_ray_x) * tex_scale)
-            tex_x_end = int((r - sprite_ray_x) * tex_scale)
+        if not visible_runs:
+            return
 
-            # Clamp
-            tex_x_start = max(0, min(tex_width, tex_x_start))
-            tex_x_end = max(0, min(tex_width, tex_x_end))
+        # Strategy:
+        # If the sprite is mostly visible or small, scale the whole surface once.
+        # This avoids calling pygame.transform.scale many times for small strips.
+        scale_whole = True
+        if total_visible_pixels < target_width * 0.3 and target_width > 200:
+            # If only a small fraction is visible and it's large, maybe strip scaling is better?
+            # But strip scaling involves creating subsurfaces which has overhead too.
+            # Modern Pygame/SDL is fast at scaling. Let's default to scale_whole for simplicity.
+            # actually, scaling a 1000x1000 image to just show 10 pixels is bad.
+            scale_whole = False
 
-            w = tex_x_end - tex_x_start
-            if w <= 0:
-                continue
-
-            # Blit visible slice
-            area = pygame.Rect(tex_x_start, 0, w, tex_height)
+        if scale_whole:
             try:
-                # We need to scale this area to (run_width, sprite_size)
-                # Note: sprite_size is the height. run_width is width.
-                target_height = int(sprite_size)
+                scaled_sprite = pygame.transform.scale(
+                    sprite_surface, (target_width, target_height)
+                )
+            except (ValueError, pygame.error):
+                return
 
-                # Taking subsurface
-                # Handle edge case where area is outside surface (should be covered by clamps)
-                if area.x + area.w > tex_width:
-                    area.w = tex_width - area.x
+            for run_start, run_end in visible_runs:
+                # Calculate x offset in the scaled sprite
+                # sprite_ray_x corresponds to 0
+                x_offset = run_start - int(sprite_ray_x)
+                width = run_end - run_start
 
-                if area.w > 0:
+                # Clamp (just in case float math drifted)
+                if x_offset < 0:
+                    width += x_offset
+                    x_offset = 0
+
+                if x_offset + width > target_width:
+                    width = target_width - x_offset
+
+                if width > 0:
+                    area = pygame.Rect(x_offset, 0, width, target_height)
+                    self.view_surface.blit(scaled_sprite, (run_start, int(sprite_y)), area)
+        else:
+            # Fallback: Strip scaling (only for large occluded sprites)
+            tex_width = sprite_surface.get_width()
+            tex_height = sprite_surface.get_height()
+            tex_scale = tex_width / sprite_ray_width
+
+            for run_start, run_end in visible_runs:
+                run_width = run_end - run_start
+
+                tex_x_start = int((run_start - sprite_ray_x) * tex_scale)
+                tex_x_end = int((run_end - sprite_ray_x) * tex_scale)
+
+                tex_x_start = max(0, min(tex_width, tex_x_start))
+                tex_x_end = max(0, min(tex_width, tex_x_end))
+
+                w = tex_x_end - tex_x_start
+                if w <= 0:
+                    continue
+
+                area = pygame.Rect(tex_x_start, 0, w, tex_height)
+                try:
                     slice_surf = sprite_surface.subsurface(area)
                     scaled_slice = pygame.transform.scale(slice_surf, (run_width, target_height))
                     self.view_surface.blit(scaled_slice, (run_start, int(sprite_y)))
-            except (ValueError, pygame.error):
-                continue
+                except (ValueError, pygame.error):
+                    continue
 
     def render_floor_ceiling(
         self, screen: pygame.Surface, player: Player, level: int, view_offset_y: float = 0.0

@@ -140,10 +140,19 @@ class GameRenderer:
         cx = C.SCREEN_WIDTH // 2
         cy = C.SCREEN_HEIGHT
 
+        # Weapon Sway (Horizontal lag)
+        # sway_amount is in radians (roughly). 0.1 rad is significant.
+        # Scale it up to pixels.
+        sway_x = int(player.sway_amount * -300.0)
+        cx += sway_x
+
         # Bobbing
         bob_y = 0
         if player.is_moving:
             bob_y = int(math.sin(pygame.time.get_ticks() * 0.012) * 15)
+            # Add some horizontal bob too
+            bob_x = int(math.cos(pygame.time.get_ticks() * 0.006) * 10)
+            cx += bob_x
 
         w_state = player.weapon_state[weapon]
         if w_state["reloading"]:
