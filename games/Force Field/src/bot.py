@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any, Dict, List
 
 from . import constants as C  # noqa: N812
 from .projectile import Projectile
+from .utils import has_line_of_sight
 
 if TYPE_CHECKING:
     from .map import Map
@@ -220,10 +221,19 @@ class Bot:
             can_move_y = not game_map.is_wall(self.x, new_y)
 
             # Check collision with other bots
+            # Optimization: Use squared distance to avoid sqrt
+            collision_radius = 0.5 + (0.5 if self.enemy_type == "beast" else 0)
+            col_sq = collision_radius * collision_radius
+
             for other_bot in other_bots:
                 if other_bot != self and not other_bot.dead:
-                    other_dist = math.sqrt((new_x - other_bot.x) ** 2 + (self.y - other_bot.y) ** 2)
-                    if other_dist < 0.5 + (0.5 if self.enemy_type == "beast" else 0):
+                    # Quick check X
+                    if abs(new_x - other_bot.x) > collision_radius and abs(self.x - other_bot.x) > collision_radius:
+                        pass # Check Y later
+
+                    dx_sq = (new_x - other_bot.x) ** 2
+                    dy_sq = (self.y - other_bot.y) ** 2
+                    if dx_sq + dy_sq < col_sq:
                         can_move_x = False
                         # Beast pushes others?
                         if self.enemy_type == "beast":
@@ -231,8 +241,9 @@ class Bot:
                             if not game_map.is_wall(push_x, other_bot.y):
                                 other_bot.x = push_x
 
-                    other_dist = math.sqrt((self.x - other_bot.x) ** 2 + (new_y - other_bot.y) ** 2)
-                    if other_dist < 0.5 + (0.5 if self.enemy_type == "beast" else 0):
+                    dx_sq = (self.x - other_bot.x) ** 2
+                    dy_sq = (new_y - other_bot.y) ** 2
+                    if dx_sq + dy_sq < col_sq:
                         can_move_y = False
                         # Beast pushes others (Y only)
                         if self.enemy_type == "beast":
@@ -262,14 +273,7 @@ class Bot:
 
     def has_line_of_sight(self, game_map: Map, player: Player) -> bool:
         """Check if bot has line of sight to player"""
-        steps = 50
-        for i in range(1, steps):
-            t = i / steps
-            check_x = self.x + (player.x - self.x) * t
-            check_y = self.y + (player.y - self.y) * t
-            if game_map.is_wall(check_x, check_y):
-                return False
-        return True
+        return has_line_of_sight(self.x, self.y, player.x, player.y, game_map)
 
     def take_damage(self, damage: int, is_headshot: bool = False) -> None:
         """Take damage

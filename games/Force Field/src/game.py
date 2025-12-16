@@ -13,6 +13,7 @@ from . import constants as C  # noqa: N812
 from .bot import Bot
 from .input_manager import InputManager
 from .map import Map
+from .particle_system import ParticleSystem
 from .player import Player
 from .projectile import Projectile
 from .raycaster import Raycaster
@@ -69,7 +70,7 @@ class Game:
         self.beast_timer = 0
 
         # Visual effects (Game Logic owned)
-        self.particles: List[Dict[str, Any]] = []
+        self.particle_system = ParticleSystem()
         self.damage_texts: List[Dict[str, Any]] = []
         self.damage_flash_timer = 0
 
@@ -268,7 +269,7 @@ class Game:
         self.kills = 0
         self.level_times = []
         self.paused = False
-        self.particles = []
+        self.particle_system.particles = []
         self.damage_texts = []
 
         # Reset Cheats/Progress
@@ -301,7 +302,7 @@ class Game:
         self.level_start_time = pygame.time.get_ticks()
         self.total_paused_time = 0
         self.pause_start_time = 0
-        self.particles = []
+        self.particle_system.particles = []
         self.damage_texts = []
         self.damage_flash_timer = 0
         self.visited_cells = set()  # Reset fog of war
@@ -719,28 +720,22 @@ class Game:
                 except Exception:
                     logger.exception("Error in explode_laser")
 
-                self.particles.append(
-                    {
-                        "type": "laser",
-                        "start": (C.SCREEN_WIDTH - 200, C.SCREEN_HEIGHT - 180),
-                        "end": (C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2),
-                        "color": (0, 255, 255),
-                        "timer": C.LASER_DURATION,
-                        "width": C.LASER_WIDTH,
-                    }
+                self.particle_system.add_laser(
+                    start=(C.SCREEN_WIDTH - 200, C.SCREEN_HEIGHT - 180),
+                    end=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2),
+                    color=(0, 255, 255),
+                    timer=C.LASER_DURATION,
+                    width=C.LASER_WIDTH,
                 )
                 return
 
             if is_laser:
-                self.particles.append(
-                    {
-                        "type": "laser",
-                        "start": (C.SCREEN_WIDTH - 200, C.SCREEN_HEIGHT - 180),
-                        "end": (C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2),
-                        "color": (255, 0, 0),
-                        "timer": 5,
-                        "width": 3,
-                    }
+                self.particle_system.add_laser(
+                    start=(C.SCREEN_WIDTH - 200, C.SCREEN_HEIGHT - 180),
+                    end=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2),
+                    color=(255, 0, 0),
+                    timer=5,
+                    width=3,
                 )
 
             if closest_bot:
@@ -775,34 +770,19 @@ class Game:
                         }
                     )
 
-                for _ in range(5):
-                    self.particles.append(
-                        {
-                            "x": C.SCREEN_WIDTH // 2,
-                            "y": C.SCREEN_HEIGHT // 2,
-                            "dx": random.uniform(-5, 5),
-                            "dy": random.uniform(-5, 5),
-                            "color": (
-                                random.randint(0, 255),
-                                random.randint(0, 255),
-                                random.randint(0, 255),
-                            ),
-                            "timer": 30,
-                            "size": random.randint(2, 6),
-                        }
-                    )
+                self.particle_system.add_explosion(
+                    C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2, count=5
+                )
 
                 for _ in range(10):
-                    self.particles.append(
-                        {
-                            "x": C.SCREEN_WIDTH // 2,
-                            "y": C.SCREEN_HEIGHT // 2,
-                            "dx": random.uniform(-5, 5),
-                            "dy": random.uniform(-5, 5),
-                            "color": C.BLUE_BLOOD,
-                            "timer": C.PARTICLE_LIFETIME,
-                            "size": random.randint(2, 5),
-                        }
+                    self.particle_system.add_particle(
+                        x=C.SCREEN_WIDTH // 2,
+                        y=C.SCREEN_HEIGHT // 2,
+                        dx=random.uniform(-5, 5),
+                        dy=random.uniform(-5, 5),
+                        color=C.BLUE_BLOOD,
+                        timer=C.PARTICLE_LIFETIME,
+                        size=random.randint(2, 5),
                     )
 
                 if not closest_bot.alive:
@@ -818,31 +798,27 @@ class Game:
     def handle_bomb_explosion(self) -> None:
         """Handle bomb explosion logic"""
         assert self.player is not None
-        self.particles.append(
-            {
-                "x": C.SCREEN_WIDTH // 2,
-                "y": C.SCREEN_HEIGHT // 2,
-                "dx": 0,
-                "dy": 0,
-                "color": C.WHITE,
-                "timer": 40,
-                "size": 3000,
-            }
+        self.particle_system.add_particle(
+            x=C.SCREEN_WIDTH // 2,
+            y=C.SCREEN_HEIGHT // 2,
+            dx=0,
+            dy=0,
+            color=C.WHITE,
+            timer=40,
+            size=3000,
         )
         for _ in range(300):
             angle = random.uniform(0, 2 * math.pi)
             speed = random.uniform(5, 25)
             color = random.choice([C.ORANGE, C.RED, C.YELLOW, C.DARK_RED, (50, 50, 50)])
-            self.particles.append(
-                {
-                    "x": C.SCREEN_WIDTH // 2,
-                    "y": C.SCREEN_HEIGHT // 2,
-                    "dx": math.cos(angle) * speed,
-                    "dy": math.sin(angle) * speed,
-                    "color": color,
-                    "timer": random.randint(40, 100),
-                    "size": random.randint(5, 25),
-                }
+            self.particle_system.add_particle(
+                x=C.SCREEN_WIDTH // 2,
+                y=C.SCREEN_HEIGHT // 2,
+                dx=math.cos(angle) * speed,
+                dy=math.sin(angle) * speed,
+                color=color,
+                timer=random.randint(40, 100),
+                size=random.randint(5, 25),
             )
 
         for bot in self.bots:
@@ -860,22 +836,9 @@ class Game:
                     self.last_death_pos = (bot.x, bot.y)
 
                 if dist < 5.0:
-                    for _ in range(3):
-                        self.particles.append(
-                            {
-                                "x": C.SCREEN_WIDTH // 2,
-                                "y": C.SCREEN_HEIGHT // 2,
-                                "dx": random.uniform(-4, 4),
-                                "dy": random.uniform(-4, 4),
-                                "color": (
-                                    random.randint(0, 255),
-                                    random.randint(0, 255),
-                                    random.randint(0, 255),
-                                ),
-                                "timer": 20,
-                                "size": 3,
-                            }
-                        )
+                    self.particle_system.add_explosion(
+                        C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2, count=3
+                    )
 
         try:
             self.sound_manager.play_sound("bomb")
@@ -923,20 +886,18 @@ class Game:
                             self.last_death_pos = (bot.x, bot.y)
 
                         for _ in range(10):
-                            self.particles.append(
-                                {
-                                    "x": C.SCREEN_WIDTH // 2,
-                                    "y": C.SCREEN_HEIGHT // 2,
-                                    "dx": random.uniform(-10, 10),
-                                    "dy": random.uniform(-10, 10),
-                                    "color": (
-                                        random.randint(200, 255),
-                                        0,
-                                        random.randint(200, 255),
-                                    ),
-                                    "timer": 40,
-                                    "size": random.randint(4, 8),
-                                }
+                            self.particle_system.add_particle(
+                                x=C.SCREEN_WIDTH // 2,
+                                y=C.SCREEN_HEIGHT // 2,
+                                dx=random.uniform(-10, 10),
+                                dy=random.uniform(-10, 10),
+                                color=(
+                                    random.randint(200, 255),
+                                    0,
+                                    random.randint(200, 255),
+                                ),
+                                timer=40,
+                                size=random.randint(4, 8),
                             )
 
             if hits > 0:
@@ -980,22 +941,9 @@ class Game:
                     self.last_death_pos = (bot.x, bot.y)
 
                 if dist < 5.0:
-                    for _ in range(3):
-                        self.particles.append(
-                            {
-                                "x": C.SCREEN_WIDTH // 2,
-                                "y": C.SCREEN_HEIGHT // 2,
-                                "dx": random.uniform(-4, 4),
-                                "dy": random.uniform(-4, 4),
-                                "color": (
-                                    random.randint(0, 255),
-                                    random.randint(0, 255),
-                                    random.randint(0, 255),
-                                ),
-                                "timer": 20,
-                                "size": 3,
-                            }
-                        )
+                    self.particle_system.add_explosion(
+                        C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2, count=3
+                    )
 
     def update_game(self) -> None:
         """Update game state"""
@@ -1115,13 +1063,7 @@ class Game:
 
         self.player.set_shield(shield_active)
 
-        for p in self.particles[:]:
-            if "dx" in p and "dy" in p:
-                p["x"] += p["dx"]
-                p["y"] += p["dy"]
-            p["timer"] -= 1
-            if p["timer"] <= 0:
-                self.particles.remove(p)
+        self.particle_system.update()
 
         for t in self.damage_texts[:]:
             t["y"] += t["vy"]
@@ -1261,22 +1203,9 @@ class Game:
                                 self.kill_combo_timer = 180
                                 self.last_death_pos = (bot.x, bot.y)
 
-                            for _ in range(5):
-                                self.particles.append(
-                                    {
-                                        "x": C.SCREEN_WIDTH // 2,
-                                        "y": C.SCREEN_HEIGHT // 2,
-                                        "dx": random.uniform(-5, 5),
-                                        "dy": random.uniform(-5, 5),
-                                        "color": (
-                                            random.randint(0, 255),
-                                            random.randint(0, 255),
-                                            random.randint(0, 255),
-                                        ),
-                                        "timer": 25,
-                                        "size": random.randint(2, 5),
-                                    }
-                                )
+                            self.particle_system.add_explosion(
+                                C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2, count=5
+                            )
 
                             projectile.alive = False
 

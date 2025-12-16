@@ -71,44 +71,16 @@ class Player:
     ) -> None:
         """Move player forward or backward"""
         if self.shield_active or self.zoomed:
-            # Shield/Zoom blocks movement? Maybe let shield allow movement but slower?
-            # Doom style usually allows movement always.
-            # I will unblock movement for Shield but keep it blocked/slow for Zoom.
             if self.zoomed:
                 return
             if self.shield_active:
                 speed *= 0.8
 
-        # Doom straferunning enabled (simple vector addition handled by caller if both pressed)
         dx = math.cos(self.angle) * speed * (1 if forward else -1)
         dy = math.sin(self.angle) * speed * (1 if forward else -1)
 
-        new_x = self.x + dx
-        new_y = self.y + dy
-
-        # Check wall collision
-        if not game_map.is_wall(new_x, self.y):
-            # Check bot collision
-            collision = False
-            for bot in bots:
-                if bot.alive:
-                    dist = math.sqrt((new_x - bot.x) ** 2 + (self.y - bot.y) ** 2)
-                    if dist < 0.5:
-                        collision = True
-                        break
-            if not collision:
-                self.x = new_x
-
-        if not game_map.is_wall(self.x, new_y):
-            collision = False
-            for bot in bots:
-                if bot.alive:
-                    dist = math.sqrt((self.x - bot.x) ** 2 + (new_y - bot.y) ** 2)
-                    if dist < 0.5:
-                        collision = True
-                        break
-            if not collision:
-                self.y = new_y
+        from .utils import try_move_entity
+        try_move_entity(self, dx, dy, game_map, bots, radius=0.5)
 
     def strafe(
         self,
@@ -124,35 +96,12 @@ class Player:
         if self.shield_active:
             speed *= 0.8
 
-        # Slightly faster strafe for Doom feel? Standard speed is fine.
         angle = self.angle + math.pi / 2 * (1 if right else -1)
         dx = math.cos(angle) * speed
         dy = math.sin(angle) * speed
 
-        new_x = self.x + dx
-        new_y = self.y + dy
-
-        if not game_map.is_wall(new_x, self.y):
-            collision = False
-            for bot in bots:
-                if bot.alive:
-                    dist = math.sqrt((new_x - bot.x) ** 2 + (self.y - bot.y) ** 2)
-                    if dist < 0.5:
-                        collision = True
-                        break
-            if not collision:
-                self.x = new_x
-
-        if not game_map.is_wall(self.x, new_y):
-            collision = False
-            for bot in bots:
-                if bot.alive:
-                    dist = math.sqrt((self.x - bot.x) ** 2 + (new_y - bot.y) ** 2)
-                    if dist < 0.5:
-                        collision = True
-                        break
-            if not collision:
-                self.y = new_y
+        from .utils import try_move_entity
+        try_move_entity(self, dx, dy, game_map, bots, radius=0.5)
 
     def rotate(self, delta: float) -> None:
         """Rotate player view"""
