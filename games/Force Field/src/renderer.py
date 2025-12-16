@@ -49,7 +49,11 @@ class GameRenderer:
 
         # 2. Effects
         self.effects_surface.fill((0, 0, 0, 0))
-        self._render_particles(game.particles)
+        if hasattr(game, "particle_system"):
+             self._render_particles(game.particle_system.particles)
+        else:
+             # Fallback if refactor not complete or mixed state
+             self._render_particles(getattr(game, "particles", []))
         self.screen.blit(self.effects_surface, (0, 0))
 
         # 3. Portal
@@ -67,13 +71,47 @@ class GameRenderer:
 
         pygame.display.flip()
 
-    def _render_particles(self, particles: List[Dict[str, Any]]) -> None:
+    def _render_particles(self, particles: List[Any]) -> None:
         """Render particle effects including lasers and explosion particles.
 
         Args:
-            particles: List of particle dictionaries with type-specific properties.
+            particles: List of Particle objects or dicts (legacy support).
         """
         for p in particles:
+            # Handle Particle Object
+            if hasattr(p, "ptype"):
+                if p.ptype == "laser":
+                    alpha = int(255 * (p.timer / C.LASER_DURATION))
+                    start = p.start_pos
+                    end = p.end_pos
+                    color = (*p.color, alpha)
+                    pygame.draw.line(self.effects_surface, color, start, end, p.width)
+                    # Spread
+                    for i in range(5):
+                        offset = (i - 2) * 20
+                        target_end = (end[0] + offset, end[1])
+                        pygame.draw.line(
+                            self.effects_surface,
+                            (*p.color, max(0, alpha - 50)),
+                            start,
+                            target_end,
+                            max(1, p.width // 2),
+                        )
+                elif p.ptype == "normal":
+                     ratio = p.timer / C.PARTICLE_LIFETIME
+                     alpha = int(255 * ratio)
+                     alpha = max(0, min(255, alpha))
+                     color = p.color
+                     rgba = (*color, alpha) if len(color) == 3 else (*color[:3], alpha)
+                     pygame.draw.circle(
+                        self.effects_surface,
+                        rgba,
+                        (int(p.x), int(p.y)),
+                        int(p.size),
+                    )
+                continue
+
+            # Legacy Dict support
             if p.get("type") == "laser":
                 alpha = int(255 * (p["timer"] / C.LASER_DURATION))
                 start = p["start"]
