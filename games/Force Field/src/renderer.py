@@ -50,10 +50,10 @@ class GameRenderer:
         # 2. Effects
         self.effects_surface.fill((0, 0, 0, 0))
         if hasattr(game, "particle_system"):
-             self._render_particles(game.particle_system.particles)
+            self._render_particles(game.particle_system.particles)
         else:
-             # Fallback if refactor not complete or mixed state
-             self._render_particles(getattr(game, "particles", []))
+            # Fallback if refactor not complete or mixed state
+            self._render_particles(getattr(game, "particles", []))
         self.screen.blit(self.effects_surface, (0, 0))
 
         # 3. Portal
@@ -98,12 +98,12 @@ class GameRenderer:
                             max(1, p.width // 2),
                         )
                 elif p.ptype == "normal":
-                     ratio = p.timer / C.PARTICLE_LIFETIME
-                     alpha = int(255 * ratio)
-                     alpha = max(0, min(255, alpha))
-                     color = p.color
-                     rgba = (*color, alpha) if len(color) == 3 else (*color[:3], alpha)
-                     pygame.draw.circle(
+                    ratio = p.timer / C.PARTICLE_LIFETIME
+                    alpha = int(255 * ratio)
+                    alpha = max(0, min(255, alpha))
+                    color = p.color
+                    rgba = (*color, alpha) if len(color) == 3 else (*color[:3], alpha)
+                    pygame.draw.circle(
                         self.effects_surface,
                         rgba,
                         (int(p.x), int(p.y)),

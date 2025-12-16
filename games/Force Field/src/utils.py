@@ -77,11 +77,10 @@ def cast_ray_dda(
                 hit = True
                 wall_type = grid[map_y][map_x]
                 break
-        else:
-             # Out of bounds
-             hit = True
-             wall_type = 1 # Treat as wall
-             break
+            # Out of bounds
+            hit = True
+            wall_type = 1  # Treat as wall
+            break
 
     if hit:
         return dist, wall_type, start_x + ray_dir_x * dist, start_y + ray_dir_y * dist
@@ -127,11 +126,10 @@ def try_move_entity(
                 continue
 
             # Quick check
-            if abs(new_x - ob.x) > radius or abs(entity.y - ob.y) > radius:
-                 # Check simple manhattan dist first or just skip if far?
-                 # If x diff is > radius, collisions impossible?
-                 # Radius is sum of radii. Assuming 0.5 for all.
-                 pass
+            if abs(new_x - ob.x) > radius:
+                continue
+            if abs(entity.y - ob.y) > radius:
+                continue
 
             # Squared distance check
             d_sq = (new_x - ob.x)**2 + (entity.y - ob.y)**2

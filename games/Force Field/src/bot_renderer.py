@@ -42,12 +42,12 @@ class BotRenderer:
             return
 
         if bot.enemy_type == "ammo_box":
-             BotRenderer._render_ammo_box(screen, sprite_x, sprite_y, sprite_size, center_x)
-             return
+            BotRenderer._render_ammo_box(screen, sprite_x, sprite_y, sprite_size, center_x)
+            return
 
         if bot.enemy_type == "bomb_item":
-             BotRenderer._render_bomb_item(screen, sprite_x, sprite_y, sprite_size, center_x)
-             return
+            BotRenderer._render_bomb_item(screen, sprite_x, sprite_y, sprite_size, center_x)
+            return
 
         if bot.enemy_type.startswith("pickup_"):
             BotRenderer._render_weapon_pickup(screen, bot, sprite_x, sprite_y, sprite_size, center_x)
@@ -108,10 +108,10 @@ class BotRenderer:
             return
 
         if visual_style == "beast":
-             BotRenderer._render_beast(
+            BotRenderer._render_beast(
                 screen, bot, center_x, render_y, render_width, render_height, base_color
             )
-             return
+            return
 
         # Monster Style (Default)
         BotRenderer._render_monster(
@@ -158,13 +158,13 @@ class BotRenderer:
 
     @staticmethod
     def _render_bomb_item(screen: pygame.Surface, x: int, y: int, size: float, cx: float) -> None:
-         r = size * 0.2
-         cy = y + size * 0.8
-         pygame.draw.circle(screen, (30, 30, 30), (int(cx), int(cy)), int(r))
-         # Fuse
-         pygame.draw.line(screen, (200, 150, 0), (cx, cy-r), (cx + r/2, cy-r*1.5), 2)
-         if random.random() < 0.5:
-             pygame.draw.circle(screen, (255, 100, 0), (int(cx + r/2), int(cy-r*1.5)), 2)
+        r = size * 0.2
+        cy = y + size * 0.8
+        pygame.draw.circle(screen, (30, 30, 30), (int(cx), int(cy)), int(r))
+        # Fuse
+        pygame.draw.line(screen, (200, 150, 0), (cx, cy-r), (cx + r/2, cy-r*1.5), 2)
+        if random.random() < 0.5:
+            pygame.draw.circle(screen, (255, 100, 0), (int(cx + r/2), int(cy-r*1.5)), 2)
 
     @staticmethod
     def _render_weapon_pickup(screen: pygame.Surface, bot: Bot, x: int, y: int, size: float, cx: float) -> None:
@@ -260,15 +260,15 @@ class BotRenderer:
         rh: float,
         color: Tuple[int, int, int],
     ) -> None:
-         # Metallic Ball with rotation effect (stripes)
-         r = rw / 2
-         cy = ry + rh / 2
-         pygame.draw.circle(screen, color, (int(cx), int(cy)), int(r))
-         # Shine
-         pygame.draw.circle(screen, (200, 200, 200), (int(cx - r*0.3), int(cy - r*0.3)), int(r*0.3))
-         # Stripes (rotate based on bot angle/pos?)
-         # Just horizontal lines for "fast" look
-         pygame.draw.line(screen, (0, 0, 0), (cx-r, cy), (cx+r, cy), 3)
+        # Metallic Ball with rotation effect (stripes)
+        r = rw / 2
+        cy = ry + rh / 2
+        pygame.draw.circle(screen, color, (int(cx), int(cy)), int(r))
+        # Shine
+        pygame.draw.circle(screen, (200, 200, 200), (int(cx - r*0.3), int(cy - r*0.3)), int(r*0.3))
+        # Stripes (rotate based on bot angle/pos?)
+        # Just horizontal lines for "fast" look
+        pygame.draw.line(screen, (0, 0, 0), (cx-r, cy), (cx+r, cy), 3)
 
     @staticmethod
     def _render_beast(
@@ -280,16 +280,16 @@ class BotRenderer:
         rh: float,
         color: Tuple[int, int, int],
     ) -> None:
-         # Large imposing figure
-         # Main Body
-         pygame.draw.rect(screen, color, (cx - rw/2, ry + rh*0.3, rw, rh*0.7))
-         # Head (Horns)
-         head_size = rw * 0.8
-         pygame.draw.rect(screen, (100, 0, 0), (cx - head_size/2, ry, head_size, head_size))
+        # Large imposing figure
+        # Main Body
+        pygame.draw.rect(screen, color, (cx - rw/2, ry + rh*0.3, rw, rh*0.7))
+        # Head (Horns)
+        head_size = rw * 0.8
+        pygame.draw.rect(screen, (100, 0, 0), (cx - head_size/2, ry, head_size, head_size))
 
-         # Eyes
-         pygame.draw.circle(screen, (255, 255, 0), (int(cx - head_size*0.2), int(ry + head_size*0.4)), 5)
-         pygame.draw.circle(screen, (255, 255, 0), (int(cx + head_size*0.2), int(ry + head_size*0.4)), 5)
+        # Eyes
+        pygame.draw.circle(screen, (255, 255, 0), (int(cx - head_size*0.2), int(ry + head_size*0.4)), 5)
+        pygame.draw.circle(screen, (255, 255, 0), (int(cx + head_size*0.2), int(ry + head_size*0.4)), 5)
 
     @staticmethod
     def _render_monster(

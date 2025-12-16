@@ -97,7 +97,7 @@ class ParticleSystem:
                  dx=random.uniform(-5, 5),
                  dy=random.uniform(-5, 5),
                  color=c,
-                 timer=random.randint(20, 40),
+                 timer=C.PARTICLE_LIFETIME,
                  size=random.randint(2, 6)
              )
 
