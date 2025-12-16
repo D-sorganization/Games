@@ -1,98 +1,46 @@
-# Ruff configuration for game development
+# ruff.toml
+# Configuration for the Ruff linter
+# Matches standards defined in ci-standard.yml
 
-target-version = "py38"
-line-length = 100
+# Target Python 3.11 (matches your CI environment)
+target-version = "py311"
+line-length = 88  # Matches Black standard (88 chars)
+
+# Exclude generated code and standard noise
+exclude = [
+    ".git",
+    "__pycache__",
+    "build",
+    "dist",
+    "venv",
+    ".env",
+    "node_modules",
+    "*.ipynb",  # Jupyter notebooks often fail standard linting
+]
 
 [lint]
-# Enable ALL rules then selectively disable
-select = ["ALL"]
-ignore = [
-    "D",       # Docstring checks (we check separately)
-    "COM812",  # Missing trailing comma (conflicts with black)
-    "ISC001",  # Single line implicit string concat
-    "S311",    # Standard pseudo-random generators (fine for games)
-    "PLR0911", # Too many return statements (game logic can be complex)
-    "PLR0912", # Too many branches (game logic can be complex)
-    "PLR0915", # Too many statements (game logic can be complex)
-    "C901",    # Function complexity (game logic can be complex)
-    "PLR2004", # Magic values (common and acceptable in game constants)
-    "PERF401", # List comprehension suggestions (readability preference)
-    "T201",    # Print statements (needed for game output/debugging)
-    "EXE001",  # Shebang without executable bit
-    "F405",    # Undefined from star imports (intentional for pygame/OpenGL)
-    "F403",    # Star imports (common pattern for game constants)
-    "FA102",   # Missing future annotations (backward compatibility)
-    "UP006",   # Use PEP 585 (we use typing module for compatibility)
-    "UP007",   # Use X | Y for type annotations (we use Optional/Union)
-    "RET504",  # Unnecessary variable assignment before return
-    "NPY002",  # Legacy numpy random (compatibility with older code)
-    "E722",    # Bare except (sometimes needed for broad error handling)
-    "TRY003",  # Long exception messages
-    "EM101",   # Exception string literals
-    "EM102",   # Exception f-string literals
-    "FBT001",  # Boolean positional argument
-    "FBT002",  # Boolean default value
-    "FBT003",  # Boolean positional value
-    "ARG001",  # Unused function argument (game engines often have this)
-    "ARG002",  # Unused method argument
-    "SIM102",  # Use single if (nested ifs preferred for clarity)
-    "SIM110",  # Use return all() (for loops more readable for game logic)
-    "SIM114",  # Combine if branches (deliberately split for readability)
-    "ANN001",  # Missing parameter type annotations (relaxed for game code)
-    "ANN204",  # Missing __init__ return type (implicit None)
-    "ANN401",  # Dynamically typed Any (necessary for flexibility)
-    "PTH110",  # os.path.exists → Path.exists (backward compatibility)
-    "PTH118",  # os.path.join → Path / operator (backward compatibility)
-    "PTH120",  # os.path.dirname → Path.parent (backward compatibility)
-    "PTH123",  # open() → Path.open() (backward compatibility)
-    "B007",    # Unused loop variable (iteration counters are acceptable)
-    "S101",    # Use of assert (common in game code for type narrowing/defensive checks)
-    "RUF003",  # Comment contains ambiguous characters (allow Unicode in comments)
-    "PLR1714", # Merge multiple comparisons (readability preference for game logic)
-    "TCH003",  # Move import into type-checking block (Iterable used at runtime)
-]
+# Enable specific rule sets:
+# E = pycodestyle errors
+# F = Pyflakes (Logic errors)
+# W = pycodestyle warnings
+# I = isort (Import sorting)
+# B = flake8-bugbear (Catches likely bugs/traps)
+# UP = pyupgrade (Modernizes old Python syntax)
+select = ["E", "F", "W", "I", "B", "UP"]
 
-# Stricter than defaults
-fixable = ["ALL"]
-unfixable = []
+# Ignore:
+# D = pydocstyle (We let the 'Doc-Scribe' agent handle docstrings, so we don't lint them strictly here)
+ignore = ["D"]
 
-# Exclude legacy code
-exclude = [
-    "archive/",
-    "legacy/",
-    "experimental/",
-    "*/migrations/",
-    "*_pb2.py",
-]
+# Allow unused variables when underscore-prefixed.
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
 
 [lint.per-file-ignores]
-# Tests can be more relaxed
-"test_*.py" = [
-    "S101",   # Use of assert
-    "PLR2004", # Magic numbers allowed in tests
-]
-"**/tests/*.py" = [
-    "S101",
-    "PLR2004", 
-]
-"games/Force Field/force_field.py" = ["PLC0415"]
+# Ignore "unused imports" in __init__.py files (common pattern)
+"__init__.py" = ["F401"]
+# Allow assertions in tests
+"tests/*" = ["S101"]
 
-[lint.mccabe]
-max-complexity = 20  # Increased for game logic
-
-[lint.pylint]
-max-args = 8  # Game methods often need many parameters
-max-branches = 20  # Game logic branches (states, conditions)
-max-returns = 10  # Multiple early returns common in game code
-max-statements = 60  # Game methods can be longer
-
-[lint.flake8-quotes]
-inline-quotes = "double"
-multiline-quotes = "double"
-docstring-quotes = "double"
-
-[lint.flake8-import-conventions]
-# No banned imports for game code
-
-[lint.flake8-tidy-imports]
-# No banned imports - numpy needed for scientific computing in games
+[lint.isort]
+# Tells Ruff how to group your own code vs. libraries
+known-first-party = ["src", "games", "tools"]
