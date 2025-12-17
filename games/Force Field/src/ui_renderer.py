@@ -5,7 +5,7 @@ import math
 import os
 import random
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Tuple, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import pygame
 
@@ -34,7 +34,7 @@ class UIRenderer:
         self.screen = screen
 
         # Load Intro Images
-        self.intro_images: Dict[str, pygame.Surface] = {}
+        self.intro_images: dict[str, pygame.Surface] = {}
         self.intro_video: Any | None = None
         self._load_assets()
 
@@ -55,7 +55,7 @@ class UIRenderer:
         self.overlay_surface = pygame.Surface((C.SCREEN_WIDTH, C.SCREEN_HEIGHT), pygame.SRCALPHA)
 
         # Menu Visual State
-        self.title_drips: List[Dict[str, Any]] = []
+        self.title_drips: list[dict[str, Any]] = []
 
     def _init_fonts(self) -> None:
         """Initialize fonts"""
@@ -161,7 +161,7 @@ class UIRenderer:
             if drip["y"] > C.SCREEN_HEIGHT:
                 self.title_drips.remove(drip)
 
-    def _draw_blood_drips(self, drips: List[Dict[str, Any]]) -> None:
+    def _draw_blood_drips(self, drips: list[dict[str, Any]]) -> None:
         """Draw the blood drips"""
         for drip in drips:
             pygame.draw.line(
@@ -418,7 +418,7 @@ class UIRenderer:
         if game.paused:
             self._render_pause_menu()
 
-    def _render_damage_texts(self, texts: List[Dict[str, Any]]) -> None:
+    def _render_damage_texts(self, texts: list[dict[str, Any]]) -> None:
         """Render floating damage text indicators."""
         for t in texts:
             surf = self.small_font.render(t["text"], True, t["color"])
@@ -567,7 +567,7 @@ class UIRenderer:
         pygame.display.flip()
 
     def _render_stats_lines(
-        self, stats: List[Tuple[str, Tuple[int, int, int]]], start_y: int
+        self, stats: list[tuple[str, tuple[int, int, int]]], start_y: int
     ) -> None:
         """Render a list of stat lines."""
         y = start_y
@@ -703,7 +703,7 @@ class UIRenderer:
                         x_off += font.size(char)[0]
 
             elif slide["type"] == "story":
-                lines = cast("List[str]", slide["lines"])
+                lines = cast("list[str]", slide["lines"])
                 show_count = int((elapsed / duration) * (len(lines) + 1))
                 show_count = min(show_count, len(lines))
                 y = C.SCREEN_HEIGHT // 2 - (len(lines) * 50) // 2
@@ -713,7 +713,7 @@ class UIRenderer:
                     y += 50
 
             elif slide["type"] == "static":
-                color = cast("Tuple[int, int, int]", slide.get("color", C.WHITE))
+                color = cast("tuple[int, int, int]", slide.get("color", C.WHITE))
                 if slide["text"] == "FORCE FIELD":
                     fade = min(1.0, elapsed / duration)
                     r = int(255 + (255 - 255) * fade)

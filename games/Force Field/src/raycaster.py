@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import math
 import random
-from typing import TYPE_CHECKING, Any, Dict, List, Tuple, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import pygame
 
@@ -43,20 +43,20 @@ class Raycaster:
             )
 
         # Sprite cache
-        self.sprite_cache: Dict[str, pygame.Surface] = {}
+        self.sprite_cache: dict[str, pygame.Surface] = {}
 
         # Offscreen surface for low-res rendering (Optimization)
         self.view_surface = pygame.Surface((C.NUM_RAYS, C.SCREEN_HEIGHT), pygame.SRCALPHA)
 
         # Z-Buffer for occlusion (Euclidean distance)
-        self.z_buffer: List[float] = [float("inf")] * C.NUM_RAYS
+        self.z_buffer: list[float] = [float("inf")] * C.NUM_RAYS
 
     def cast_ray(
         self,
         origin_x: float,
         origin_y: float,
         angle: float,
-    ) -> Tuple[float, int]:
+    ) -> tuple[float, int]:
         """Cast a single ray using DDA
         Returns: (distance, wall_type)
         Distance is Euclidean distance along the ray.
@@ -122,7 +122,7 @@ class Raycaster:
         self,
         screen: pygame.Surface,
         player: Player,
-        bots: List[Bot],
+        bots: list[Bot],
         level: int,
         view_offset_y: float = 0.0,
     ) -> None:
@@ -139,7 +139,7 @@ class Raycaster:
         # Select theme
         theme_idx = (level - 1) % len(C.LEVEL_THEMES)
         theme = C.LEVEL_THEMES[theme_idx]
-        wall_colors = cast("Dict[int, Tuple[int, int, int]]", theme["walls"])
+        wall_colors = cast("dict[int, tuple[int, int, int]]", theme["walls"])
 
         # Reset Z-Buffer
         self.z_buffer = [float("inf")] * C.NUM_RAYS
@@ -218,7 +218,7 @@ class Raycaster:
     def _render_sprites(
         self,
         player: Player,
-        bots: List[Bot],
+        bots: list[Bot],
         half_fov: float,
         view_offset_y: float = 0.0,
     ) -> None:
@@ -268,7 +268,7 @@ class Raycaster:
         safe_dist = max(0.01, dist)
         base_sprite_size = C.SCREEN_HEIGHT / safe_dist
 
-        type_data: Dict[str, Any] = bot.type_data
+        type_data: dict[str, Any] = bot.type_data
         sprite_size = base_sprite_size * float(type_data.get("scale", 1.0))
 
         center_ray = C.NUM_RAYS / 2
@@ -432,7 +432,7 @@ class Raycaster:
 
         horizon = C.SCREEN_HEIGHT // 2 + int(player.pitch + view_offset_y)
 
-        ceiling_color = cast("Tuple[int, int, int]", theme["ceiling"])
+        ceiling_color = cast("tuple[int, int, int]", theme["ceiling"])
         pygame.draw.rect(screen, ceiling_color, (0, 0, C.SCREEN_WIDTH, horizon))
 
         star_offset = int(player_angle * 200) % C.SCREEN_WIDTH
@@ -454,7 +454,7 @@ class Raycaster:
                 pygame.draw.circle(screen, (220, 220, 200), (int(moon_x), moon_y), 40)
                 pygame.draw.circle(screen, ceiling_color, (int(moon_x) - 10, moon_y), 40)
 
-        floor_color = cast("Tuple[int, int, int]", theme["floor"])
+        floor_color = cast("tuple[int, int, int]", theme["floor"])
         pygame.draw.rect(
             screen,
             floor_color,
@@ -465,9 +465,9 @@ class Raycaster:
         self,
         screen: pygame.Surface,
         player: Player,
-        bots: List[Bot],
+        bots: list[Bot],
         visited_cells: set[tuple[int, int]] | None = None,
-        portal: Dict[str, Any] | None = None,
+        portal: dict[str, Any] | None = None,
     ) -> None:
         """Render 2D minimap with fog of war support."""
         minimap_size = 200
@@ -537,7 +537,7 @@ class Raycaster:
         self,
         screen: pygame.Surface,
         player: Player,
-        projectiles: List[Projectile],
+        projectiles: list[Projectile],
         view_offset_y: float = 0.0,
     ) -> None:
         """Render bot projectiles"""

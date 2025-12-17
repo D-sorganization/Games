@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-import math
 import random
-from typing import List, Tuple
 
 import pygame
 
@@ -16,13 +14,13 @@ class Particle:
         y: float,
         dx: float = 0.0,
         dy: float = 0.0,
-        color: Tuple[int, int, int] = (255, 255, 255),
+        color: tuple[int, int, int] = (255, 255, 255),
         timer: int = 30,
         size: float = 2.0,
         ptype: str = "normal",
         width: int = 1,
-        start_pos: Tuple[float, float] | None = None,
-        end_pos: Tuple[float, float] | None = None,
+        start_pos: tuple[float, float] | None = None,
+        end_pos: tuple[float, float] | None = None,
     ):
         self.x = x
         self.y = y
@@ -57,7 +55,7 @@ class Particle:
 
 class ParticleSystem:
     def __init__(self):
-        self.particles: List[Particle] = []
+        self.particles: list[Particle] = []
 
     def add_particle(
         self,
@@ -65,7 +63,7 @@ class ParticleSystem:
         y: float,
         dx: float,
         dy: float,
-        color: Tuple[int, int, int],
+        color: tuple[int, int, int],
         timer: int = 30,
         size: float = 2.0,
     ) -> None:
@@ -73,9 +71,9 @@ class ParticleSystem:
 
     def add_laser(
         self,
-        start: Tuple[float, float],
-        end: Tuple[float, float],
-        color: Tuple[int, int, int],
+        start: tuple[float, float],
+        end: tuple[float, float],
+        color: tuple[int, int, int],
         timer: int,
         width: int,
     ) -> None:
@@ -85,7 +83,7 @@ class ParticleSystem:
             )
         )
 
-    def add_explosion(self, x: float, y: float, count: int = 10, color: Tuple[int, int, int] | None = None) -> None:
+    def add_explosion(self, x: float, y: float, count: int = 10, color: tuple[int, int, int] | None = None) -> None:
         for _ in range(count):
              c = color if color else (
                  random.randint(0, 255),

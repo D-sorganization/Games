@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+import math
 import random
-from typing import TYPE_CHECKING, Any, Dict, List, Tuple
+from typing import TYPE_CHECKING, Any
 
 import pygame
 
@@ -32,7 +33,7 @@ class BotRenderer:
             sprite_size: Size of the sprite (width/height).
         """
         center_x = sprite_x + sprite_size / 2
-        type_data: Dict[str, Any] = bot.type_data
+        type_data: dict[str, Any] = bot.type_data
         base_color = type_data["color"]
         visual_style = type_data.get("visual_style", "monster")
 
@@ -113,6 +114,12 @@ class BotRenderer:
             )
             return
 
+        if visual_style == "ghost":
+            BotRenderer._render_ghost(
+                screen, bot, center_x, render_y, render_width, render_height, base_color
+            )
+            return
+
         # Monster Style (Default)
         BotRenderer._render_monster(
             screen, bot, center_x, render_y, render_width, render_height, base_color
@@ -185,7 +192,7 @@ class BotRenderer:
         ry: float,
         rw: float,
         rh: float,
-        color: Tuple[int, int, int],
+        color: tuple[int, int, int],
     ) -> None:
         # Body
         body_rect = pygame.Rect(
@@ -258,7 +265,7 @@ class BotRenderer:
         ry: float,
         rw: float,
         rh: float,
-        color: Tuple[int, int, int],
+        color: tuple[int, int, int],
     ) -> None:
         # Metallic Ball with rotation effect (stripes)
         r = rw / 2
@@ -278,7 +285,7 @@ class BotRenderer:
         ry: float,
         rw: float,
         rh: float,
-        color: Tuple[int, int, int],
+        color: tuple[int, int, int],
     ) -> None:
         # Large imposing figure
         # Main Body
@@ -292,6 +299,52 @@ class BotRenderer:
         pygame.draw.circle(screen, (255, 255, 0), (int(cx + head_size*0.2), int(ry + head_size*0.4)), 5)
 
     @staticmethod
+    def _render_ghost(
+        screen: pygame.Surface,
+        bot: Bot,
+        cx: float,
+        ry: float,
+        rw: float,
+        rh: float,
+        color: tuple[int, int, int],
+    ) -> None:
+        # Ghost: Float, fade at bottom, semi-transparent
+        offset_y = math.sin(pygame.time.get_ticks() * 0.005) * 10
+        gy = ry + offset_y
+
+        ghost_color = (*color, 150)  # RGBA
+
+        # Head
+        pygame.draw.circle(screen, ghost_color, (int(cx), int(gy + rw / 2)), int(rw / 2))
+
+        # Body (Rect)
+        body_rect = pygame.Rect(cx - rw / 2, gy + rw / 2, rw, rh * 0.6)
+        pygame.draw.rect(screen, ghost_color, body_rect)
+
+        # Tattered bottom
+        points = []
+        points.append((cx - rw / 2, gy + rw / 2 + rh * 0.6))
+        for i in range(5):
+            x = cx - rw / 2 + (i + 1) * (rw / 5)
+            y_base = gy + rw / 2 + rh * 0.6
+            y = y_base + (rh * 0.2 if i % 2 == 0 else 0)
+            points.append((x, y))
+        points.append((cx + rw / 2, gy + rw / 2 + rh * 0.6))
+        # Close shape
+        points.append((cx + rw / 2, gy + rw / 2))
+        points.append((cx - rw / 2, gy + rw / 2))
+
+        pygame.draw.polygon(screen, ghost_color, points)
+
+        # Eyes (Hollow)
+        pygame.draw.circle(
+            screen, (0, 0, 0), (int(cx - rw * 0.2), int(gy + rw * 0.4)), int(rw * 0.1)
+        )
+        pygame.draw.circle(
+            screen, (0, 0, 0), (int(cx + rw * 0.2), int(gy + rw * 0.4)), int(rw * 0.1)
+        )
+
+    @staticmethod
     def _render_monster(
         screen: pygame.Surface,
         bot: Bot,
@@ -299,7 +352,7 @@ class BotRenderer:
         ry: float,
         rw: float,
         rh: float,
-        color: Tuple[int, int, int],
+        color: tuple[int, int, int],
     ) -> None:
         body_x = cx - rw / 2
 

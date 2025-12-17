@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import logging
 import os
-from typing import ClassVar, Dict
+from typing import ClassVar
 
 import pygame
 
@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 class InputManager:
     """Manages input bindings and state."""
 
-    DEFAULT_BINDINGS: ClassVar[Dict[str, int]] = {
+    DEFAULT_BINDINGS: ClassVar[dict[str, int]] = {
         "move_forward": pygame.K_w,
         "move_backward": pygame.K_s,
         "strafe_left": pygame.K_a,
@@ -36,6 +36,7 @@ class InputManager:
         "weapon_3": pygame.K_3,
         "weapon_4": pygame.K_4,
         "weapon_5": pygame.K_5,
+        "weapon_6": pygame.K_6,
     }
 
     def __init__(self, config_file: str = "keybindings.json"):
@@ -45,7 +46,7 @@ class InputManager:
             config_file: Path to the keybindings JSON file.
         """
         self.config_file = config_file
-        self.bindings: Dict[str, int] = self.DEFAULT_BINDINGS.copy()
+        self.bindings: dict[str, int] = self.DEFAULT_BINDINGS.copy()
         self.load_config()
 
         # Mouse settings

@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import math
 import random
-from typing import TYPE_CHECKING, Any, Dict, List, Tuple, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import pygame
 
@@ -71,7 +71,7 @@ class GameRenderer:
 
         pygame.display.flip()
 
-    def _render_particles(self, particles: List[Any]) -> None:
+    def _render_particles(self, particles: list[Any]) -> None:
         """Render particle effects including lasers and explosion particles.
 
         Args:
@@ -146,7 +146,7 @@ class GameRenderer:
                 except (ValueError, TypeError):
                     continue
 
-    def _render_portal(self, portal: Dict[str, Any] | None, player: Player) -> None:
+    def _render_portal(self, portal: dict[str, Any] | None, player: Player) -> None:
         """Render portal visual effects if active.
 
         Args:
@@ -173,7 +173,7 @@ class GameRenderer:
                     pygame.draw.circle(self.screen, color, (screen_x, screen_y), size // 2, 2)
                     pygame.draw.circle(self.screen, C.WHITE, (screen_x, screen_y), size // 4, 1)
 
-    def _render_weapon(self, player: Player) -> Tuple[int, int]:
+    def _render_weapon(self, player: Player) -> tuple[int, int]:
         """Render weapon model and return its screen position (cx, cy)"""
         weapon = player.current_weapon
         cx = C.SCREEN_WIDTH // 2
@@ -319,7 +319,7 @@ class GameRenderer:
 
         return cx, cy
 
-    def _render_muzzle_flash(self, weapon_name: str, weapon_pos: Tuple[int, int]) -> None:
+    def _render_muzzle_flash(self, weapon_name: str, weapon_pos: tuple[int, int]) -> None:
         """Render weapon-specific muzzle flash effects."""
         flash_x = weapon_pos[0]
         # Base offset from weapon anchor (screen height)
