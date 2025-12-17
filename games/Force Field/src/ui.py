@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import math
 import random
-from typing import Dict, List, Tuple, Union
 
 import pygame
 
@@ -21,7 +20,7 @@ class Button:
         width: int,
         height: int,
         text: str,
-        color: Tuple[int, int, int],
+        color: tuple[int, int, int],
     ):
         """Initialize button"""
         self.rect = pygame.Rect(x, y, width, height)
@@ -31,12 +30,12 @@ class Button:
         self.hovered = False
 
     @property
-    def color(self) -> Tuple[int, int, int]:
+    def color(self) -> tuple[int, int, int]:
         """Get button color"""
         return self._color
 
     @color.setter
-    def color(self, value: Tuple[int, int, int]) -> None:
+    def color(self, value: tuple[int, int, int]) -> None:
         """Set button color and update hover color"""
         self._color = value
         self.hover_color = tuple(min(255, c + self.HOVER_BRIGHTNESS_OFFSET) for c in value)
@@ -51,11 +50,11 @@ class Button:
         text_rect = text_surface.get_rect(center=self.rect.center)
         screen.blit(text_surface, text_rect)
 
-    def update(self, mouse_pos: Tuple[int, int]) -> None:
+    def update(self, mouse_pos: tuple[int, int]) -> None:
         """Update button hover state"""
         self.hovered = self.rect.collidepoint(mouse_pos)
 
-    def is_clicked(self, mouse_pos: Tuple[int, int]) -> bool:
+    def is_clicked(self, mouse_pos: tuple[int, int]) -> bool:
         """Check if button was clicked"""
         return self.rect.collidepoint(mouse_pos)
 
@@ -70,11 +69,11 @@ class BloodButton(Button):
         width: int,
         height: int,
         text: str,
-        color: Tuple[int, int, int] = (139, 0, 0),  # Dark Red default
+        color: tuple[int, int, int] = (139, 0, 0),  # Dark Red default
     ):
         """Initialize BloodButton"""
         super().__init__(x, y, width, height, text, color)
-        self.drips: List[Dict[str, Union[float, int]]] = []
+        self.drips: list[dict[str, float | int]] = []
         self._generate_drips()
         self.pulse_timer = 0.0
 
@@ -100,7 +99,7 @@ class BloodButton(Button):
                     }
                 )
 
-    def update(self, mouse_pos: Tuple[int, int]) -> None:
+    def update(self, mouse_pos: tuple[int, int]) -> None:
         """Update button state and animation"""
         super().update(mouse_pos)
         self.pulse_timer += 0.1

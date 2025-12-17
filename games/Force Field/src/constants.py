@@ -118,6 +118,19 @@ WEAPONS = {
         "beam_color": (255, 0, 0),  # Red laser
         "beam_width": 3,
     },
+    "rocket": {
+        "name": "Rocket Launcher",
+        "damage": 150,
+        "range": 100,
+        "ammo": 999,
+        "cooldown": 45,
+        "clip_size": 1,
+        "reload_time": 180,
+        "key": "6",
+        "projectile_speed": 0.3,
+        "projectile_color": (255, 100, 0),
+        "aoe_radius": 6.0,
+    },
 }
 
 # Combat settings
@@ -222,6 +235,14 @@ ENEMY_TYPES = {
         "scale": 1.0,
         "visual_style": "monster",
     },
+    "ghost": {
+        "color": (200, 200, 255),
+        "health_mult": 0.6,
+        "speed_mult": 0.6,
+        "damage_mult": 1.5,
+        "scale": 0.9,
+        "visual_style": "ghost",
+    },
     "boss": {
         "color": BOSS_COLOR,
         "health_mult": 5.0,
@@ -273,6 +294,14 @@ ENEMY_TYPES = {
     },
     "health_pack": {
         "color": (0, 255, 0),
+        "health_mult": 1.0,
+        "speed_mult": 0.0,
+        "damage_mult": 0.0,
+        "scale": 0.5,
+        "visual_style": "item",
+    },
+    "pickup_rocket": {
+        "color": (255, 100, 0),
         "health_mult": 1.0,
         "speed_mult": 0.0,
         "damage_mult": 0.0,

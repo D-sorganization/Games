@@ -5,7 +5,7 @@ import math
 import random
 import traceback
 from contextlib import suppress
-from typing import Any, Dict, List, Tuple, cast
+from typing import Any, cast
 
 import pygame
 
@@ -45,13 +45,13 @@ class Game:
         self.intro_step = 0
         self.intro_timer = 0
         self.intro_start_time = 0
-        self.last_death_pos: Tuple[float, float] | None = None
+        self.last_death_pos: tuple[float, float] | None = None
 
         # Gameplay state
         self.level = 1
         self.kills = 0
         self.level_start_time = 0
-        self.level_times: List[float] = []
+        self.level_times: list[float] = []
         self.selected_map_size = C.DEFAULT_MAP_SIZE
         self.paused = False
         self.pause_start_time = 0
@@ -71,16 +71,16 @@ class Game:
 
         # Visual effects (Game Logic owned)
         self.particle_system = ParticleSystem()
-        self.damage_texts: List[Dict[str, Any]] = []
+        self.damage_texts: list[dict[str, Any]] = []
         self.damage_flash_timer = 0
 
         # Game objects
         self.game_map: Map | None = None
         self.player: Player | None = None
-        self.bots: List[Bot] = []
-        self.projectiles: List[Projectile] = []
+        self.bots: list[Bot] = []
+        self.projectiles: list[Projectile] = []
         self.raycaster: Raycaster | None = None
-        self.portal: Dict[str, Any] | None = None
+        self.portal: dict[str, Any] | None = None
         self.health = 100
         self.lives = C.DEFAULT_LIVES
 
@@ -157,7 +157,7 @@ class Game:
                         self.portal = {"x": tx + 0.5, "y": ty + 0.5}
                         return
 
-    def get_corner_positions(self) -> List[Tuple[float, float, float]]:
+    def get_corner_positions(self) -> list[tuple[float, float, float]]:
         """Get spawn positions for four corners (x, y, angle)"""
         offset = 5
         map_size = self.game_map.size if self.game_map else self.selected_map_size
@@ -167,7 +167,7 @@ class Game:
             base_x: float,
             base_y: float,
             angle: float,
-        ) -> Tuple[float, float, float]:
+        ) -> tuple[float, float, float]:
             """Find a safe spawn position near the base coordinates"""
             if not self.game_map:
                 return (base_x, base_y, angle)
@@ -532,6 +532,8 @@ class Game:
                         self.switch_weapon_with_message("laser")
                     elif self.input_manager.is_action_just_pressed(event, "weapon_5"):
                         self.switch_weapon_with_message("plasma")
+                    elif self.input_manager.is_action_just_pressed(event, "weapon_6"):
+                        self.switch_weapon_with_message("rocket")
                     elif self.input_manager.is_action_just_pressed(event, "reload"):
                         assert self.player is not None
                         self.player.reload()
@@ -621,11 +623,30 @@ class Game:
                 damage=self.player.get_current_weapon_damage(),
                 is_player=True,
                 color=cast(
-                    "Tuple[int, int, int]",
+                    "tuple[int, int, int]",
                     C.WEAPONS["plasma"].get("projectile_color", (0, 255, 255)),
                 ),
                 size=0.225,
                 weapon_type="plasma",
+            )
+            self.projectiles.append(p)
+            return
+
+        if weapon == "rocket" and not is_secondary:
+            # Spawn Rocket
+            p = Projectile(
+                self.player.x,
+                self.player.y,
+                self.player.angle,
+                speed=float(cast("float", C.WEAPONS["rocket"].get("projectile_speed", 0.3))),
+                damage=self.player.get_current_weapon_damage(),
+                is_player=True,
+                color=cast(
+                    "tuple[int, int, int]",
+                    C.WEAPONS["rocket"].get("projectile_color", (255, 100, 0)),
+                ),
+                size=0.3,
+                weapon_type="rocket",
             )
             self.projectiles.append(p)
             return
@@ -916,12 +937,47 @@ class Game:
 
     def explode_plasma(self, projectile: Projectile) -> None:
         """Trigger plasma AOE explosion"""
+        self._explode_generic(projectile, C.PLASMA_AOE_RADIUS, "plasma")
+
+    def explode_rocket(self, projectile: Projectile) -> None:
+        """Trigger rocket AOE explosion"""
+        # Rocket has larger AOE
+        radius = float(cast("float", C.WEAPONS["rocket"].get("aoe_radius", 6.0)))
+        self._explode_generic(projectile, radius, "rocket")
+
+    def _explode_generic(self, projectile: Projectile, radius: float, weapon_type: str) -> None:
+        """Generic explosion logic"""
         assert self.player is not None
         dist_to_player = math.sqrt(
             (projectile.x - self.player.x) ** 2 + (projectile.y - self.player.y) ** 2
         )
         if dist_to_player < 15:
             self.damage_flash_timer = 15
+
+        # Visuals
+        if dist_to_player < 20:
+            count = 5 if weapon_type == "rocket" else 3
+            self.particle_system.add_explosion(
+                C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2, count=count
+            )
+
+            # Add some colored particles
+            color = C.CYAN if weapon_type == "plasma" else C.ORANGE
+            for _ in range(20):
+                self.particle_system.add_particle(
+                    x=C.SCREEN_WIDTH // 2,
+                    y=C.SCREEN_HEIGHT // 2,
+                    dx=random.uniform(-10, 10),
+                    dy=random.uniform(-10, 10),
+                    color=color,
+                    timer=40,
+                    size=random.randint(4, 8),
+                )
+
+        try:
+            self.sound_manager.play_sound("boom_real" if weapon_type == "rocket" else "shoot_plasma")
+        except Exception:
+            pass
 
         for bot in self.bots:
             if not bot.alive:
@@ -930,20 +986,19 @@ class Game:
             dy = bot.y - projectile.y
             dist = math.sqrt(dx * dx + dy * dy)
 
-            if dist < C.PLASMA_AOE_RADIUS:
+            if dist < radius:
+                # Falloff damage
+                damage_factor = 1.0 - (dist / radius)
+                damage = int(projectile.damage * damage_factor)
+
                 was_alive = bot.alive
-                bot.take_damage(projectile.damage)
+                bot.take_damage(damage)
                 if was_alive and not bot.alive:
                     self.sound_manager.play_sound("scream")
                     self.kills += 1
                     self.kill_combo_count += 1
                     self.kill_combo_timer = 180
                     self.last_death_pos = (bot.x, bot.y)
-
-                if dist < 5.0:
-                    self.particle_system.add_explosion(
-                        C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2, count=3
-                    )
 
     def update_game(self) -> None:
         """Update game state"""
@@ -1165,12 +1220,12 @@ class Game:
             was_alive = projectile.alive
             projectile.update(self.game_map)
 
-            if (
-                was_alive
-                and not projectile.alive
-                and getattr(projectile, "weapon_type", "normal") == "plasma"
-            ):
-                self.explode_plasma(projectile)
+            if was_alive and not projectile.alive:
+                w_type = getattr(projectile, "weapon_type", "normal")
+                if w_type == "plasma":
+                    self.explode_plasma(projectile)
+                elif w_type == "rocket":
+                    self.explode_rocket(projectile)
 
             if projectile.alive:
                 if not projectile.is_player:
@@ -1209,8 +1264,11 @@ class Game:
 
                             projectile.alive = False
 
-                            if getattr(projectile, "weapon_type", "normal") == "plasma":
+                            w_type = getattr(projectile, "weapon_type", "normal")
+                            if w_type == "plasma":
                                 self.explode_plasma(projectile)
+                            elif w_type == "rocket":
+                                self.explode_rocket(projectile)
                             break
 
         self.projectiles = [p for p in self.projectiles if p.alive]

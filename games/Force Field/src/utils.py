@@ -1,5 +1,5 @@
 import math
-from typing import TYPE_CHECKING, Any, Dict, List, Tuple
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from .map import Map
@@ -10,7 +10,7 @@ def cast_ray_dda(
     angle: float,
     game_map: "Map",
     max_dist: float = 100.0,
-) -> Tuple[float, int, float, float]:
+) -> tuple[float, int, float, float]:
     """Cast a ray using DDA algorithm.
 
     Returns:
@@ -42,7 +42,6 @@ def cast_ray_dda(
         side_dist_y = (map_y + 1.0 - start_y) * delta_dist_y
 
     hit = False
-    side = 0  # 0 for NS, 1 for EW
     wall_type = 0
 
     # Max depth check to prevent infinite loop (approximate)
@@ -61,12 +60,10 @@ def cast_ray_dda(
         if side_dist_x < side_dist_y:
             side_dist_x += delta_dist_x
             map_x += step_x
-            side = 0
             dist = side_dist_x - delta_dist_x
         else:
             side_dist_y += delta_dist_y
             map_y += step_y
-            side = 1
             dist = side_dist_y - delta_dist_y
 
         if dist > max_dist:
@@ -109,7 +106,7 @@ def try_move_entity(
     dx: float,
     dy: float,
     game_map: "Map",
-    obstacles: List[Any],
+    obstacles: list[Any],
     radius: float = 0.5
 ) -> None:
     """Try to move entity by dx, dy checking walls and obstacles."""

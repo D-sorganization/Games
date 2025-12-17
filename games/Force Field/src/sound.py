@@ -3,7 +3,6 @@ from __future__ import annotations
 import contextlib
 import logging
 from pathlib import Path
-from typing import Dict
 
 import pygame
 
@@ -36,7 +35,7 @@ class SoundManager:
         pygame.mixer.init()
         pygame.mixer.set_num_channels(32)
 
-        self.sounds: Dict[str, pygame.mixer.Sound] = {}
+        self.sounds: dict[str, pygame.mixer.Sound] = {}
         self.music_channel = None
         self.sound_enabled = True
         self.current_music: str | None = None

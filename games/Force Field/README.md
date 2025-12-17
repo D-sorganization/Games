@@ -62,7 +62,7 @@ Each level, the four corners of the map are randomly assigned:
 ## How to Play
 
 ### Starting the Game
-1. Run `python fps_shooter.py`
+1. Run `python force_field.py`
 2. Click the **START GAME** button
 3. You'll spawn in a random corner with 3 bots in the other corners
 
@@ -138,10 +138,10 @@ Each level, the four corners of the map are randomly assigned:
 pip install pygame
 
 # Navigate to game directory
-cd "games/FPS Shooter"
+cd "games/Force Field"
 
 # Run the game
-python fps_shooter.py
+python force_field.py
 ```
 
 ## Technical Details

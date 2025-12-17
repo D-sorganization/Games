@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import math
-from typing import TYPE_CHECKING, Any, Dict, List, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from . import constants as C  # noqa: N812
 
@@ -24,7 +24,7 @@ class Player:
         self.is_moving = False  # Track movement for bobbing
 
         # Weapon State
-        self.weapon_state: Dict[str, Dict[str, Any]] = {}
+        self.weapon_state: dict[str, dict[str, Any]] = {}
         for w_name, w_data in C.WEAPONS.items():
             self.weapon_state[w_name] = {
                 "clip": w_data.get("clip_size", 999),
@@ -38,7 +38,7 @@ class Player:
         # Keep tracking total ammo (reserves) if we want,
         # but user request implies specific mechanics per gun
         # For now, we assume "ammo" in constants refers to reserves.
-        self.ammo: Dict[str, int] = {w: int(cast("int", C.WEAPONS[w]["ammo"])) for w in C.WEAPONS}
+        self.ammo: dict[str, int] = {w: int(cast("int", C.WEAPONS[w]["ammo"])) for w in C.WEAPONS}
 
         self.current_weapon = "rifle"
         self.shooting = False
@@ -65,7 +65,7 @@ class Player:
     def move(
         self,
         game_map: Map,
-        bots: List[Bot],
+        bots: list[Bot],
         forward: bool = True,
         speed: float = C.PLAYER_SPEED,
     ) -> None:
@@ -85,7 +85,7 @@ class Player:
     def strafe(
         self,
         game_map: Map,
-        bots: List[Bot],
+        bots: list[Bot],
         right: bool = True,
         speed: float = C.PLAYER_SPEED,
     ) -> None:

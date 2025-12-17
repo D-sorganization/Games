@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import math
 import random
-from typing import TYPE_CHECKING, Any, Dict, List
+from typing import TYPE_CHECKING, Any
 
 from . import constants as C  # noqa: N812
 from .projectile import Projectile
@@ -43,7 +43,7 @@ class Bot:
 
         diff_stats = C.DIFFICULTIES.get(difficulty, C.DIFFICULTIES["NORMAL"])
 
-        type_data: Dict[str, Any] = self.type_data
+        type_data: dict[str, Any] = self.type_data
         base_health = int(C.BASE_BOT_HEALTH * float(type_data["health_mult"]))
         # Apply difficulty to health
         self.health = int((base_health + (level - 1) * 3) * diff_stats["health_mult"])
@@ -80,7 +80,7 @@ class Bot:
         self.disintegrate_timer = 0
         self.removed = False  # When fully disintegrated
 
-    def update(self, game_map: Map, player: Player, other_bots: List[Bot]) -> Projectile | None:
+    def update(self, game_map: Map, player: Player, other_bots: list[Bot]) -> Projectile | None:
         """Update bot AI"""
         if self.dead:
             self.death_timer += 1
