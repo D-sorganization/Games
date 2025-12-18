@@ -54,7 +54,7 @@ class Particle:
 
 
 class ParticleSystem:
-    def __init__(self):
+    def __init__(self) -> None:
         self.particles: list[Particle] = []
 
     def add_particle(

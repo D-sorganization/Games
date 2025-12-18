@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import math
 import random
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import pygame
 
@@ -184,7 +184,7 @@ class BotRenderer:
         rect_w = size * 0.6
         rect_h = size * 0.2
         py = y + size * 0.75
-        color = bot.type_data["color"]
+        color = cast("tuple[int, int, int]", bot.type_data["color"])
         pygame.draw.rect(screen, color, (cx - rect_w / 2, py, rect_w, rect_h))
         # Label/Detail
         pygame.draw.line(screen, (255, 255, 255), (cx - rect_w / 2, py), (cx + rect_w / 2, py), 2)

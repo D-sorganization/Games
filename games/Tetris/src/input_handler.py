@@ -10,7 +10,7 @@ class InputHandler:
     def __init__(self) -> None:
         """Initialize input handler"""
         self.controller_enabled = True
-        self.awaiting_controller_action = None
+        self.awaiting_controller_action: str | None = None
         self.controller_mapping = {
             "move_left": {"type": "hat", "index": 0, "value": (-1, 0)},
             "move_right": {"type": "hat", "index": 0, "value": (1, 0)},
@@ -170,7 +170,7 @@ class InputHandler:
                     if binding.get("value") == event.value:
                         self.trigger_action(action, logic, game_state_manager)
 
-    def apply_controller_binding(self, event) -> bool:
+    def apply_controller_binding(self, event: pygame.event.Event) -> bool:
         """Bind the awaiting action to the next controller input"""
         if not self.awaiting_controller_action:
             return False
