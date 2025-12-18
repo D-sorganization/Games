@@ -90,6 +90,8 @@ jobs:
           python-version: ${{ matrix.python }}
       - run: pip install -r requirements.txt
       - run: pytest games/ --cov=games --cov-report=xml
+        env:
+            PYTHONPATH: .
       - uses: codecov/codecov-action@v4
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
@@ -98,43 +100,4 @@ jobs:
           fail_ci_if_error: true # BLOCKING: Requires CODECOV_TOKEN secret to be configured
           token: ${{ secrets.CODECOV_TOKEN }}
 
-  javascript-tests:
-    needs: quality-gate
-    runs-on: ubuntu-latest
-    if: false  # Directory does not exist in repo
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: "20" }
-      - name: Install & Test
-        working-directory: ./javascript
-        run: |
-          npm ci
-          npm run test:coverage
 
-  matlab-tests:
-    needs: quality-gate
-    runs-on: ubuntu-latest
-    if: false
-    continue-on-error: true
-    steps:
-      - uses: actions/checkout@v4
-      - uses: matlab-actions/setup-matlab@v2
-      - uses: matlab-actions/run-command@v2
-        with:
-          command: |
-            addpath('matlab');
-            run_all
-
-  arduino-build:
-    needs: quality-gate
-    runs-on: ubuntu-latest
-    if: false  # Directory does not exist in repo
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with: { python-version: "3.11" }
-      - run: pip install platformio
-      - name: Verify Build
-        working-directory: ./arduino
-        run: pio run -e uno
