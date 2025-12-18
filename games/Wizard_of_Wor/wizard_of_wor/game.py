@@ -235,9 +235,10 @@ class WizardOfWorGame:
             self.player.update(keys, self.dungeon, self.effects)
 
         # Update enemies
-        player_pos = (
-            (self.player.x, self.player.y) if self.player is not None else (0, 0)
-        )
+        if self.player is not None:
+            player_pos = (self.player.x, self.player.y)
+        else:
+            player_pos = (0, 0)
         for enemy in self.enemies:
             enemy.update(self.dungeon, player_pos)
 

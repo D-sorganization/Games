@@ -217,9 +217,8 @@ class TetrisGame:
                 True,
                 C.YELLOW,
             )
-            waiting_rect = waiting.get_rect(
-                center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT - 100)
-            )
+            center = (C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT - 100)
+            waiting_rect = waiting.get_rect(center=center)
             self.screen.blit(waiting, waiting_rect)
 
     def handle_mouse_input(self, pos: tuple[int, int]) -> None:
@@ -328,9 +327,8 @@ class TetrisGame:
                     pause_text = self.renderer.font_large.render(
                         "PAUSED", True, C.YELLOW
                     )
-                    pause_rect = pause_text.get_rect(
-                        center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2)
-                    )
+                    center = (C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2)
+                    pause_rect = pause_text.get_rect(center=center)
                     self.screen.blit(pause_text, pause_rect)
 
             elif self.state == C.GameState.GAME_OVER:

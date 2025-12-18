@@ -57,28 +57,22 @@ class InputHandler:
         soft_drop = self.controller_mapping.get("soft_drop")
 
         if move_left and move_left.get("type") == "hat":
-            if (
-                self.joystick.get_hat(int(cast(int, move_left["index"])))
-                == move_left.get("value")
-            ):
+            idx = int(cast(int, move_left["index"]))
+            if self.joystick.get_hat(idx) == move_left.get("value"):
                 if logic.valid_move(logic.current_piece, x_offset=-1):
                     logic.current_piece.x -= 1
                     pygame.time.wait(100)
 
         if move_right and move_right.get("type") == "hat":
-            if (
-                self.joystick.get_hat(int(cast(int, move_right["index"])))
-                == move_right.get("value")
-            ):
+            idx = int(cast(int, move_right["index"]))
+            if self.joystick.get_hat(idx) == move_right.get("value"):
                 if logic.valid_move(logic.current_piece, x_offset=1):
                     logic.current_piece.x += 1
                     pygame.time.wait(100)
 
         if soft_drop and soft_drop.get("type") == "hat":
-            if (
-                self.joystick.get_hat(int(cast(int, soft_drop["index"])))
-                == soft_drop.get("value")
-            ):
+            idx = int(cast(int, soft_drop["index"]))
+            if self.joystick.get_hat(idx) == soft_drop.get("value"):
                 if logic.valid_move(logic.current_piece, y_offset=1):
                     logic.current_piece.y += 1
                     logic.score += 1

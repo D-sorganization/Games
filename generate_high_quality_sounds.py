@@ -60,10 +60,8 @@ def gen_pistol() -> None:
             t = i / sample_rate
             # High freq noise + sine drop
             noise = random.uniform(-1, 1) * math.exp(-t * 20)
-            tone = (
-                math.sin(2 * math.pi * (800 * math.exp(-t * 10)) * t)
-                * math.exp(-t * 10)
-            )
+            osc = math.sin(2 * math.pi * (800 * math.exp(-t * 10)) * t)
+            tone = osc * math.exp(-t * 10)
             val = int(0.9 * 32767 * (noise * 0.7 + tone * 0.3))  # Increased volume
             f.writeframes(struct.pack("h", val))
 
@@ -103,9 +101,8 @@ def gen_shotgun() -> None:
             t = i / sample_rate
             # Low freq sine + lots of noise
             noise = random.uniform(-1, 1) * math.exp(-t * 5)
-            boom = (
-                math.sin(2 * math.pi * (60 * math.exp(-t * 2)) * t) * math.exp(-t * 5)
-            )
+            osc = math.sin(2 * math.pi * (60 * math.exp(-t * 2)) * t)
+            boom = osc * math.exp(-t * 5)
             # Increased volume
             val = int(0.95 * 32767 * (noise * 0.6 + boom * 0.4))
             f.writeframes(struct.pack("h", val))
@@ -206,9 +203,8 @@ def gen_scream() -> None:
             t = i / sample_rate
             # Monster Growl/Scream
             # Low Sawtooth/Square mix
-            freq = 150 * (1 - t / duration * 0.2) + random.uniform(
-                -20, 20
-            )  # 150Hz base
+            base_freq = 150 * (1 - t / duration * 0.2)
+            freq = base_freq + random.uniform(-20, 20)
 
             osc1 = 2.0 * (t * freq - math.floor(t * freq + 0.5))  # Saw
             osc2 = (

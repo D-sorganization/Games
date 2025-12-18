@@ -1077,9 +1077,8 @@ class Game:
             dist = math.sqrt(dx * dx + dy * dy)
             if dist < 1.5:
                 paused = self.total_paused_time
-                level_time = (
-                    pygame.time.get_ticks() - self.level_start_time - paused
-                ) / 1000.0
+                now = pygame.time.get_ticks()
+                level_time = (now - self.level_start_time - paused) / 1000.0
                 self.level_times.append(level_time)
                 self.state = "level_complete"
                 pygame.mouse.set_visible(True)
@@ -1210,9 +1209,7 @@ class Game:
                 self.projectiles.append(projectile)
                 self.sound_manager.play_sound("enemy_shoot")
 
-            is_item = bot.enemy_type.startswith(
-                ("health", "ammo", "bomb", "pickup")
-            )
+            is_item = bot.enemy_type.startswith(("health", "ammo", "bomb", "pickup"))
             if bot.alive and is_item:
                 dx = bot.x - self.player.x
                 dy = bot.y - self.player.y
@@ -1519,9 +1516,9 @@ class Game:
                         return
 
                 # Back Button
-                back_rect = pygame.Rect(
-                    C.SCREEN_WIDTH // 2 - 50, C.SCREEN_HEIGHT - 80, 100, 40
-                )
+                center_x = C.SCREEN_WIDTH // 2 - 50
+                top_y = C.SCREEN_HEIGHT - 80
+                back_rect = pygame.Rect(center_x, top_y, 100, 40)
                 if back_rect.collidepoint(mx, my):
                     self.state = "playing" if self.paused else "menu"
 
