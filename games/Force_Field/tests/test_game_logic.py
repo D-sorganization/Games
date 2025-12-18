@@ -1,7 +1,5 @@
 import math
-import sys
 import unittest
-from pathlib import Path
 
 import games.Force_Field.src.constants as C  # noqa: N812
 from games.Force_Field.src.bot import Bot

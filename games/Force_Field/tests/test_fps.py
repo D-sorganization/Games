@@ -1,5 +1,3 @@
-import os
-import sys
 import unittest
 
 from games.Force_Field.src.map import Map
