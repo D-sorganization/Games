@@ -135,12 +135,11 @@ class Dungeon:
         for y in range(2, self.rows - 2):
             for x in range(2, self.cols - 2):
                 if self.grid[y][x] == 0:
-                    at_side_door = x in (2, self.cols - 3) and abs(
-                        y - self.rows // 2
-                    ) <= 2
+                    at_side_door = (
+                        x in (2, self.cols - 3) and abs(y - self.rows // 2) <= 2
+                    )
                     near_center = (
-                        abs(x - self.cols // 2) <= 2
-                        and abs(y - self.rows // 2) <= 4
+                        abs(x - self.cols // 2) <= 2 and abs(y - self.rows // 2) <= 4
                     )
                     corner_pad = (x, y) in {
                         (3, 3),

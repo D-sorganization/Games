@@ -425,9 +425,7 @@ class Game:
             cy = random.randint(2, upper_bound)
             if (
                 not self.game_map.is_wall(cx, cy)
-                and math.sqrt(
-                    (cx - player_pos[0]) ** 2 + (cy - player_pos[1]) ** 2
-                )
+                and math.sqrt((cx - player_pos[0]) ** 2 + (cy - player_pos[1]) ** 2)
                 > 15
             ):
                 self.bots.append(

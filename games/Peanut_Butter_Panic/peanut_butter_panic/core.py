@@ -317,7 +317,7 @@ class GameWorld:
 
     def _resolve_enemy_collisions(self) -> None:
         """Resolve collisions between enemies and their targets
-(sandwiches or player)."""
+        (sandwiches or player)."""
         surviving_enemies: list[Enemy] = []
         for enemy in self.enemies:
             target = self._find_hit_target(enemy)

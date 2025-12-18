@@ -596,8 +596,7 @@ class Raycaster:
             if abs(angle_to_proj) < half_fov:
                 proj_size = max(2, 10 / proj_dist) if proj_dist > 0.1 else 100
                 proj_x = (
-                    C.SCREEN_WIDTH / 2
-                    + (angle_to_proj / half_fov) * C.SCREEN_WIDTH / 2
+                    C.SCREEN_WIDTH / 2 + (angle_to_proj / half_fov) * C.SCREEN_WIDTH / 2
                 )
                 proj_y = C.SCREEN_HEIGHT / 2 + player.pitch + view_offset_y
 

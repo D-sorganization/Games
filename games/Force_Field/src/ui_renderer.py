@@ -664,9 +664,7 @@ class UIRenderer:
             t1 = self.tiny_font.render("in association with", True, C.CYAN)
             self.screen.blit(
                 t1,
-                t1.get_rect(
-                    center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 - 230)
-                ),
+                t1.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 - 230)),
             )
 
             if self.intro_video and self.intro_video.isOpened():
