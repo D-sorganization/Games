@@ -110,7 +110,11 @@ def check_banned_patterns(
     """Check for banned patterns in lines."""
     issues: list[tuple[int, str, str]] = []
     # Skip checking this file for its own patterns
-    if filepath.name in ["quality_check_script.py", "quality_check.py", "matlab_quality_check.py"]:
+    if filepath.name in [
+        "quality_check_script.py",
+        "quality_check.py",
+        "matlab_quality_check.py",
+    ]:
         return issues
 
     for line_num, line in enumerate(lines, 1):
@@ -139,7 +143,11 @@ def check_magic_numbers(lines: list[str], filepath: Path) -> list[tuple[int, str
     """Check for magic numbers in lines."""
     issues: list[tuple[int, str, str]] = []
     # Skip checking this file for magic numbers
-    if filepath.name in ["quality_check_script.py", "quality_check.py", "matlab_quality_check.py"]:
+    if filepath.name in [
+        "quality_check_script.py",
+        "quality_check.py",
+        "matlab_quality_check.py",
+    ]:
         return issues
     for line_num, line in enumerate(lines, 1):
         line_content = line[: line.index("#")] if "#" in line else line
@@ -207,7 +215,9 @@ def main() -> None:
         ".ipynb_checkpoints",  # Add checkpoint files to exclusion
         ".Trash",  # Add trash files to exclusion
     }
-    python_files = [f for f in python_files if not any(part in exclude_dirs for part in f.parts)]
+    python_files = [
+        f for f in python_files if not any(part in exclude_dirs for part in f.parts)
+    ]
 
     all_issues = []
     for filepath in python_files:

@@ -40,7 +40,7 @@ def generate_wave(
             wav_file.writeframes(packed_value)
 
 
-sounds_dir = Path("games/Force Field/assets/sounds")
+sounds_dir = Path("games/Force_Field/assets/sounds")
 sounds_dir.mkdir(parents=True, exist_ok=True)
 
 # Dark Ambient
@@ -63,7 +63,8 @@ def generate_scream(filename: str) -> None:
         for i in range(n_frames):
             t = i / sample_rate
             # Slide down
-            freq = 800 * (1 - t / duration) + random.uniform(-50, 50) if duration > 0 else 800
+            base_freq = 800 * (1 - t / duration)
+            freq = base_freq + random.uniform(-50, 50) if duration > 0 else 800
             value = int(0.5 * 32767.0 * math.sin(2 * math.pi * freq * t))
             wav_file.writeframes(struct.pack("h", value))
 
@@ -82,7 +83,8 @@ def generate_death(filename: str) -> None:
         for i in range(n_frames):
             t = i / sample_rate
             freq = 100 * (1 - t / duration) if duration > 0 else 100
-            value = int(0.6 * 32767.0 * (random.random() * math.sin(2 * math.pi * freq * t)))
+            osc = math.sin(2 * math.pi * freq * t)
+            value = int(0.6 * 32767.0 * (random.random() * osc))
             wav_file.writeframes(struct.pack("h", value))
 
 

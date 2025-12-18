@@ -6,8 +6,10 @@ Refactored into modules.
 """
 
 import sys
+from typing import Any
 
 import pygame
+
 import src.constants as C  # noqa: N812
 from src.game_logic import TetrisLogic
 from src.input_handler import InputHandler
@@ -56,12 +58,18 @@ class TetrisGame:
         """Toggle game pause state"""
         if self.state in [C.GameState.PLAYING, C.GameState.PAUSED]:
             self.state = (
-                C.GameState.PAUSED if self.state == C.GameState.PLAYING else C.GameState.PLAYING
+                C.GameState.PAUSED
+                if self.state == C.GameState.PLAYING
+                else C.GameState.PLAYING
             )
 
     def restart_game(self) -> None:
         """Restart the current game"""
-        if self.state in [C.GameState.PLAYING, C.GameState.PAUSED, C.GameState.GAME_OVER]:
+        if self.state in [
+            C.GameState.PLAYING,
+            C.GameState.PAUSED,
+            C.GameState.GAME_OVER,
+        ]:
             self.logic.reset_game()
             self.state = C.GameState.PLAYING
 
@@ -75,14 +83,16 @@ class TetrisGame:
             elif event.key == pygame.K_DOWN:
                 levels = [1, 5, 10, 15, 20]
                 current_idx = levels.index(self.logic.starting_level)
-                self.logic.starting_level = levels[min(len(levels) - 1, current_idx + 1)]
+                self.logic.starting_level = levels[
+                    min(len(levels) - 1, current_idx + 1)
+                ]
             elif event.key == pygame.K_RETURN:
                 self.logic.reset_game()
                 self.state = C.GameState.PLAYING
             elif event.key == pygame.K_s:
                 self.state = C.GameState.SETTINGS
 
-    def get_settings_entries(self) -> list[dict]:
+    def get_settings_entries(self) -> list[dict[str, Any]]:
         """Return the settings configuration items"""
         entries = [
             {"label": "Show Next Piece", "key": "show_next_piece", "type": "bool"},
@@ -98,7 +108,10 @@ class TetrisGame:
             {"label": "Controller Mappings", "type": "header", "key": ""},
         ]
 
-        for action_key, description in self.input_handler.controller_action_labels.items():
+        for (
+            action_key,
+            description,
+        ) in self.input_handler.controller_action_labels.items():
             entries.append(
                 {
                     "label": description,
@@ -149,7 +162,8 @@ class TetrisGame:
 
     def draw_settings(self) -> None:
         """Render the settings menu"""
-        # Implementing draw_settings here as it was missing from renderer and needs state access
+        # Implementing draw_settings here as it was missing from
+        # renderer and needs state access
         self.screen.fill(C.BLACK)
         title = self.renderer.font_large.render("Settings", True, C.CYAN)
         title_rect = title.get_rect(center=(C.SCREEN_WIDTH // 2, 80))
@@ -177,7 +191,9 @@ class TetrisGame:
                 value_text = self.input_handler.get_binding_label(entry["key"])
 
             label_text = self.renderer.font.render(label, True, color)
-            value_render = self.renderer.small_font.render(value_text, True, C.LIGHT_GRAY)
+            value_render = self.renderer.small_font.render(
+                value_text, True, C.LIGHT_GRAY
+            )
 
             self.screen.blit(label_text, (140, y_offset))
             if value_text:
@@ -201,7 +217,8 @@ class TetrisGame:
                 True,
                 C.YELLOW,
             )
-            waiting_rect = waiting.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT - 100))
+            center = (C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT - 100)
+            waiting_rect = waiting.get_rect(center=center)
             self.screen.blit(waiting, waiting_rect)
 
     def handle_mouse_input(self, pos: tuple[int, int]) -> None:
@@ -210,7 +227,11 @@ class TetrisGame:
             if self.state in [C.GameState.PLAYING, C.GameState.PAUSED]:
                 self.show_controls_panel = not self.show_controls_panel
         if self.restart_button.collidepoint(pos):
-            if self.state in [C.GameState.PLAYING, C.GameState.PAUSED, C.GameState.GAME_OVER]:
+            if self.state in [
+                C.GameState.PLAYING,
+                C.GameState.PAUSED,
+                C.GameState.GAME_OVER,
+            ]:
                 self.restart_game()
 
     def run(self) -> None:
@@ -303,10 +324,11 @@ class TetrisGame:
                     overlay.fill(C.BLACK)
                     overlay.set_alpha(128)
                     self.screen.blit(overlay, (0, 0))
-                    pause_text = self.renderer.font_large.render("PAUSED", True, C.YELLOW)
-                    pause_rect = pause_text.get_rect(
-                        center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2)
+                    pause_text = self.renderer.font_large.render(
+                        "PAUSED", True, C.YELLOW
                     )
+                    center = (C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2)
+                    pause_rect = pause_text.get_rect(center=center)
                     self.screen.blit(pause_text, pause_rect)
 
             elif self.state == C.GameState.GAME_OVER:

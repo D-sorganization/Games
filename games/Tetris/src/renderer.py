@@ -1,6 +1,24 @@
 import pygame
 
-from .constants import *
+from .constants import (
+    BLACK,
+    CYAN,
+    DARK_GRAY,
+    GOLD,
+    GRAY,
+    GREEN,
+    GRID_HEIGHT,
+    GRID_SIZE,
+    GRID_WIDTH,
+    LIGHT_GRAY,
+    PLAY_HEIGHT,
+    PLAY_WIDTH,
+    RED,
+    SCREEN_WIDTH,
+    TOP_LEFT_X,
+    TOP_LEFT_Y,
+    WHITE,
+)
 from .game_logic import TetrisLogic
 from .tetromino import Tetromino
 
@@ -26,9 +44,13 @@ class TetrisRenderer:
             r = int(top_color[0] * (1 - ratio) + bottom_color[0] * ratio)
             g = int(top_color[1] * (1 - ratio) + bottom_color[1] * ratio)
             b = int(top_color[2] * (1 - ratio) + bottom_color[2] * ratio)
-            pygame.draw.line(self.screen, (r, g, b), (0, y), (self.screen.get_width(), y))
+            pygame.draw.line(
+                self.screen, (r, g, b), (0, y), (self.screen.get_width(), y)
+            )
 
-    def draw_bevel_rect(self, surface: pygame.Surface, color: tuple, rect: pygame.Rect) -> None:
+    def draw_bevel_rect(
+        self, surface: pygame.Surface, color: tuple[int, int, int], rect: pygame.Rect
+    ) -> None:
         """Draw a rectangle with a bevel effect"""
         pygame.draw.rect(surface, color, rect)
 
@@ -128,7 +150,9 @@ class TetrisRenderer:
                         )
                     else:
                         # Glow effect for active piece
-                        glow_surf = pygame.Surface((GRID_SIZE + 4, GRID_SIZE + 4), pygame.SRCALPHA)
+                        glow_surf = pygame.Surface(
+                            (GRID_SIZE + 4, GRID_SIZE + 4), pygame.SRCALPHA
+                        )
                         glow_color = (*piece.color, 100)
                         pygame.draw.rect(
                             glow_surf,
@@ -159,9 +183,16 @@ class TetrisRenderer:
                 if cell:
                     px = TOP_LEFT_X + (ghost.x + x) * GRID_SIZE
                     py = TOP_LEFT_Y + (ghost.y + y) * GRID_SIZE
-                    pygame.draw.rect(self.screen, GRAY, (px, py, GRID_SIZE - 1, GRID_SIZE - 1), 2)
+                    pygame.draw.rect(
+                        self.screen,
+                        GRAY,
+                        (px, py, GRID_SIZE - 1, GRID_SIZE - 1),
+                        2,
+                    )
 
-    def draw_mini_piece(self, shape_type: str | None, x: int, y: int, size: int = 20) -> None:
+    def draw_mini_piece(
+        self, shape_type: str | None, x: int, y: int, size: int = 20
+    ) -> None:
         """Draw a small preview piece"""
         if shape_type is None:
             return
@@ -192,7 +223,9 @@ class TetrisRenderer:
         text = self.font.render("Next", True, WHITE)
         self.screen.blit(text, (panel_x + 10, panel_y + 10))
 
-        self.draw_mini_piece(logic.next_piece.shape_type, panel_x + 60, panel_y + 50, 25)
+        self.draw_mini_piece(
+            logic.next_piece.shape_type, panel_x + 60, panel_y + 50, 25
+        )
 
     def draw_held_piece(self, logic: TetrisLogic) -> None:
         """Draw the held piece preview"""
@@ -362,7 +395,9 @@ class TetrisRenderer:
         self.screen.blit(settings_text, settings_rect)
 
         # Controls hint
-        hint_text = self.tiny_font.render("Use UP/DOWN arrows to select level", True, GRAY)
+        hint_text = self.tiny_font.render(
+            "Use UP/DOWN arrows to select level", True, GRAY
+        )
         hint_rect = hint_text.get_rect(center=(SCREEN_WIDTH // 2, 600))
         self.screen.blit(hint_text, hint_rect)
 

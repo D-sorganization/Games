@@ -1,3 +1,5 @@
+from typing import Any, cast
+
 import pygame
 
 from .constants import GameState
@@ -10,7 +12,7 @@ class InputHandler:
     def __init__(self) -> None:
         """Initialize input handler"""
         self.controller_enabled = True
-        self.awaiting_controller_action = None
+        self.awaiting_controller_action: str | None = None
         self.controller_mapping = {
             "move_left": {"type": "hat", "index": 0, "value": (-1, 0)},
             "move_right": {"type": "hat", "index": 0, "value": (1, 0)},
@@ -34,7 +36,7 @@ class InputHandler:
             "rewind": "Rewind",
         }
         pygame.joystick.init()
-        self.joystick = None
+        self.joystick: Any = None
         self.init_controller()
 
     def init_controller(self) -> None:
@@ -55,25 +57,30 @@ class InputHandler:
         soft_drop = self.controller_mapping.get("soft_drop")
 
         if move_left and move_left.get("type") == "hat":
-            if self.joystick.get_hat(int(move_left["index"])) == move_left.get("value"):
+            idx = int(cast(int, move_left["index"]))
+            if self.joystick.get_hat(idx) == move_left.get("value"):
                 if logic.valid_move(logic.current_piece, x_offset=-1):
                     logic.current_piece.x -= 1
                     pygame.time.wait(100)
 
         if move_right and move_right.get("type") == "hat":
-            if self.joystick.get_hat(int(move_right["index"])) == move_right.get("value"):
+            idx = int(cast(int, move_right["index"]))
+            if self.joystick.get_hat(idx) == move_right.get("value"):
                 if logic.valid_move(logic.current_piece, x_offset=1):
                     logic.current_piece.x += 1
                     pygame.time.wait(100)
 
         if soft_drop and soft_drop.get("type") == "hat":
-            if self.joystick.get_hat(int(soft_drop["index"])) == soft_drop.get("value"):
+            idx = int(cast(int, soft_drop["index"]))
+            if self.joystick.get_hat(idx) == soft_drop.get("value"):
                 if logic.valid_move(logic.current_piece, y_offset=1):
                     logic.current_piece.y += 1
                     logic.score += 1
                 pygame.time.wait(50)
 
-    def trigger_action(self, action: str, logic: TetrisLogic, game_state_manager) -> None:
+    def trigger_action(
+        self, action: str, logic: TetrisLogic, game_state_manager: Any
+    ) -> None:
         """Execute an action from controller or keyboard"""
         if action == "pause":
             game_state_manager.toggle_pause()
@@ -93,13 +100,17 @@ class InputHandler:
 
         if action == "move_left" and logic.valid_move(logic.current_piece, x_offset=-1):
             logic.current_piece.x -= 1
-        elif action == "move_right" and logic.valid_move(logic.current_piece, x_offset=1):
+        elif action == "move_right" and logic.valid_move(
+            logic.current_piece, x_offset=1
+        ):
             logic.current_piece.x += 1
         elif action == "soft_drop":
             if logic.valid_move(logic.current_piece, y_offset=1):
                 logic.current_piece.y += 1
                 logic.score += 1
-        elif action == "rotate" and logic.valid_move(logic.current_piece, rotation_offset=1):
+        elif action == "rotate" and logic.valid_move(
+            logic.current_piece, rotation_offset=1
+        ):
             logic.current_piece.rotate()
         elif action == "hard_drop":
             logic.hard_drop()
@@ -107,7 +118,10 @@ class InputHandler:
             logic.hold_piece()
 
     def process_events(
-        self, events: list[pygame.event.Event], logic: TetrisLogic, game_state_manager
+        self,
+        events: list[pygame.event.Event],
+        logic: TetrisLogic,
+        game_state_manager: Any,
     ) -> None:
         """Process all input events"""
         for event in events:
@@ -121,7 +135,7 @@ class InputHandler:
                 self.handle_keydown(event, logic, game_state_manager)
 
     def handle_keydown(
-        self, event: pygame.event.Event, logic: TetrisLogic, game_state_manager
+        self, event: pygame.event.Event, logic: TetrisLogic, game_state_manager: Any
     ) -> None:
         """Handle key press events"""
         if event.key == pygame.K_r:
@@ -151,7 +165,7 @@ class InputHandler:
             logic.rewind()
 
     def handle_controller_event(
-        self, event: pygame.event.Event, logic: TetrisLogic, game_state_manager
+        self, event: pygame.event.Event, logic: TetrisLogic, game_state_manager: Any
     ) -> None:
         """Handle controller input events"""
         if self.joystick is None:
@@ -162,7 +176,10 @@ class InputHandler:
 
         if event.type == pygame.JOYBUTTONDOWN:
             for action, binding in self.controller_mapping.items():
-                if binding.get("type") == "button" and binding.get("index") == event.button:
+                if (
+                    binding.get("type") == "button"
+                    and binding.get("index") == event.button
+                ):
                     self.trigger_action(action, logic, game_state_manager)
         elif event.type == pygame.JOYHATMOTION:
             for action, binding in self.controller_mapping.items():
@@ -170,7 +187,7 @@ class InputHandler:
                     if binding.get("value") == event.value:
                         self.trigger_action(action, logic, game_state_manager)
 
-    def apply_controller_binding(self, event) -> bool:
+    def apply_controller_binding(self, event: pygame.event.Event) -> bool:
         """Bind the awaiting action to the next controller input"""
         if not self.awaiting_controller_action:
             return False
