@@ -99,16 +99,14 @@ class SoundManager:
                     if "music" in name or name == "ambient":
                         self.sounds[name].set_volume(0.5)
                 except Exception:
-                    logger.exception(
-                        "Failed to load sound %s (probably codec issue?)", filename
-                    )
+                    msg = "Failed to load sound %s (probably codec issue?)"
+                    logger.exception(msg, filename)
                     # If we fail to load a "real" sound, try to fallback
                     # to synthesized logic if possible?
                     # For now just log it.
             else:
-                logger.warning(
-                    "Sound file not found: %s (Current Dir: %s)", path, Path.cwd()
-                )
+                msg = "Sound file not found: %s (Current Dir: %s)"
+                logger.warning(msg, path, Path.cwd())
 
     def play_sound(self, name: str) -> None:
         """Play a sound effect"""

@@ -64,9 +64,7 @@ def gen_pistol() -> None:
                 math.sin(2 * math.pi * (800 * math.exp(-t * 10)) * t)
                 * math.exp(-t * 10)
             )
-            val = int(
-                0.9 * 32767 * (noise * 0.7 + tone * 0.3)
-            )  # Increased volume
+            val = int(0.9 * 32767 * (noise * 0.7 + tone * 0.3))  # Increased volume
             f.writeframes(struct.pack("h", val))
 
 

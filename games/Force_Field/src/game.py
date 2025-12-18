@@ -189,12 +189,9 @@ class Game:
                     test_y = base_y + math.sin(angle_offset) * radius
 
                     # Ensure within bounds
-                    if (
-                        test_x < 2
-                        or test_x >= map_size - 2
-                        or test_y < 2
-                        or test_y >= map_size - 2
-                    ):
+                    in_x = test_x >= 2 and test_x < map_size - 2
+                    in_y = test_y >= 2 and test_y < map_size - 2
+                    if not (in_x and in_y):
                         continue
 
                     # Check if not a wall
@@ -520,9 +517,8 @@ class Game:
                         pygame.event.set_grab(False)
                     else:
                         if self.pause_start_time > 0:
-                            pause_duration = (
-                                pygame.time.get_ticks() - self.pause_start_time
-                            )
+                            now = pygame.time.get_ticks()
+                            pause_duration = now - self.pause_start_time
                             self.total_paused_time += pause_duration
                             self.pause_start_time = 0
                         pygame.mouse.set_visible(False)
@@ -577,9 +573,8 @@ class Game:
                         if 350 <= my <= 400:  # Resume
                             self.paused = False
                             if self.pause_start_time > 0:
-                                pause_duration = (
-                                    pygame.time.get_ticks() - self.pause_start_time
-                                )
+                                now = pygame.time.get_ticks()
+                                pause_duration = now - self.pause_start_time
                                 self.total_paused_time += pause_duration
                                 self.pause_start_time = 0
                             pygame.mouse.set_visible(False)
@@ -744,9 +739,8 @@ class Game:
                     continue
 
                 bot_angle = math.atan2(dy, dx)
-                bot_angle_norm = (
-                    bot_angle if bot_angle >= 0 else bot_angle + 2 * math.pi
-                )
+                angle = bot_angle if bot_angle >= 0 else bot_angle + 2 * math.pi
+                bot_angle_norm = angle
 
                 angle_diff = abs(bot_angle_norm - aim_angle)
                 if angle_diff > math.pi:
@@ -796,9 +790,8 @@ class Game:
                 dx = closest_bot.x - self.player.x
                 dy = closest_bot.y - self.player.y
                 bot_angle = math.atan2(dy, dx)
-                bot_angle_norm = (
-                    bot_angle if bot_angle >= 0 else bot_angle + 2 * math.pi
-                )
+                angle = bot_angle if bot_angle >= 0 else bot_angle + 2 * math.pi
+                bot_angle_norm = angle
 
                 angle_diff = abs(bot_angle_norm - self.player.angle)
                 if angle_diff > math.pi:
@@ -878,9 +871,9 @@ class Game:
         for bot in self.bots:
             if not bot.alive:
                 continue
-            dist = math.sqrt(
-                (bot.x - self.player.x) ** 2 + (bot.y - self.player.y) ** 2
-            )
+            dx = bot.x - self.player.x
+            dy = bot.y - self.player.y
+            dist = math.sqrt(dx * dx + dy * dy)
             if dist < C.BOMB_RADIUS:
                 if bot.take_damage(1000):
                     self.sound_manager.play_sound("scream")
@@ -1079,15 +1072,13 @@ class Game:
                 )
 
         if self.portal:
-            dist = math.sqrt(
-                (self.portal["x"] - self.player.x) ** 2
-                + (self.portal["y"] - self.player.y) ** 2
-            )
+            dx = self.portal["x"] - self.player.x
+            dy = self.portal["y"] - self.player.y
+            dist = math.sqrt(dx * dx + dy * dy)
             if dist < 1.5:
+                paused = self.total_paused_time
                 level_time = (
-                    pygame.time.get_ticks()
-                    - self.level_start_time
-                    - self.total_paused_time
+                    pygame.time.get_ticks() - self.level_start_time - paused
                 ) / 1000.0
                 self.level_times.append(level_time)
                 self.state = "level_complete"
@@ -1168,9 +1159,8 @@ class Game:
             if t["timer"] <= 0:
                 self.damage_texts.remove(t)
 
-        is_sprinting = (
-            self.input_manager.is_action_pressed("sprint") or keys[pygame.K_RSHIFT]
-        )
+        sprint_key = keys[pygame.K_RSHIFT]
+        is_sprinting = self.input_manager.is_action_pressed("sprint") or sprint_key
         if is_sprinting and self.player.stamina > 0:
             current_speed = C.PLAYER_SPRINT_SPEED
             self.player.stamina -= 1
@@ -1220,12 +1210,13 @@ class Game:
                 self.projectiles.append(projectile)
                 self.sound_manager.play_sound("enemy_shoot")
 
-            if bot.alive and bot.enemy_type.startswith(
+            is_item = bot.enemy_type.startswith(
                 ("health", "ammo", "bomb", "pickup")
-            ):
-                dist = math.sqrt(
-                    (bot.x - self.player.x) ** 2 + (bot.y - self.player.y) ** 2
-                )
+            )
+            if bot.alive and is_item:
+                dx = bot.x - self.player.x
+                dy = bot.y - self.player.y
+                dist = math.sqrt(dx * dx + dy * dy)
                 if dist < 0.8:
                     pickup_msg = ""
                     color = C.GREEN
@@ -1337,9 +1328,9 @@ class Game:
         min_dist = float("inf")
         for bot in self.bots:
             if bot.alive:
-                dist = math.sqrt(
-                    (bot.x - self.player.x) ** 2 + (bot.y - self.player.y) ** 2
-                )
+                dx = bot.x - self.player.x
+                dy = bot.y - self.player.y
+                dist = math.sqrt(dx * dx + dy * dy)
                 min_dist = min(min_dist, dist)
 
         if min_dist < 15:
@@ -1366,9 +1357,8 @@ class Game:
             self.kill_combo_timer -= 1
             if self.kill_combo_timer <= 0:
                 if self.kill_combo_count >= 3:
-                    phrase = random.choice(
-                        ["phrase_cool", "phrase_awesome", "phrase_brutal"]
-                    )
+                    phrases = ["phrase_cool", "phrase_awesome", "phrase_brutal"]
+                    phrase = random.choice(phrases)
                     self.sound_manager.play_sound(phrase)
                     self.damage_texts.append(
                         {

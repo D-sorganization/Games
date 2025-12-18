@@ -86,9 +86,8 @@ class BotRenderer:
             current_h = render_height * scale_y
             current_w = render_width * scale_x
 
-            render_y = int(
-                sprite_y + (render_height - current_h) + (render_height * 0.05)
-            )
+            offset_y = (render_height - current_h) + (render_height * 0.05)
+            render_y = int(sprite_y + offset_y)
             render_height = int(current_h)
             render_width = int(current_w)
 
@@ -175,9 +174,8 @@ class BotRenderer:
         rect_w = size * 0.4
         rect_h = size * 0.3
         box_y = y + size * 0.7
-        pygame.draw.rect(
-            screen, (100, 100, 50), (cx - rect_w / 2, box_y, rect_w, rect_h)
-        )
+        rect = (cx - rect_w / 2, box_y, rect_w, rect_h)
+        pygame.draw.rect(screen, (100, 100, 50), rect)
         pygame.draw.rect(
             screen,
             (200, 200, 0),
@@ -192,13 +190,12 @@ class BotRenderer:
         cy = y + size * 0.8
         pygame.draw.circle(screen, (30, 30, 30), (int(cx), int(cy)), int(r))
         # Fuse
-        pygame.draw.line(
-            screen, (200, 150, 0), (cx, cy - r), (cx + r / 2, cy - r * 1.5), 2
-        )
+        start_fuse = (cx, cy - r)
+        end_fuse = (cx + r / 2, cy - r * 1.5)
+        pygame.draw.line(screen, (200, 150, 0), start_fuse, end_fuse, 2)
         if random.random() < 0.5:
-            pygame.draw.circle(
-                screen, (255, 100, 0), (int(cx + r / 2), int(cy - r * 1.5)), 2
-            )
+            spark_pos = (int(cx + r / 2), int(cy - r * 1.5))
+            pygame.draw.circle(screen, (255, 100, 0), spark_pos, 2)
 
     @staticmethod
     def _render_weapon_pickup(
@@ -326,9 +323,8 @@ class BotRenderer:
         pygame.draw.rect(screen, color, (cx - rw / 2, ry + rh * 0.3, rw, rh * 0.7))
         # Head (Horns)
         head_size = rw * 0.8
-        pygame.draw.rect(
-            screen, (100, 0, 0), (cx - head_size / 2, ry, head_size, head_size)
-        )
+        head_rect = (cx - head_size / 2, ry, head_size, head_size)
+        pygame.draw.rect(screen, (100, 0, 0), head_rect)
 
         # Eyes
         pygame.draw.circle(
@@ -361,9 +357,8 @@ class BotRenderer:
         ghost_color = (*color, 150)  # RGBA
 
         # Head
-        pygame.draw.circle(
-            screen, ghost_color, (int(cx), int(gy + rw / 2)), int(rw / 2)
-        )
+        center = (int(cx), int(gy + rw / 2))
+        pygame.draw.circle(screen, ghost_color, center, int(rw / 2))
 
         # Body (Rect)
         body_rect = pygame.Rect(cx - rw / 2, gy + rw / 2, rw, rh * 0.6)
@@ -522,17 +517,17 @@ class BotRenderer:
                 )
                 for i in range(4):
                     x_off = cx - mouth_w / 2 + (i + 1) * (mouth_w / 5)
-                    pygame.draw.line(
-                        screen, (50, 0, 0), (x_off, mouth_y), (x_off, mouth_y + 10), 1
-                    )
+                    start_p = (x_off, mouth_y)
+                    end_p = (x_off, mouth_y + 10)
+                    pygame.draw.line(screen, (50, 0, 0), start_p, end_p, 1)
 
         # 3. Arms
         if not bot.dead:
             arm_y = ry + rh * 0.3
             # Left
-            pygame.draw.line(
-                screen, color, (body_x, arm_y + 10), (body_x - 15, arm_y + 30), 6
-            )
+            start_arm = (body_x, arm_y + 10)
+            end_arm = (body_x - 15, arm_y + 30)
+            pygame.draw.line(screen, color, start_arm, end_arm, 6)
             pygame.draw.polygon(
                 screen,
                 (200, 200, 200),

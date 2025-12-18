@@ -24,9 +24,8 @@ class GameRenderer:
         self.screen = screen
 
         # Optimization: Shared surface for alpha effects
-        self.effects_surface = pygame.Surface(
-            (C.SCREEN_WIDTH, C.SCREEN_HEIGHT), pygame.SRCALPHA
-        )
+        size = (C.SCREEN_WIDTH, C.SCREEN_HEIGHT)
+        self.effects_surface = pygame.Surface(size, pygame.SRCALPHA)
 
     def render_game(self, game: Game) -> None:
         """Render gameplay"""
@@ -172,12 +171,9 @@ class GameRenderer:
                 if -size < screen_x < C.SCREEN_WIDTH + size:
                     color = (0, 255, 255)
                     # Draw rings
-                    pygame.draw.circle(
-                        self.screen, color, (screen_x, screen_y), size // 2, 2
-                    )
-                    pygame.draw.circle(
-                        self.screen, C.WHITE, (screen_x, screen_y), size // 4, 1
-                    )
+                    center = (screen_x, screen_y)
+                    pygame.draw.circle(self.screen, color, center, size // 2, 2)
+                    pygame.draw.circle(self.screen, C.WHITE, center, size // 4, 1)
 
     def _render_weapon(self, player: Player) -> tuple[int, int]:
         """Render weapon model and return its screen position (cx, cy)"""
@@ -241,9 +237,9 @@ class GameRenderer:
             )
             for i in range(5):
                 y_ser = slide_y + 80 + i * 8
-                pygame.draw.line(
-                    self.screen, gun_dark, (cx - 20, y_ser), (cx + 20, y_ser), 2
-                )
+                start_pos = (cx - 20, y_ser)
+                end_pos = (cx + 20, y_ser)
+                pygame.draw.line(self.screen, gun_dark, start_pos, end_pos, 2)
             pygame.draw.rect(self.screen, (10, 10, 10), (cx - 8, slide_y - 5, 16, 10))
             pygame.draw.rect(self.screen, (10, 10, 10), (cx - 20, slide_y - 12, 5, 12))
             pygame.draw.rect(self.screen, (10, 10, 10), (cx + 15, slide_y - 12, 5, 12))
@@ -316,11 +312,9 @@ class GameRenderer:
                 ],
             )
             pulse = int(25 * math.sin(pygame.time.get_ticks() * 0.01))
-            vent_color = (
-                (0, 150 + pulse, 200)
-                if not w_state["overheated"]
-                else (200 + pulse, 50, 0)
-            )
+            heat_color = (0, 150 + pulse, 200)
+            overheat_color = (200 + pulse, 50, 0)
+            vent_color = heat_color if not w_state["overheated"] else overheat_color
             pygame.draw.rect(self.screen, vent_color, (cx - 90, cy - 150, 20, 100))
             pygame.draw.rect(self.screen, vent_color, (cx + 70, cy - 150, 20, 100))
             core_width = 40 + pulse // 2

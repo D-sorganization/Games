@@ -111,11 +111,9 @@ class BloodButton(Button):
         # Animate drips
         for drip in self.drips:
             # Oscillate length
-            drip["length"] = drip["max_length"] * (
-                0.7
-                + 0.3
-                * math.sin(self.pulse_timer * drip["speed"] + drip["phase_offset"])
-            )
+            phase = self.pulse_timer * drip["speed"] + drip["phase_offset"]
+            factor = 0.7 + 0.3 * math.sin(phase)
+            drip["length"] = drip["max_length"] * factor
 
     def draw(self, screen: pygame.Surface, font: pygame.font.Font) -> None:
         """Draw blood button"""
@@ -173,11 +171,10 @@ class BloodButton(Button):
         screen.blit(highlight_surf, highlight_rect)
 
         # Border (Top, Left, Right) - No Bottom to blend drips
-        pygame.draw.line(screen, (50, 0, 0), self.rect.topleft, self.rect.topright, 2)
-        pygame.draw.line(screen, (50, 0, 0), self.rect.topleft, self.rect.bottomleft, 2)
-        pygame.draw.line(
-            screen, (50, 0, 0), self.rect.topright, self.rect.bottomright, 2
-        )
+        color = (50, 0, 0)
+        pygame.draw.line(screen, color, self.rect.topleft, self.rect.topright, 2)
+        pygame.draw.line(screen, color, self.rect.topleft, self.rect.bottomleft, 2)
+        pygame.draw.line(screen, color, self.rect.topright, self.rect.bottomright, 2)
 
         # Text with shadow
         text_surf = font.render(self.text, True, C.WHITE)

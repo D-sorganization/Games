@@ -104,9 +104,7 @@ class InputHandler:
         if game_state_manager.state != GameState.PLAYING:
             return
 
-        if action == "move_left" and logic.valid_move(
-            logic.current_piece, x_offset=-1
-        ):
+        if action == "move_left" and logic.valid_move(logic.current_piece, x_offset=-1):
             logic.current_piece.x -= 1
         elif action == "move_right" and logic.valid_move(
             logic.current_piece, x_offset=1

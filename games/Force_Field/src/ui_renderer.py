@@ -52,9 +52,8 @@ class UIRenderer:
         )
 
         # Optimization: Shared surface for alpha effects
-        self.overlay_surface = pygame.Surface(
-            (C.SCREEN_WIDTH, C.SCREEN_HEIGHT), pygame.SRCALPHA
-        )
+        size = (C.SCREEN_WIDTH, C.SCREEN_HEIGHT)
+        self.overlay_surface = pygame.Surface(size, pygame.SRCALPHA)
 
         # Menu Visual State
         self.title_drips: list[dict[str, Any]] = []
@@ -138,15 +137,13 @@ class UIRenderer:
 
         if (pygame.time.get_ticks() // 500) % 2 == 0:
             prompt = self.font.render("CLICK TO BEGIN", True, C.GRAY)
-            prompt_rect = prompt.get_rect(
-                center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT - 150)
-            )
+            center_pos = (C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT - 150)
+            prompt_rect = prompt.get_rect(center=center_pos)
             self.screen.blit(prompt, prompt_rect)
 
         credit = self.tiny_font.render("A Jasper Production", True, C.DARK_GRAY)
-        credit_rect = credit.get_rect(
-            center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT - 50)
-        )
+        center_pos = (C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT - 50)
+        credit_rect = credit.get_rect(center=center_pos)
         self.screen.blit(credit, credit_rect)
         pygame.display.flip()
 
@@ -198,9 +195,9 @@ class UIRenderer:
         # Shadow
         for off in [(-2, 0), (2, 0), (0, -2), (0, 2)]:
             shadow = self.subtitle_font.render("MISSION SETUP", True, (50, 0, 0))
-            s_rect = shadow.get_rect(
-                center=(C.SCREEN_WIDTH // 2 + off[0], 100 + off[1])
-            )
+            cx = C.SCREEN_WIDTH // 2 + off[0]
+            cy = 100 + off[1]
+            s_rect = shadow.get_rect(center=(cx, cy))
             self.screen.blit(shadow, s_rect)
 
         title_rect = title.get_rect(center=(C.SCREEN_WIDTH // 2, 100))
@@ -280,14 +277,13 @@ class UIRenderer:
         )
         health_percent = max(0, game.player.health / game.player.max_health)
         fill_width = int(health_width * health_percent)
-        health_color = (
-            C.GREEN
-            if health_percent > 0.5
-            else (C.ORANGE if health_percent > 0.25 else C.RED)
-        )
-        pygame.draw.rect(
-            self.screen, health_color, (health_x, health_y, fill_width, health_height)
-        )
+        health_color = C.RED
+        if health_percent > 0.5:
+            health_color = C.GREEN
+        elif health_percent > 0.25:
+            health_color = C.ORANGE
+        health_rect = (health_x, health_y, fill_width, health_height)
+        pygame.draw.rect(self.screen, health_color, health_rect)
         pygame.draw.rect(
             self.screen,
             C.WHITE,
@@ -337,9 +333,8 @@ class UIRenderer:
             elif w == "plasma":
                 key_display = "5"
 
-            inv_txt = self.tiny_font.render(
-                f"[{key_display}] {C.WEAPONS[w]['name']}", True, color
-            )
+            text_str = f"[{key_display}] {C.WEAPONS[w]['name']}"
+            inv_txt = self.tiny_font.render(text_str, True, color)
             inv_rect = inv_txt.get_rect(bottomright=(C.SCREEN_WIDTH - 20, inv_y))
             self.screen.blit(inv_txt, inv_rect)
             inv_y -= 25
@@ -381,14 +376,15 @@ class UIRenderer:
         pygame.draw.rect(
             self.screen, C.DARK_GRAY, (shield_x, shield_y, shield_width, shield_height)
         )
-        pygame.draw.rect(
-            self.screen,
-            C.CYAN,
-            (shield_x, shield_y, int(shield_width * shield_pct), shield_height),
+        shield_rect = (
+            shield_x,
+            shield_y,
+            int(shield_width * shield_pct),
+            shield_height,
         )
-        pygame.draw.rect(
-            self.screen, C.WHITE, (shield_x, shield_y, shield_width, shield_height), 1
-        )
+        pygame.draw.rect(self.screen, C.CYAN, shield_rect)
+        border_rect = (shield_x, shield_y, shield_width, shield_height)
+        pygame.draw.rect(self.screen, C.WHITE, border_rect, 1)
 
         if game.player.shield_recharge_delay > 0:
             status_text = "RECHARGING" if game.player.shield_active else "COOLDOWN"
@@ -399,9 +395,8 @@ class UIRenderer:
         laser_y = shield_y - 15
         laser_pct = 1.0 - (game.player.secondary_cooldown / C.SECONDARY_COOLDOWN)
         laser_pct = max(0, min(1, laser_pct))
-        pygame.draw.rect(
-            self.screen, C.DARK_GRAY, (shield_x, laser_y, shield_width, shield_height)
-        )
+        bg_rect = (shield_x, laser_y, shield_width, shield_height)
+        pygame.draw.rect(self.screen, C.DARK_GRAY, bg_rect)
         pygame.draw.rect(
             self.screen,
             (255, 50, 50),

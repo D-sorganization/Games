@@ -46,9 +46,8 @@ class Raycaster:
         self.sprite_cache: dict[str, pygame.Surface] = {}
 
         # Offscreen surface for low-res rendering (Optimization)
-        self.view_surface = pygame.Surface(
-            (C.NUM_RAYS, C.SCREEN_HEIGHT), pygame.SRCALPHA
-        )
+        size = (C.NUM_RAYS, C.SCREEN_HEIGHT)
+        self.view_surface = pygame.Surface(size, pygame.SRCALPHA)
 
         # Z-Buffer for occlusion (Euclidean distance)
         self.z_buffer: list[float] = [float("inf")] * C.NUM_RAYS
@@ -194,9 +193,8 @@ class Raycaster:
                 color = (int(final_r), int(final_g), int(final_b))
 
                 # Pitch Adjustment
-                wall_top = (
-                    (C.SCREEN_HEIGHT - wall_height) // 2 + player.pitch + view_offset_y
-                )
+                pitch_off = player.pitch + view_offset_y
+                wall_top = (C.SCREEN_HEIGHT - wall_height) // 2 + pitch_off
 
                 # Draw vertical line on view_surface (width=1)
                 pygame.draw.line(
@@ -282,11 +280,8 @@ class Raycaster:
         sprite_size = base_sprite_size * float(type_data.get("scale", 1.0))
 
         center_ray = C.NUM_RAYS / 2
-        ray_x = (
-            center_ray
-            + (angle / half_fov) * center_ray
-            - (sprite_size / C.RENDER_SCALE) / 2
-        )
+        sprite_scale = sprite_size / C.RENDER_SCALE
+        ray_x = center_ray + (angle / half_fov) * center_ray - sprite_scale / 2
 
         sprite_ray_width = sprite_size / C.RENDER_SCALE
         sprite_ray_x = ray_x
@@ -409,9 +404,8 @@ class Raycaster:
 
                 if width > 0:
                     area = pygame.Rect(x_offset, 0, width, target_height)
-                    self.view_surface.blit(
-                        scaled_sprite, (run_start, int(sprite_y)), area
-                    )
+                    pos = (run_start, int(sprite_y))
+                    self.view_surface.blit(scaled_sprite, pos, area)
         else:
             # Fallback: Strip scaling (only for large occluded sprites)
             tex_width = sprite_surface.get_width()
@@ -475,9 +469,8 @@ class Raycaster:
         if -100 < moon_x < C.SCREEN_WIDTH + 100:
             if 0 <= moon_y < horizon + 40:
                 pygame.draw.circle(screen, (220, 220, 200), (int(moon_x), moon_y), 40)
-                pygame.draw.circle(
-                    screen, ceiling_color, (int(moon_x) - 10, moon_y), 40
-                )
+                shadow_pos = (int(moon_x) - 10, moon_y)
+                pygame.draw.circle(screen, ceiling_color, shadow_pos, 40)
 
         floor_color = cast("tuple[int, int, int]", theme["floor"])
         pygame.draw.rect(
@@ -506,9 +499,8 @@ class Raycaster:
             C.BLACK,
             (minimap_x - 2, minimap_y - 2, minimap_size + 4, minimap_size + 4),
         )
-        pygame.draw.rect(
-            screen, C.DARK_GRAY, (minimap_x, minimap_y, minimap_size, minimap_size)
-        )
+        map_rect = (minimap_x, minimap_y, minimap_size, minimap_size)
+        pygame.draw.rect(screen, C.DARK_GRAY, map_rect)
 
         for i in range(map_size):
             for j in range(map_size):
@@ -595,9 +587,8 @@ class Raycaster:
 
             if abs(angle_to_proj) < half_fov:
                 proj_size = max(2, 10 / proj_dist) if proj_dist > 0.1 else 100
-                proj_x = (
-                    C.SCREEN_WIDTH / 2 + (angle_to_proj / half_fov) * C.SCREEN_WIDTH / 2
-                )
+                offset_x = (angle_to_proj / half_fov) * C.SCREEN_WIDTH / 2
+                proj_x = C.SCREEN_WIDTH / 2 + offset_x
                 proj_y = C.SCREEN_HEIGHT / 2 + player.pitch + view_offset_y
 
                 # Simple Z-Check
@@ -612,9 +603,8 @@ class Raycaster:
                         # Occluded
                         continue
 
-                pygame.draw.circle(
-                    screen, C.RED, (int(proj_x), int(proj_y)), int(proj_size)
-                )
+                center = (int(proj_x), int(proj_y))
+                pygame.draw.circle(screen, C.RED, center, int(proj_size))
                 pygame.draw.circle(
                     screen,
                     C.ORANGE,

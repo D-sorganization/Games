@@ -275,13 +275,10 @@ class Player:
                     # Cool down while overheated? Or fixed penalty?
                     # Usually fixed wait. We'll linearly cool it down too
                     # so visual bar goes down
-                    penalty_time = int(
-                        cast("int", C.WEAPONS[w_name].get("overheat_penalty", 180))
-                    )
-                    cool_amount = (
-                        float(cast("float", C.WEAPONS[w_name]["max_heat"]))
-                        / penalty_time
-                    )
+                    oh_penalty = C.WEAPONS[w_name].get("overheat_penalty", 180)
+                    penalty_time = int(cast("int", oh_penalty))
+                    max_heat = float(cast("float", C.WEAPONS[w_name]["max_heat"]))
+                    cool_amount = max_heat / penalty_time
                     w_state["heat"] = max(0.0, w_state["heat"] - cool_amount)
 
                     if w_state["overheat_timer"] <= 0:
