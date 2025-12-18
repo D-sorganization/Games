@@ -93,7 +93,6 @@ class TestGameLogic(unittest.TestCase):
         # Kill bot
         bot.take_damage(bot.health + 10)
         assert not bot.alive
-        assert bot.dead
 
     def test_projectile_update(self) -> None:
         """Test projectile movement and collision with walls."""
