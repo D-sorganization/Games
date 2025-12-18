@@ -3,14 +3,11 @@ import sys
 import unittest
 from pathlib import Path
 
-# Add src to path
-sys.path.append(str(Path(__file__).parent.parent.resolve()))
-
-import src.constants as C  # noqa: N812
-from src.bot import Bot
-from src.map import Map
-from src.player import Player
-from src.projectile import Projectile
+import games.Force_Field.src.constants as C  # noqa: N812
+from games.Force_Field.src.bot import Bot
+from games.Force_Field.src.map import Map
+from games.Force_Field.src.player import Player
+from games.Force_Field.src.projectile import Projectile
 
 
 class TestGameLogic(unittest.TestCase):

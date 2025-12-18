@@ -2,12 +2,8 @@ import os
 import sys
 import unittest
 
-sys.path.append(
-    os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-)  # noqa: PTH100
-
-from src.map import Map
-from src.player import Player
+from games.Force_Field.src.map import Map
+from games.Force_Field.src.player import Player
 
 
 class TestFPS(unittest.TestCase):
