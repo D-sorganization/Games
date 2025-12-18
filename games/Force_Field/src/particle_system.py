@@ -50,7 +50,9 @@ class Particle:
             # Let's check where they are drawn.
             pass
         elif self.ptype == "laser" and self.start_pos and self.end_pos:
-            pygame.draw.line(screen, self.color, self.start_pos, self.end_pos, self.width)
+            pygame.draw.line(
+                screen, self.color, self.start_pos, self.end_pos, self.width
+            )
 
 
 class ParticleSystem:
@@ -91,7 +93,11 @@ class ParticleSystem:
         )
 
     def add_explosion(
-        self, x: float, y: float, count: int = 10, color: tuple[int, int, int] | None = None
+        self,
+        x: float,
+        y: float,
+        count: int = 10,
+        color: tuple[int, int, int] | None = None,
     ) -> None:
         for _ in range(count):
             c = (

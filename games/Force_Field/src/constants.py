@@ -11,7 +11,8 @@ TILE_SIZE = 64
 MIN_BUILDING_OFFSET = 3  # Minimum offset from map edges for building generation
 
 # Rendering Quality
-# 1 = Ultra (Full Res), 2 = High (Half Res), 4 = Medium/Retro (Quarter Res), 8 = Low (Blocky)
+# 1 = Ultra (Full Res), 2 = High (Half Res),
+# 4 = Medium/Retro (Quarter Res), 8 = Low (Blocky)
 RENDER_SCALE = 4
 
 # Player settings
@@ -187,7 +188,8 @@ SHIELD_MAX_DURATION = 600  # 10 seconds at 60 FPS
 SHIELD_COOLDOWN_NORMAL = 600  # 10 seconds
 SHIELD_COOLDOWN_DEPLETED = 900  # 15 seconds
 BOMB_RADIUS = 10
-BOMB_COOLDOWN = 1800  # 30 seconds (if we want cooldown, user didn't specify, but implies rare use)
+BOMB_COOLDOWN = 1800  # 30 seconds
+# (if we want cooldown, user didn't specify, but implies rare use)
 
 # System Constants
 SAVE_FILE_PATH = "savegame.txt"
@@ -386,18 +388,33 @@ LEVEL_THEMES = [
     {
         "floor": (50, 20, 20),
         "ceiling": (40, 10, 10),
-        "walls": {1: (150, 50, 50), 2: (180, 80, 40), 3: (100, 30, 30), 4: (200, 100, 50)},
+        "walls": {
+            1: (150, 50, 50),
+            2: (180, 80, 40),
+            3: (100, 30, 30),
+            4: (200, 100, 50),
+        },
     },
     # 2: Cyber (Neon/Dark)
     {
         "floor": (10, 10, 20),
         "ceiling": (5, 5, 20),
-        "walls": {1: (0, 100, 200), 2: (0, 200, 200), 3: (0, 50, 150), 4: (100, 0, 200)},
+        "walls": {
+            1: (0, 100, 200),
+            2: (0, 200, 200),
+            3: (0, 50, 150),
+            4: (100, 0, 200),
+        },
     },
     # 3: Toxic (Green)
     {
         "floor": (20, 40, 20),
         "ceiling": (10, 30, 10),
-        "walls": {1: (50, 150, 50), 2: (100, 180, 40), 3: (30, 100, 30), 4: (150, 200, 100)},
+        "walls": {
+            1: (50, 150, 50),
+            2: (100, 180, 40),
+            3: (30, 100, 30),
+            4: (150, 200, 100),
+        },
     },
 ]

@@ -120,7 +120,8 @@ class TestGameLogic(unittest.TestCase):
     def test_player_rocket_launcher(self) -> None:
         """Test rocket launcher."""
         player = Player(15.0, 15.0, 0.0)
-        # Unlock rocket (assuming we might need to, but switch_weapon checks availability elsewhere.
+        # Unlock rocket (assuming we might need to, but switch_weapon
+        # checks availability elsewhere.
         # Player class logic doesn't strictly check unlocks, Game class does.
         # But wait, Player.switch_weapon validates against WEAPONS keys.)
 

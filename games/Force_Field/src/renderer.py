@@ -24,7 +24,9 @@ class GameRenderer:
         self.screen = screen
 
         # Optimization: Shared surface for alpha effects
-        self.effects_surface = pygame.Surface((C.SCREEN_WIDTH, C.SCREEN_HEIGHT), pygame.SRCALPHA)
+        self.effects_surface = pygame.Surface(
+            (C.SCREEN_WIDTH, C.SCREEN_HEIGHT), pygame.SRCALPHA
+        )
 
     def render_game(self, game: Game) -> None:
         """Render gameplay"""
@@ -170,8 +172,12 @@ class GameRenderer:
                 if -size < screen_x < C.SCREEN_WIDTH + size:
                     color = (0, 255, 255)
                     # Draw rings
-                    pygame.draw.circle(self.screen, color, (screen_x, screen_y), size // 2, 2)
-                    pygame.draw.circle(self.screen, C.WHITE, (screen_x, screen_y), size // 4, 1)
+                    pygame.draw.circle(
+                        self.screen, color, (screen_x, screen_y), size // 2, 2
+                    )
+                    pygame.draw.circle(
+                        self.screen, C.WHITE, (screen_x, screen_y), size // 4, 1
+                    )
 
     def _render_weapon(self, player: Player) -> tuple[int, int]:
         """Render weapon model and return its screen position (cx, cy)"""
@@ -212,7 +218,12 @@ class GameRenderer:
             pygame.draw.polygon(
                 self.screen,
                 (30, 25, 20),
-                [(cx - 30, cy), (cx + 30, cy), (cx + 35, cy - 100), (cx - 35, cy - 100)],
+                [
+                    (cx - 30, cy),
+                    (cx + 30, cy),
+                    (cx + 35, cy - 100),
+                    (cx - 35, cy - 100),
+                ],
             )
             pygame.draw.rect(self.screen, gun_metal, (cx - 20, cy - 140, 40, 140))
             slide_y = cy - 180
@@ -230,7 +241,9 @@ class GameRenderer:
             )
             for i in range(5):
                 y_ser = slide_y + 80 + i * 8
-                pygame.draw.line(self.screen, gun_dark, (cx - 20, y_ser), (cx + 20, y_ser), 2)
+                pygame.draw.line(
+                    self.screen, gun_dark, (cx - 20, y_ser), (cx + 20, y_ser), 2
+                )
             pygame.draw.rect(self.screen, (10, 10, 10), (cx - 8, slide_y - 5, 16, 10))
             pygame.draw.rect(self.screen, (10, 10, 10), (cx - 20, slide_y - 12, 5, 12))
             pygame.draw.rect(self.screen, (10, 10, 10), (cx + 15, slide_y - 12, 5, 12))
@@ -255,7 +268,12 @@ class GameRenderer:
             pygame.draw.polygon(
                 self.screen,
                 gun_metal,
-                [(cx - 30, cy - 150), (cx + 30, cy - 150), (cx + 40, cy), (cx - 40, cy)],
+                [
+                    (cx - 30, cy - 150),
+                    (cx + 30, cy - 150),
+                    (cx + 40, cy),
+                    (cx - 40, cy),
+                ],
             )
             pygame.draw.rect(self.screen, gun_highlight, (cx - 20, cy - 220, 40, 100))
             for i in range(6):
@@ -267,14 +285,25 @@ class GameRenderer:
             pygame.draw.circle(self.screen, (0, 100, 0), (cx, cy - 170), 25)
             pygame.draw.circle(self.screen, (150, 255, 150), (cx - 10, cy - 180), 8)
             if player.zoomed:
-                pygame.draw.line(self.screen, C.RED, (cx - 25, cy - 170), (cx + 25, cy - 170), 1)
+                pygame.draw.line(
+                    self.screen,
+                    C.RED,
+                    (cx - 25, cy - 170),
+                    (cx + 25, cy - 170),
+                    1,
+                )
                 pygame.draw.line(self.screen, C.RED, (cx, cy - 195), (cx, cy - 145), 1)
 
         elif weapon == "plasma":
             pygame.draw.polygon(
                 self.screen,
                 (40, 40, 60),
-                [(cx - 100, cy), (cx + 100, cy), (cx + 90, cy - 80), (cx - 90, cy - 80)],
+                [
+                    (cx - 100, cy),
+                    (cx + 100, cy),
+                    (cx + 90, cy - 80),
+                    (cx - 90, cy - 80),
+                ],
             )
             pygame.draw.polygon(
                 self.screen,
@@ -288,7 +317,9 @@ class GameRenderer:
             )
             pulse = int(25 * math.sin(pygame.time.get_ticks() * 0.01))
             vent_color = (
-                (0, 150 + pulse, 200) if not w_state["overheated"] else (200 + pulse, 50, 0)
+                (0, 150 + pulse, 200)
+                if not w_state["overheated"]
+                else (200 + pulse, 50, 0)
             )
             pygame.draw.rect(self.screen, vent_color, (cx - 90, cy - 150, 20, 100))
             pygame.draw.rect(self.screen, vent_color, (cx + 70, cy - 150, 20, 100))
@@ -319,12 +350,15 @@ class GameRenderer:
 
         return cx, cy
 
-    def _render_muzzle_flash(self, weapon_name: str, weapon_pos: tuple[int, int]) -> None:
+    def _render_muzzle_flash(
+        self, weapon_name: str, weapon_pos: tuple[int, int]
+    ) -> None:
         """Render weapon-specific muzzle flash effects."""
         flash_x = weapon_pos[0]
         # Base offset from weapon anchor (screen height)
         # Using the same offset logic as before (SCREEN_HEIGHT - 210 vs cy - 210)
-        # assuming weapon_pos[1] corresponds to the weapon's base y (mostly SCREEN_HEIGHT + bob)
+        # assuming weapon_pos[1] corresponds
+        # to the weapon's base y (mostly SCREEN_HEIGHT + bob)
         flash_y = weapon_pos[1] - 210
 
         if weapon_name == "plasma":

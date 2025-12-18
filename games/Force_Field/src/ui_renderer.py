@@ -52,7 +52,9 @@ class UIRenderer:
         )
 
         # Optimization: Shared surface for alpha effects
-        self.overlay_surface = pygame.Surface((C.SCREEN_WIDTH, C.SCREEN_HEIGHT), pygame.SRCALPHA)
+        self.overlay_surface = pygame.Surface(
+            (C.SCREEN_WIDTH, C.SCREEN_HEIGHT), pygame.SRCALPHA
+        )
 
         # Menu Visual State
         self.title_drips: list[dict[str, Any]] = []
@@ -90,7 +92,10 @@ class UIRenderer:
                 img = pygame.transform.rotate(img, -90)
                 scale = min(500 / img.get_height(), 800 / img.get_width())
                 if scale < 1:
-                    new_size = (int(img.get_width() * scale), int(img.get_height() * scale))
+                    new_size = (
+                        int(img.get_width() * scale),
+                        int(img.get_height() * scale),
+                    )
                     img = pygame.transform.scale(img, new_size)
                 self.intro_images["willy"] = img
 
@@ -105,7 +110,10 @@ class UIRenderer:
                 img = pygame.image.load(deadfish_path)
                 scale = min(500 / img.get_height(), 800 / img.get_width())
                 if scale < 1:
-                    new_size = (int(img.get_width() * scale), int(img.get_height() * scale))
+                    new_size = (
+                        int(img.get_width() * scale),
+                        int(img.get_height() * scale),
+                    )
                     img = pygame.transform.scale(img, new_size)
                 self.intro_images["deadfish"] = img
 
@@ -130,11 +138,15 @@ class UIRenderer:
 
         if (pygame.time.get_ticks() // 500) % 2 == 0:
             prompt = self.font.render("CLICK TO BEGIN", True, C.GRAY)
-            prompt_rect = prompt.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT - 150))
+            prompt_rect = prompt.get_rect(
+                center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT - 150)
+            )
             self.screen.blit(prompt, prompt_rect)
 
         credit = self.tiny_font.render("A Jasper Production", True, C.DARK_GRAY)
-        credit_rect = credit.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT - 50))
+        credit_rect = credit.get_rect(
+            center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT - 50)
+        )
         self.screen.blit(credit, credit_rect)
         pygame.display.flip()
 
@@ -172,7 +184,10 @@ class UIRenderer:
                 drip["size"],
             )
             pygame.draw.circle(
-                self.screen, drip["color"], (drip["x"], int(drip["y"])), drip["size"] + 1
+                self.screen,
+                drip["color"],
+                (drip["x"], int(drip["y"])),
+                drip["size"] + 1,
             )
 
     def render_map_select(self, game: Game) -> None:
@@ -183,7 +198,9 @@ class UIRenderer:
         # Shadow
         for off in [(-2, 0), (2, 0), (0, -2), (0, 2)]:
             shadow = self.subtitle_font.render("MISSION SETUP", True, (50, 0, 0))
-            s_rect = shadow.get_rect(center=(C.SCREEN_WIDTH // 2 + off[0], 100 + off[1]))
+            s_rect = shadow.get_rect(
+                center=(C.SCREEN_WIDTH // 2 + off[0], 100 + off[1])
+            )
             self.screen.blit(shadow, s_rect)
 
         title_rect = title.get_rect(center=(C.SCREEN_WIDTH // 2, 100))
@@ -264,10 +281,19 @@ class UIRenderer:
         health_percent = max(0, game.player.health / game.player.max_health)
         fill_width = int(health_width * health_percent)
         health_color = (
-            C.GREEN if health_percent > 0.5 else (C.ORANGE if health_percent > 0.25 else C.RED)
+            C.GREEN
+            if health_percent > 0.5
+            else (C.ORANGE if health_percent > 0.25 else C.RED)
         )
-        pygame.draw.rect(self.screen, health_color, (health_x, health_y, fill_width, health_height))
-        pygame.draw.rect(self.screen, C.WHITE, (health_x, health_y, health_width, health_height), 2)
+        pygame.draw.rect(
+            self.screen, health_color, (health_x, health_y, fill_width, health_height)
+        )
+        pygame.draw.rect(
+            self.screen,
+            C.WHITE,
+            (health_x, health_y, health_width, health_height),
+            2,
+        )
 
         # Ammo / State
         w_state = game.player.weapon_state[game.player.current_weapon]
@@ -311,7 +337,9 @@ class UIRenderer:
             elif w == "plasma":
                 key_display = "5"
 
-            inv_txt = self.tiny_font.render(f"[{key_display}] {C.WEAPONS[w]['name']}", True, color)
+            inv_txt = self.tiny_font.render(
+                f"[{key_display}] {C.WEAPONS[w]['name']}", True, color
+            )
             inv_rect = inv_txt.get_rect(bottomright=(C.SCREEN_WIDTH - 20, inv_y))
             self.screen.blit(inv_txt, inv_rect)
             inv_y -= 25
@@ -358,7 +386,9 @@ class UIRenderer:
             C.CYAN,
             (shield_x, shield_y, int(shield_width * shield_pct), shield_height),
         )
-        pygame.draw.rect(self.screen, C.WHITE, (shield_x, shield_y, shield_width, shield_height), 1)
+        pygame.draw.rect(
+            self.screen, C.WHITE, (shield_x, shield_y, shield_width, shield_height), 1
+        )
 
         if game.player.shield_recharge_delay > 0:
             status_text = "RECHARGING" if game.player.shield_active else "COOLDOWN"
@@ -369,7 +399,9 @@ class UIRenderer:
         laser_y = shield_y - 15
         laser_pct = 1.0 - (game.player.secondary_cooldown / C.SECONDARY_COOLDOWN)
         laser_pct = max(0, min(1, laser_pct))
-        pygame.draw.rect(self.screen, C.DARK_GRAY, (shield_x, laser_y, shield_width, shield_height))
+        pygame.draw.rect(
+            self.screen, C.DARK_GRAY, (shield_x, laser_y, shield_width, shield_height)
+        )
         pygame.draw.rect(
             self.screen,
             (255, 50, 50),
@@ -429,7 +461,9 @@ class UIRenderer:
         """Render red screen flash effect when player takes damage."""
         if timer > 0:
             alpha = int(100 * (timer / 10.0))
-            self.overlay_surface.fill((255, 0, 0, alpha), special_flags=pygame.BLEND_RGBA_ADD)
+            self.overlay_surface.fill(
+                (255, 0, 0, alpha), special_flags=pygame.BLEND_RGBA_ADD
+            )
 
     def _render_shield_effect(self, player: Player) -> None:
         """Render shield activation visual effects and status."""
@@ -442,22 +476,36 @@ class UIRenderer:
             )
             # Border
             pygame.draw.rect(
-                self.overlay_surface, C.SHIELD_COLOR, (0, 0, C.SCREEN_WIDTH, C.SCREEN_HEIGHT), 10
+                self.overlay_surface,
+                C.SHIELD_COLOR,
+                (0, 0, C.SCREEN_WIDTH, C.SCREEN_HEIGHT),
+                10,
             )
 
             shield_text = self.title_font.render("SHIELD ACTIVE", True, C.SHIELD_COLOR)
-            self.screen.blit(shield_text, (C.SCREEN_WIDTH // 2 - shield_text.get_width() // 2, 100))
+            self.screen.blit(
+                shield_text,
+                (C.SCREEN_WIDTH // 2 - shield_text.get_width() // 2, 100),
+            )
 
             time_left = player.shield_timer / 60.0
             timer_text = self.small_font.render(f"{time_left:.1f}s", True, C.WHITE)
-            self.screen.blit(timer_text, (C.SCREEN_WIDTH // 2 - timer_text.get_width() // 2, 160))
+            self.screen.blit(
+                timer_text,
+                (C.SCREEN_WIDTH // 2 - timer_text.get_width() // 2, 160),
+            )
 
             if player.shield_timer < 120 and (player.shield_timer // 10) % 2 == 0:
                 pygame.draw.rect(
-                    self.overlay_surface, (255, 0, 0, 50), (0, 0, C.SCREEN_WIDTH, C.SCREEN_HEIGHT)
+                    self.overlay_surface,
+                    (255, 0, 0, 50),
+                    (0, 0, C.SCREEN_WIDTH, C.SCREEN_HEIGHT),
                 )
 
-        elif player.shield_timer == C.SHIELD_MAX_DURATION and player.shield_recharge_delay <= 0:
+        elif (
+            player.shield_timer == C.SHIELD_MAX_DURATION
+            and player.shield_recharge_delay <= 0
+        ):
             ready_text = self.tiny_font.render("SHIELD READY", True, C.CYAN)
             self.screen.blit(ready_text, (20, C.SCREEN_HEIGHT - 120))
 
@@ -465,7 +513,9 @@ class UIRenderer:
         """Render red screen tint when health is low."""
         if player.health < 50:
             alpha = int(100 * (1.0 - (player.health / 50.0)))
-            self.overlay_surface.fill((255, 0, 0, alpha), special_flags=pygame.BLEND_RGBA_ADD)
+            self.overlay_surface.fill(
+                (255, 0, 0, alpha), special_flags=pygame.BLEND_RGBA_ADD
+            )
 
     def _render_crosshair(self) -> None:
         """Render the aiming crosshair at the center of the screen."""
@@ -483,9 +533,13 @@ class UIRenderer:
             bar_w = 40
             bar_h = 4
             cx, cy = C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 30
-            pygame.draw.rect(self.screen, C.DARK_GRAY, (cx - bar_w // 2, cy, bar_w, bar_h))
             pygame.draw.rect(
-                self.screen, C.CYAN, (cx - bar_w // 2, cy, int(bar_w * charge_pct), bar_h)
+                self.screen, C.DARK_GRAY, (cx - bar_w // 2, cy, bar_w, bar_h)
+            )
+            pygame.draw.rect(
+                self.screen,
+                C.CYAN,
+                (cx - bar_w // 2, cy, int(bar_w * charge_pct), bar_h),
             )
 
     def _render_pause_menu(self) -> None:
@@ -549,7 +603,8 @@ class UIRenderer:
 
         stats = [
             (
-                f"You survived {completed_levels} level{'s' if completed_levels != 1 else ''}",
+                f"You survived {completed_levels} "
+                f"level{'s' if completed_levels != 1 else ''}",
                 C.WHITE,
             ),
             (f"Total Kills: {game.kills}", C.WHITE),
@@ -583,11 +638,15 @@ class UIRenderer:
         self.screen.fill(C.BLACK)
 
         if intro_phase == 0:
-            text = self.subtitle_font.render("A Willy Wonk Production", True, (255, 182, 193))
+            text = self.subtitle_font.render(
+                "A Willy Wonk Production", True, (255, 182, 193)
+            )
             self.screen.blit(text, text.get_rect(center=(C.SCREEN_WIDTH // 2, 100)))
             if "willy" in self.intro_images:
                 img = self.intro_images["willy"]
-                r = img.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 30))
+                r = img.get_rect(
+                    center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 30)
+                )
                 self.screen.blit(img, r)
                 pygame.draw.rect(self.screen, (255, 192, 203), r, 4, border_radius=10)
 
@@ -598,12 +657,16 @@ class UIRenderer:
 
             t2 = stylish.render("UPSTREAM DRIFT", True, color)
             self.screen.blit(
-                t2, t2.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 - 180))
+                t2,
+                t2.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 - 180)),
             )
 
             t1 = self.tiny_font.render("in association with", True, C.CYAN)
             self.screen.blit(
-                t1, t1.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 - 230))
+                t1,
+                t1.get_rect(
+                    center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 - 230)
+                ),
             )
 
             if self.intro_video and self.intro_video.isOpened():
@@ -620,14 +683,19 @@ class UIRenderer:
                     )
                     self.screen.blit(
                         surf,
-                        surf.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 50)),
+                        surf.get_rect(
+                            center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 50)
+                        ),
                     )
                 else:
                     self.intro_video.set(cv2.CAP_PROP_POS_FRAMES, 0)
             elif "deadfish" in self.intro_images:
                 img = self.intro_images["deadfish"]
                 self.screen.blit(
-                    img, img.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 50))
+                    img,
+                    img.get_rect(
+                        center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 50)
+                    ),
                 )
 
         elif intro_phase == 2:
@@ -740,7 +808,9 @@ class UIRenderer:
                     sub = self.subtitle_font.render(str(slide["sub"]), True, C.CYAN)
                     self.screen.blit(
                         sub,
-                        sub.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 60)),
+                        sub.get_rect(
+                            center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 60)
+                        ),
                     )
 
     def render_key_config(self, game: Any) -> None:
@@ -780,7 +850,9 @@ class UIRenderer:
             self.screen.blit(key_txt, (x + 20, y))
 
         back_txt = self.subtitle_font.render("BACK", True, C.WHITE)
-        back_rect = back_txt.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT - 60))
+        back_rect = back_txt.get_rect(
+            center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT - 60)
+        )
         self.screen.blit(back_txt, back_rect)
         if back_rect.collidepoint(pygame.mouse.get_pos()):
             pygame.draw.rect(self.screen, C.RED, back_rect, 2)

@@ -46,7 +46,9 @@ class Raycaster:
         self.sprite_cache: dict[str, pygame.Surface] = {}
 
         # Offscreen surface for low-res rendering (Optimization)
-        self.view_surface = pygame.Surface((C.NUM_RAYS, C.SCREEN_HEIGHT), pygame.SRCALPHA)
+        self.view_surface = pygame.Surface(
+            (C.NUM_RAYS, C.SCREEN_HEIGHT), pygame.SRCALPHA
+        )
 
         # Z-Buffer for occlusion (Euclidean distance)
         self.z_buffer: list[float] = [float("inf")] * C.NUM_RAYS
@@ -112,7 +114,10 @@ class Raycaster:
                 break
 
         if hit:
-            distance = side_dist_x - delta_dist_x if side == 0 else side_dist_y - delta_dist_y
+            if side == 0:
+                distance = side_dist_x - delta_dist_x
+            else:
+                distance = side_dist_y - delta_dist_y
             return distance, wall_type
 
         return C.MAX_DEPTH, 0
@@ -168,7 +173,8 @@ class Raycaster:
                     0.0,
                     min(
                         1.0,
-                        (distance - C.MAX_DEPTH * C.FOG_START) / (C.MAX_DEPTH * (1 - C.FOG_START)),
+                        (distance - C.MAX_DEPTH * C.FOG_START)
+                        / (C.MAX_DEPTH * (1 - C.FOG_START)),
                     ),
                 )
 
@@ -188,7 +194,9 @@ class Raycaster:
                 color = (int(final_r), int(final_g), int(final_b))
 
                 # Pitch Adjustment
-                wall_top = (C.SCREEN_HEIGHT - wall_height) // 2 + player.pitch + view_offset_y
+                wall_top = (
+                    (C.SCREEN_HEIGHT - wall_height) // 2 + player.pitch + view_offset_y
+                )
 
                 # Draw vertical line on view_surface (width=1)
                 pygame.draw.line(
@@ -201,7 +209,8 @@ class Raycaster:
             # Horizontal lines (Brick effect) - Removed for performance
             # The set_at loop was causing significant performance drops.
             # If needed, this should be implemented via a pre-generated texture pattern
-            # or a faster line drawing method, but doing it per-ray per-line in Python is too slow.
+            # or a faster line drawing method, but doing it per-ray per-line
+            # in Python is too slow.
 
             ray_angle += delta_angle
 
@@ -248,7 +257,9 @@ class Raycaster:
         bots_to_render.sort(key=lambda x: x[1], reverse=True)
 
         for bot, bot_dist, angle_to_bot in bots_to_render:
-            self._draw_single_sprite(player, bot, bot_dist, angle_to_bot, half_fov, view_offset_y)
+            self._draw_single_sprite(
+                player, bot, bot_dist, angle_to_bot, half_fov, view_offset_y
+            )
 
     def _draw_single_sprite(
         self,
@@ -271,7 +282,11 @@ class Raycaster:
         sprite_size = base_sprite_size * float(type_data.get("scale", 1.0))
 
         center_ray = C.NUM_RAYS / 2
-        ray_x = center_ray + (angle / half_fov) * center_ray - (sprite_size / C.RENDER_SCALE) / 2
+        ray_x = (
+            center_ray
+            + (angle / half_fov) * center_ray
+            - (sprite_size / C.RENDER_SCALE) / 2
+        )
 
         sprite_ray_width = sprite_size / C.RENDER_SCALE
         sprite_ray_x = ray_x
@@ -363,9 +378,10 @@ class Raycaster:
             total_visible_pixels < target_width * STRIP_VISIBILITY_THRESHOLD
             and target_width > LARGE_SPRITE_THRESHOLD
         ):
-            # If only a small fraction is visible and it's large, maybe strip scaling is better?
-            # But strip scaling involves creating subsurfaces which has overhead too.
-            # Modern Pygame/SDL is fast at scaling. Let's default to scale_whole for simplicity.
+            # If only a small fraction is visible and it's large, maybe strip
+            # scaling is better? But strip scaling involves creating subsurfaces
+            # which has overhead too. Modern Pygame/SDL is fast at scaling.
+            # Let's default to scale_whole for simplicity.
             # actually, scaling a 1000x1000 image to just show 10 pixels is bad.
             scale_whole = False
 
@@ -393,7 +409,9 @@ class Raycaster:
 
                 if width > 0:
                     area = pygame.Rect(x_offset, 0, width, target_height)
-                    self.view_surface.blit(scaled_sprite, (run_start, int(sprite_y)), area)
+                    self.view_surface.blit(
+                        scaled_sprite, (run_start, int(sprite_y)), area
+                    )
         else:
             # Fallback: Strip scaling (only for large occluded sprites)
             tex_width = sprite_surface.get_width()
@@ -416,13 +434,19 @@ class Raycaster:
                 area = pygame.Rect(tex_x_start, 0, w, tex_height)
                 try:
                     slice_surf = sprite_surface.subsurface(area)
-                    scaled_slice = pygame.transform.scale(slice_surf, (run_width, target_height))
+                    scaled_slice = pygame.transform.scale(
+                        slice_surf, (run_width, target_height)
+                    )
                     self.view_surface.blit(scaled_slice, (run_start, int(sprite_y)))
                 except (ValueError, pygame.error):
                     continue
 
     def render_floor_ceiling(
-        self, screen: pygame.Surface, player: Player, level: int, view_offset_y: float = 0.0
+        self,
+        screen: pygame.Surface,
+        player: Player,
+        level: int,
+        view_offset_y: float = 0.0,
     ) -> None:
         """Render floor and sky with stars"""
         theme_idx = (level - 1) % len(C.LEVEL_THEMES)
@@ -451,7 +475,9 @@ class Raycaster:
         if -100 < moon_x < C.SCREEN_WIDTH + 100:
             if 0 <= moon_y < horizon + 40:
                 pygame.draw.circle(screen, (220, 220, 200), (int(moon_x), moon_y), 40)
-                pygame.draw.circle(screen, ceiling_color, (int(moon_x) - 10, moon_y), 40)
+                pygame.draw.circle(
+                    screen, ceiling_color, (int(moon_x) - 10, moon_y), 40
+                )
 
         floor_color = cast("tuple[int, int, int]", theme["floor"])
         pygame.draw.rect(
@@ -480,7 +506,9 @@ class Raycaster:
             C.BLACK,
             (minimap_x - 2, minimap_y - 2, minimap_size + 4, minimap_size + 4),
         )
-        pygame.draw.rect(screen, C.DARK_GRAY, (minimap_x, minimap_y, minimap_size, minimap_size))
+        pygame.draw.rect(
+            screen, C.DARK_GRAY, (minimap_x, minimap_y, minimap_size, minimap_size)
+        )
 
         for i in range(map_size):
             for j in range(map_size):
@@ -508,7 +536,10 @@ class Raycaster:
                 portal_map_x = minimap_x + portal_x * minimap_scale
                 portal_map_y = minimap_y + portal_y * minimap_scale
                 pygame.draw.circle(
-                    screen, C.CYAN, (int(portal_map_x), int(portal_map_y)), int(minimap_scale * 2)
+                    screen,
+                    C.CYAN,
+                    (int(portal_map_x), int(portal_map_y)),
+                    int(minimap_scale * 2),
                 )
 
         for bot in bots:
@@ -564,7 +595,10 @@ class Raycaster:
 
             if abs(angle_to_proj) < half_fov:
                 proj_size = max(2, 10 / proj_dist) if proj_dist > 0.1 else 100
-                proj_x = C.SCREEN_WIDTH / 2 + (angle_to_proj / half_fov) * C.SCREEN_WIDTH / 2
+                proj_x = (
+                    C.SCREEN_WIDTH / 2
+                    + (angle_to_proj / half_fov) * C.SCREEN_WIDTH / 2
+                )
                 proj_y = C.SCREEN_HEIGHT / 2 + player.pitch + view_offset_y
 
                 # Simple Z-Check
@@ -579,7 +613,9 @@ class Raycaster:
                         # Occluded
                         continue
 
-                pygame.draw.circle(screen, C.RED, (int(proj_x), int(proj_y)), int(proj_size))
+                pygame.draw.circle(
+                    screen, C.RED, (int(proj_x), int(proj_y)), int(proj_size)
+                )
                 pygame.draw.circle(
                     screen,
                     C.ORANGE,

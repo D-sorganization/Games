@@ -8,12 +8,15 @@ import pygame
 pygame.init()
 pygame.display.set_mode((1, 1))  # Dummy display
 
-# Add wizard_of_wor directory to path to support "from bullet import Bullet" style imports
-sys.path.append(str((Path(__file__).parent / "../wizard_of_wor").resolve()))
+# Add wizard_of_wor directory to path to support "from bullet import Bullet"
+# style imports
+sys.path.append(
+    str((Path(__file__).parent / "../wizard_of_wor").resolve())
+)
 sys.path.append(str((Path(__file__).parent / "..").resolve()))
 
 # Now we can import
-from constants import *  # noqa: E402
+# from constants import *  # noqa: E402 (Unused)
 from player import Player  # noqa: E402
 
 

@@ -133,7 +133,7 @@ class Player:
         """Grant temporary invulnerability."""
         self.invulnerable_timer = max(self.invulnerable_timer, frames)
 
-    def draw(self, screen: pygame.Surface) -> None:  # type: ignore[no-any-unimported]
+    def draw(self, screen: pygame.Surface) -> None:
         """Draw the player."""
         if self.alive:
             body_rect = pygame.Rect(self.rect)

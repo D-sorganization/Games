@@ -49,7 +49,7 @@ class SoundBoard:
     def __init__(self) -> None:
         """Initialize the tone generator for arcade-style sound effects."""
         self.enabled = False
-        self.sounds: dict[str, pygame.mixer.Sound] = {}  # type: ignore[no-any-unimported]
+        self.sounds: dict[str, pygame.mixer.Sound] = {}
         try:
             if not pygame.mixer.get_init():
                 pygame.mixer.init(frequency=22050, size=-16, channels=1)
@@ -64,7 +64,7 @@ class SoundBoard:
             "wizard": self._build_tone(300, 200),
         }
 
-    def _build_tone(self, frequency: int, duration_ms: int) -> pygame.mixer.Sound:  # type: ignore[no-any-unimported]
+    def _build_tone(self, frequency: int, duration_ms: int) -> pygame.mixer.Sound:
         """Build a tone sound effect with the given frequency and duration."""
         sample_rate = 22050
         sample_count = int(sample_rate * duration_ms / 1000)
@@ -235,7 +235,9 @@ class WizardOfWorGame:
             self.player.update(keys, self.dungeon, self.effects)
 
         # Update enemies
-        player_pos = (self.player.x, self.player.y) if self.player is not None else (0, 0)
+        player_pos = (
+            (self.player.x, self.player.y) if self.player is not None else (0, 0)
+        )
         for enemy in self.enemies:
             enemy.update(self.dungeon, player_pos)
 

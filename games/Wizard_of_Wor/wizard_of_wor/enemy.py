@@ -9,7 +9,36 @@ from typing import Any
 
 import pygame
 from bullet import Bullet
-from constants import *
+from constants import (
+    BLACK,
+    BURWOR_POINTS,
+    BURWOR_SPEED,
+    CYAN,
+    DOWN,
+    ENEMY_ANIMATION_SPEED,
+    ENEMY_GLOW,
+    ENEMY_OUTLINE,
+    ENEMY_SIZE,
+    GARWOR_POINTS,
+    GARWOR_SPEED,
+    INVISIBILITY_DURATION,
+    INVISIBILITY_FLICKER_ON_FRAMES,
+    INVISIBILITY_FLICKER_PERIOD,
+    INVISIBILITY_INTERVAL,
+    LEFT,
+    ORANGE,
+    PURPLE,
+    RED,
+    RIGHT,
+    THORWOR_POINTS,
+    THORWOR_SPEED,
+    UP,
+    WIZARD_POINTS,
+    WIZARD_SPEED,
+    WORLUK_POINTS,
+    WORLUK_SPEED,
+    YELLOW,
+)
 
 
 class Enemy:
@@ -138,7 +167,7 @@ class Enemy:
         self.alive = False
         return int(self.points)
 
-    def draw(self, screen: pygame.Surface) -> None:  # type: ignore[no-any-unimported]
+    def draw(self, screen: pygame.Surface) -> None:
         """Draw the enemy."""
         if self.alive and self.visible:
             body_rect = pygame.Rect(self.rect)
@@ -252,7 +281,7 @@ class Wizard(Enemy):
             else:
                 self.direction = DOWN if dy > 0 else UP
 
-    def draw(self, screen: pygame.Surface) -> None:  # type: ignore[no-any-unimported]
+    def draw(self, screen: pygame.Surface) -> None:
         """Draw the wizard (only after appearance timer)."""
         if self.appearance_timer <= 0:
             super().draw(screen)

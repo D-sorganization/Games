@@ -64,7 +64,7 @@ class Bullet:
         ):
             self.active = False
 
-    def draw(self, screen: pygame.Surface) -> None:  # type: ignore[no-any-unimported]
+    def draw(self, screen: pygame.Surface) -> None:
         """Draw the bullet."""
         if self.active:
             pygame.draw.circle(

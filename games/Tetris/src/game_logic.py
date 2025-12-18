@@ -3,7 +3,20 @@ from __future__ import annotations
 import random
 from typing import Any
 
-from .constants import *
+from .constants import (
+    BLACK,
+    GRID_HEIGHT,
+    GRID_SIZE,
+    GRID_WIDTH,
+    PLAY_HEIGHT,
+    PLAY_WIDTH,
+    REWIND_HISTORY_LIMIT,
+    REWIND_STEP,
+    SHAPES,
+    SILVER,
+    TOP_LEFT_X,
+    TOP_LEFT_Y,
+)
 from .particles import Particle, ScorePopup
 from .tetromino import Tetromino
 

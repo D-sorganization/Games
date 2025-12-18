@@ -80,7 +80,9 @@ class Bot:
         self.disintegrate_timer = 0
         self.removed = False  # When fully disintegrated
 
-    def update(self, game_map: Map, player: Player, other_bots: list[Bot]) -> Projectile | None:
+    def update(
+        self, game_map: Map, player: Player, other_bots: list[Bot]
+    ) -> Projectile | None:
         """Update bot AI"""
         if self.dead:
             self.death_timer += 1
@@ -175,7 +177,8 @@ class Bot:
             if distance < 15 and self.attack_timer <= 0:  # Long range
                 if self.has_line_of_sight(game_map, player):
                     # Calculate parabola (fake 3D arc)
-                    # We just spawn a big fireball projectile (fake 3D arc handled later)
+                    # We just spawn a big fireball projectile
+                    # (fake 3D arc handled later)
                     # For now, just a big fireball projectile
                     projectile = Projectile(
                         self.x,
@@ -192,7 +195,9 @@ class Bot:
                     return projectile
 
         # Attack if in range
-        if distance < C.BOT_ATTACK_RANGE and self.enemy_type != "beast":  # Beast handled above
+        if (
+            distance < C.BOT_ATTACK_RANGE and self.enemy_type != "beast"
+        ):  # Beast handled above
             if self.attack_timer <= 0:
                 # Check line of sight
                 if self.has_line_of_sight(game_map, player):
@@ -278,21 +283,26 @@ class Bot:
         """Check if bot has line of sight to player"""
         return has_line_of_sight(self.x, self.y, player.x, player.y, game_map)
 
-    def take_damage(self, damage: int, is_headshot: bool = False) -> None:
+    def take_damage(self, damage: int, is_headshot: bool = False) -> bool:
         """Take damage
         Args:
             damage: Base damage amount
             is_headshot: If True, do 3x damage instead of instant kill
+
+        Returns:
+            bool: True if this damage killed the bot
         """
         if self.dead:
-            return
+            return False
 
         if is_headshot:
-            self.health -= damage * 3  # Headshot does 3x damage, not instant kill
+            self.health -= damage * 3
         else:
             self.health -= damage
 
         if self.health <= 0:
             self.health = 0
             self.dead = True
-            self.alive = False  # Kept for backward compat logic usage, but we use dead/removed now
+            self.alive = False
+            return True
+        return False

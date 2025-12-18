@@ -86,7 +86,9 @@ def cast_ray_dda(
     return max_dist, 0, start_x + ray_dir_x * max_dist, start_y + ray_dir_y * max_dist
 
 
-def has_line_of_sight(x1: float, y1: float, x2: float, y2: float, game_map: "Map") -> bool:
+def has_line_of_sight(
+    x1: float, y1: float, x2: float, y2: float, game_map: "Map"
+) -> bool:
     """Check if there is a clear line of sight between two points."""
     dx = x2 - x1
     dy = y2 - y1
@@ -103,7 +105,12 @@ def has_line_of_sight(x1: float, y1: float, x2: float, y2: float, game_map: "Map
 
 
 def try_move_entity(
-    entity: Any, dx: float, dy: float, game_map: "Map", obstacles: list[Any], radius: float = 0.5
+    entity: Any,
+    dx: float,
+    dy: float,
+    game_map: "Map",
+    obstacles: list[Any],
+    radius: float = 0.5,
 ) -> None:
     """Try to move entity by dx, dy checking walls and obstacles."""
     col_sq = radius * radius

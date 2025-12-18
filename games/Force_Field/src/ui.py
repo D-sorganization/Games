@@ -26,7 +26,9 @@ class Button:
         self.rect = pygame.Rect(x, y, width, height)
         self.text = text
         self._color = color
-        self.hover_color = tuple(min(255, c + self.HOVER_BRIGHTNESS_OFFSET) for c in color)
+        self.hover_color = tuple(
+            min(255, c + self.HOVER_BRIGHTNESS_OFFSET) for c in color
+        )
         self.hovered = False
 
     @property
@@ -38,7 +40,9 @@ class Button:
     def color(self, value: tuple[int, int, int]) -> None:
         """Set button color and update hover color"""
         self._color = value
-        self.hover_color = tuple(min(255, c + self.HOVER_BRIGHTNESS_OFFSET) for c in value)
+        self.hover_color = tuple(
+            min(255, c + self.HOVER_BRIGHTNESS_OFFSET) for c in value
+        )
 
     def draw(self, screen: pygame.Surface, font: pygame.font.Font) -> None:
         """Draw button"""
@@ -108,7 +112,9 @@ class BloodButton(Button):
         for drip in self.drips:
             # Oscillate length
             drip["length"] = drip["max_length"] * (
-                0.7 + 0.3 * math.sin(self.pulse_timer * drip["speed"] + drip["phase_offset"])
+                0.7
+                + 0.3
+                * math.sin(self.pulse_timer * drip["speed"] + drip["phase_offset"])
             )
 
     def draw(self, screen: pygame.Surface, font: pygame.font.Font) -> None:
@@ -138,7 +144,9 @@ class BloodButton(Button):
 
             # Draw rect for the flow
             pygame.draw.rect(
-                screen, current_color, (drip_x - drip_w // 2, drip_y - 2, drip_w, drip_h + 2)
+                screen,
+                current_color,
+                (drip_x - drip_w // 2, drip_y - 2, drip_w, drip_h + 2),
             )
             # Draw circle for the drop at end
             pygame.draw.circle(
@@ -167,7 +175,9 @@ class BloodButton(Button):
         # Border (Top, Left, Right) - No Bottom to blend drips
         pygame.draw.line(screen, (50, 0, 0), self.rect.topleft, self.rect.topright, 2)
         pygame.draw.line(screen, (50, 0, 0), self.rect.topleft, self.rect.bottomleft, 2)
-        pygame.draw.line(screen, (50, 0, 0), self.rect.topright, self.rect.bottomright, 2)
+        pygame.draw.line(
+            screen, (50, 0, 0), self.rect.topright, self.rect.bottomright, 2
+        )
 
         # Text with shadow
         text_surf = font.render(self.text, True, C.WHITE)

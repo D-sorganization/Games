@@ -22,7 +22,10 @@ class Tetromino:
 
     def _rotate_clockwise(self, shape: list[list[int]]) -> list[list[int]]:
         """Rotate a shape 90 degrees clockwise"""
-        return [[shape[y][x] for y in range(len(shape) - 1, -1, -1)] for x in range(len(shape[0]))]
+        return [
+            [shape[y][x] for y in range(len(shape) - 1, -1, -1)]
+            for x in range(len(shape[0]))
+        ]
 
     def rotate(self) -> None:
         """Rotate the tetromino"""

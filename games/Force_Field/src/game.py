@@ -189,7 +189,12 @@ class Game:
                     test_y = base_y + math.sin(angle_offset) * radius
 
                     # Ensure within bounds
-                    if test_x < 2 or test_x >= map_size - 2 or test_y < 2 or test_y >= map_size - 2:
+                    if (
+                        test_x < 2
+                        or test_x >= map_size - 2
+                        or test_y < 2
+                        or test_y >= map_size - 2
+                    ):
                         continue
 
                     # Check if not a wall
@@ -235,7 +240,7 @@ class Game:
         # Check safety
         if self.game_map.is_wall(player_pos[0], player_pos[1]):
             # Find nearby
-            for attempt in range(20):
+            for _ in range(20):
                 test_x = player_pos[0] + random.uniform(-3, 3)
                 test_y = player_pos[1] + random.uniform(-3, 3)
                 if not self.game_map.is_wall(test_x, test_y):
@@ -349,7 +354,8 @@ class Game:
                 self.player.current_weapon = previous_weapon
             else:
                 self.player.current_weapon = "pistol"
-        # Validate current weapon is unlocked (e.g. Player init sets 'rifle' but it might be locked)
+        # Validate current weapon is unlocked
+        # (e.g. Player init sets 'rifle' but it might be locked)
         if self.player.current_weapon not in self.unlocked_weapons:
             self.player.current_weapon = "pistol"
 
@@ -361,7 +367,13 @@ class Game:
         self.projectiles = []
 
         num_enemies = int(
-            min(50, 5 + self.level * 2 * C.DIFFICULTIES[self.selected_difficulty]["score_mult"])
+            min(
+                50,
+                5
+                + self.level
+                * 2
+                * C.DIFFICULTIES[self.selected_difficulty]["score_mult"],
+            )
         )
 
         for _ in range(num_enemies):
@@ -408,12 +420,15 @@ class Game:
         boss_type = random.choice(boss_options)
 
         upper_bound = max(2, self.game_map.size - 3)
-        for attempt in range(50):
+        for _ in range(50):
             cx = random.randint(2, upper_bound)
             cy = random.randint(2, upper_bound)
             if (
                 not self.game_map.is_wall(cx, cy)
-                and math.sqrt((cx - player_pos[0]) ** 2 + (cy - player_pos[1]) ** 2) > 15
+                and math.sqrt(
+                    (cx - player_pos[0]) ** 2 + (cy - player_pos[1]) ** 2
+                )
+                > 15
             ):
                 self.bots.append(
                     Bot(
@@ -507,14 +522,18 @@ class Game:
                         pygame.event.set_grab(False)
                     else:
                         if self.pause_start_time > 0:
-                            pause_duration = pygame.time.get_ticks() - self.pause_start_time
+                            pause_duration = (
+                                pygame.time.get_ticks() - self.pause_start_time
+                            )
                             self.total_paused_time += pause_duration
                             self.pause_start_time = 0
                         pygame.mouse.set_visible(False)
                         pygame.event.set_grab(True)
 
                 # Activate Cheat Mode
-                elif event.key == pygame.K_c and (pygame.key.get_mods() & pygame.KMOD_CTRL):
+                elif event.key == pygame.K_c and (
+                    pygame.key.get_mods() & pygame.KMOD_CTRL
+                ):
                     self.cheat_mode_active = True
                     self.current_cheat_input = ""
                     self.add_message("CHEAT MODE: TYPE CODE", C.PURPLE)
@@ -560,7 +579,9 @@ class Game:
                         if 350 <= my <= 400:  # Resume
                             self.paused = False
                             if self.pause_start_time > 0:
-                                pause_duration = pygame.time.get_ticks() - self.pause_start_time
+                                pause_duration = (
+                                    pygame.time.get_ticks() - self.pause_start_time
+                                )
                                 self.total_paused_time += pause_duration
                                 self.pause_start_time = 0
                             pygame.mouse.set_visible(False)
@@ -594,7 +615,8 @@ class Game:
         """Save game state to file.
 
         Args:
-            filename (str): The file path to save the game state. Defaults to "savegame.txt".
+            filename (str): The file path to save the game state.
+                Defaults to "savegame.txt".
         """
         # Simple save implementation
         try:
@@ -619,7 +641,9 @@ class Game:
                 self.player.x,
                 self.player.y,
                 self.player.angle,
-                speed=float(cast("float", C.WEAPONS["plasma"].get("projectile_speed", 0.5))),
+                speed=float(
+                    cast("float", C.WEAPONS["plasma"].get("projectile_speed", 0.5))
+                ),
                 damage=self.player.get_current_weapon_damage(),
                 is_player=True,
                 color=cast(
@@ -638,7 +662,9 @@ class Game:
                 self.player.x,
                 self.player.y,
                 self.player.angle,
-                speed=float(cast("float", C.WEAPONS["rocket"].get("projectile_speed", 0.3))),
+                speed=float(
+                    cast("float", C.WEAPONS["rocket"].get("projectile_speed", 0.3))
+                ),
                 damage=self.player.get_current_weapon_damage(),
                 is_player=True,
                 color=cast(
@@ -668,7 +694,10 @@ class Game:
             self.check_shot_hit(is_secondary=is_secondary)
 
     def check_shot_hit(
-        self, is_secondary: bool = False, angle_offset: float = 0.0, is_laser: bool = False
+        self,
+        is_secondary: bool = False,
+        angle_offset: float = 0.0,
+        is_laser: bool = False,
     ) -> None:
         """Check if player's shot hit a bot"""
         assert self.player is not None
@@ -692,7 +721,9 @@ class Game:
 
             # 1. Cast ray to find wall distance
             # Use Raycaster to avoid code duplication
-            wall_dist, _ = self.raycaster.cast_ray(self.player.x, self.player.y, aim_angle)
+            wall_dist, _ = self.raycaster.cast_ray(
+                self.player.x, self.player.y, aim_angle
+            )
 
             # Cap at weapon range
             if wall_dist > weapon_range:
@@ -715,7 +746,9 @@ class Game:
                     continue
 
                 bot_angle = math.atan2(dy, dx)
-                bot_angle_norm = bot_angle if bot_angle >= 0 else bot_angle + 2 * math.pi
+                bot_angle_norm = (
+                    bot_angle if bot_angle >= 0 else bot_angle + 2 * math.pi
+                )
 
                 angle_diff = abs(bot_angle_norm - aim_angle)
                 if angle_diff > math.pi:
@@ -765,7 +798,9 @@ class Game:
                 dx = closest_bot.x - self.player.x
                 dy = closest_bot.y - self.player.y
                 bot_angle = math.atan2(dy, dx)
-                bot_angle_norm = bot_angle if bot_angle >= 0 else bot_angle + 2 * math.pi
+                bot_angle_norm = (
+                    bot_angle if bot_angle >= 0 else bot_angle + 2 * math.pi
+                )
 
                 angle_diff = abs(bot_angle_norm - self.player.angle)
                 if angle_diff > math.pi:
@@ -845,11 +880,11 @@ class Game:
         for bot in self.bots:
             if not bot.alive:
                 continue
-            dist = math.sqrt((bot.x - self.player.x) ** 2 + (bot.y - self.player.y) ** 2)
+            dist = math.sqrt(
+                (bot.x - self.player.x) ** 2 + (bot.y - self.player.y) ** 2
+            )
             if dist < C.BOMB_RADIUS:
-                was_alive = bot.alive
-                bot.take_damage(1000)
-                if was_alive and not bot.alive:
+                if bot.take_damage(1000):
                     self.sound_manager.play_sound("scream")
                     self.kills += 1
                     self.kill_combo_count += 1
@@ -894,11 +929,10 @@ class Game:
                     dist = math.sqrt((bot.x - impact_x) ** 2 + (bot.y - impact_y) ** 2)
                     if dist < C.LASER_AOE_RADIUS:
                         damage = 500
-                        was_alive = bot.alive
-                        bot.take_damage(damage)
+                        killed = bot.take_damage(damage)
                         hits += 1
 
-                        if was_alive and not bot.alive:
+                        if killed:
                             with suppress(Exception):
                                 self.sound_manager.play_sound("scream")
                             self.kills += 1
@@ -945,7 +979,9 @@ class Game:
         radius = float(cast("float", C.WEAPONS["rocket"].get("aoe_radius", 6.0)))
         self._explode_generic(projectile, radius, "rocket")
 
-    def _explode_generic(self, projectile: Projectile, radius: float, weapon_type: str) -> None:
+    def _explode_generic(
+        self, projectile: Projectile, radius: float, weapon_type: str
+    ) -> None:
         """Generic explosion logic"""
         assert self.player is not None
         dist_to_player = math.sqrt(
@@ -993,9 +1029,7 @@ class Game:
                 damage_factor = 1.0 - (dist / radius)
                 damage = int(projectile.damage * damage_factor)
 
-                was_alive = bot.alive
-                bot.take_damage(damage)
-                if was_alive and not bot.alive:
+                if bot.take_damage(damage):
                     self.sound_manager.play_sound("scream")
                     self.kills += 1
                     self.kill_combo_count += 1
@@ -1027,7 +1061,9 @@ class Game:
             return
 
         enemies_alive = [
-            b for b in self.bots if b.alive and b.type_data.get("visual_style") != "item"
+            b
+            for b in self.bots
+            if b.alive and b.type_data.get("visual_style") != "item"
         ]
 
         if not enemies_alive:
@@ -1046,11 +1082,14 @@ class Game:
 
         if self.portal:
             dist = math.sqrt(
-                (self.portal["x"] - self.player.x) ** 2 + (self.portal["y"] - self.player.y) ** 2
+                (self.portal["x"] - self.player.x) ** 2
+                + (self.portal["y"] - self.player.y) ** 2
             )
             if dist < 1.5:
                 level_time = (
-                    pygame.time.get_ticks() - self.level_start_time - self.total_paused_time
+                    pygame.time.get_ticks()
+                    - self.level_start_time
+                    - self.total_paused_time
                 ) / 1000.0
                 self.level_times.append(level_time)
                 self.state = "level_complete"
@@ -1070,7 +1109,10 @@ class Game:
 
             if abs(axis_x) > C.JOYSTICK_DEADZONE:
                 self.player.strafe(
-                    self.game_map, self.bots, right=(axis_x > 0), speed=abs(axis_x) * C.PLAYER_SPEED
+                    self.game_map,
+                    self.bots,
+                    right=(axis_x > 0),
+                    speed=abs(axis_x) * C.PLAYER_SPEED,
                 )
                 self.player.is_moving = True
             if abs(axis_y) > C.JOYSTICK_DEADZONE:
@@ -1128,7 +1170,9 @@ class Game:
             if t["timer"] <= 0:
                 self.damage_texts.remove(t)
 
-        is_sprinting = self.input_manager.is_action_pressed("sprint") or keys[pygame.K_RSHIFT]
+        is_sprinting = (
+            self.input_manager.is_action_pressed("sprint") or keys[pygame.K_RSHIFT]
+        )
         if is_sprinting and self.player.stamina > 0:
             current_speed = C.PLAYER_SPRINT_SPEED
             self.player.stamina -= 1
@@ -1139,16 +1183,24 @@ class Game:
         moving = False
 
         if self.input_manager.is_action_pressed("move_forward"):
-            self.player.move(self.game_map, self.bots, forward=True, speed=current_speed)
+            self.player.move(
+                self.game_map, self.bots, forward=True, speed=current_speed
+            )
             moving = True
         if self.input_manager.is_action_pressed("move_backward"):
-            self.player.move(self.game_map, self.bots, forward=False, speed=current_speed)
+            self.player.move(
+                self.game_map, self.bots, forward=False, speed=current_speed
+            )
             moving = True
         if self.input_manager.is_action_pressed("strafe_left"):
-            self.player.strafe(self.game_map, self.bots, right=False, speed=current_speed)
+            self.player.strafe(
+                self.game_map, self.bots, right=False, speed=current_speed
+            )
             moving = True
         if self.input_manager.is_action_pressed("strafe_right"):
-            self.player.strafe(self.game_map, self.bots, right=True, speed=current_speed)
+            self.player.strafe(
+                self.game_map, self.bots, right=True, speed=current_speed
+            )
             moving = True
 
         self.player.is_moving = moving
@@ -1170,8 +1222,12 @@ class Game:
                 self.projectiles.append(projectile)
                 self.sound_manager.play_sound("enemy_shoot")
 
-            if bot.alive and bot.enemy_type.startswith(("health", "ammo", "bomb", "pickup")):
-                dist = math.sqrt((bot.x - self.player.x) ** 2 + (bot.y - self.player.y) ** 2)
+            if bot.alive and bot.enemy_type.startswith(
+                ("health", "ammo", "bomb", "pickup")
+            ):
+                dist = math.sqrt(
+                    (bot.x - self.player.x) ** 2 + (bot.y - self.player.y) ** 2
+                )
                 if dist < 0.8:
                     pickup_msg = ""
                     color = C.GREEN
@@ -1251,9 +1307,7 @@ class Game:
                         dy = projectile.y - bot.y
                         dist = math.sqrt(dx**2 + dy**2)
                         if dist < 0.8:
-                            was_alive = bot.alive
-                            bot.take_damage(projectile.damage)
-                            if was_alive and not bot.alive:
+                            if bot.take_damage(projectile.damage):
                                 self.sound_manager.play_sound("scream")
                                 self.kills += 1
                                 self.kill_combo_count += 1
@@ -1285,7 +1339,9 @@ class Game:
         min_dist = float("inf")
         for bot in self.bots:
             if bot.alive:
-                dist = math.sqrt((bot.x - self.player.x) ** 2 + (bot.y - self.player.y) ** 2)
+                dist = math.sqrt(
+                    (bot.x - self.player.x) ** 2 + (bot.y - self.player.y) ** 2
+                )
                 min_dist = min(min_dist, dist)
 
         if min_dist < 15:
@@ -1312,7 +1368,9 @@ class Game:
             self.kill_combo_timer -= 1
             if self.kill_combo_timer <= 0:
                 if self.kill_combo_count >= 3:
-                    phrase = random.choice(["phrase_cool", "phrase_awesome", "phrase_brutal"])
+                    phrase = random.choice(
+                        ["phrase_cool", "phrase_awesome", "phrase_brutal"]
+                    )
                     self.sound_manager.play_sound(phrase)
                     self.damage_texts.append(
                         {
@@ -1473,7 +1531,9 @@ class Game:
                         return
 
                 # Back Button
-                back_rect = pygame.Rect(C.SCREEN_WIDTH // 2 - 50, C.SCREEN_HEIGHT - 80, 100, 40)
+                back_rect = pygame.Rect(
+                    C.SCREEN_WIDTH // 2 - 50, C.SCREEN_HEIGHT - 80, 100, 40
+                )
                 if back_rect.collidepoint(mx, my):
                     self.state = "playing" if self.paused else "menu"
 
@@ -1531,7 +1591,9 @@ class Game:
                         self.intro_start_time = pygame.time.get_ticks()
                     elapsed = pygame.time.get_ticks() - self.intro_start_time
 
-                    self.ui_renderer.render_intro(self.intro_phase, self.intro_step, elapsed)
+                    self.ui_renderer.render_intro(
+                        self.intro_phase, self.intro_step, elapsed
+                    )
                     self._update_intro_logic(elapsed)
 
                 elif self.state == "menu":
@@ -1566,7 +1628,8 @@ class Game:
                     else:
                         self.update_game()
                     self.renderer.render_game(self)
-                    # Decrement damage flash timer after rendering to maintain correct frame count
+                    # Decrement damage flash timer after rendering
+                    # to maintain correct frame count
                     if not self.paused and self.damage_flash_timer > 0:
                         self.damage_flash_timer -= 1
 

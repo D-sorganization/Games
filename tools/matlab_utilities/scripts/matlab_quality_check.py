@@ -6,7 +6,8 @@ This script runs comprehensive quality checks on MATLAB code following the proje
 .cursorrules.md requirements. It can be run from the command line and integrates
 with the project's quality control system.
 
-This is the unified version combining the best features from all repository implementations.
+This is the unified version combining the best features from all repository
+implementations.
 
 Usage:
     python tools/matlab_utilities/scripts/matlab_quality_check.py \\
@@ -89,14 +90,16 @@ class MATLABQualityChecker:
             # Check if we can run MATLAB from command line
             matlab_script = self.matlab_dir / "matlab_quality_config.m"
             if not matlab_script.exists():
-                # Config script not found - fall back to static analysis (primary use case)
+                # Config script not found - fall back to static analysis
+                # (primary use case)
                 logger.info(
                     "MATLAB quality config script not found, using static analysis",
                 )
                 return self._static_matlab_analysis()
 
             # Try to run MATLAB quality checks
-            # Note: This requires MATLAB to be installed and accessible from command line
+            # Note: This requires MATLAB to be installed and accessible from
+            # command line
             try:
                 # First, try to run the MATLAB script directly if possible
                 return self._run_matlab_script(matlab_script)
@@ -218,7 +221,8 @@ class MATLABQualityChecker:
             # Track if we're in a function and nesting level
             in_function = False
             nesting_level = 0
-            # Track declaration block nesting separately (arguments, properties, methods, events)
+            # Track declaration block nesting separately (arguments, properties,
+            # methods, events)
             # These don't create executable scope but have their own 'end' keywords
             declaration_nesting_level = 0
 
@@ -241,13 +245,16 @@ class MATLABQualityChecker:
                 if not line_stripped:
                     continue
 
-                # Skip comment-only lines for most checks (but check comments for banned patterns)
+                # Skip comment-only lines for most checks (but check comments for
+                # banned patterns)
                 is_comment = line_stripped.startswith("%")
 
                 # Track function scope by monitoring nesting level
                 if not is_comment:
-                    # Check for declaration block keywords (arguments, properties, methods, events)
-                    # These create their own scope but don't affect executable nesting level
+                    # Check for declaration block keywords (arguments, properties,
+                    # methods, events)
+                    # These create their own scope but don't affect executable
+                    # nesting level
                     if re.match(
                         r"\b(arguments|properties|methods|events)\b",
                         line_stripped,
@@ -257,7 +264,8 @@ class MATLABQualityChecker:
 
                     # Check for keywords that increase nesting
                     # Note: Only control flow keywords affect executable scope
-                    # Declaration blocks (arguments, properties, methods, events) don't create
+                    # Declaration blocks (arguments, properties, methods, events)
+                    # don't create
                     # executable scope, so they shouldn't increment nesting level
                     if re.match(
                         r"\b(function|if|for|while|switch|try|parfor|classdef)\b",
@@ -369,8 +377,9 @@ class MATLABQualityChecker:
                 # Matches both integer and floating-point literals (e.g., 3.14, 42, 0.5)
                 # that are not part of scientific notation, array indices, or
                 # embedded in words.
-                # Uses lookbehind/lookahead to avoid matching numbers adjacent to dots or
-                # word characters. This helps flag "magic numbers" in code while avoiding
+                # Uses lookbehind/lookahead to avoid matching numbers adjacent to dots
+                # or word characters. This helps flag "magic numbers" in code while
+                # avoiding
                 # false positives from common patterns.
                 magic_number_pattern = r"(?<![.\w])(?:\d+\.\d+|\d+)(?![.\w])"
                 magic_numbers = re.findall(magic_number_pattern, line_stripped)
