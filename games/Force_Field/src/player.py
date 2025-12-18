@@ -80,6 +80,7 @@ class Player:
         dy = math.sin(self.angle) * speed * (1 if forward else -1)
 
         from .utils import try_move_entity
+
         try_move_entity(self, dx, dy, game_map, bots, radius=0.5)
 
     def strafe(
@@ -101,6 +102,7 @@ class Player:
         dy = math.sin(angle) * speed
 
         from .utils import try_move_entity
+
         try_move_entity(self, dx, dy, game_map, bots, radius=0.5)
 
     def rotate(self, delta: float) -> None:

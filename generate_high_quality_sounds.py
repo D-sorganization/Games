@@ -5,7 +5,7 @@ import struct
 import wave
 from pathlib import Path
 
-sounds_dir = "games/Force Field/assets/sounds"
+sounds_dir = "games/Force_Field/assets/sounds"
 Path(sounds_dir).mkdir(parents=True, exist_ok=True)
 
 

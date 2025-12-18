@@ -975,7 +975,9 @@ class Game:
                 )
 
         try:
-            self.sound_manager.play_sound("boom_real" if weapon_type == "rocket" else "shoot_plasma")
+            self.sound_manager.play_sound(
+                "boom_real" if weapon_type == "rocket" else "shoot_plasma"
+            )
         except Exception:
             pass
 

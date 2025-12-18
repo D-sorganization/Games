@@ -79,25 +79,39 @@ class ParticleSystem:
     ) -> None:
         self.particles.append(
             Particle(
-                0, 0, color=color, timer=timer, ptype="laser", width=width, start_pos=start, end_pos=end
+                0,
+                0,
+                color=color,
+                timer=timer,
+                ptype="laser",
+                width=width,
+                start_pos=start,
+                end_pos=end,
             )
         )
 
-    def add_explosion(self, x: float, y: float, count: int = 10, color: tuple[int, int, int] | None = None) -> None:
+    def add_explosion(
+        self, x: float, y: float, count: int = 10, color: tuple[int, int, int] | None = None
+    ) -> None:
         for _ in range(count):
-             c = color if color else (
-                 random.randint(0, 255),
-                 random.randint(0, 255),
-                 random.randint(0, 255),
-             )
-             self.add_particle(
-                 x, y,
-                 dx=random.uniform(-5, 5),
-                 dy=random.uniform(-5, 5),
-                 color=c,
-                 timer=C.PARTICLE_LIFETIME,
-                 size=random.randint(2, 6)
-             )
+            c = (
+                color
+                if color
+                else (
+                    random.randint(0, 255),
+                    random.randint(0, 255),
+                    random.randint(0, 255),
+                )
+            )
+            self.add_particle(
+                x,
+                y,
+                dx=random.uniform(-5, 5),
+                dy=random.uniform(-5, 5),
+                color=c,
+                timer=C.PARTICLE_LIFETIME,
+                size=random.randint(2, 6),
+            )
 
     def update(self) -> None:
         self.particles = [p for p in self.particles if p.update()]
@@ -107,8 +121,8 @@ class ParticleSystem:
         # In Game.render_game, particles were likely drawn on top.
         # Let's verify where they are used.
         for p in self.particles:
-             if p.ptype == "laser":
-                 p.render(screen)
-             else:
-                 # UI Overlay particles (blood, hit effects)
-                 pygame.draw.rect(screen, p.color, (p.x, p.y, p.size, p.size))
+            if p.ptype == "laser":
+                p.render(screen)
+            else:
+                # UI Overlay particles (blood, hit effects)
+                pygame.draw.rect(screen, p.color, (p.x, p.y, p.size, p.size))

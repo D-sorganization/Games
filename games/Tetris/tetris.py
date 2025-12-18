@@ -8,6 +8,7 @@ Refactored into modules.
 import sys
 
 import pygame
+
 import src.constants as C  # noqa: N812
 from src.game_logic import TetrisLogic
 from src.input_handler import InputHandler

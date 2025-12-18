@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import random
-from typing import Any, Dict, List
+from typing import Any
 
 from .constants import *
 from .particles import Particle, ScorePopup
@@ -31,14 +31,14 @@ class TetrisLogic:
         self.fall_time = 0
         self.fall_speed = max(50, 500 - (self.level - 1) * 40)
         self.combo = 0
-        self.particles: List[Particle] = []
-        self.score_popups: List[ScorePopup] = []
+        self.particles: list[Particle] = []
+        self.score_popups: list[ScorePopup] = []
         self.lines_cleared_this_drop = 0
         self.total_singles = 0
         self.total_doubles = 0
         self.total_triples = 0
         self.total_tetrises = 0
-        self.rewind_history: List[Dict[str, Any]] = []
+        self.rewind_history: list[dict[str, Any]] = []
 
     def new_piece(self) -> Tetromino:
         """Create a new random tetromino"""
@@ -51,7 +51,7 @@ class TetrisLogic:
         clone.rotation = piece.rotation
         return clone
 
-    def create_snapshot(self) -> Dict[str, Any]:
+    def create_snapshot(self) -> dict[str, Any]:
         """Capture the current game state for rewinding"""
         return {
             "grid": [row[:] for row in self.grid],
@@ -72,7 +72,7 @@ class TetrisLogic:
             "total_tetrises": self.total_tetrises,
         }
 
-    def restore_snapshot(self, snapshot: Dict[str, Any]) -> None:
+    def restore_snapshot(self, snapshot: dict[str, Any]) -> None:
         """Restore a saved game state"""
         self.grid = snapshot["grid"]
         self.current_piece = snapshot["current_piece"]

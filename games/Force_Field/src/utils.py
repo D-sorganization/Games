@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from .map import Map
 
+
 def cast_ray_dda(
     start_x: float,
     start_y: float,
@@ -84,13 +85,12 @@ def cast_ray_dda(
 
     return max_dist, 0, start_x + ray_dir_x * max_dist, start_y + ray_dir_y * max_dist
 
-def has_line_of_sight(
-    x1: float, y1: float, x2: float, y2: float, game_map: "Map"
-) -> bool:
+
+def has_line_of_sight(x1: float, y1: float, x2: float, y2: float, game_map: "Map") -> bool:
     """Check if there is a clear line of sight between two points."""
     dx = x2 - x1
     dy = y2 - y1
-    dist = math.sqrt(dx*dx + dy*dy)
+    dist = math.sqrt(dx * dx + dy * dy)
     if dist < 0.001:
         return True
 
@@ -101,13 +101,9 @@ def has_line_of_sight(
     # Allow small epsilon error
     return hit_dist >= dist - 0.1
 
+
 def try_move_entity(
-    entity: Any,
-    dx: float,
-    dy: float,
-    game_map: "Map",
-    obstacles: list[Any],
-    radius: float = 0.5
+    entity: Any, dx: float, dy: float, game_map: "Map", obstacles: list[Any], radius: float = 0.5
 ) -> None:
     """Try to move entity by dx, dy checking walls and obstacles."""
     col_sq = radius * radius
@@ -129,7 +125,7 @@ def try_move_entity(
                 continue
 
             # Squared distance check
-            d_sq = (new_x - ob.x)**2 + (entity.y - ob.y)**2
+            d_sq = (new_x - ob.x) ** 2 + (entity.y - ob.y) ** 2
             if d_sq < col_sq:
                 collision = True
                 break
@@ -147,7 +143,7 @@ def try_move_entity(
             if hasattr(ob, "alive") and not ob.alive:
                 continue
 
-            d_sq = (entity.x - ob.x)**2 + (new_y - ob.y)**2
+            d_sq = (entity.x - ob.x) ** 2 + (new_y - ob.y) ** 2
             if d_sq < col_sq:
                 collision = True
                 break

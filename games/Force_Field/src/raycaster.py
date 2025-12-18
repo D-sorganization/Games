@@ -117,7 +117,6 @@ class Raycaster:
 
         return C.MAX_DEPTH, 0
 
-
     def render_3d(
         self,
         screen: pygame.Surface,

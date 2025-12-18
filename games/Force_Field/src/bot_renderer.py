@@ -51,7 +51,9 @@ class BotRenderer:
             return
 
         if bot.enemy_type.startswith("pickup_"):
-            BotRenderer._render_weapon_pickup(screen, bot, sprite_x, sprite_y, sprite_size, center_x)
+            BotRenderer._render_weapon_pickup(
+                screen, bot, sprite_x, sprite_y, sprite_size, center_x
+            )
             return
 
         render_height = sprite_size
@@ -65,7 +67,8 @@ class BotRenderer:
             # Interpolate Color to Goo
             goo_color = (50, 150, 50)
             base_color = tuple(
-                int(c * (1 - melt_pct) + g * melt_pct) for c, g in zip(base_color, goo_color)
+                int(c * (1 - melt_pct) + g * melt_pct)
+                for c, g in zip(base_color, goo_color, strict=False)
             )
 
             # Squish
@@ -126,9 +129,7 @@ class BotRenderer:
         )
 
     @staticmethod
-    def _render_health_pack(
-        screen: pygame.Surface, x: int, y: int, size: float, cx: float
-    ) -> None:
+    def _render_health_pack(screen: pygame.Surface, x: int, y: int, size: float, cx: float) -> None:
         rect_w = size * 0.4
         rect_h = size * 0.3
         kit_y = y + size * 0.7
@@ -160,8 +161,10 @@ class BotRenderer:
         rect_w = size * 0.4
         rect_h = size * 0.3
         box_y = y + size * 0.7
-        pygame.draw.rect(screen, (100, 100, 50), (cx - rect_w/2, box_y, rect_w, rect_h))
-        pygame.draw.rect(screen, (200, 200, 0), (cx - rect_w/2 + 2, box_y + 2, rect_w - 4, rect_h - 4))
+        pygame.draw.rect(screen, (100, 100, 50), (cx - rect_w / 2, box_y, rect_w, rect_h))
+        pygame.draw.rect(
+            screen, (200, 200, 0), (cx - rect_w / 2 + 2, box_y + 2, rect_w - 4, rect_h - 4)
+        )
 
     @staticmethod
     def _render_bomb_item(screen: pygame.Surface, x: int, y: int, size: float, cx: float) -> None:
@@ -169,20 +172,22 @@ class BotRenderer:
         cy = y + size * 0.8
         pygame.draw.circle(screen, (30, 30, 30), (int(cx), int(cy)), int(r))
         # Fuse
-        pygame.draw.line(screen, (200, 150, 0), (cx, cy-r), (cx + r/2, cy-r*1.5), 2)
+        pygame.draw.line(screen, (200, 150, 0), (cx, cy - r), (cx + r / 2, cy - r * 1.5), 2)
         if random.random() < 0.5:
-            pygame.draw.circle(screen, (255, 100, 0), (int(cx + r/2), int(cy-r*1.5)), 2)
+            pygame.draw.circle(screen, (255, 100, 0), (int(cx + r / 2), int(cy - r * 1.5)), 2)
 
     @staticmethod
-    def _render_weapon_pickup(screen: pygame.Surface, bot: Bot, x: int, y: int, size: float, cx: float) -> None:
+    def _render_weapon_pickup(
+        screen: pygame.Surface, bot: Bot, x: int, y: int, size: float, cx: float
+    ) -> None:
         # Simple placeholder for weapon pickups
         rect_w = size * 0.6
         rect_h = size * 0.2
         py = y + size * 0.75
         color = bot.type_data["color"]
-        pygame.draw.rect(screen, color, (cx - rect_w/2, py, rect_w, rect_h))
+        pygame.draw.rect(screen, color, (cx - rect_w / 2, py, rect_w, rect_h))
         # Label/Detail
-        pygame.draw.line(screen, (255, 255, 255), (cx - rect_w/2, py), (cx + rect_w/2, py), 2)
+        pygame.draw.line(screen, (255, 255, 255), (cx - rect_w / 2, py), (cx + rect_w / 2, py), 2)
 
     @staticmethod
     def _render_baby(
@@ -206,9 +211,7 @@ class BotRenderer:
         # Head (Floating slightly above)
         head_size = rw
         head_y = ry
-        pygame.draw.circle(
-            screen, color, (cx, head_y + head_size / 2), head_size / 2
-        )
+        pygame.draw.circle(screen, color, (cx, head_y + head_size / 2), head_size / 2)
 
         # Face
         eye_r = head_size * 0.15
@@ -272,10 +275,12 @@ class BotRenderer:
         cy = ry + rh / 2
         pygame.draw.circle(screen, color, (int(cx), int(cy)), int(r))
         # Shine
-        pygame.draw.circle(screen, (200, 200, 200), (int(cx - r*0.3), int(cy - r*0.3)), int(r*0.3))
+        pygame.draw.circle(
+            screen, (200, 200, 200), (int(cx - r * 0.3), int(cy - r * 0.3)), int(r * 0.3)
+        )
         # Stripes (rotate based on bot angle/pos?)
         # Just horizontal lines for "fast" look
-        pygame.draw.line(screen, (0, 0, 0), (cx-r, cy), (cx+r, cy), 3)
+        pygame.draw.line(screen, (0, 0, 0), (cx - r, cy), (cx + r, cy), 3)
 
     @staticmethod
     def _render_beast(
@@ -289,14 +294,18 @@ class BotRenderer:
     ) -> None:
         # Large imposing figure
         # Main Body
-        pygame.draw.rect(screen, color, (cx - rw/2, ry + rh*0.3, rw, rh*0.7))
+        pygame.draw.rect(screen, color, (cx - rw / 2, ry + rh * 0.3, rw, rh * 0.7))
         # Head (Horns)
         head_size = rw * 0.8
-        pygame.draw.rect(screen, (100, 0, 0), (cx - head_size/2, ry, head_size, head_size))
+        pygame.draw.rect(screen, (100, 0, 0), (cx - head_size / 2, ry, head_size, head_size))
 
         # Eyes
-        pygame.draw.circle(screen, (255, 255, 0), (int(cx - head_size*0.2), int(ry + head_size*0.4)), 5)
-        pygame.draw.circle(screen, (255, 255, 0), (int(cx + head_size*0.2), int(ry + head_size*0.4)), 5)
+        pygame.draw.circle(
+            screen, (255, 255, 0), (int(cx - head_size * 0.2), int(ry + head_size * 0.4)), 5
+        )
+        pygame.draw.circle(
+            screen, (255, 255, 0), (int(cx + head_size * 0.2), int(ry + head_size * 0.4)), 5
+        )
 
     @staticmethod
     def _render_ghost(

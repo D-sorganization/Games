@@ -228,8 +228,11 @@ class Bot:
             for other_bot in other_bots:
                 if other_bot != self and not other_bot.dead:
                     # Quick check X
-                    if abs(new_x - other_bot.x) > collision_radius and abs(self.x - other_bot.x) > collision_radius:
-                        pass # Check Y later
+                    if (
+                        abs(new_x - other_bot.x) > collision_radius
+                        and abs(self.x - other_bot.x) > collision_radius
+                    ):
+                        pass  # Check Y later
 
                     dx_sq = (new_x - other_bot.x) ** 2
                     dy_sq = (self.y - other_bot.y) ** 2

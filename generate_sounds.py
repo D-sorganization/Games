@@ -40,7 +40,7 @@ def generate_wave(
             wav_file.writeframes(packed_value)
 
 
-sounds_dir = Path("games/Force Field/assets/sounds")
+sounds_dir = Path("games/Force_Field/assets/sounds")
 sounds_dir.mkdir(parents=True, exist_ok=True)
 
 # Dark Ambient

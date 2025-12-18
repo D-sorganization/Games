@@ -314,7 +314,8 @@ class MATLABQualityChecker:
 
                     if not has_arguments:
                         issues.append(
-                            f"{file_path.name} (line {i}): Missing arguments validation block",
+                            f"{file_path.name} (line {i}): "
+                            "Missing arguments validation block",
                         )
 
                 for pattern, message in banned_patterns:
@@ -329,7 +330,8 @@ class MATLABQualityChecker:
                 if re.search(r"\beval\s*\(", line_stripped):
                     issues.append(
                         f"{file_path.name} (line {i}): "
-                        "Avoid using eval() - potential security risk and performance issue",
+                        "Avoid using eval() - potential security risk and "
+                        "performance issue",
                     )
 
                 if re.search(r"\bassignin\s*\(", line_stripped):
@@ -352,7 +354,8 @@ class MATLABQualityChecker:
                     )
 
                 # Check for load without output (loads into workspace)
-                # Match both command syntax (load file.mat) and function syntax (load('file.mat'))
+                # Match both command syntax (load file.mat) and function "
+                # syntax (load('file.mat'))
                 if (
                     re.search(r"^\s*load\s+\w+", line_stripped)
                     or re.search(r"^\s*load\s*\([^)]+\)", line_stripped)
@@ -364,7 +367,8 @@ class MATLABQualityChecker:
 
                 # Check for magic numbers (but allow common values and known constants)
                 # Matches both integer and floating-point literals (e.g., 3.14, 42, 0.5)
-                # that are not part of scientific notation, array indices, or embedded in words.
+                # that are not part of scientific notation, array indices, or
+                # embedded in words.
                 # Uses lookbehind/lookahead to avoid matching numbers adjacent to dots or
                 # word characters. This helps flag "magic numbers" in code while avoiding
                 # false positives from common patterns.
@@ -398,19 +402,19 @@ class MATLABQualityChecker:
                     "0.0001",  # Common tolerances
                 }
 
-                # Known physics constants (should be defined but at least flag with context)
-                # Includes units and sources per coding guidelines
+                # Known physics constants (should be defined but at least flag
+                # with context). Includes units and sources per coding guidelines
                 known_constants = {
                     "3.14159": "pi constant [dimensionless] - mathematical constant",
                     "3.1416": "pi constant [dimensionless] - mathematical constant",
                     "3.14": "pi constant [dimensionless] - mathematical constant",
                     "1.5708": "pi/2 constant [dimensionless] - mathematical constant",
                     "1.57": "pi/2 constant [dimensionless] - mathematical constant",
-                    "0.7854": "pi/4 constant [dimensionless] - mathematical constant",
-                    "0.785": "pi/4 constant [dimensionless] - mathematical constant",
-                    "9.81": "gravitational acceleration [m/s²] - approximate standard gravity",
-                    "9.8": "gravitational acceleration [m/s²] - approximate standard gravity",
-                    "9.807": "gravitational acceleration [m/s²] - approximate standard gravity",
+                    "0.7854": "pi/4 [dimensionless]",
+                    "0.785": "pi/4 [dimensionless]",
+                    "9.81": "gravitational acceleration [m/s²]",
+                    "9.8": "gravitational acceleration [m/s²]",
+                    "9.807": "gravitational acceleration [m/s²]",
                 }
 
                 for num in magic_numbers:
@@ -424,7 +428,9 @@ class MATLABQualityChecker:
                         # Check if the number appears before a comment on same line
                         comment_idx = line_original.find("%")
                         num_idx = line_original.find(num)
-                        if comment_idx == -1 or (num_idx != -1 and num_idx < comment_idx):
+                        if comment_idx == -1 or (
+                            num_idx != -1 and num_idx < comment_idx
+                        ):
                             issues.append(
                                 f"{file_path.name} (line {i}): Magic number {num} "
                                 "should be defined as constant with units and source",
@@ -460,14 +466,16 @@ class MATLABQualityChecker:
                             "Avoid 'close all' in functions - closes user's figures",
                         )
 
-                # Check for exist() usage (often code smell, prefer try/catch or validation)
+                # Check for exist() usage (often code smell, prefer try/catch
+                # or validation)
                 if re.search(r"\bexist\s*\(", line_stripped):
                     issues.append(
                         f"{file_path.name} (line {i}): "
                         "Consider using validation or try/catch instead of exist()",
                     )
 
-                # Check for addpath in functions (should be in startup.m or managed externally)
+                # Check for addpath in functions (should be in startup.m or
+                # managed externally)
                 if in_function and re.search(r"\baddpath\s*\(", line_stripped):
                     issues.append(
                         f"{file_path.name} (line {i}): "
@@ -498,7 +506,9 @@ class MATLABQualityChecker:
 
         if "error" in matlab_results:
             self.results["passed"] = False
-            self.results["summary"] = f"MATLAB quality checks failed: {matlab_results['error']}"
+            self.results["summary"] = (
+                f"MATLAB quality checks failed: {matlab_results['error']}"
+            )
             checks = cast("dict[str, Any]", self.results["checks"])
             checks["matlab"] = matlab_results
         else:
@@ -572,7 +582,8 @@ def main() -> None:
         print("\n" + "=" * 60)
 
     # Exit with appropriate code
-    # In strict mode, fail if any issues are found; otherwise fail only if checks didn't pass
+    # In strict mode, fail if any issues are found; otherwise fail
+    # only if checks didn't pass
     passed = results.get("passed", False)
     has_issues = bool(results.get("issues"))
 
