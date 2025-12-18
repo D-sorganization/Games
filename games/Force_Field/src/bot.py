@@ -169,6 +169,13 @@ class Bot:
 
             return None
 
+        if self.enemy_type == "ninja":
+            if distance < 1.2 and self.attack_timer <= 0:
+                if not player.god_mode:
+                    player.take_damage(self.damage)
+                self.attack_timer = 30
+                return None
+
         if self.enemy_type == "beast":
             # Slow movement, big fireballs
             # Standard move logic below will handle slow movement
@@ -196,8 +203,8 @@ class Bot:
 
         # Attack if in range
         if (
-            distance < C.BOT_ATTACK_RANGE and self.enemy_type != "beast"
-        ):  # Beast handled above
+            distance < C.BOT_ATTACK_RANGE and self.enemy_type not in ["beast", "ninja"]
+        ):  # Beast and Ninja handled above
             if self.attack_timer <= 0:
                 # Check line of sight
                 if self.has_line_of_sight(game_map, player):
