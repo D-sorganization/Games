@@ -8,6 +8,7 @@ multiple weapons, enemy AI, and progressive difficulty.
 
 import logging
 import sys
+from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
 import pygame
@@ -35,7 +36,12 @@ def main() -> None:
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         handlers=[
             logging.StreamHandler(),
-            logging.FileHandler(game_dir / "force_field.log", mode="a"),
+            RotatingFileHandler(
+                game_dir / "force_field.log",
+                maxBytes=10 * 1024 * 1024,  # 10MB
+                backupCount=5,
+                encoding="utf-8",
+            ),
         ],
     )
 
@@ -59,7 +65,6 @@ def main() -> None:
             logger.info("Game shutdown complete")
         except Exception as e:
             logger.error("Error during shutdown: %s", e)
-        sys.exit()
 
 
 if __name__ == "__main__":

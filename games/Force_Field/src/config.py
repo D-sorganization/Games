@@ -82,7 +82,12 @@ class GameConfig:
 
     def _parse_bool(self, value: str) -> bool:
         """Parse boolean value from string."""
-        return value.lower() in ("true", "1", "yes", "on")
+        normalized = value.strip().lower()
+        if normalized in ("true", "1", "yes", "on"):
+            return True
+        if normalized in ("false", "0", "no", "off"):
+            return False
+        raise ValueError(f"Invalid boolean value: {value!r}")
 
     def get(self, key: str, default: Any = None) -> Any:
         """Get configuration value by key."""

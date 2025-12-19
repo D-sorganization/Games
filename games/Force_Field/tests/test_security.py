@@ -25,15 +25,25 @@ class TestSecurity(unittest.TestCase):
 
     def test_validate_safe_save_path(self) -> None:
         """Test validation of safe save file paths."""
-        # Create a test file in temp directory
-        safe_file = self.temp_dir / "test_save.txt"
-        safe_file.write_text("test content")
-
-        # This should fail because it's outside game directory
-        # but we're testing the validation logic
-        result = self.security_manager.validate_save_path(safe_file)
-        # Should be False because it's outside game directory
+        # Test case 1: File outside game directory should fail
+        external_file = self.temp_dir / "test_save.txt"
+        external_file.write_text("test content")
+        result = self.security_manager.validate_save_path(external_file)
         self.assertFalse(result)
+
+        # Test case 2: File within game directory should pass
+        # Create a mock file within the game directory structure
+        from pathlib import Path
+        game_dir = Path(__file__).parent.parent.resolve()
+        internal_file = game_dir / "test_internal_save.txt"
+        try:
+            internal_file.write_text("test content")
+            result = self.security_manager.validate_save_path(internal_file)
+            self.assertTrue(result)
+        finally:
+            # Clean up test file
+            if internal_file.exists():
+                internal_file.unlink()
 
     def test_sanitize_filename(self) -> None:
         """Test filename sanitization."""

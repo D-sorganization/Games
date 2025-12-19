@@ -44,8 +44,11 @@ class TestGameIntegration(unittest.TestCase):
         self.game.start_game()
         # Level progression test setup
 
-        # Simulate level completion
+        # Simulate level completion by clearing all enemies
         self.game.bots = []  # Clear all enemies
+
+        # Set a mock death position for portal spawning
+        self.game.last_death_pos = (10.0, 10.0)
         self.game.spawn_portal()
 
         self.assertIsNotNone(self.game.portal)

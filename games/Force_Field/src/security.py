@@ -32,9 +32,20 @@ class SecurityManager:
 
             # Check if path is within allowed directory (game directory)
             game_dir = Path(__file__).parent.parent.resolve()
-            if not str(resolved_path).startswith(str(game_dir)):
-                logger.warning("Save path outside game directory: %s", resolved_path)
-                return False
+            try:
+                # Use is_relative_to for secure path validation (Python 3.9+)
+                if not resolved_path.is_relative_to(game_dir):
+                    logger.warning(
+                        "Save path outside game directory: %s", resolved_path
+                    )
+                    return False
+            except AttributeError:
+                # Fallback for Python < 3.9: check if game_dir is in parents
+                if game_dir not in resolved_path.parents and resolved_path != game_dir:
+                    logger.warning(
+                        "Save path outside game directory: %s", resolved_path
+                    )
+                    return False
 
             # Check file extension
             if resolved_path.suffix.lower() not in self.allowed_save_extensions:
@@ -153,6 +164,11 @@ class SecurityManager:
 
     def secure_delete_file(self, filepath: Path) -> bool:
         """Securely delete a file by overwriting it first.
+
+        Note: This implementation performs a single overwrite pass with random data.
+        On modern SSDs with wear leveling, this may not guarantee complete data
+        erasure due to the underlying storage technology. For highly sensitive data,
+        consider using specialized secure deletion tools or full disk encryption.
 
         Args:
             filepath: Path to file to delete

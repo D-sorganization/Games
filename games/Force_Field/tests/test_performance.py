@@ -5,6 +5,13 @@ import unittest
 
 from games.Force_Field.src.performance_monitor import PerformanceMonitor
 
+# Test timing constants for better maintainability
+MIN_EXPECTED_FRAME_TIME = 0.009  # 9ms minimum expected frame time
+MAX_EXPECTED_FRAME_TIME = 0.02   # 20ms maximum expected frame time
+SIMULATED_FRAME_TIME = 0.01      # 10ms simulated frame time
+MIN_EXPECTED_FPS = 50            # Minimum expected FPS
+MAX_EXPECTED_FPS = 150           # Maximum expected FPS
+
 
 class TestPerformanceMonitor(unittest.TestCase):
     """Test performance monitoring functionality."""
@@ -16,12 +23,12 @@ class TestPerformanceMonitor(unittest.TestCase):
     def test_frame_timing(self) -> None:
         """Test frame timing measurement."""
         self.monitor.start_frame()
-        time.sleep(0.01)  # Simulate 10ms frame
+        time.sleep(SIMULATED_FRAME_TIME)  # Simulate frame
         self.monitor.end_frame()
 
         self.assertEqual(len(self.monitor.frame_times), 1)
-        self.assertGreater(self.monitor.frame_times[0], 0.009)  # At least 9ms
-        self.assertLess(self.monitor.frame_times[0], 0.02)  # Less than 20ms
+        self.assertGreater(self.monitor.frame_times[0], MIN_EXPECTED_FRAME_TIME)
+        self.assertLess(self.monitor.frame_times[0], MAX_EXPECTED_FRAME_TIME)
 
     def test_fps_calculation(self) -> None:
         """Test FPS calculation."""
@@ -32,8 +39,8 @@ class TestPerformanceMonitor(unittest.TestCase):
             self.monitor.end_frame()
 
         fps = self.monitor.get_fps()
-        self.assertGreater(fps, 50)  # Should be at least 50 FPS
-        self.assertLess(fps, 150)  # Should be less than 150 FPS
+        self.assertGreater(fps, MIN_EXPECTED_FPS)
+        self.assertLess(fps, MAX_EXPECTED_FPS)
 
     def test_render_timing(self) -> None:
         """Test render timing measurement."""
