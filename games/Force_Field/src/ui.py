@@ -60,7 +60,7 @@ class Button:
 
     def is_clicked(self, mouse_pos: tuple[int, int]) -> bool:
         """Check if button was clicked"""
-        return self.rect.collidepoint(mouse_pos)
+        return bool(self.rect.collidepoint(mouse_pos))
 
 
 class BloodButton(Button):

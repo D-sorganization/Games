@@ -219,10 +219,11 @@ class Bot:
                     return projectile
 
         # Attack if in range
-        if (
-            distance < C.BOT_ATTACK_RANGE
-            and self.enemy_type not in ["beast", "ninja", "minigunner"]
-        ):  # Beast and Ninja handled above
+        if distance < C.BOT_ATTACK_RANGE and self.enemy_type not in [
+            "beast",
+            "ninja",
+            "minigunner",
+        ]:  # Beast and Ninja handled above
             if self.attack_timer <= 0:
                 # Check line of sight
                 if self.has_line_of_sight(game_map, player):
