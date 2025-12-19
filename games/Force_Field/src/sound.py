@@ -31,7 +31,7 @@ class SoundManager:
         import os
 
         # Check if we're in a headless environment (CI)
-        is_headless = os.environ.get('SDL_VIDEODRIVER') == 'dummy'
+        is_headless = os.environ.get("SDL_VIDEODRIVER") == "dummy"
 
         if is_headless:
             # In headless mode, disable sound completely

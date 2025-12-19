@@ -14,7 +14,8 @@ class TestGameIntegration(unittest.TestCase):
         """Set up test fixtures."""
         # Initialize pygame without audio for CI compatibility
         import os
-        if os.environ.get('SDL_VIDEODRIVER') == 'dummy':
+
+        if os.environ.get("SDL_VIDEODRIVER") == "dummy":
             # In CI environment, initialize only specific pygame modules
             pygame.display.init()
             pygame.font.init()
