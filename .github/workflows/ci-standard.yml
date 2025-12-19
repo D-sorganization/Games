@@ -88,7 +88,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
-      - run: pip install -r requirements.txt
+      - run: |
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          else
+            echo "No root requirements.txt found, skipping dependency installation"
+          fi
       - run: pytest games/ --cov=games --cov-report=xml
         env:
             PYTHONPATH: .
