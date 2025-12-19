@@ -70,7 +70,8 @@ class TestSecurity(unittest.TestCase):
 
         hash_result = self.security_manager.calculate_file_hash(test_file)
         self.assertIsNotNone(hash_result)
-        self.assertEqual(len(hash_result), 64)  # SHA-256 hex digest length
+        if hash_result is not None:
+            self.assertEqual(len(hash_result), 64)  # SHA-256 hex digest length
 
     def test_validate_save_file_content(self) -> None:
         """Test save file content validation."""

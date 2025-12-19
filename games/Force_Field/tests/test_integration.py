@@ -69,6 +69,11 @@ class TestGameIntegration(unittest.TestCase):
         self.game.start_game()
         player = self.game.player
 
+        # Ensure player exists
+        self.assertIsNotNone(player)
+        if player is None:
+            return
+
         # Test weapon switching - pistol should always be available
         player.switch_weapon("pistol")
         self.assertEqual(player.current_weapon, "pistol")
@@ -85,6 +90,12 @@ class TestGameIntegration(unittest.TestCase):
         # Test player-wall collision
         player = self.game.player
         game_map = self.game.game_map
+
+        # Ensure both player and game_map exist
+        self.assertIsNotNone(player)
+        self.assertIsNotNone(game_map)
+        if player is None or game_map is None:
+            return
 
         # Try to move player into a wall
         # Store original position for reference

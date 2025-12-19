@@ -53,7 +53,10 @@ class GameConfig:
 
     def _load_from_environment(self) -> None:
         """Load configuration overrides from environment variables."""
-        env_mappings = {
+        from collections.abc import Callable
+        from typing import Any
+
+        env_mappings: dict[str, tuple[str, Callable[[str], Any]]] = {
             "FORCE_FIELD_DEBUG": ("debug", self._parse_bool),
             "FORCE_FIELD_LOG_LEVEL": ("log_level", str),
             "FORCE_FIELD_FULLSCREEN": ("fullscreen", self._parse_bool),
