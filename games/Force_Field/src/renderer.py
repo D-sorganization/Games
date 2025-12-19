@@ -251,7 +251,7 @@ class GameRenderer:
             # Rotate barrels
             rot = 0
             if player.shooting:
-                rot = (pygame.time.get_ticks() * 0.5) % 20
+                rot = int((pygame.time.get_ticks() * 0.5) % 20)
 
             pygame.draw.rect(self.screen, (20, 20, 20), (cx - 40, cy - 100, 80, 100))
             # Barrels

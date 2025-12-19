@@ -16,7 +16,7 @@ class TestNinja(unittest.TestCase):
     def test_ninja_attack(self) -> None:
         """Test that ninja attacks when close."""
         ninja = Bot(15.0, 15.0, 1, enemy_type="ninja")
-        player = Player(15.5, 15.0, 0.0) # Very close (0.5 distance)
+        player = Player(15.5, 15.0, 0.0)  # Very close (0.5 distance)
 
         initial_health = player.health
 
@@ -41,6 +41,7 @@ class TestNinja(unittest.TestCase):
 
         # Should not have attacked (timer 0)
         assert ninja.attack_timer == 0
+
 
 if __name__ == "__main__":
     unittest.main()
