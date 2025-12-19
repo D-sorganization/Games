@@ -1,7 +1,9 @@
 import unittest
+
 from games.Force_Field.src.bot import Bot
-from games.Force_Field.src.player import Player
 from games.Force_Field.src.map import Map
+from games.Force_Field.src.player import Player
+
 
 class TestNinja(unittest.TestCase):
     def setUp(self) -> None:
