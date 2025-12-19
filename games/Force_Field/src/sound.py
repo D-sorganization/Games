@@ -29,10 +29,10 @@ class SoundManager:
             return
 
         import os
-        
+
         # Check if we're in a headless environment (CI)
         is_headless = os.environ.get('SDL_VIDEODRIVER') == 'dummy'
-        
+
         if is_headless:
             # In headless mode, disable sound completely
             self.sounds: dict[str, pygame.mixer.Sound] = {}
@@ -55,7 +55,7 @@ class SoundManager:
 
             # Load assets
             self.load_assets()
-            
+
         self.initialized = True
 
     def load_assets(self) -> None:
@@ -63,7 +63,7 @@ class SoundManager:
         if not self.sound_enabled:
             logger.info("Skipping sound asset loading in headless mode")
             return
-            
+
         base_dir = Path(__file__).resolve().parent.parent
         sound_dir = base_dir / "assets" / "sounds"
 

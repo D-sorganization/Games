@@ -15,12 +15,13 @@ class TestGameIntegration(unittest.TestCase):
         # Initialize pygame without audio for CI compatibility
         import os
         if os.environ.get('SDL_VIDEODRIVER') == 'dummy':
-            # In CI environment, disable audio
-            pygame.mixer.pre_init(frequency=0, size=0, channels=0, buffer=0)
-        pygame.init()
-        if os.environ.get('SDL_VIDEODRIVER') == 'dummy':
-            # Disable audio mixer in headless mode
-            pygame.mixer.quit()
+            # In CI environment, initialize only specific pygame modules
+            pygame.display.init()
+            pygame.font.init()
+            pygame.time.init()
+            # Explicitly avoid pygame.mixer.init()
+        else:
+            pygame.init()
         self.game = Game()
         self.game.selected_map_size = 20  # Smaller for faster tests
 
