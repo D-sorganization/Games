@@ -34,6 +34,7 @@ class TestSecurity(unittest.TestCase):
         # Test case 2: File within game directory should pass
         # Create a mock file within the game directory structure
         from pathlib import Path
+
         game_dir = Path(__file__).parent.parent.resolve()
         internal_file = game_dir / "test_internal_save.txt"
         try:

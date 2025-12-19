@@ -7,10 +7,10 @@ from games.Force_Field.src.performance_monitor import PerformanceMonitor
 
 # Test timing constants for better maintainability
 MIN_EXPECTED_FRAME_TIME = 0.009  # 9ms minimum expected frame time
-MAX_EXPECTED_FRAME_TIME = 0.02   # 20ms maximum expected frame time
-SIMULATED_FRAME_TIME = 0.01      # 10ms simulated frame time
-MIN_EXPECTED_FPS = 50            # Minimum expected FPS
-MAX_EXPECTED_FPS = 150           # Maximum expected FPS
+MAX_EXPECTED_FRAME_TIME = 0.02  # 20ms maximum expected frame time
+SIMULATED_FRAME_TIME = 0.01  # 10ms simulated frame time
+MIN_EXPECTED_FPS = 50  # Minimum expected FPS
+MAX_EXPECTED_FPS = 150  # Maximum expected FPS
 
 
 class TestPerformanceMonitor(unittest.TestCase):
