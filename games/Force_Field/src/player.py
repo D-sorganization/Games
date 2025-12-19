@@ -11,32 +11,10 @@ if TYPE_CHECKING:
 
 
 class Player:
-    """Player character with position, rotation, weapons, and combat capabilities.
+    """Player with position, rotation, and shooting capabilities"""
 
-    The Player class manages the player's state including position, health,
-    weapons, and combat mechanics. It handles movement, shooting, weapon
-    switching, and shield activation.
-
-    Attributes:
-        x: Player's X coordinate in the game world
-        y: Player's Y coordinate in the game world
-        angle: Player's rotation angle in radians
-        pitch: Vertical look offset for aiming
-        health: Current health points (0-100)
-        max_health: Maximum health points
-        current_weapon: Currently selected weapon name
-        alive: Whether the player is alive
-        shield_active: Whether the force field shield is active
-    """
-
-    def __init__(self, x: float, y: float, angle: float) -> None:
-        """Initialize player at specified position and angle.
-
-        Args:
-            x: Initial X coordinate
-            y: Initial Y coordinate
-            angle: Initial rotation angle in radians
-        """
+    def __init__(self, x: float, y: float, angle: float):
+        """Initialize player"""
         self.x = x
         self.y = y
         self.angle = angle

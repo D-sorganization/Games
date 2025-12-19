@@ -1,6 +1,0 @@
-# Core game dependencies (production)
-pygame>=2.5.0,<3.0.0
-numpy>=1.24.0,<2.0.0
-
-# Configuration management
-python-dotenv>=1.0.0
