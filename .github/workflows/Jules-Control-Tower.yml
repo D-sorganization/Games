@@ -29,13 +29,6 @@ jobs:
       # FIX: Matched output name to what downstream jobs expect ("target")
       target: ${{ steps.decide.outputs.target }}
     steps:
-      - name: Fast API Ping (Optional)
-        env:
-          API_KEY: ${{ secrets.JULES_API_KEY }}
-        run: |
-          # Example: Just checking if Jules is alive or valid before dispatching expensive workers
-          curl -fsS -H "x-goog-api-key: $API_KEY" \
-            https://jules.google/api/v1/health || exit 1
 
       - name: Analyze Event Context
         id: decide
