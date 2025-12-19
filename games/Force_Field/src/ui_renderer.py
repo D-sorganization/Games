@@ -328,7 +328,7 @@ class UIRenderer:
                 color = C.GREEN if w == game.player.current_weapon else C.WHITE
 
             key_display = C.WEAPONS[w]["key"]
-            # Key display is retrieved from weapon configuration
+            # Just use key from dict
 
             text_str = f"[{key_display}] {C.WEAPONS[w]['name']}"
             inv_txt = self.tiny_font.render(text_str, True, color)

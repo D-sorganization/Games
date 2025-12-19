@@ -434,7 +434,12 @@ class Game:
                 break
 
         # Spawn Pickups
-        possible_weapons = ["pickup_rifle", "pickup_shotgun", "pickup_plasma", "pickup_minigun"]
+        possible_weapons = [
+            "pickup_rifle",
+            "pickup_shotgun",
+            "pickup_plasma",
+            "pickup_minigun",
+        ]
         for w_pickup in possible_weapons:
             if random.random() < 0.4:  # 40% chance per level
                 rx = random.randint(5, self.game_map.size - 5)

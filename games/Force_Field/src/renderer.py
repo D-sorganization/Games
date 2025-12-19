@@ -338,12 +338,8 @@ class GameRenderer:
             pygame.draw.circle(self.screen, C.ORANGE, (flash_x, flash_y), 35)
             pygame.draw.circle(self.screen, C.YELLOW, (flash_x, flash_y), 15)
         elif weapon_name == "minigun":
-            # Use a deterministic pseudo-random offset based on frame time and weapon state
-            ticks = pygame.time.get_ticks()
-            seed = hash((weapon_name, weapon_pos, ticks))
-            rng = random.Random(seed)
-            offset_x = rng.randint(-10, 10)
-            offset_y = rng.randint(-10, 10)
+            offset_x = random.randint(-10, 10)
+            offset_y = random.randint(-10, 10)
             pygame.draw.circle(
                 self.screen, C.YELLOW, (flash_x + offset_x, flash_y + offset_y), 30
             )
