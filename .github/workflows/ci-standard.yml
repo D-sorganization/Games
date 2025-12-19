@@ -126,7 +126,7 @@ jobs:
           if [ -d "games/Force_Field/tests/" ]; then
             echo "Running Force Field tests..."
             cd games/Force_Field
-            python -m pytest tests/ --cov=games.Force_Field --cov-report=xml
+            PYTHONPATH=../.. python -m pytest tests/ --cov=games.Force_Field --cov-report=xml
             cd ../..
           elif [ -d "python/" ]; then
             pytest python/ --cov=python --cov-report=xml
@@ -134,7 +134,6 @@ jobs:
             echo "No test directories found, skipping tests"
           fi
         env:
-            PYTHONPATH: .
             SDL_VIDEODRIVER: dummy  # Headless mode for pygame
             SDL_AUDIODRIVER: dummy  # Disable audio for pygame
       - uses: codecov/codecov-action@v4
