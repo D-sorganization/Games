@@ -30,10 +30,16 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
+          echo "Installing dependencies from games/Force_Field/requirements-dev.txt"
           pip install -r games/Force_Field/requirements-dev.txt
+          echo "Dependencies installed successfully"
       
       - name: Run Force Field specific tests
         run: |
+          echo "Running tests with PYTHONPATH=. and SDL_VIDEODRIVER=dummy"
+          echo "Python version: $(python --version)"
+          echo "Current directory: $(pwd)"
+          echo "Files in games/Force_Field/tests/: $(ls games/Force_Field/tests/)"
           python -m pytest games/Force_Field/tests/ -v --cov=games.Force_Field --cov-report=xml
         env:
           PYTHONPATH: .
@@ -62,15 +68,24 @@ jobs:
       - name: Install linting tools
         run: |
           pip install ruff==0.5.0 black==24.4.2 mypy==1.10.0
+          echo "Linting tools installed successfully"
       
       - name: Run Ruff linting
-        run: ruff check games/Force_Field/
+        run: |
+          echo "Running Ruff linting on games/Force_Field/"
+          ruff check games/Force_Field/
       
       - name: Check Black formatting
-        run: black --check games/Force_Field/
+        run: |
+          echo "Checking Black formatting on games/Force_Field/"
+          black --check games/Force_Field/
       
       - name: Run MyPy type checking
-        run: mypy games/Force_Field/ --config-file games/Force_Field/mypy.ini
+        run: |
+          echo "Running MyPy type checking with config file games/Force_Field/mypy.ini"
+          echo "MyPy config contents:"
+          cat games/Force_Field/mypy.ini
+          mypy games/Force_Field/ --config-file games/Force_Field/mypy.ini
 
   force-field-security:
     runs-on: ubuntu-latest
