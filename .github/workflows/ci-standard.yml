@@ -108,16 +108,25 @@ jobs:
           if [ -f requirements.txt ]; then
             pip install -r requirements.txt
           else
-            echo "No root requirements.txt found, skipping dependency installation"
+            echo "No root requirements.txt found"
+          fi
+          if [ -f games/Force_Field/requirements-dev.txt ]; then
+            echo "Installing Force Field dependencies..."
+            pip install -r games/Force_Field/requirements-dev.txt
+          else
+            echo "No Force Field requirements found"
           fi
       - name: Run tests
         run: |
-          if [ -d "games/" ]; then
-            pytest games/ --cov=games --cov-report=xml
+          if [ -d "games/Force_Field/tests/" ]; then
+            echo "Running Force Field tests..."
+            cd games/Force_Field
+            python -m pytest tests/ --cov=games.Force_Field --cov-report=xml
+            cd ../..
           elif [ -d "python/" ]; then
             pytest python/ --cov=python --cov-report=xml
           else
-            echo "No games/ or python/ directory found, skipping tests"
+            echo "No test directories found, skipping tests"
           fi
         env:
             PYTHONPATH: .
