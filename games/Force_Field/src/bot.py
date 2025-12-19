@@ -222,7 +222,6 @@ class Bot:
         if distance < C.BOT_ATTACK_RANGE and self.enemy_type not in [
             "beast",
             "ninja",
-            "minigunner",
         ]:  # Beast and Ninja handled above
             if self.attack_timer <= 0:
                 # Check line of sight
