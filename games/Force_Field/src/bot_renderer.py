@@ -132,6 +132,12 @@ class BotRenderer:
             )
             return
 
+        if bot.enemy_type == "minigunner":
+            BotRenderer._render_minigunner(
+                screen, bot, center_x, render_y, render_width, render_height, base_color
+            )
+            return
+
         # Monster Style (Default)
         BotRenderer._render_monster(
             screen, bot, center_x, render_y, render_width, render_height, base_color
@@ -211,6 +217,15 @@ class BotRenderer:
         pygame.draw.line(
             screen, (255, 255, 255), (cx - rect_w / 2, py), (cx + rect_w / 2, py), 2
         )
+        if "minigun" in bot.enemy_type:
+            # Add extra barrels
+            pygame.draw.line(
+                screen,
+                (200, 200, 200),
+                (cx - rect_w / 2, py + 4),
+                (cx + rect_w / 2, py + 4),
+                2,
+            )
 
     @staticmethod
     def _render_baby(
@@ -386,6 +401,44 @@ class BotRenderer:
         pygame.draw.circle(
             screen, (0, 0, 0), (int(cx + rw * 0.2), int(gy + rw * 0.4)), int(rw * 0.1)
         )
+
+    @staticmethod
+    def _render_minigunner(
+        screen: pygame.Surface,
+        bot: Bot,
+        cx: float,
+        ry: float,
+        rw: float,
+        rh: float,
+        color: tuple[int, int, int],
+    ) -> None:
+        # Armored Heavy Soldier
+        # Body armor
+        body_x = cx - rw / 2
+        body_y = ry + rh * 0.2
+        pygame.draw.rect(screen, (50, 50, 70), (body_x, body_y, rw, rh * 0.5))
+
+        # Helmet
+        head_size = rw * 0.7
+        head_x = cx - head_size / 2
+        head_y = ry
+        pygame.draw.rect(screen, (30, 30, 40), (head_x, head_y, head_size, head_size))
+        # Visor
+        pygame.draw.rect(
+            screen, (255, 0, 0), (head_x + 5, head_y + 10, head_size - 10, 5)
+        )
+
+        # Minigun Weapon
+        weapon_w = rw * 1.2
+        weapon_h = rh * 0.2
+        wx = cx - weapon_w / 2
+        wy = body_y + rh * 0.2
+        pygame.draw.rect(screen, (20, 20, 20), (wx, wy, weapon_w, weapon_h))
+        # Barrels
+        if bot.shoot_animation > 0:
+            pygame.draw.circle(
+                screen, C.YELLOW, (wx, wy + weapon_h / 2), 5 + random.randint(0, 5)
+            )
 
     @staticmethod
     def _render_monster(

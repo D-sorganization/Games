@@ -201,9 +201,27 @@ class Bot:
                     self.shoot_animation = 1.0
                     return projectile
 
+        if self.enemy_type == "minigunner":
+            if distance < 12 and self.attack_timer <= 0:
+                if self.has_line_of_sight(game_map, player):
+                    projectile = Projectile(
+                        self.x,
+                        self.y,
+                        self.angle,
+                        damage=self.damage,
+                        speed=0.2,  # Fast projectile
+                        is_player=False,
+                        color=(255, 255, 0),
+                        size=0.1,
+                    )
+                    self.attack_timer = 10  # Rapid fire
+                    self.shoot_animation = 1.0
+                    return projectile
+
         # Attack if in range
         if (
-            distance < C.BOT_ATTACK_RANGE and self.enemy_type not in ["beast", "ninja"]
+            distance < C.BOT_ATTACK_RANGE
+            and self.enemy_type not in ["beast", "ninja", "minigunner"]
         ):  # Beast and Ninja handled above
             if self.attack_timer <= 0:
                 # Check line of sight

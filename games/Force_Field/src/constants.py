@@ -54,6 +54,7 @@ WEAPON_RANGE_RIFLE = 25
 WEAPON_RANGE_SHOTGUN = 12  # Increased range (was 8)
 WEAPON_RANGE_PLASMA = 30
 WEAPON_RANGE_STORMTROOPER = 30
+WEAPON_RANGE_MINIGUN = 20
 
 # Weapon settings
 WEAPONS = {
@@ -89,6 +90,18 @@ WEAPONS = {
         "pellets": 8,
         "spread": 0.15,
         "key": "3",
+    },
+    "minigun": {
+        "name": "Minigun",
+        "damage": 10,
+        "range": WEAPON_RANGE_MINIGUN,
+        "ammo": 999,
+        "cooldown": 3,
+        "automatic": True,
+        "clip_size": 100,
+        "reload_time": 150,
+        "key": "7",
+        "spin_up_time": 30,
     },
     "plasma": {
         "name": "Plasma",
@@ -358,6 +371,22 @@ ENEMY_TYPES = {
         "damage_mult": 0.0,
         "scale": 0.5,
         "visual_style": "item",
+    },
+    "pickup_minigun": {
+        "color": (150, 150, 255),
+        "health_mult": 1.0,
+        "speed_mult": 0.0,
+        "damage_mult": 0.0,
+        "scale": 0.5,
+        "visual_style": "item",
+    },
+    "minigunner": {
+        "color": (100, 100, 150),
+        "health_mult": 2.0,
+        "speed_mult": 0.5,
+        "damage_mult": 0.8,
+        "scale": 1.2,
+        "visual_style": "monster",
     },
     "ball": {
         "color": (50, 50, 50),  # Metallic

@@ -33,6 +33,7 @@ class Player:
                 "reload_timer": 0,
                 "overheated": False,
                 "overheat_timer": 0,
+                "spin_timer": 0,
             }
 
         # Keep tracking total ammo (reserves) if we want,
@@ -138,6 +139,15 @@ class Player:
             self.reload()
             return False
 
+        # Minigun Spin-up logic
+        if self.current_weapon == "minigun":
+            spin_up = int(cast("int", weapon_data.get("spin_up_time", 30)))
+            if w_state["spin_timer"] < spin_up:
+                w_state["spin_timer"] += 2  # Charge up
+                return False  # Not firing yet
+        else:
+            w_state["spin_timer"] = 0
+
         self.shooting = True
         self.shoot_timer = int(cast("int", weapon_data["cooldown"]))
 
@@ -221,6 +231,11 @@ class Player:
             self.shoot_timer -= 1
         else:
             self.shooting = False
+            # Spin down minigun
+            if self.current_weapon == "minigun":
+                w_state = self.weapon_state["minigun"]
+                if w_state["spin_timer"] > 0:
+                    w_state["spin_timer"] -= 1
 
         if self.bomb_cooldown > 0:
             self.bomb_cooldown -= 1
