@@ -149,7 +149,7 @@ class Player:
             w_state["spin_timer"] = 0
 
         self.shooting = True
-        self.shoot_timer = int(cast("int", weapon_data["cooldown"]))
+        self.shoot_timer = int(cast(int, weapon_data["cooldown"]))
 
         # Consumables
         if self.current_weapon == "plasma":
