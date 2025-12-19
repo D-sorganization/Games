@@ -1,0 +1,104 @@
+name: Force Field Game CI
+
+on:
+  push:
+    paths:
+      - 'games/Force_Field/**'
+  pull_request:
+    paths:
+      - 'games/Force_Field/**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  force-field-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pygame-ce  # Alternative pygame for CI
+      
+      - name: Run Force Field specific tests
+        run: |
+          python -m pytest games/Force_Field/tests/ -v --cov=games.Force_Field --cov-report=xml
+        env:
+          PYTHONPATH: .
+          SDL_VIDEODRIVER: dummy  # Headless mode for pygame
+      
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        if: matrix.python-version == '3.11'
+        with:
+          file: ./coverage.xml
+          flags: force-field
+          name: force-field-coverage
+          fail_ci_if_error: false
+
+  force-field-lint:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      
+      - name: Install linting tools
+        run: |
+          pip install ruff==0.5.0 black==24.4.2 mypy==1.10.0
+      
+      - name: Run Ruff linting
+        run: ruff check games/Force_Field/
+      
+      - name: Check Black formatting
+        run: black --check games/Force_Field/
+      
+      - name: Run MyPy type checking
+        run: mypy games/Force_Field/ --ignore-missing-imports
+
+  force-field-security:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      
+      - name: Install security tools
+        run: pip install bandit safety
+      
+      - name: Run Bandit security scan
+        run: bandit -r games/Force_Field/src/ -f json -o bandit-report.json
+        continue-on-error: true
+      
+      - name: Run Safety dependency check
+        run: safety check --json --output safety-report.json
+        continue-on-error: true
+      
+      - name: Upload security reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-reports
+          path: |
+            bandit-report.json
+            safety-report.json
