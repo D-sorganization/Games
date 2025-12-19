@@ -50,25 +50,19 @@ class GameRenderer:
 
         # 2. Effects
         self.effects_surface.fill((0, 0, 0, 0))
-        if hasattr(game, "particle_system"):
-            self._render_particles(game.particle_system.particles)
-        else:
-            # Fallback if refactor not complete or mixed state
-            self._render_particles(getattr(game, "particles", []))
+        self._render_particles(game.particle_system.particles)
         self.screen.blit(self.effects_surface, (0, 0))
 
         # 3. Portal
         self._render_portal(game.portal, game.player)
 
         # 4. Weapon Model
-        # 4. Weapon Model
         weapon_pos = self._render_weapon(game.player)
         if game.player.shooting:
             self._render_muzzle_flash(game.player.current_weapon, weapon_pos)
 
         # 5. UI / HUD
-        if hasattr(game, "ui_renderer"):
-            game.ui_renderer.render_hud(game)
+        game.ui_renderer.render_hud(game)
 
         pygame.display.flip()
 
@@ -76,76 +70,39 @@ class GameRenderer:
         """Render particle effects including lasers and explosion particles.
 
         Args:
-            particles: List of Particle objects or dicts (legacy support).
+            particles: List of Particle objects.
         """
         for p in particles:
             # Handle Particle Object
-            if hasattr(p, "ptype"):
-                if p.ptype == "laser":
-                    alpha = int(255 * (p.timer / C.LASER_DURATION))
-                    start = p.start_pos
-                    end = p.end_pos
-                    color = (*p.color, alpha)
-                    pygame.draw.line(self.effects_surface, color, start, end, p.width)
-                    # Spread
-                    for i in range(5):
-                        offset = (i - 2) * 20
-                        target_end = (end[0] + offset, end[1])
-                        pygame.draw.line(
-                            self.effects_surface,
-                            (*p.color, max(0, alpha - 50)),
-                            start,
-                            target_end,
-                            max(1, p.width // 2),
-                        )
-                elif p.ptype == "normal":
-                    ratio = p.timer / C.PARTICLE_LIFETIME
-                    alpha = int(255 * ratio)
-                    alpha = max(0, min(255, alpha))
-                    color = p.color
-                    rgba = (*color, alpha) if len(color) == 3 else (*color[:3], alpha)
-                    pygame.draw.circle(
-                        self.effects_surface,
-                        rgba,
-                        (int(p.x), int(p.y)),
-                        int(p.size),
-                    )
-                continue
-
-            # Legacy Dict support
-            if p.get("type") == "laser":
-                alpha = int(255 * (p["timer"] / C.LASER_DURATION))
-                start = p["start"]
-                end = p["end"]
-                color = (*p["color"], alpha)
-                pygame.draw.line(self.effects_surface, color, start, end, p["width"])
-
+            if p.ptype == "laser":
+                alpha = int(255 * (p.timer / C.LASER_DURATION))
+                start = p.start_pos
+                end = p.end_pos
+                color = (*p.color, alpha)
+                pygame.draw.line(self.effects_surface, color, start, end, p.width)
                 # Spread
                 for i in range(5):
                     offset = (i - 2) * 20
                     target_end = (end[0] + offset, end[1])
                     pygame.draw.line(
                         self.effects_surface,
-                        (*p["color"], max(0, alpha - 50)),
+                        (*p.color, max(0, alpha - 50)),
                         start,
                         target_end,
-                        max(1, p["width"] // 2),
+                        max(1, p.width // 2),
                     )
-            elif "dx" in p:
-                ratio = p["timer"] / C.PARTICLE_LIFETIME
+            elif p.ptype == "normal":
+                ratio = p.timer / C.PARTICLE_LIFETIME
                 alpha = int(255 * ratio)
                 alpha = max(0, min(255, alpha))
-                try:
-                    color = p["color"]
-                    rgba = (*color, alpha) if len(color) == 3 else (*color[:3], alpha)
-                    pygame.draw.circle(
-                        self.effects_surface,
-                        rgba,
-                        (int(p["x"]), int(p["y"])),
-                        int(p["size"]),
-                    )
-                except (ValueError, TypeError):
-                    continue
+                color = p.color
+                rgba = (*color, alpha) if len(color) == 3 else (*color[:3], alpha)
+                pygame.draw.circle(
+                    self.effects_surface,
+                    rgba,
+                    (int(p.x), int(p.y)),
+                    int(p.size),
+                )
 
     def _render_portal(self, portal: dict[str, Any] | None, player: Player) -> None:
         """Render portal visual effects if active.
@@ -290,6 +247,23 @@ class GameRenderer:
                 )
                 pygame.draw.line(self.screen, C.RED, (cx, cy - 195), (cx, cy - 145), 1)
 
+        elif weapon == "minigun":
+            # Rotate barrels
+            rot = 0
+            if player.shooting:
+                rot = int((pygame.time.get_ticks() * 0.5) % 20)
+
+            pygame.draw.rect(self.screen, (20, 20, 20), (cx - 40, cy - 100, 80, 100))
+            # Barrels
+            barrel_color = (60, 60, 60)
+            for i in range(3):
+                bx = cx - 30 + i * 30 + rot - 10
+                if bx > cx + 30:
+                    bx -= 80  # wrap
+                pygame.draw.rect(self.screen, barrel_color, (bx, cy - 200, 15, 120))
+
+            pygame.draw.rect(self.screen, (30, 30, 30), (cx - 50, cy - 80, 100, 30))
+
         elif weapon == "plasma":
             pygame.draw.polygon(
                 self.screen,
@@ -363,6 +337,15 @@ class GameRenderer:
             pygame.draw.circle(self.screen, (255, 100, 0), (flash_x, flash_y), 50)
             pygame.draw.circle(self.screen, C.ORANGE, (flash_x, flash_y), 35)
             pygame.draw.circle(self.screen, C.YELLOW, (flash_x, flash_y), 15)
+        elif weapon_name == "minigun":
+            offset_x = random.randint(-10, 10)
+            offset_y = random.randint(-10, 10)
+            pygame.draw.circle(
+                self.screen, C.YELLOW, (flash_x + offset_x, flash_y + offset_y), 30
+            )
+            pygame.draw.circle(
+                self.screen, C.WHITE, (flash_x + offset_x, flash_y + offset_y), 15
+            )
         else:
             pygame.draw.circle(self.screen, C.YELLOW, (flash_x, flash_y), 25)
             pygame.draw.circle(self.screen, C.ORANGE, (flash_x, flash_y), 15)

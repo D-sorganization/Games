@@ -148,6 +148,13 @@ class Raycaster:
         self.z_buffer = [float("inf")] * C.NUM_RAYS
 
         # Raycast and draw walls
+        last_wall_type = 0
+        last_color = (0, 0, 0)
+        last_top = 0
+        last_height = 0
+        strip_width = 0
+        start_ray = 0
+
         for ray in range(C.NUM_RAYS):
             distance, wall_type = self.cast_ray(
                 player.x,
@@ -194,23 +201,58 @@ class Raycaster:
 
                 # Pitch Adjustment
                 pitch_off = player.pitch + view_offset_y
-                wall_top = (C.SCREEN_HEIGHT - wall_height) // 2 + pitch_off
+                wall_top = int((C.SCREEN_HEIGHT - wall_height) // 2 + pitch_off)
+                wall_h_int = int(wall_height)
 
-                # Draw vertical line on view_surface (width=1)
-                pygame.draw.line(
-                    self.view_surface,
-                    color,
-                    (ray, int(wall_top)),
-                    (ray, int(wall_top + wall_height)),
-                )
+                # Strip Rendering Logic
+                can_group = False
+                if strip_width > 0:
+                    # Check if we can group with previous strip
+                    if (
+                        wall_type == last_wall_type
+                        and color == last_color
+                        and abs(wall_top - last_top) <= 1
+                        and abs(wall_h_int - last_height) <= 1
+                    ):
+                        can_group = True
 
-            # Horizontal lines (Brick effect) - Removed for performance
-            # The set_at loop was causing significant performance drops.
-            # If needed, this should be implemented via a pre-generated texture pattern
-            # or a faster line drawing method, but doing it per-ray per-line
-            # in Python is too slow.
+                if can_group:
+                    strip_width += 1
+                else:
+                    if strip_width > 0:
+                        # Draw accumulated strip
+                        pygame.draw.rect(
+                            self.view_surface,
+                            last_color,
+                            (start_ray, last_top, strip_width, last_height),
+                        )
+
+                    # Start new strip
+                    last_wall_type = wall_type
+                    last_color = color
+                    last_top = wall_top
+                    last_height = wall_h_int
+                    strip_width = 1
+                    start_ray = ray
+            else:
+                # No wall hit (or too far)
+                if strip_width > 0:
+                    pygame.draw.rect(
+                        self.view_surface,
+                        last_color,
+                        (start_ray, last_top, strip_width, last_height),
+                    )
+                strip_width = 0
 
             ray_angle += delta_angle
+
+        # Draw final strip
+        if strip_width > 0:
+            pygame.draw.rect(
+                self.view_surface,
+                last_color,
+                (start_ray, last_top, strip_width, last_height),
+            )
 
         # Render Sprites
         self._render_sprites(player, bots, half_fov, view_offset_y)

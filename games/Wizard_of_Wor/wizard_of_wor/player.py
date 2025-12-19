@@ -111,7 +111,7 @@ class Player:
         if self.invulnerable_timer > 0:
             self.invulnerable_timer -= 1
 
-    def shoot(self) -> tuple[Bullet, MuzzleFlash] | tuple[None, None]:  # type: ignore[no-any-unimported]
+    def shoot(self) -> tuple[Bullet, MuzzleFlash] | tuple[None, None]:
         """Create a bullet if cooldown allows."""
         if self.shoot_cooldown == 0 and self.alive:
             self.shoot_cooldown = self.shoot_delay

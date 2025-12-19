@@ -99,13 +99,13 @@ class WizardOfWorGame:
 
         # Game objects
         self.dungeon = Dungeon()
-        self.player: Player | None = None  # type: ignore[no-any-unimported]
-        self.enemies: list[Enemy] = []  # type: ignore[no-any-unimported]
+        self.player: Player | None = None
+        self.enemies: list[Enemy] = []
         self.bullets: list["Bullet"] = []  # type: ignore[name-defined]  # noqa: F821, UP037
         self.radar = Radar()
         self.wizard_spawned = False
         self.soundboard = SoundBoard()
-        self.effects: list[VisualEffect] = []  # type: ignore[no-any-unimported]
+        self.effects: list[VisualEffect] = []
         self.vignette = Vignette(
             (GAME_AREA_WIDTH, GAME_AREA_HEIGHT),
             (GAME_AREA_X, GAME_AREA_Y),
@@ -156,7 +156,7 @@ class WizardOfWorGame:
             self.wizard_spawned = True
             self.soundboard.play("wizard")
 
-    def _spawn_enemy(self, enemy_cls: type["Enemy"]) -> None:  # type: ignore[no-any-unimported]
+    def _spawn_enemy(self, enemy_cls: type["Enemy"]) -> None:
         """Spawn a single enemy with spacing away from the player."""
         chosen_pos = None
         for _ in range(8):
@@ -332,7 +332,7 @@ class WizardOfWorGame:
 
     def _update_effects(self) -> None:
         """Advance and cull transient visual effects."""
-        next_effects: list[VisualEffect] = []  # type: ignore[no-any-unimported]
+        next_effects: list[VisualEffect] = []
         for effect in self.effects:
             if effect.update():
                 next_effects.append(effect)

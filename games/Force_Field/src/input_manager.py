@@ -79,7 +79,7 @@ class InputManager:
         keys = pygame.key.get_pressed()
         key_code = self.bindings.get(action)
         if key_code is not None and 0 <= key_code < len(keys):
-            return keys[key_code]
+            return bool(keys[key_code])
         return False
 
     def is_action_just_pressed(self, event: pygame.event.Event, action: str) -> bool:
@@ -94,7 +94,7 @@ class InputManager:
         key_code = self.bindings.get(action)
         if key_code is None:
             return "None"
-        return pygame.key.name(key_code).upper()
+        return str(pygame.key.name(key_code).upper())
 
     def bind_key(self, action: str, key_code: int) -> None:
         """Rebind an action to a new key."""

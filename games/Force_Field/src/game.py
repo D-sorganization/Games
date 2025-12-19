@@ -157,49 +157,50 @@ class Game:
                         self.portal = {"x": tx + 0.5, "y": ty + 0.5}
                         return
 
+    def find_safe_spawn(
+        self,
+        base_x: float,
+        base_y: float,
+        angle: float,
+    ) -> tuple[float, float, float]:
+        """Find a safe spawn position near the base coordinates"""
+        map_size = self.game_map.size if self.game_map else self.selected_map_size
+        if not self.game_map:
+            return (base_x, base_y, angle)
+
+        for attempt in range(10):
+            # Try positions in a small radius around the corner
+            radius = attempt * 2
+            for angle_offset in [
+                0,
+                math.pi / 4,
+                math.pi / 2,
+                3 * math.pi / 4,
+                math.pi,
+                5 * math.pi / 4,
+                3 * math.pi / 2,
+                7 * math.pi / 4,
+            ]:
+                test_x = base_x + math.cos(angle_offset) * radius
+                test_y = base_y + math.sin(angle_offset) * radius
+
+                # Ensure within bounds
+                in_x = test_x >= 2 and test_x < map_size - 2
+                in_y = test_y >= 2 and test_y < map_size - 2
+                if not (in_x and in_y):
+                    continue
+
+                # Check if not a wall
+                if not self.game_map.is_wall(test_x, test_y):
+                    return (test_x, test_y, angle)
+
+        # Fallback to base position if all attempts fail
+        return (base_x, base_y, angle)
+
     def get_corner_positions(self) -> list[tuple[float, float, float]]:
         """Get spawn positions for four corners (x, y, angle)"""
         offset = 5
         map_size = self.game_map.size if self.game_map else self.selected_map_size
-
-        # Try multiple positions near each corner to find one that's not in a building
-        def find_safe_spawn(
-            base_x: float,
-            base_y: float,
-            angle: float,
-        ) -> tuple[float, float, float]:
-            """Find a safe spawn position near the base coordinates"""
-            if not self.game_map:
-                return (base_x, base_y, angle)
-
-            for attempt in range(10):
-                # Try positions in a small radius around the corner
-                radius = attempt * 2
-                for angle_offset in [
-                    0,
-                    math.pi / 4,
-                    math.pi / 2,
-                    3 * math.pi / 4,
-                    math.pi,
-                    5 * math.pi / 4,
-                    3 * math.pi / 2,
-                    7 * math.pi / 4,
-                ]:
-                    test_x = base_x + math.cos(angle_offset) * radius
-                    test_y = base_y + math.sin(angle_offset) * radius
-
-                    # Ensure within bounds
-                    in_x = test_x >= 2 and test_x < map_size - 2
-                    in_y = test_y >= 2 and test_y < map_size - 2
-                    if not (in_x and in_y):
-                        continue
-
-                    # Check if not a wall
-                    if not self.game_map.is_wall(test_x, test_y):
-                        return (test_x, test_y, angle)
-
-            # Fallback to base position if all attempts fail
-            return (base_x, base_y, angle)
 
         # Building 4 occupies 0.75 * size to 0.95 * size,
         # so bottom-right spawn must be before 0.75 * size
@@ -220,7 +221,7 @@ class Game:
         # Find safe spawns for each corner
         safe_corners = []
         for x, y, angle in corners:
-            safe_corners.append(find_safe_spawn(x, y, angle))
+            safe_corners.append(self.find_safe_spawn(x, y, angle))
 
         return safe_corners
 
@@ -236,13 +237,9 @@ class Game:
 
         # Check safety
         if self.game_map.is_wall(player_pos[0], player_pos[1]):
-            # Find nearby
-            for _ in range(20):
-                test_x = player_pos[0] + random.uniform(-3, 3)
-                test_y = player_pos[1] + random.uniform(-3, 3)
-                if not self.game_map.is_wall(test_x, test_y):
-                    player_pos = (test_x, test_y, player_pos[2])
-                    break
+            # Find nearby using helper
+            safe = self.find_safe_spawn(player_pos[0], player_pos[1], player_pos[2])
+            player_pos = safe
 
         # Reset Player
         self.player.x = player_pos[0]
@@ -437,7 +434,12 @@ class Game:
                 break
 
         # Spawn Pickups
-        possible_weapons = ["pickup_rifle", "pickup_shotgun", "pickup_plasma"]
+        possible_weapons = [
+            "pickup_rifle",
+            "pickup_shotgun",
+            "pickup_plasma",
+            "pickup_minigun",
+        ]
         for w_pickup in possible_weapons:
             if random.random() < 0.4:  # 40% chance per level
                 rx = random.randint(5, self.game_map.size - 5)
@@ -547,6 +549,8 @@ class Game:
                         self.switch_weapon_with_message("plasma")
                     elif self.input_manager.is_action_just_pressed(event, "weapon_6"):
                         self.switch_weapon_with_message("rocket")
+                    elif event.key == pygame.K_7:
+                        self.switch_weapon_with_message("minigun")
                     elif self.input_manager.is_action_just_pressed(event, "reload"):
                         assert self.player is not None
                         self.player.reload()
@@ -668,6 +672,12 @@ class Game:
                 weapon_type="rocket",
             )
             self.projectiles.append(p)
+            return
+
+        if weapon == "minigun" and not is_secondary:
+            # Minigun spread
+            angle_off = random.uniform(-0.1, 0.1)
+            self.check_shot_hit(angle_offset=angle_off)
             return
 
         if weapon == "laser" and not is_secondary:

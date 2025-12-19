@@ -322,16 +322,13 @@ class UIRenderer:
 
         # Inventory
         inv_y = hud_bottom - 80
-        for w in ["pistol", "rifle", "shotgun", "laser", "plasma"]:
+        for w in ["pistol", "rifle", "shotgun", "laser", "plasma", "rocket", "minigun"]:
             color = C.GRAY
             if w in game.unlocked_weapons:
                 color = C.GREEN if w == game.player.current_weapon else C.WHITE
 
             key_display = C.WEAPONS[w]["key"]
-            if w == "laser":
-                key_display = "4"
-            elif w == "plasma":
-                key_display = "5"
+            # Just use key from dict
 
             text_str = f"[{key_display}] {C.WEAPONS[w]['name']}"
             inv_txt = self.tiny_font.render(text_str, True, color)
