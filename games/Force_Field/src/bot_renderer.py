@@ -437,7 +437,10 @@ class BotRenderer:
         # Barrels
         if bot.shoot_animation > 0:
             pygame.draw.circle(
-                screen, C.YELLOW, (wx, wy + weapon_h / 2), 5 + random.randint(0, 5)
+                screen,
+                C.YELLOW,
+                (wx, wy + weapon_h / 2),
+                5 + int(abs(math.sin(bot.shoot_animation * 10.0)) * 5),
             )
 
     @staticmethod
