@@ -136,6 +136,7 @@ jobs:
         env:
             PYTHONPATH: .
             SDL_VIDEODRIVER: dummy  # Headless mode for pygame
+            SDL_AUDIODRIVER: dummy  # Disable audio for pygame
       - uses: codecov/codecov-action@v4
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

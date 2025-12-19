@@ -28,24 +28,42 @@ class SoundManager:
         if self.initialized:
             return
 
-        # Re-initialize mixer with lower buffer to reduce latency
-        with contextlib.suppress(Exception):
-            pygame.mixer.quit()
-        pygame.mixer.pre_init(44100, -16, 2, 512)
-        pygame.mixer.init()
-        pygame.mixer.set_num_channels(32)
+        import os
+        
+        # Check if we're in a headless environment (CI)
+        is_headless = os.environ.get('SDL_VIDEODRIVER') == 'dummy'
+        
+        if is_headless:
+            # In headless mode, disable sound completely
+            self.sounds: dict[str, pygame.mixer.Sound] = {}
+            self.music_channel = None
+            self.sound_enabled = False
+            self.current_music: str | None = None
+            logger.info("SoundManager initialized in headless mode - audio disabled")
+        else:
+            # Re-initialize mixer with lower buffer to reduce latency
+            with contextlib.suppress(Exception):
+                pygame.mixer.quit()
+            pygame.mixer.pre_init(44100, -16, 2, 512)
+            pygame.mixer.init()
+            pygame.mixer.set_num_channels(32)
 
-        self.sounds: dict[str, pygame.mixer.Sound] = {}
-        self.music_channel = None
-        self.sound_enabled = True
-        self.current_music: str | None = None
+            self.sounds: dict[str, pygame.mixer.Sound] = {}
+            self.music_channel = None
+            self.sound_enabled = True
+            self.current_music: str | None = None
 
-        # Load assets
-        self.load_assets()
+            # Load assets
+            self.load_assets()
+            
         self.initialized = True
 
     def load_assets(self) -> None:
         """Load all sound files"""
+        if not self.sound_enabled:
+            logger.info("Skipping sound asset loading in headless mode")
+            return
+            
         base_dir = Path(__file__).resolve().parent.parent
         sound_dir = base_dir / "assets" / "sounds"
 
