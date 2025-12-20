@@ -52,6 +52,11 @@ class Raycaster:
         # Z-Buffer for occlusion (Euclidean distance)
         self.z_buffer: list[float] = [float("inf")] * C.NUM_RAYS
 
+        # Precompute fisheye correction
+        self.fisheye_table = [
+            math.cos(C.HALF_FOV - i * C.DELTA_ANGLE) for i in range(C.NUM_RAYS)
+        ]
+
     def cast_ray(
         self,
         origin_x: float,
@@ -166,7 +171,7 @@ class Raycaster:
 
             if wall_type > 0 and distance < C.MAX_DEPTH:
                 # Fisheye correction
-                corrected_dist = distance * math.cos(player.angle - ray_angle)
+                corrected_dist = distance * self.fisheye_table[ray]
 
                 # Prevent division by zero
                 safe_dist = max(0.01, corrected_dist)
@@ -362,10 +367,9 @@ class Raycaster:
                 sprite_surface.fill(shade_color, special_flags=pygame.BLEND_MULT)
 
             if len(self.sprite_cache) > 400:
-                # Evict oldest
-                keys_to_remove = list(self.sprite_cache.keys())[:40]
-                for k in keys_to_remove:
-                    del self.sprite_cache[k]
+                # Evict oldest efficiently
+                for _ in range(40):
+                    self.sprite_cache.pop(next(iter(self.sprite_cache)))
             self.sprite_cache[cache_key] = sprite_surface
 
         start_r = int(max(0, sprite_ray_x))

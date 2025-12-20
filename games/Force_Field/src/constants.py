@@ -13,7 +13,7 @@ MIN_BUILDING_OFFSET = 3  # Minimum offset from map edges for building generation
 # Rendering Quality
 # 1 = Ultra (Full Res), 2 = High (Half Res),
 # 4 = Medium/Retro (Quarter Res), 8 = Low (Blocky)
-RENDER_SCALE = 4
+RENDER_SCALE = 2
 
 # Player settings
 # Speeds reduced to improve game pacing
@@ -60,7 +60,7 @@ WEAPON_RANGE_MINIGUN = 20
 WEAPONS = {
     "pistol": {
         "name": "Pistol",
-        "damage": 20,
+        "damage": 25,
         "range": WEAPON_RANGE_PISTOL,
         "ammo": 999,  # Infinite total ammo concept? Or max carry?
         # Keeping 999 as "unlimited" pool for now
@@ -71,29 +71,29 @@ WEAPONS = {
     },
     "rifle": {
         "name": "Rifle",
-        "damage": 15,  # Reduced from 25
+        "damage": 20,
         "range": WEAPON_RANGE_RIFLE,
         "ammo": 999,
-        "cooldown": 25,  # Slower fire rate (was 15)
+        "cooldown": 20,
         "clip_size": 30,
         "reload_time": 120,  # 2 seconds
         "key": "2",
     },
     "shotgun": {
         "name": "Shotgun",
-        "damage": 20,  # Increased again (was 15)
+        "damage": 20,
         "range": WEAPON_RANGE_SHOTGUN,
         "ammo": 999,
         "cooldown": 30,
         "clip_size": 2,  # Two shots
-        "reload_time": 100,  # Faster reload (was 150)
+        "reload_time": 80,
         "pellets": 8,
         "spread": 0.15,
         "key": "3",
     },
     "minigun": {
         "name": "Minigun",
-        "damage": 10,
+        "damage": 12,
         "range": WEAPON_RANGE_MINIGUN,
         "ammo": 999,
         "cooldown": 3,
