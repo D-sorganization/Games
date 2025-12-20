@@ -164,8 +164,9 @@ class Game:
         angle: float,
     ) -> tuple[float, float, float]:
         """Find a safe spawn position near the base coordinates"""
-        map_size = self.game_map.size if self.game_map else self.selected_map_size
-        if not self.game_map:
+        game_map = self.game_map
+        map_size = game_map.size if game_map else self.selected_map_size
+        if not game_map:
             return (base_x, base_y, angle)
 
         for attempt in range(10):
@@ -191,7 +192,7 @@ class Game:
                     continue
 
                 # Check if not a wall
-                if not self.game_map.is_wall(test_x, test_y):
+                if not game_map.is_wall(test_x, test_y):
                     return (test_x, test_y, angle)
 
         # Fallback to base position if all attempts fail
@@ -230,14 +231,18 @@ class Game:
         corners = self.get_corner_positions()
         random.shuffle(corners)
 
+        game_map = self.game_map
+        if not game_map:
+            return C.DEFAULT_PLAYER_SPAWN
+
         for pos in corners:
-            if not self.game_map.is_wall(pos[0], pos[1]):
+            if not game_map.is_wall(pos[0], pos[1]):
                 return pos
 
         # Fallback linear search
-        for y in range(self.game_map.height):
-            for x in range(self.game_map.width):
-                if not self.game_map.is_wall(x, y):
+        for y in range(game_map.height):
+            for x in range(game_map.width):
+                if not game_map.is_wall(x, y):
                     return (x + 0.5, y + 0.5, 0.0)
 
         return C.DEFAULT_PLAYER_SPAWN
