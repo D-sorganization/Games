@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import itertools
 import math
 import random
 from typing import TYPE_CHECKING, Any, cast
@@ -362,8 +363,8 @@ class Raycaster:
                 sprite_surface.fill(shade_color, special_flags=pygame.BLEND_MULT)
 
             if len(self.sprite_cache) > 400:
-                # Evict oldest
-                keys_to_remove = list(self.sprite_cache.keys())[:40]
+                # Evict oldest efficiently
+                keys_to_remove = list(itertools.islice(self.sprite_cache, 40))
                 for k in keys_to_remove:
                     del self.sprite_cache[k]
             self.sprite_cache[cache_key] = sprite_surface

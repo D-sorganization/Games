@@ -164,8 +164,9 @@ class Game:
         angle: float,
     ) -> tuple[float, float, float]:
         """Find a safe spawn position near the base coordinates"""
-        map_size = self.game_map.size if self.game_map else self.selected_map_size
-        if not self.game_map:
+        game_map = self.game_map
+        map_size = game_map.size if game_map else self.selected_map_size
+        if not game_map:
             return (base_x, base_y, angle)
 
         for attempt in range(10):
@@ -191,7 +192,7 @@ class Game:
                     continue
 
                 # Check if not a wall
-                if not self.game_map.is_wall(test_x, test_y):
+                if not game_map.is_wall(test_x, test_y):
                     return (test_x, test_y, angle)
 
         # Fallback to base position if all attempts fail
@@ -225,21 +226,33 @@ class Game:
 
         return safe_corners
 
+    def _get_best_spawn_point(self) -> tuple[float, float, float]:
+        """Find a valid spawn point."""
+        corners = self.get_corner_positions()
+        random.shuffle(corners)
+
+        game_map = self.game_map
+        if not game_map:
+            return C.DEFAULT_PLAYER_SPAWN
+
+        for pos in corners:
+            if not game_map.is_wall(pos[0], pos[1]):
+                return pos
+
+        # Fallback linear search
+        for y in range(game_map.height):
+            for x in range(game_map.width):
+                if not game_map.is_wall(x, y):
+                    return (x + 0.5, y + 0.5, 0.0)
+
+        return C.DEFAULT_PLAYER_SPAWN
+
     def respawn_player(self) -> None:
         """Respawn player after death if lives remain"""
         assert self.game_map is not None
         assert self.player is not None
 
-        # Find safe spawn (similar to start_level)
-        corners = self.get_corner_positions()
-        random.shuffle(corners)
-        player_pos = corners[0]
-
-        # Check safety
-        if self.game_map.is_wall(player_pos[0], player_pos[1]):
-            # Find nearby using helper
-            safe = self.find_safe_spawn(player_pos[0], player_pos[1], player_pos[2])
-            player_pos = safe
+        player_pos = self._get_best_spawn_point()
 
         # Reset Player
         self.player.x = player_pos[0]
@@ -311,27 +324,8 @@ class Game:
         pygame.mouse.set_visible(False)
         pygame.event.set_grab(True)
 
-        # Player Spawn Logic - Use corners
-        corners = self.get_corner_positions()
-        random.shuffle(corners)
-
-        # Select best corner (safest)
-        player_pos = corners[0]
-        # Just in case, try to verify valid spot (though corners should be valid)
-        if self.game_map.is_wall(int(player_pos[0]), int(player_pos[1])):
-            # Fallback: Find first non-wall cell in the map
-            found = False
-            for y in range(self.game_map.height):
-                for x in range(self.game_map.width):
-                    if not self.game_map.is_wall(x, y):
-                        player_pos = (x + 0.5, y + 0.5, 0.0)
-                        found = True
-                        break
-                if found:
-                    break
-            else:
-                # If no valid cell found, default to constant
-                player_pos = C.DEFAULT_PLAYER_SPAWN
+        # Player Spawn Logic
+        player_pos = self._get_best_spawn_point()
 
         # Preserve ammo and weapon selection from previous level if player exists
         previous_ammo = None
@@ -737,16 +731,21 @@ class Game:
             is_headshot = False
 
             # 2. Check bots
+            # Optimization: Use squared distance check first
+            wall_dist_sq = wall_dist * wall_dist
+
             for bot in self.bots:
                 if not bot.alive:
                     continue
 
                 dx = bot.x - self.player.x
                 dy = bot.y - self.player.y
-                distance = math.sqrt(dx**2 + dy**2)
+                dist_sq = dx * dx + dy * dy
 
-                if distance > wall_dist:
+                if dist_sq > wall_dist_sq:
                     continue
+
+                distance = math.sqrt(dist_sq)
 
                 bot_angle = math.atan2(dy, dx)
                 angle = bot_angle if bot_angle >= 0 else bot_angle + 2 * math.pi
@@ -1332,13 +1331,18 @@ class Game:
                 if r_i * r_i + r_j * r_j <= reveal_radius * reveal_radius:
                     self.visited_cells.add((cx + r_j, cy + r_i))
 
-        min_dist = float("inf")
+        min_dist_sq = float("inf")
         for bot in self.bots:
             if bot.alive:
                 dx = bot.x - self.player.x
                 dy = bot.y - self.player.y
-                dist = math.sqrt(dx * dx + dy * dy)
-                min_dist = min(min_dist, dist)
+                d_sq = dx * dx + dy * dy
+                if d_sq < min_dist_sq:
+                    min_dist_sq = d_sq
+
+        min_dist = (
+            math.sqrt(min_dist_sq) if min_dist_sq != float("inf") else float("inf")
+        )
 
         if min_dist < 15:
             self.beast_timer -= 1
