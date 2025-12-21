@@ -114,6 +114,7 @@ def check_banned_patterns(
         "quality_check_script.py",
         "quality_check.py",
         "matlab_quality_check.py",
+        "code_quality_check.py",
     ]:
         return issues
 
@@ -147,6 +148,7 @@ def check_magic_numbers(lines: list[str], filepath: Path) -> list[tuple[int, str
         "quality_check_script.py",
         "quality_check.py",
         "matlab_quality_check.py",
+        "code_quality_check.py",
     ]:
         return issues
     for line_num, line in enumerate(lines, 1):

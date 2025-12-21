@@ -22,6 +22,7 @@ class Particle:
         start_pos: tuple[float, float] | None = None,
         end_pos: tuple[float, float] | None = None,
     ):
+        """Initialize a particle."""
         self.x = x
         self.y = y
         self.dx = dx
@@ -44,11 +45,13 @@ class Particle:
         return self.timer > 0
 
     def render(self, screen: pygame.Surface) -> None:
+        """Render the particle."""
         if self.ptype == "normal":
             # These are usually 2D UI particles or overlay particles?
             # Wait, the game code draws particles in render_game?
             # Let's check where they are drawn.
-            pass
+            # Render logic for normal particles is handled in ParticleSystem.render
+            return
         elif self.ptype == "laser" and self.start_pos and self.end_pos:
             pygame.draw.line(
                 screen, self.color, self.start_pos, self.end_pos, self.width
@@ -57,6 +60,7 @@ class Particle:
 
 class ParticleSystem:
     def __init__(self) -> None:
+        """Initialize the particle system."""
         self.particles: list[Particle] = []
 
     def add_particle(
@@ -69,6 +73,7 @@ class ParticleSystem:
         timer: int = 30,
         size: float = 2.0,
     ) -> None:
+        """Add a standard particle."""
         self.particles.append(Particle(x, y, dx, dy, color, timer, size))
 
     def add_laser(
@@ -79,6 +84,7 @@ class ParticleSystem:
         timer: int,
         width: int,
     ) -> None:
+        """Add a laser particle."""
         self.particles.append(
             Particle(
                 0,
@@ -99,6 +105,7 @@ class ParticleSystem:
         count: int = 10,
         color: tuple[int, int, int] | None = None,
     ) -> None:
+        """Create an explosion effect."""
         for _ in range(count):
             c = (
                 color
@@ -120,9 +127,11 @@ class ParticleSystem:
             )
 
     def update(self) -> None:
+        """Update all particles."""
         self.particles = [p for p in self.particles if p.update()]
 
     def render(self, screen: pygame.Surface) -> None:
+        """Render all particles."""
         # Note: Some particles are 3D world particles, some are UI?
         # In Game.render_game, particles were likely drawn on top.
         # Let's verify where they are used.

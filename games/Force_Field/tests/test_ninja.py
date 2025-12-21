@@ -7,6 +7,7 @@ from games.Force_Field.src.player import Player
 
 class TestNinja(unittest.TestCase):
     def setUp(self) -> None:
+        """Set up test fixtures."""
         self.map = Map(30)
         # Clear area
         for y in range(10, 20):
