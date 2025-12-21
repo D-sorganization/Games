@@ -20,6 +20,7 @@ class EntityManager:
     """Manages game entities (Bots and Projectiles)"""
 
     def __init__(self) -> None:
+        """Initialize the entity manager."""
         self.bots: list[Bot] = []
         self.projectiles: list[Projectile] = []
 
@@ -143,6 +144,7 @@ class EntityManager:
     def get_active_enemies(self) -> list[Bot]:
         """Return list of alive enemies (excluding items)."""
         return [
-            b for b in self.bots
+            b
+            for b in self.bots
             if b.alive and b.type_data.get("visual_style") != "item"
         ]

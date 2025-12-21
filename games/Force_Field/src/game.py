@@ -116,10 +116,12 @@ class Game:
 
     @property
     def bots(self) -> list[Bot]:
+        """Get list of active bots."""
         return self.entity_manager.bots
 
     @property
     def projectiles(self) -> list[Projectile]:
+        """Get list of active projectiles."""
         return self.entity_manager.projectiles
 
     def add_message(self, text: str, color: tuple[int, int, int]) -> None:

@@ -346,7 +346,9 @@ class Raycaster:
 
         sprite_y = C.SCREEN_HEIGHT / 2 - sprite_size / 2 + player.pitch + view_offset_y
 
-        if sprite_ray_x + sprite_ray_width < 0 or sprite_ray_x >= C.NUM_RAYS:
+        if sprite_ray_x + sprite_ray_width < 0:
+            return
+        if sprite_ray_x >= C.NUM_RAYS:
             return
 
         cache_display_size = min(sprite_size, 800)
