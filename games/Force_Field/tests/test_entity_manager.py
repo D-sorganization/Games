@@ -7,19 +7,19 @@ from games.Force_Field.src.entity_manager import EntityManager
 class TestEntityManager(unittest.TestCase):
     """Tests for the EntityManager class."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         """Set up test fixtures."""
         self.em = EntityManager()
         self.em.grid_cell_size = 5
 
-    def test_add_bot(self):
+    def test_add_bot(self) -> None:
         """Test adding a bot to the manager."""
         bot = Bot(10.0, 10.0, 1)
         self.em.add_bot(bot)
         assert len(self.em.bots) == 1
         assert bot in self.em.bots
 
-    def test_spatial_grid_update(self):
+    def test_spatial_grid_update(self) -> None:
         """Test that the spatial grid updates correctly."""
         bot1 = Bot(2.0, 2.0, 1)  # Cell 0,0
         bot2 = Bot(7.0, 2.0, 1)  # Cell 1,0
@@ -34,7 +34,7 @@ class TestEntityManager(unittest.TestCase):
         assert len(self.em.spatial_grid[(1, 0)]) == 1
         assert self.em.spatial_grid[(1, 0)][0] == bot2
 
-    def test_get_nearby_bots(self):
+    def test_get_nearby_bots(self) -> None:
         """Test retrieving nearby bots."""
         # Bot at 5,5 (Cell 1,1)
         # Nearby should include cells 0,0 to 2,2
