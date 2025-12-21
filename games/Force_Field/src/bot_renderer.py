@@ -147,6 +147,7 @@ class BotRenderer:
     def _render_health_pack(
         screen: pygame.Surface, x: int, y: int, size: float, cx: float
     ) -> None:
+        """Render a health pack item."""
         rect_w = size * 0.4
         rect_h = size * 0.3
         kit_y = y + size * 0.7
@@ -177,6 +178,7 @@ class BotRenderer:
     def _render_ammo_box(
         screen: pygame.Surface, x: int, y: int, size: float, cx: float
     ) -> None:
+        """Render an ammo box item."""
         rect_w = size * 0.4
         rect_h = size * 0.3
         box_y = y + size * 0.7
@@ -192,6 +194,7 @@ class BotRenderer:
     def _render_bomb_item(
         screen: pygame.Surface, x: int, y: int, size: float, cx: float
     ) -> None:
+        """Render a bomb item."""
         r = size * 0.2
         cy = y + size * 0.8
         pygame.draw.circle(screen, (30, 30, 30), (int(cx), int(cy)), int(r))
@@ -207,6 +210,7 @@ class BotRenderer:
     def _render_weapon_pickup(
         screen: pygame.Surface, bot: Bot, x: int, y: int, size: float, cx: float
     ) -> None:
+        """Render a weapon pickup item."""
         # Simple placeholder for weapon pickups
         rect_w = size * 0.6
         rect_h = size * 0.2
@@ -237,6 +241,7 @@ class BotRenderer:
         rh: float,
         color: tuple[int, int, int],
     ) -> None:
+        """Render the baby enemy visual style."""
         # Body
         body_rect = pygame.Rect(
             int(cx - rw / 2),
@@ -308,6 +313,7 @@ class BotRenderer:
         rh: float,
         color: tuple[int, int, int],
     ) -> None:
+        """Render the ball enemy visual style."""
         # Metallic Ball with rotation effect (stripes)
         r = rw / 2
         cy = ry + rh / 2
@@ -333,6 +339,7 @@ class BotRenderer:
         rh: float,
         color: tuple[int, int, int],
     ) -> None:
+        """Render the beast enemy visual style."""
         # Large imposing figure
         # Main Body
         pygame.draw.rect(screen, color, (cx - rw / 2, ry + rh * 0.3, rw, rh * 0.7))
@@ -365,6 +372,7 @@ class BotRenderer:
         rh: float,
         color: tuple[int, int, int],
     ) -> None:
+        """Render the ghost enemy visual style."""
         # Ghost: Float, fade at bottom, semi-transparent
         offset_y = math.sin(pygame.time.get_ticks() * 0.005) * 10
         gy = ry + offset_y
@@ -412,6 +420,7 @@ class BotRenderer:
         rh: float,
         color: tuple[int, int, int],
     ) -> None:
+        """Render the minigunner enemy visual style."""
         # Armored Heavy Soldier
         # Body armor
         body_x = cx - rw / 2
@@ -450,6 +459,7 @@ class BotRenderer:
         rh: float,
         color: tuple[int, int, int],
     ) -> None:
+        """Render the default monster visual style."""
         body_x = cx - rw / 2
 
         # 1. Body (Rounded Torso)
