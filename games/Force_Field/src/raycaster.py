@@ -273,16 +273,31 @@ class Raycaster:
     ) -> None:
         """Render all sprites to the view surface"""
         bots_to_render = []
+
+        # Optimization: Pre-calculate player direction vector
+        p_cos = math.cos(player.angle)
+        p_sin = math.sin(player.angle)
+        max_dist_sq = C.MAX_DEPTH * C.MAX_DEPTH
+
         for bot in bots:
             if bot.removed:
                 continue
 
             dx = bot.x - player.x
             dy = bot.y - player.y
-            bot_dist = math.sqrt(dx**2 + dy**2)
 
-            if bot_dist > C.MAX_DEPTH:
+            # Distance culling
+            dist_sq = dx * dx + dy * dy
+            if dist_sq > max_dist_sq:
                 continue
+
+            # Dot product check (Coarse culling for objects behind player)
+            # FOV is 60 degrees, so roughly +/- 30 degrees.
+            # Anything behind the player (proj < 0) can be safely skipped.
+            if dx * p_cos + dy * p_sin < 0:
+                continue
+
+            bot_dist = math.sqrt(dist_sq)
 
             bot_angle = math.atan2(dy, dx)
             angle_to_bot = bot_angle - player.angle
@@ -609,16 +624,26 @@ class Raycaster:
         current_fov = C.FOV * (C.ZOOM_FOV_MULT if player.zoomed else 1.0)
         half_fov = current_fov / 2
 
+        # Optimization
+        p_cos = math.cos(player.angle)
+        p_sin = math.sin(player.angle)
+        max_dist_sq = C.MAX_DEPTH * C.MAX_DEPTH
+
         for projectile in projectiles:
             if not projectile.alive:
                 continue
 
             dx = projectile.x - player.x
             dy = projectile.y - player.y
-            proj_dist = math.sqrt(dx**2 + dy**2)
 
-            if proj_dist > C.MAX_DEPTH:
+            dist_sq = dx * dx + dy * dy
+            if dist_sq > max_dist_sq:
                 continue
+
+            if dx * p_cos + dy * p_sin < 0:
+                continue
+
+            proj_dist = math.sqrt(dist_sq)
 
             proj_angle = math.atan2(dy, dx)
             angle_to_proj = proj_angle - player.angle

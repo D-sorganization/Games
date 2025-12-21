@@ -11,6 +11,7 @@ import pygame
 
 from . import constants as C  # noqa: N812
 from .bot import Bot
+from .entity_manager import EntityManager
 from .input_manager import InputManager
 from .map import Map
 from .particle_system import ParticleSystem
@@ -77,8 +78,7 @@ class Game:
         # Game objects
         self.game_map: Map | None = None
         self.player: Player | None = None
-        self.bots: list[Bot] = []
-        self.projectiles: list[Projectile] = []
+        self.entity_manager = EntityManager()
         self.raycaster: Raycaster | None = None
         self.portal: dict[str, Any] | None = None
         self.health = 100
@@ -113,6 +113,14 @@ class Game:
         # Input Manager
         self.input_manager = InputManager()
         self.binding_action: str | None = None
+
+    @property
+    def bots(self) -> list[Bot]:
+        return self.entity_manager.bots
+
+    @property
+    def projectiles(self) -> list[Projectile]:
+        return self.entity_manager.projectiles
 
     def add_message(self, text: str, color: tuple[int, int, int]) -> None:
         """Add a temporary message to the center of the screen"""
@@ -283,6 +291,7 @@ class Game:
         self.paused = False
         self.particle_system.particles = []
         self.damage_texts = []
+        self.entity_manager.reset()
 
         # Reset Cheats/Progress
         self.unlocked_weapons = {"pistol"}
@@ -351,8 +360,7 @@ class Game:
         self.player.god_mode = self.god_mode
 
         # Bots spawn in random locations, but respect safety radius
-        self.bots = []
-        self.projectiles = []
+        self.entity_manager.reset()
 
         num_enemies = int(
             min(
@@ -392,7 +400,7 @@ class Game:
                     ]:
                         enemy_type = random.choice(list(C.ENEMY_TYPES.keys()))
 
-                    self.bots.append(
+                    self.entity_manager.add_bot(
                         Bot(
                             bx + 0.5,
                             by + 0.5,
@@ -416,7 +424,7 @@ class Game:
                 and math.sqrt((cx - player_pos[0]) ** 2 + (cy - player_pos[1]) ** 2)
                 > 15
             ):
-                self.bots.append(
+                self.entity_manager.add_bot(
                     Bot(
                         cx + 0.5,
                         cy + 0.5,
@@ -439,7 +447,9 @@ class Game:
                 rx = random.randint(5, self.game_map.size - 5)
                 ry = random.randint(5, self.game_map.size - 5)
                 if not self.game_map.is_wall(rx, ry):
-                    self.bots.append(Bot(rx + 0.5, ry + 0.5, self.level, w_pickup))
+                    self.entity_manager.add_bot(
+                        Bot(rx + 0.5, ry + 0.5, self.level, w_pickup)
+                    )
 
         # Ammo / Bombs
         for _ in range(8):
@@ -448,11 +458,17 @@ class Game:
             if not self.game_map.is_wall(rx, ry):
                 choice = random.random()
                 if choice < 0.2:
-                    self.bots.append(Bot(rx + 0.5, ry + 0.5, self.level, "bomb_item"))
+                    self.entity_manager.add_bot(
+                        Bot(rx + 0.5, ry + 0.5, self.level, "bomb_item")
+                    )
                 elif choice < 0.7:
-                    self.bots.append(Bot(rx + 0.5, ry + 0.5, self.level, "ammo_box"))
+                    self.entity_manager.add_bot(
+                        Bot(rx + 0.5, ry + 0.5, self.level, "ammo_box")
+                    )
                 else:
-                    self.bots.append(Bot(rx + 0.5, ry + 0.5, self.level, "health_pack"))
+                    self.entity_manager.add_bot(
+                        Bot(rx + 0.5, ry + 0.5, self.level, "health_pack")
+                    )
 
         # Start Music
         music_tracks = [
@@ -644,7 +660,7 @@ class Game:
                 size=0.225,
                 weapon_type="plasma",
             )
-            self.projectiles.append(p)
+            self.entity_manager.add_projectile(p)
             return
 
         if weapon == "rocket" and not is_secondary:
@@ -665,7 +681,7 @@ class Game:
                 size=0.3,
                 weapon_type="rocket",
             )
-            self.projectiles.append(p)
+            self.entity_manager.add_projectile(p)
             return
 
         if weapon == "minigun" and not is_secondary:
@@ -1060,11 +1076,7 @@ class Game:
             pygame.event.set_grab(False)
             return
 
-        enemies_alive = [
-            b
-            for b in self.bots
-            if b.alive and b.type_data.get("visual_style") != "item"
-        ]
+        enemies_alive = self.entity_manager.get_active_enemies()
 
         if not enemies_alive:
             if self.portal is None:
@@ -1212,12 +1224,9 @@ class Game:
 
         self.player.update()
 
-        for bot in self.bots:
-            projectile = bot.update(self.game_map, self.player, self.bots)
-            if projectile:
-                self.projectiles.append(projectile)
-                self.sound_manager.play_sound("enemy_shoot")
+        self.entity_manager.update_bots(self.game_map, self.player, self)
 
+        for bot in self.bots:
             is_item = bot.enemy_type.startswith(("health", "ammo", "bomb", "pickup"))
             if bot.alive and is_item:
                 dx = bot.x - self.player.x
@@ -1267,62 +1276,7 @@ class Game:
                             }
                         )
 
-        assert self.game_map is not None
-        assert self.player is not None
-        for projectile in self.projectiles[:]:
-            was_alive = projectile.alive
-            projectile.update(self.game_map)
-
-            if was_alive and not projectile.alive:
-                w_type = getattr(projectile, "weapon_type", "normal")
-                if w_type == "plasma":
-                    self.explode_plasma(projectile)
-                elif w_type == "rocket":
-                    self.explode_rocket(projectile)
-
-            if projectile.alive:
-                if not projectile.is_player:
-                    dx = projectile.x - self.player.x
-                    dy = projectile.y - self.player.y
-                    dist = math.sqrt(dx**2 + dy**2)
-                    if dist < 0.5:
-                        old_health = self.player.health
-                        self.player.take_damage(projectile.damage)
-
-                        if self.player.health < old_health:
-                            self.damage_flash_timer = 10
-                            self.sound_manager.play_sound("oww")
-
-                        projectile.alive = False
-                else:
-                    for bot in self.bots:
-                        if not bot.alive:
-                            continue
-                        dx = projectile.x - bot.x
-                        dy = projectile.y - bot.y
-                        dist = math.sqrt(dx**2 + dy**2)
-                        if dist < 0.8:
-                            if bot.take_damage(projectile.damage):
-                                self.sound_manager.play_sound("scream")
-                                self.kills += 1
-                                self.kill_combo_count += 1
-                                self.kill_combo_timer = 180
-                                self.last_death_pos = (bot.x, bot.y)
-
-                            self.particle_system.add_explosion(
-                                C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2, count=5
-                            )
-
-                            projectile.alive = False
-
-                            w_type = getattr(projectile, "weapon_type", "normal")
-                            if w_type == "plasma":
-                                self.explode_plasma(projectile)
-                            elif w_type == "rocket":
-                                self.explode_rocket(projectile)
-                            break
-
-        self.projectiles = [p for p in self.projectiles if p.alive]
+        self.entity_manager.update_projectiles(self.game_map, self.player, self)
 
         cx, cy = int(self.player.x), int(self.player.y)
         reveal_radius = 5
