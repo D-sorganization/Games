@@ -65,7 +65,7 @@ class SoundBoard:
             "spawn": self._build_tone(640, 150),
             "wizard": self._build_tone(300, 200),
         }
-        
+
         # Create simple intro melody
         self.intro_melody = self._build_intro_melody()
 
@@ -85,18 +85,18 @@ class SoundBoard:
         duration_ms = 3000  # 3 second intro
         sample_count = int(sample_rate * duration_ms / 1000)
         waveform = array("h")
-        
+
         # Classic arcade-style melody notes (frequencies in Hz)
         melody = [
             (523, 300),  # C5
-            (659, 300),  # E5  
+            (659, 300),  # E5
             (784, 300),  # G5
             (1047, 600), # C6
             (784, 300),  # G5
             (659, 300),  # E5
             (523, 600),  # C5
         ]
-        
+
         current_sample = 0
         for freq, note_duration_ms in melody:
             note_samples = int(sample_rate * note_duration_ms / 1000)
@@ -105,10 +105,12 @@ class SoundBoard:
                     break
                 # Create a simple square wave with some envelope
                 envelope = min(1.0, (note_samples - i) / (note_samples * 0.1))
-                value = int(8000 * envelope * (1 if (i * freq // sample_rate) % 2 else -1))
+                # Square wave generation
+                square_wave = 1 if (i * freq // sample_rate) % 2 else -1
+                value = int(8000 * envelope * square_wave)
                 waveform.append(value)
                 current_sample += 1
-            
+
             # Small pause between notes
             pause_samples = int(sample_rate * 0.05)  # 50ms pause
             for _ in range(pause_samples):
@@ -116,19 +118,19 @@ class SoundBoard:
                     break
                 waveform.append(0)
                 current_sample += 1
-        
+
         # Fill remaining time with silence
         while current_sample < sample_count:
             waveform.append(0)
             current_sample += 1
-            
+
         return pygame.mixer.Sound(buffer=waveform.tobytes())
 
     def play(self, name: str) -> None:
         """Play a sound effect by name."""
         if self.enabled and name in self.sounds:
             self.sounds[name].play()
-    
+
     def play_intro(self) -> None:
         """Play the intro melody."""
         if self.enabled and hasattr(self, 'intro_melody'):
@@ -173,7 +175,7 @@ class WizardOfWorGame:
 
         # Auto-start the first level
         self.start_level()
-        
+
         # Play intro music
         self.soundboard.play_intro()
 

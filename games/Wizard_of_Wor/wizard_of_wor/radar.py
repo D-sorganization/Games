@@ -12,7 +12,6 @@ from constants import (
     GAME_AREA_WIDTH,
     GAME_AREA_X,
     GAME_AREA_Y,
-    GRAY,
     GREEN,
     RADAR_PING_INTERVAL,
     RADAR_SIZE,

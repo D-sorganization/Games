@@ -269,7 +269,8 @@ class Worluk(Enemy):
         super().__init__(x, y, WORLUK_SPEED, CYAN, WORLUK_POINTS, "worluk")
         self.visible = True  # Start visible
         self.can_shoot = False
-        self.invisibility_cooldown = INVISIBILITY_INTERVAL // 3  # Shorter initial cooldown
+        # Shorter initial cooldown
+        self.invisibility_cooldown = INVISIBILITY_INTERVAL // 3
         self.invisibility_time = 0
 
     def update(self, dungeon: Any, player_pos: tuple[float, float]) -> None:
