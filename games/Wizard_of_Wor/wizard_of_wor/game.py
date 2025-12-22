@@ -91,7 +91,7 @@ class SoundBoard:
             (523, 300),  # C5
             (659, 300),  # E5
             (784, 300),  # G5
-            (1047, 600), # C6
+            (1047, 600),  # C6
             (784, 300),  # G5
             (659, 300),  # E5
             (523, 600),  # C5
@@ -133,7 +133,7 @@ class SoundBoard:
 
     def play_intro(self) -> None:
         """Play the intro melody."""
-        if self.enabled and hasattr(self, 'intro_melody'):
+        if self.enabled and hasattr(self, "intro_melody"):
             self.intro_melody.play()
 
 
@@ -671,8 +671,8 @@ class WizardOfWorGame:
         for line in instructions:
             instruction_text = self.font_small.render(line, True, WHITE)
             instruction_rect = instruction_text.get_rect(
-            center=(SCREEN_WIDTH // 2, y_offset)
-        )
+                center=(SCREEN_WIDTH // 2, y_offset)
+            )
             self.screen.blit(instruction_text, instruction_rect)
             y_offset += 30
 
