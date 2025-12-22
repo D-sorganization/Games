@@ -50,3 +50,9 @@ ruff_errors.txt
 ruff_output.txt
 ruff_output_ff.txt
 ruff_output_ff_2.txt
+
+# Jules generated files
+.jules/bolt*
+.jules/palette*
+.jules/pallette*
+.jules/sentinel*
