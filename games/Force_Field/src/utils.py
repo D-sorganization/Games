@@ -70,14 +70,17 @@ def cast_ray_dda(
         if dist > max_dist:
             break
 
-        if 0 <= map_x < width and 0 <= map_y < height:
-            if grid[map_y][map_x] > 0:
-                hit = True
-                wall_type = grid[map_y][map_x]
-                break
-            # Out of bounds
+        # Check bounds first
+        if not (0 <= map_x < width and 0 <= map_y < height):
+            # Out of bounds - treat as wall
             hit = True
-            wall_type = 1  # Treat as wall
+            wall_type = 1
+            break
+
+        # Within bounds - check for wall
+        if grid[map_y][map_x] > 0:
+            hit = True
+            wall_type = grid[map_y][map_x]
             break
 
     if hit:
