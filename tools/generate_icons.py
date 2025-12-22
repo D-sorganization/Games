@@ -1,6 +1,6 @@
-import pygame
-import os
 from pathlib import Path
+
+import pygame
 
 # Initialize Pygame
 pygame.init()
@@ -121,7 +121,6 @@ def create_wizard_of_wor_icon():
     surf.fill(COLORS["dark_blue"])
 
     # Star/Spark
-    center = (256, 256)
     points = [
         (256, 50),
         (300, 200),
