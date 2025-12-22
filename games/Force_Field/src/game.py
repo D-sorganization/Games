@@ -54,6 +54,7 @@ class Game:
         self.level_start_time = 0
         self.level_times: list[float] = []
         self.selected_map_size = C.DEFAULT_MAP_SIZE
+        self.render_scale = C.DEFAULT_RENDER_SCALE
         self.paused = False
         self.pause_start_time = 0
         self.total_paused_time = 0
@@ -123,6 +124,22 @@ class Game:
     def projectiles(self) -> list[Projectile]:
         """Get list of active projectiles."""
         return self.entity_manager.projectiles
+
+    def cycle_render_scale(self) -> None:
+        """Cycle through render scales."""
+        scales = [1, 2, 4, 8]
+        try:
+            idx = scales.index(self.render_scale)
+            self.render_scale = scales[(idx + 1) % len(scales)]
+        except ValueError:
+            self.render_scale = 2
+
+        if self.raycaster:
+            self.raycaster.set_render_scale(self.render_scale)
+
+        scale_names = {1: "ULTRA", 2: "HIGH", 4: "MEDIUM", 8: "LOW"}
+        msg = f"QUALITY: {scale_names.get(self.render_scale, 'CUSTOM')}"
+        self.add_message(msg, C.WHITE)
 
     def add_message(self, text: str, color: tuple[int, int, int]) -> None:
         """Add a temporary message to the center of the screen"""
@@ -311,6 +328,7 @@ class Game:
         # Create map with selected size
         self.game_map = Map(self.selected_map_size)
         self.raycaster = Raycaster(self.game_map)
+        self.raycaster.set_render_scale(self.render_scale)
         self.last_death_pos = None
 
         # Grab mouse
@@ -580,6 +598,8 @@ class Game:
                             self.fire_weapon()
                     elif event.key == pygame.K_m:
                         self.show_minimap = not self.show_minimap
+                    elif event.key == pygame.K_F9:
+                        self.cycle_render_scale()
 
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if self.paused:

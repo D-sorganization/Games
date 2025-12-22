@@ -2,6 +2,7 @@ import subprocess
 import sys
 import webbrowser
 from pathlib import Path
+from typing import Any
 
 import pygame
 
@@ -22,7 +23,7 @@ GAMES_DIR = BASE_DIR / "games"
 ASSETS_DIR = BASE_DIR / "launcher_assets"
 
 # Game Definitions
-GAMES = [
+GAMES: list[dict[str, Any]] = [
     {
         "name": "Force Field",
         "icon": "force_field_icon.png",
@@ -66,7 +67,7 @@ GAMES = [
 ]
 
 
-def main():
+def main() -> None:
     pygame.init()
     pygame.display.set_caption("Game Launcher")
 
@@ -92,7 +93,14 @@ def main():
             surf.fill((100, 100, 100))
             game["img"] = surf
 
-    def draw_text(surf, text, font, color, pos, center=False):
+    def draw_text(
+        surf: pygame.Surface,
+        text: str,
+        font: pygame.font.Font,
+        color: tuple[int, int, int],
+        pos: tuple[int, int],
+        center: bool = False,
+    ) -> None:
         t = font.render(text, True, color)
         if center:
             rect = t.get_rect(center=pos)
@@ -100,7 +108,7 @@ def main():
         else:
             surf.blit(t, pos)
 
-    def launch_game(game):
+    def launch_game(game: dict[str, Any]) -> None:
         print(f"Launching {game['name']}...")
         if game["type"] == "python":
             try:
@@ -111,7 +119,7 @@ def main():
             except Exception as e:
                 print(f"Error launching {game['name']}: {e}")
         elif game["type"] == "web":
-            webbrowser.open(game["path"].as_uri())
+            webbrowser.open(str(game["path"]))
 
     running = True
     clock = pygame.time.Clock()
@@ -170,15 +178,17 @@ def main():
 
             # Icon
             if "img" in game:
-                icon_x = x + (ITEM_WIDTH - ICON_SIZE[0]) // 2
-                icon_y = y + 20
-                screen.blit(game["img"], (icon_x, icon_y))
+                game_img = game["img"]
+                if isinstance(game_img, pygame.Surface):
+                    icon_x = x + (ITEM_WIDTH - ICON_SIZE[0]) // 2
+                    icon_y = y + 20
+                    screen.blit(game_img, (icon_x, icon_y))
 
             # Name
             colors = ACCENT_COLOR if is_hovered else TEXT_COLOR
             draw_text(
                 screen,
-                game["name"],
+                str(game["name"]),
                 font,
                 colors,
                 (x + ITEM_WIDTH // 2, y + ICON_SIZE[1] + 30),
