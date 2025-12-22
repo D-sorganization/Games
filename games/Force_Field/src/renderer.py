@@ -134,4 +134,3 @@ class GameRenderer:
                     center = (screen_x, screen_y)
                     pygame.draw.circle(self.screen, color, center, size // 2, 2)
                     pygame.draw.circle(self.screen, C.WHITE, center, size // 4, 1)
-
