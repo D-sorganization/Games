@@ -46,12 +46,25 @@ class Raycaster:
         # Sprite cache
         self.sprite_cache: dict[str, pygame.Surface] = {}
 
+        # Resolution settings
+        self.render_scale = C.DEFAULT_RENDER_SCALE
+        self.num_rays = C.SCREEN_WIDTH // self.render_scale
+
         # Offscreen surface for low-res rendering (Optimization)
-        size = (C.NUM_RAYS, C.SCREEN_HEIGHT)
+        size = (self.num_rays, C.SCREEN_HEIGHT)
         self.view_surface = pygame.Surface(size, pygame.SRCALPHA)
 
         # Z-Buffer for occlusion (Euclidean distance)
-        self.z_buffer: list[float] = [float("inf")] * C.NUM_RAYS
+        self.z_buffer: list[float] = [float("inf")] * self.num_rays
+
+    def set_render_scale(self, scale: int) -> None:
+        """Update render scale and related buffers."""
+        self.render_scale = scale
+        self.num_rays = C.SCREEN_WIDTH // scale
+
+        # Recreate buffers
+        self.view_surface = pygame.Surface((self.num_rays, C.SCREEN_HEIGHT), pygame.SRCALPHA)
+        self.z_buffer = [float("inf")] * self.num_rays
 
     def cast_ray(
         self,
@@ -136,7 +149,7 @@ class Raycaster:
 
         current_fov = C.FOV * (C.ZOOM_FOV_MULT if player.zoomed else 1.0)
         half_fov = current_fov / 2
-        delta_angle = current_fov / C.NUM_RAYS
+        delta_angle = current_fov / self.num_rays
 
         ray_angle = player.angle - half_fov
 
@@ -146,7 +159,7 @@ class Raycaster:
         wall_colors = cast("dict[int, tuple[int, int, int]]", theme["walls"])
 
         # Reset Z-Buffer
-        self.z_buffer = [float("inf")] * C.NUM_RAYS
+        self.z_buffer = [float("inf")] * self.num_rays
 
         # Raycast and draw walls
         last_wall_type = 0
@@ -156,7 +169,7 @@ class Raycaster:
         strip_width = 0
         start_ray = 0
 
-        for ray in range(C.NUM_RAYS):
+        for ray in range(self.num_rays):
             distance, wall_type = self.cast_ray(
                 player.x,
                 player.y,
@@ -337,18 +350,18 @@ class Raycaster:
         type_data: dict[str, Any] = bot.type_data
         sprite_size = base_sprite_size * float(type_data.get("scale", 1.0))
 
-        center_ray = C.NUM_RAYS / 2
-        sprite_scale = sprite_size / C.RENDER_SCALE
+        center_ray = self.num_rays / 2
+        sprite_scale = sprite_size / self.render_scale
         ray_x = center_ray + (angle / half_fov) * center_ray - sprite_scale / 2
 
-        sprite_ray_width = sprite_size / C.RENDER_SCALE
+        sprite_ray_width = sprite_size / self.render_scale
         sprite_ray_x = ray_x
 
         sprite_y = C.SCREEN_HEIGHT / 2 - sprite_size / 2 + player.pitch + view_offset_y
 
         if sprite_ray_x + sprite_ray_width < 0:
             return
-        if sprite_ray_x >= C.NUM_RAYS:
+        if sprite_ray_x >= self.num_rays:
             return
 
         cache_display_size = min(sprite_size, 800)
@@ -387,7 +400,7 @@ class Raycaster:
             self.sprite_cache[cache_key] = sprite_surface
 
         start_r = int(max(0, sprite_ray_x))
-        end_r = int(min(C.NUM_RAYS, sprite_ray_x + sprite_ray_width))
+        end_r = int(min(self.num_rays, sprite_ray_x + sprite_ray_width))
 
         if start_r >= end_r:
             return
@@ -663,11 +676,11 @@ class Raycaster:
 
                 # Simple Z-Check
                 # Map angle to ray index
-                center_ray = C.NUM_RAYS // 2
+                center_ray = self.num_rays // 2
                 ray_idx = int(center_ray + (angle_to_proj / half_fov) * center_ray)
 
                 # Check bounds and Z-Buffer
-                if 0 <= ray_idx < C.NUM_RAYS:
+                if 0 <= ray_idx < self.num_rays:
                     # Check if center is occluded
                     if proj_dist > self.z_buffer[ray_idx]:
                         # Occluded

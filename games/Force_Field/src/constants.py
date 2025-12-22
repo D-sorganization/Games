@@ -13,7 +13,7 @@ MIN_BUILDING_OFFSET = 3  # Minimum offset from map edges for building generation
 # Rendering Quality
 # 1 = Ultra (Full Res), 2 = High (Half Res),
 # 4 = Medium/Retro (Quarter Res), 8 = Low (Blocky)
-RENDER_SCALE = 2
+DEFAULT_RENDER_SCALE = 2
 
 # Player settings
 # Speeds reduced to improve game pacing
@@ -26,9 +26,6 @@ MAX_RAYCAST_STEPS = 1000  # Maximum steps for raycasting
 FOV = math.pi / 3  # 60 degrees
 HALF_FOV = FOV / 2
 
-# Raycasting calculations based on Render Scale
-NUM_RAYS = SCREEN_WIDTH // RENDER_SCALE
-DELTA_ANGLE = FOV / NUM_RAYS
 MAX_DEPTH = 100  # Increased render distance (2x)
 
 DEFAULT_PLAYER_SPAWN = (2.5, 2.5, 0.0)
