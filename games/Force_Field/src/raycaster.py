@@ -63,7 +63,9 @@ class Raycaster:
         self.num_rays = C.SCREEN_WIDTH // scale
 
         # Recreate buffers
-        self.view_surface = pygame.Surface((self.num_rays, C.SCREEN_HEIGHT), pygame.SRCALPHA)
+        self.view_surface = pygame.Surface(
+            (self.num_rays, C.SCREEN_HEIGHT), pygame.SRCALPHA
+        )
         self.z_buffer = [float("inf")] * self.num_rays
 
     def cast_ray(

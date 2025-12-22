@@ -138,7 +138,8 @@ class Game:
             self.raycaster.set_render_scale(self.render_scale)
 
         scale_names = {1: "ULTRA", 2: "HIGH", 4: "MEDIUM", 8: "LOW"}
-        self.add_message(f"QUALITY: {scale_names.get(self.render_scale, 'CUSTOM')}", C.WHITE)
+        msg = f"QUALITY: {scale_names.get(self.render_scale, 'CUSTOM')}"
+        self.add_message(msg, C.WHITE)
 
     def add_message(self, text: str, color: tuple[int, int, int]) -> None:
         """Add a temporary message to the center of the screen"""
