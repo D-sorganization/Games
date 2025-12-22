@@ -33,6 +33,16 @@ Games/
 └── output/             # Output files
 ```
 
+## Game Launcher
+
+To easily play all games, run the **Game Launcher**:
+
+1. Double-click `Play Games.bat` in the root directory.
+2. Or run:
+   ```bash
+   python game_launcher.py
+   ```
+
 ## Getting Started
 
 Each game/simulation has its own requirements and setup instructions. See the README files in each project directory for specific details.
