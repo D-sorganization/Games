@@ -12,7 +12,6 @@ from constants import (
     GAME_AREA_WIDTH,
     GAME_AREA_X,
     GAME_AREA_Y,
-    GRAY,
     GREEN,
     RADAR_PING_INTERVAL,
     RADAR_SIZE,
@@ -120,15 +119,14 @@ class Radar:
 
         # Draw enemy positions
         for enemy in enemies:
-            if enemy.alive:
+            if enemy.alive and enemy.visible:  # Only show visible enemies
                 enemy_radar_x = self.x + (enemy.x - GAME_AREA_X) * scale_x
                 enemy_radar_y = self.y + (enemy.y - GAME_AREA_Y) * scale_y
 
-                # Use different colors for different enemy types
-                color = enemy.color if enemy.visible else GRAY
+                # Use enemy color
                 pygame.draw.circle(
                     screen,
-                    color,
+                    enemy.color,
                     (int(enemy_radar_x), int(enemy_radar_y)),
                     2,
                 )

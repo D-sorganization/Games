@@ -118,8 +118,30 @@ class Enemy:
             self.x, self.y = old_x, old_y
             self.rect.x = self.x - ENEMY_SIZE // 2
             self.rect.y = self.y - ENEMY_SIZE // 2
-            # Change direction when hitting wall
-            self.direction = random.choice([UP, DOWN, LEFT, RIGHT])
+            # Smart direction change when hitting wall
+            # Try perpendicular directions first to avoid getting stuck
+            possible_directions = []
+            if self.direction in (UP, DOWN):
+                possible_directions = [LEFT, RIGHT, UP, DOWN]
+            else:  # LEFT or RIGHT
+                possible_directions = [UP, DOWN, LEFT, RIGHT]
+
+            # Test each direction to find a valid one
+            for new_direction in possible_directions:
+                test_x = self.x + new_direction[0] * self.speed * 2
+                test_y = self.y + new_direction[1] * self.speed * 2
+                test_rect = pygame.Rect(
+                    test_x - ENEMY_SIZE // 2,
+                    test_y - ENEMY_SIZE // 2,
+                    ENEMY_SIZE,
+                    ENEMY_SIZE,
+                )
+                if dungeon.can_move_to(test_rect):
+                    self.direction = new_direction
+                    break
+            else:
+                # If no direction works, pick random
+                self.direction = random.choice([UP, DOWN, LEFT, RIGHT])
 
         # Advance walk animation
         if (self.x, self.y) != (old_x, old_y):
@@ -245,10 +267,11 @@ class Worluk(Enemy):
     def __init__(self, x: float, y: float) -> None:
         """Initialize Worluk enemy at position"""
         super().__init__(x, y, WORLUK_SPEED, CYAN, WORLUK_POINTS, "worluk")
-        self.visible = False
+        self.visible = True  # Start visible
         self.can_shoot = False
-        self.invisibility_cooldown = INVISIBILITY_INTERVAL // 2
-        self.invisibility_time = INVISIBILITY_DURATION // 2
+        # Shorter initial cooldown
+        self.invisibility_cooldown = INVISIBILITY_INTERVAL // 3
+        self.invisibility_time = 0
 
     def update(self, dungeon: Any, player_pos: tuple[float, float]) -> None:
         """Update Worluk with special visibility behavior."""
@@ -282,6 +305,35 @@ class Wizard(Enemy):
                 self.direction = DOWN if dy > 0 else UP
 
     def draw(self, screen: pygame.Surface) -> None:
-        """Draw the wizard (only after appearance timer)."""
-        if self.appearance_timer <= 0:
+        """Draw the wizard (with special appearance effect)."""
+        if self.appearance_timer > 0:
+            # Show materializing effect during countdown
+            if self.appearance_timer % 20 < 10:  # Flicker effect
+                # Draw semi-transparent version
+                body_rect = pygame.Rect(self.rect)
+                body_rect.inflate_ip(-ENEMY_OUTLINE, -ENEMY_OUTLINE)
+
+                # Fading aura
+                aura_radius = ENEMY_GLOW * 2
+                aura_surface = pygame.Surface(
+                    (
+                        body_rect.width + aura_radius * 2,
+                        body_rect.height + aura_radius * 2,
+                    ),
+                    pygame.SRCALPHA,
+                )
+                alpha = int(100 + 50 * math.sin(self.appearance_timer / 10))
+                pygame.draw.ellipse(
+                    aura_surface,
+                    (self.color[0], self.color[1], self.color[2], alpha),
+                    aura_surface.get_rect(),
+                )
+                screen.blit(
+                    aura_surface,
+                    (
+                        body_rect.centerx - aura_surface.get_width() // 2,
+                        body_rect.centery - aura_surface.get_height() // 2,
+                    ),
+                )
+        else:
             super().draw(screen)

@@ -6,6 +6,7 @@ Main game file for Wizard of Wor remake.
 
 
 import math
+import random
 import sys
 from array import array
 from typing import NoReturn
@@ -60,9 +61,13 @@ class SoundBoard:
         self.sounds = {
             "shot": self._build_tone(920, 80),
             "enemy_hit": self._build_tone(480, 120),
+            "player_hit": self._build_tone(220, 200),
             "spawn": self._build_tone(640, 150),
             "wizard": self._build_tone(300, 200),
         }
+
+        # Create simple intro melody
+        self.intro_melody = self._build_intro_melody()
 
     def _build_tone(self, frequency: int, duration_ms: int) -> pygame.mixer.Sound:
         """Build a tone sound effect with the given frequency and duration."""
@@ -74,10 +79,62 @@ class SoundBoard:
             waveform.append(value)
         return pygame.mixer.Sound(buffer=waveform.tobytes())
 
+    def _build_intro_melody(self) -> pygame.mixer.Sound:
+        """Build a retro-style intro melody reminiscent of classic arcade games."""
+        sample_rate = 22050
+        duration_ms = 3000  # 3 second intro
+        sample_count = int(sample_rate * duration_ms / 1000)
+        waveform = array("h")
+
+        # Classic arcade-style melody notes (frequencies in Hz)
+        melody = [
+            (523, 300),  # C5
+            (659, 300),  # E5
+            (784, 300),  # G5
+            (1047, 600),  # C6
+            (784, 300),  # G5
+            (659, 300),  # E5
+            (523, 600),  # C5
+        ]
+
+        current_sample = 0
+        for freq, note_duration_ms in melody:
+            note_samples = int(sample_rate * note_duration_ms / 1000)
+            for i in range(note_samples):
+                if current_sample >= sample_count:
+                    break
+                # Create a simple square wave with some envelope
+                envelope = min(1.0, (note_samples - i) / (note_samples * 0.1))
+                # Square wave generation
+                square_wave = 1 if (i * freq // sample_rate) % 2 else -1
+                value = int(8000 * envelope * square_wave)
+                waveform.append(value)
+                current_sample += 1
+
+            # Small pause between notes
+            pause_samples = int(sample_rate * 0.05)  # 50ms pause
+            for _ in range(pause_samples):
+                if current_sample >= sample_count:
+                    break
+                waveform.append(0)
+                current_sample += 1
+
+        # Fill remaining time with silence
+        while current_sample < sample_count:
+            waveform.append(0)
+            current_sample += 1
+
+        return pygame.mixer.Sound(buffer=waveform.tobytes())
+
     def play(self, name: str) -> None:
         """Play a sound effect by name."""
         if self.enabled and name in self.sounds:
             self.sounds[name].play()
+
+    def play_intro(self) -> None:
+        """Play the intro melody."""
+        if self.enabled and hasattr(self, "intro_melody"):
+            self.intro_melody.play()
 
 
 class WizardOfWorGame:
@@ -91,8 +148,8 @@ class WizardOfWorGame:
         self.clock = pygame.time.Clock()
         self.running = True
 
-        # Game state
-        self.state = "menu"  # menu, playing, game_over, level_complete
+        # Game state - Start directly in playing mode for easier testing
+        self.state = "playing"
         self.level = 1
         self.score = 0
         self.lives = PLAYER_LIVES
@@ -115,6 +172,12 @@ class WizardOfWorGame:
         self.font_large = pygame.font.Font(None, 48)
         self.font_medium = pygame.font.Font(None, 32)
         self.font_small = pygame.font.Font(None, 24)
+
+        # Auto-start the first level
+        self.start_level()
+
+        # Play intro music
+        self.soundboard.play_intro()
 
     def start_level(self) -> None:
         """Start a new level."""
@@ -159,17 +222,39 @@ class WizardOfWorGame:
     def _spawn_enemy(self, enemy_cls: type["Enemy"]) -> None:
         """Spawn a single enemy with spacing away from the player."""
         chosen_pos = None
-        for _ in range(8):
+        for _ in range(20):  # Increased attempts for better positioning
             pos = self.dungeon.get_random_spawn_position()
             if self.player is None:
                 chosen_pos = pos
                 break
             player_vector = pygame.math.Vector2(self.player.x, self.player.y)
-            if player_vector.distance_to(pygame.math.Vector2(pos)) > CELL_SIZE * 3:
+            distance = player_vector.distance_to(pygame.math.Vector2(pos))
+            # Require minimum distance of 4 cells from player
+            if distance > CELL_SIZE * 4:
                 chosen_pos = pos
                 break
+
+        # Fallback: if no good position found, use a corner spawn
         if chosen_pos is None:
-            chosen_pos = pos
+            corner_positions = [
+                (
+                    GAME_AREA_X + CELL_SIZE * 2,
+                    GAME_AREA_Y + CELL_SIZE * 2,
+                ),
+                (
+                    GAME_AREA_X + GAME_AREA_WIDTH - CELL_SIZE * 2,
+                    GAME_AREA_Y + CELL_SIZE * 2,
+                ),
+                (
+                    GAME_AREA_X + CELL_SIZE * 2,
+                    GAME_AREA_Y + GAME_AREA_HEIGHT - CELL_SIZE * 2,
+                ),
+                (
+                    GAME_AREA_X + GAME_AREA_WIDTH - CELL_SIZE * 2,
+                    GAME_AREA_Y + GAME_AREA_HEIGHT - CELL_SIZE * 2,
+                ),
+            ]
+            chosen_pos = random.choice(corner_positions)
 
         self.enemies.append(enemy_cls(chosen_pos[0], chosen_pos[1]))
         self.effects.append(SparkleBurst(chosen_pos, CYAN, count=12))
@@ -197,6 +282,14 @@ class WizardOfWorGame:
                                     self.effects.append(muzzle)
                                 self.soundboard.play("shot")
                     elif event.key == pygame.K_ESCAPE:
+                        self.state = "paused"
+                    elif event.key == pygame.K_p:
+                        self.state = "paused"
+
+                elif self.state == "paused":
+                    if event.key == pygame.K_ESCAPE or event.key == pygame.K_p:
+                        self.state = "playing"
+                    elif event.key == pygame.K_q:
                         self.state = "menu"
 
                 elif self.state == "game_over":
@@ -215,7 +308,11 @@ class WizardOfWorGame:
 
     def update(self) -> None:
         """Update game state."""
-        if self.state != "playing":
+        if self.state not in ("playing", "paused"):
+            return
+
+        # Don't update game logic when paused
+        if self.state == "paused":
             return
 
         previous_ping = self.radar.ping_timer
@@ -260,12 +357,12 @@ class WizardOfWorGame:
         alive_enemies = [e for e in self.enemies if e.alive]
         if len(alive_enemies) == 0:
             self.state = "level_complete"
-        elif len(alive_enemies) <= 2 and not self.wizard_spawned:
-            # Spawn wizard when few enemies remain
+        elif len(alive_enemies) <= 1 and not self.wizard_spawned:
+            # Spawn wizard when only 1 enemy remains (more like original)
             self.spawn_wizard()
 
         # Check lose condition
-        if not self.player.alive:
+        if self.player is not None and not self.player.alive:
             self.lives -= 1
             if self.lives > 0:
                 # Respawn player
@@ -282,8 +379,10 @@ class WizardOfWorGame:
 
     def check_collisions(self) -> None:
         """Check for collisions between bullets and entities."""
+        bullets_to_remove = []
+
         # Player bullets hitting enemies
-        for bullet in self.bullets[:]:
+        for bullet in self.bullets:
             if not bullet.is_player_bullet or not bullet.active:
                 continue
 
@@ -292,17 +391,20 @@ class WizardOfWorGame:
                     points = enemy.take_damage()
                     self.score += points
                     bullet.active = False
+                    bullets_to_remove.append(bullet)
                     self.soundboard.play("enemy_hit")
-                    if bullet in self.bullets:
-                        self.bullets.remove(bullet)
                     self.effects.append(
                         SparkleBurst((enemy.x, enemy.y), enemy.color, count=10),
                     )
                     break
 
         # Enemy bullets hitting player
-        for bullet in self.bullets[:]:
-            if bullet.is_player_bullet or not bullet.active:
+        for bullet in self.bullets:
+            if (
+                bullet.is_player_bullet
+                or not bullet.active
+                or bullet in bullets_to_remove
+            ):
                 continue
 
             if (
@@ -312,12 +414,17 @@ class WizardOfWorGame:
             ):
                 took_damage = self.player.take_damage()
                 bullet.active = False
-                if bullet in self.bullets:
-                    self.bullets.remove(bullet)
+                bullets_to_remove.append(bullet)
                 if took_damage:
+                    self.soundboard.play("player_hit")
                     self.effects.append(
                         SparkleBurst((self.player.x, self.player.y), RED, count=16),
                     )
+
+        # Remove bullets that hit something
+        for bullet in bullets_to_remove:
+            if bullet in self.bullets:
+                self.bullets.remove(bullet)
 
         # Player colliding with enemies
         if self.player is not None and self.player.alive:
@@ -325,6 +432,7 @@ class WizardOfWorGame:
                 if enemy.alive and self.player.rect.colliderect(enemy.rect):
                     took_damage = self.player.take_damage()
                     if took_damage:
+                        self.soundboard.play("player_hit")
                         self.effects.append(
                             SparkleBurst((self.player.x, self.player.y), RED, count=16),
                         )
@@ -352,6 +460,8 @@ class WizardOfWorGame:
             self.draw_menu()
         elif self.state == "playing":
             self.draw_game()
+        elif self.state == "paused":
+            self.draw_paused()
         elif self.state == "level_complete":
             self.draw_level_complete()
         elif self.state == "game_over":
@@ -368,7 +478,7 @@ class WizardOfWorGame:
         instructions = [
             "WASD or Arrow Keys - Move",
             "SPACE - Shoot",
-            "ESC - Pause/Menu",
+            "P or ESC - Pause",
             "",
             "Press ENTER to Start",
             "Press ESC to Quit",
@@ -435,6 +545,7 @@ class WizardOfWorGame:
 
         # Shield indicator
         if self.player is not None:
+            shield_ratio = 0.0
             if self.player.invulnerable_timer > 0:
                 shield_ratio = min(
                     1.0,
@@ -449,11 +560,12 @@ class WizardOfWorGame:
                 DARK_GRAY,
                 (bar_x, bar_y, bar_width, bar_height),
             )
-            pygame.draw.rect(
-                self.screen,
-                PALE_YELLOW,
-                (bar_x, bar_y, int(bar_width * shield_ratio), bar_height),
-            )
+            if shield_ratio > 0:
+                pygame.draw.rect(
+                    self.screen,
+                    PALE_YELLOW,
+                    (bar_x, bar_y, int(bar_width * shield_ratio), bar_height),
+                )
             shield_text = self.font_small.render("Shield", True, PALE_YELLOW)
             self.screen.blit(shield_text, (bar_x, bar_y - 18))
 
@@ -534,6 +646,35 @@ class WizardOfWorGame:
             center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 130),
         )
         self.screen.blit(menu_text, menu_rect)
+
+    def draw_paused(self) -> None:
+        """Draw pause screen."""
+        self.draw_game()  # Draw game in background
+
+        # Overlay
+        overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+        overlay.set_alpha(128)
+        overlay.fill(BLACK)
+        self.screen.blit(overlay, (0, 0))
+
+        # Text
+        text = self.font_large.render("PAUSED", True, YELLOW)
+        text_rect = text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 50))
+        self.screen.blit(text, text_rect)
+
+        instructions = [
+            "P or ESC - Resume",
+            "Q - Quit to Menu",
+        ]
+
+        y_offset = SCREEN_HEIGHT // 2
+        for line in instructions:
+            instruction_text = self.font_small.render(line, True, WHITE)
+            instruction_rect = instruction_text.get_rect(
+                center=(SCREEN_WIDTH // 2, y_offset)
+            )
+            self.screen.blit(instruction_text, instruction_rect)
+            y_offset += 30
 
     def run(self) -> NoReturn:
         """Main game loop."""

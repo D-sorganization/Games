@@ -80,13 +80,13 @@ THORWOR_POINTS = 300
 WORLUK_POINTS = 1000
 WIZARD_POINTS = 2500
 
-# Enemy spawn counts per level
+# Enemy spawn counts per level (more balanced progression)
 ENEMIES_PER_LEVEL = {
-    1: {"burwor": 4, "garwor": 0, "thorwor": 0},
-    2: {"burwor": 3, "garwor": 2, "thorwor": 0},
-    3: {"burwor": 2, "garwor": 2, "thorwor": 2},
-    4: {"burwor": 1, "garwor": 3, "thorwor": 2},
-    5: {"burwor": 0, "garwor": 3, "thorwor": 3},
+    1: {"burwor": 6, "garwor": 0, "thorwor": 0},
+    2: {"burwor": 4, "garwor": 2, "thorwor": 0},
+    3: {"burwor": 2, "garwor": 3, "thorwor": 1},
+    4: {"burwor": 1, "garwor": 2, "thorwor": 3},
+    5: {"burwor": 0, "garwor": 2, "thorwor": 4},
 }
 
 # Direction constants
