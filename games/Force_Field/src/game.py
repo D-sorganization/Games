@@ -1279,10 +1279,13 @@ class Game:
                             pickup_msg = f"{w_name.upper()} ACQUIRED!"
                             color = C.CYAN
                         else:
-                            clip_size = int(cast("int", C.WEAPONS[w_name]["clip_size"]))
-                            self.player.ammo[w_name] += clip_size * 2
-                            pickup_msg = f"{w_name.upper()} AMMO"
-                            color = C.YELLOW
+                            if w_name in self.player.ammo:
+                                clip_size = int(
+                                    cast("int", C.WEAPONS[w_name]["clip_size"])
+                                )
+                                self.player.ammo[w_name] += clip_size * 2
+                                pickup_msg = f"{w_name.upper()} AMMO"
+                                color = C.YELLOW
 
                     if pickup_msg:
                         bot.alive = False

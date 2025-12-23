@@ -218,11 +218,30 @@ class Bot:
                     self.shoot_animation = 1.0
                     return projectile
 
+        if self.enemy_type == "sniper":
+            if distance < C.WEAPON_RANGE_SNIPER and self.attack_timer <= 0:
+                if self.has_line_of_sight(game_map, player):
+                    # Very Fast projectile
+                    projectile = Projectile(
+                        self.x,
+                        self.y,
+                        self.angle,
+                        damage=self.damage,
+                        speed=0.4,
+                        is_player=False,
+                        color=(255, 0, 0),
+                        size=0.1,
+                    )
+                    self.attack_timer = 180  # Slow fire
+                    self.shoot_animation = 1.0
+                    return projectile
+
         # Attack if in range
         if distance < C.BOT_ATTACK_RANGE and self.enemy_type not in [
             "beast",
             "ninja",
             "minigunner",
+            "sniper",
         ]:  # Beast and Ninja handled above
             if self.attack_timer <= 0:
                 # Check line of sight
