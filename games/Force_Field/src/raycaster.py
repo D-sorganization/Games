@@ -156,9 +156,14 @@ class Raycaster:
         ray_angle = player.angle - half_fov
 
         # Select theme
-        theme_idx = (level - 1) % len(C.LEVEL_THEMES)
-        theme = C.LEVEL_THEMES[theme_idx]
-        wall_colors = cast("dict[int, tuple[int, int, int]]", theme["walls"])
+        if hasattr(self, "_cached_level") and self._cached_level == level:
+            wall_colors = self._cached_wall_colors
+        else:
+            theme_idx = (level - 1) % len(C.LEVEL_THEMES)
+            theme = C.LEVEL_THEMES[theme_idx]
+            wall_colors = cast("dict[int, tuple[int, int, int]]", theme["walls"])
+            self._cached_level = level
+            self._cached_wall_colors = wall_colors
 
         # Reset Z-Buffer
         self.z_buffer = [float("inf")] * self.num_rays
@@ -274,10 +279,13 @@ class Raycaster:
         self._render_sprites(player, bots, half_fov, view_offset_y)
 
         # Scale view surface to screen size and blit
-        scaled_surface = pygame.transform.scale(
-            self.view_surface, (C.SCREEN_WIDTH, C.SCREEN_HEIGHT)
-        )
-        screen.blit(scaled_surface, (0, 0))
+        if self.render_scale == 1:
+            screen.blit(self.view_surface, (0, 0))
+        else:
+            scaled_surface = pygame.transform.scale(
+                self.view_surface, (C.SCREEN_WIDTH, C.SCREEN_HEIGHT)
+            )
+            screen.blit(scaled_surface, (0, 0))
 
     def _render_sprites(
         self,

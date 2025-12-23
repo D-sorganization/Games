@@ -52,6 +52,7 @@ WEAPON_RANGE_SHOTGUN = 12  # Increased range (was 8)
 WEAPON_RANGE_PLASMA = 30
 WEAPON_RANGE_STORMTROOPER = 30
 WEAPON_RANGE_MINIGUN = 20
+WEAPON_RANGE_SNIPER = 40
 
 # Weapon settings
 WEAPONS = {
@@ -238,6 +239,7 @@ DEMON_COLOR = (181, 43, 29)
 DINOSAUR_COLOR = (63, 163, 77)
 RAIDER_COLOR = (122, 92, 255)
 NINJA_COLOR = (0, 0, 100)
+SNIPER_COLOR = (70, 70, 70)
 
 ENEMY_TYPES = {
     "zombie": {
@@ -294,6 +296,14 @@ ENEMY_TYPES = {
         "speed_mult": 1.5,
         "damage_mult": 1.2,
         "scale": 0.9,
+        "visual_style": "ghost",
+    },
+    "sniper": {
+        "color": SNIPER_COLOR,
+        "health_mult": 0.5,
+        "speed_mult": 0.9,
+        "damage_mult": 3.0,
+        "scale": 0.8,
         "visual_style": "ghost",
     },
     # Baby Variants (Cute/Creepy Round Style)
