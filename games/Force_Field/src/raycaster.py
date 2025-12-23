@@ -31,6 +31,10 @@ class Raycaster:
         self.grid = game_map.grid
         self.map_size = game_map.size
 
+        # Cache for theme
+        self._cached_level: int = -1
+        self._cached_wall_colors: dict[int, tuple[int, int, int]] = {}
+
         # Pre-generate stars
         self.stars = []
         for _ in range(100):
