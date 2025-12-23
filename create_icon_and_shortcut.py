@@ -5,24 +5,31 @@ Create a proper ICO file from PNG and desktop shortcut for Games Launcher
 import subprocess
 import sys
 from pathlib import Path
+from typing import Any
+
+# Global variables for PIL availability
+PIL_AVAILABLE = False
+PIL_Image: Any | None = None
 
 try:
-    from PIL import Image
+    from PIL import Image as PIL_Image
 
     PIL_AVAILABLE = True
 except ImportError:
-    PIL_AVAILABLE = False
+    PIL_Image = None
 
 
 def create_ico_from_png(png_path: Path, ico_path: Path) -> bool:
     """Convert PNG to ICO with multiple sizes"""
-    if not PIL_AVAILABLE:
+    global PIL_AVAILABLE, PIL_Image
+
+    if not PIL_AVAILABLE or PIL_Image is None:
         print("PIL/Pillow not available, trying alternative method...")
         return False
 
     try:
         # Open the PNG image
-        with Image.open(png_path) as img:
+        with PIL_Image.open(png_path) as img:
             # Convert to RGBA if not already
             if img.mode != "RGBA":
                 img = img.convert("RGBA")
@@ -32,7 +39,7 @@ def create_ico_from_png(png_path: Path, ico_path: Path) -> bool:
             images = []
 
             for size in sizes:
-                resized = img.resize(size, Image.Resampling.LANCZOS)
+                resized = img.resize(size, PIL_Image.Resampling.LANCZOS)
                 images.append(resized)
 
             # Save as ICO with multiple sizes
@@ -122,6 +129,8 @@ $Shortcut.WindowStyle = 1
 
 def main() -> None:
     """Main function"""
+    global PIL_AVAILABLE, PIL_Image
+
     print("🚀 Games Launcher Desktop Shortcut Creator")
     print("=" * 50)
 
@@ -131,10 +140,9 @@ def main() -> None:
             subprocess.check_call([sys.executable, "-m", "pip", "install", "Pillow"])
             print("✅ Pillow installed successfully!")
             # Re-import after installation and update global state
-            global PIL_AVAILABLE, Image
-            from PIL import Image as _Image
+            from PIL import Image as _PIL_Image
 
-            Image = _Image
+            PIL_Image = _PIL_Image
             PIL_AVAILABLE = True
             print("📦 Pillow imported successfully!")
         except Exception as e:
