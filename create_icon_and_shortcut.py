@@ -2,10 +2,9 @@
 """
 Create a proper ICO file from PNG and desktop shortcut for Games Launcher
 """
-import os
+import subprocess
 import sys
 from pathlib import Path
-import subprocess
 
 try:
     from PIL import Image
@@ -18,28 +17,29 @@ def create_ico_from_png(png_path: Path, ico_path: Path) -> bool:
     if not PIL_AVAILABLE:
         print("PIL/Pillow not available, trying alternative method...")
         return False
-    
+
     try:
         # Open the PNG image
         with Image.open(png_path) as img:
             # Convert to RGBA if not already
             if img.mode != 'RGBA':
                 img = img.convert('RGBA')
-            
+
             # Create multiple sizes for the ICO file
             sizes = [(16, 16), (32, 32), (48, 48), (64, 64)]
             images = []
-            
+
             for size in sizes:
                 resized = img.resize(size, Image.Resampling.LANCZOS)
                 images.append(resized)
-            
+
             # Save as ICO with multiple sizes
-            img.save(ico_path, format='ICO', sizes=[(img.width, img.height) for img in images])
-            
+            sizes_list = [(img.width, img.height) for img in images]
+            img.save(ico_path, format='ICO', sizes=sizes_list)
+
             print(f"✅ Successfully created ICO file: {ico_path}")
             return True
-            
+
     except Exception as e:
         print(f"❌ Error creating ICO file: {e}")
         return False
@@ -50,25 +50,25 @@ def create_desktop_shortcut():
     launcher_path = current_dir / "game_launcher.py"
     png_icon_path = current_dir / "launcher_assets" / "force_field_icon.png"
     ico_icon_path = current_dir / "launcher_assets" / "games_launcher.ico"
-    
+
     # Get desktop path
     desktop_path = Path.home() / "Desktop"
     shortcut_path = desktop_path / "Games Launcher.lnk"
-    
-    print(f"🎮 Creating Games Launcher desktop shortcut...")
+
+    print("🎮 Creating Games Launcher desktop shortcut...")
     print(f"📁 Current directory: {current_dir}")
     print(f"🎯 Launcher path: {launcher_path}")
     print(f"🖼️  PNG icon: {png_icon_path}")
     print(f"🎨 ICO icon: {ico_icon_path}")
-    
+
     # Check if PNG icon exists
     if not png_icon_path.exists():
         print(f"❌ PNG icon not found: {png_icon_path}")
         return False
-    
+
     # Create ICO file from PNG
     ico_created = create_ico_from_png(png_icon_path, ico_icon_path)
-    
+
     # Create PowerShell script to make the shortcut
     ps_script = f'''
 $WshShell = New-Object -comObject WScript.Shell
@@ -79,16 +79,16 @@ $Shortcut.WorkingDirectory = "{current_dir}"
 $Shortcut.Description = "Launch Games Collection - Force Field, Tetris, Doom and more!"
 $Shortcut.WindowStyle = 1
 '''
-    
+
     if ico_created and ico_icon_path.exists():
         ps_script += f'$Shortcut.IconLocation = "{ico_icon_path}"\n'
         print("🎨 Using custom ICO icon")
     else:
         print("⚠️  Using default Python icon")
-    
+
     ps_script += '$Shortcut.Save()\n'
     ps_script += f'Write-Host "Desktop shortcut created: {shortcut_path}"\n'
-    
+
     # Execute PowerShell script
     try:
         result = subprocess.run(
@@ -99,15 +99,15 @@ $Shortcut.WindowStyle = 1
         )
         print("✅ PowerShell execution successful:")
         print(result.stdout)
-        
+
         if shortcut_path.exists():
-            print(f"🎉 Desktop shortcut created successfully!")
+            print("🎉 Desktop shortcut created successfully!")
             print(f"📍 Location: {shortcut_path}")
             return True
         else:
             print("❌ Shortcut file not found after creation")
             return False
-            
+
     except subprocess.CalledProcessError as e:
         print(f"❌ PowerShell error: {e}")
         print(f"Error output: {e.stderr}")
@@ -117,21 +117,20 @@ def main():
     """Main function"""
     print("🚀 Games Launcher Desktop Shortcut Creator")
     print("=" * 50)
-    
+
     if not PIL_AVAILABLE:
         print("⚠️  PIL/Pillow not installed. Installing...")
         try:
             subprocess.check_call([sys.executable, "-m", "pip", "install", "Pillow"])
             print("✅ Pillow installed successfully!")
             # Re-import after installation
-            from PIL import Image
             print("📦 Pillow imported successfully!")
         except Exception as e:
             print(f"❌ Failed to install Pillow: {e}")
             print("Continuing without custom icon conversion...")
-    
+
     success = create_desktop_shortcut()
-    
+
     if success:
         print("\n🎉 SUCCESS! Your Games Launcher shortcut is ready!")
         print("Look for 'Games Launcher' on your desktop with a cool Force Field icon!")
