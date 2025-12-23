@@ -12,11 +12,32 @@ PIL_AVAILABLE = False
 PIL_Image: Any | None = None
 
 try:
-    from PIL import Image as PIL_Image
+    from PIL import Image
 
+    PIL_Image = Image
     PIL_AVAILABLE = True
 except ImportError:
     PIL_Image = None
+
+
+def get_desktop_path() -> Path:
+    """Get the correct Desktop path using Windows API via PowerShell"""
+    try:
+        result = subprocess.run(
+            ["powershell", "-Command", "[Environment]::GetFolderPath('Desktop')"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        desktop_path = result.stdout.strip()
+        if desktop_path:
+            return Path(desktop_path)
+    except subprocess.CalledProcessError as e:
+        print(f"⚠️  Failed to get Desktop path via PowerShell: {e}")
+
+    # Fallback to home/Desktop if PowerShell fails
+    print("⚠️  Using fallback Desktop path")
+    return Path.home() / "Desktop"
 
 
 def create_ico_from_png(png_path: Path, ico_path: Path) -> bool:
@@ -63,12 +84,13 @@ def create_desktop_shortcut() -> bool:
     png_icon_path = current_dir / "launcher_assets" / "force_field_icon.png"
     ico_icon_path = current_dir / "launcher_assets" / "games_launcher.ico"
 
-    # Get desktop path
-    desktop_path = Path.home() / "Desktop"
+    # Get desktop path using Windows API
+    desktop_path = get_desktop_path()
     shortcut_path = desktop_path / "Games Launcher.lnk"
 
     print("🎮 Creating Games Launcher desktop shortcut...")
     print(f"📁 Current directory: {current_dir}")
+    print(f"🖥️  Desktop path: {desktop_path}")
     print(f"🎯 Launcher path: {launcher_path}")
     print(f"🖼️  PNG icon: {png_icon_path}")
     print(f"🎨 ICO icon: {ico_icon_path}")
