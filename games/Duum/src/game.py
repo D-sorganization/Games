@@ -230,8 +230,9 @@ class Game:
         offset = 5
         map_size = self.game_map.size if self.game_map else self.selected_map_size
 
-        # Building 4 occupies 0.75 * size to 0.95 * size,
-        # so bottom-right spawn must be before 0.75 * size
+        # Reserve space near the bottom-right corner so the spawn point
+        # stays well inside the map and away from large structures/boundaries.
+        # The 0.75 factor is a historical heuristic kept for compatibility.
         building4_start = int(map_size * 0.75)
         bottom_right_offset = map_size - building4_start + C.SPAWN_SAFETY_MARGIN
 
@@ -417,6 +418,8 @@ class Game:
                         "health_pack",
                         "ammo_box",
                         "bomb_item",
+                        "pickup_rocket",
+                        "pickup_minigun",
                     ]:
                         enemy_type = random.choice(list(C.ENEMY_TYPES.keys()))
 
@@ -460,7 +463,9 @@ class Game:
             "pickup_rifle",
             "pickup_shotgun",
             "pickup_plasma",
+            "pickup_plasma",
             "pickup_minigun",
+            "pickup_rocket",
         ]
         for w_pickup in possible_weapons:
             if random.random() < 0.4:  # 40% chance per level

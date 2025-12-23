@@ -218,12 +218,19 @@ class Bot:
                     self.shoot_animation = 1.0
                     return projectile
 
-        # Attack if in range
-        if distance < C.BOT_ATTACK_RANGE and self.enemy_type not in [
-            "beast",
-            "ninja",
-            "minigunner",
-        ]:  # Beast and Ninja handled above
+        if (
+            distance < C.BOT_ATTACK_RANGE
+            and self.enemy_type
+            not in [
+                "beast",
+                "ninja",
+                "minigunner",
+                "ammo_box",
+                "health_pack",
+                "bomb_item",
+            ]
+            and not self.enemy_type.startswith("pickup_")
+        ):  # Beast, Ninja, Minigunner and Items handled separately
             if self.attack_timer <= 0:
                 # Check line of sight
                 if self.has_line_of_sight(game_map, player):

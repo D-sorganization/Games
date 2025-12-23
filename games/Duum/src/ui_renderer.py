@@ -774,7 +774,7 @@ class UIRenderer:
                 color = cast("tuple[int, int, int]", slide.get("color", C.WHITE))
                 if slide["text"] == "DUUM":
                     fade = min(1.0, elapsed / duration)
-                    r = int(255 + (255 - 255) * fade)
+                    r = 255
                     g = int(255 + (0 - 255) * fade)
                     b = int(255 + (0 - 255) * fade)
                     color = (r, g, b)

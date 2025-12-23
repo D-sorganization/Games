@@ -15,7 +15,7 @@ class SoundManager:
     _instance: SoundManager | None = None
     initialized: bool
 
-    def __new__(cls) -> SoundManager:  # noqa: PYI034
+    def __new__(cls) -> SoundManager:
         """Create singleton instance"""
         if cls._instance is None:
             cls._instance = super().__new__(cls)

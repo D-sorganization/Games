@@ -76,7 +76,7 @@ class BotRenderer:
             goo_color = (50, 150, 50)
             base_color = tuple(
                 int(c * (1 - melt_pct) + g * melt_pct)
-                for c, g in zip(base_color, goo_color, strict=False)
+                for c, g in zip(base_color, goo_color, strict=True)
             )
 
             # Squish

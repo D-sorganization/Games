@@ -443,17 +443,15 @@ class Raycaster:
         # Strategy:
         # If the sprite is mostly visible or small, scale the whole surface once.
         # This avoids calling pygame.transform.scale many times for small strips.
-        scale_whole = True
-        if (
+        is_large_sprite = target_width > LARGE_SPRITE_THRESHOLD
+        is_mostly_occluded = (
             total_visible_pixels < target_width * STRIP_VISIBILITY_THRESHOLD
-            and target_width > LARGE_SPRITE_THRESHOLD
-        ):
-            # If only a small fraction is visible and it's large, maybe strip
-            # scaling is better? But strip scaling involves creating subsurfaces
-            # which has overhead too. Modern Pygame/SDL is fast at scaling.
-            # Let's default to scale_whole for simplicity.
-            # actually, scaling a 1000x1000 image to just show 10 pixels is bad.
-            scale_whole = False
+        )
+
+        # For very large sprites where only a small fraction of columns is visible,
+        # prefer strip scaling to avoid scaling a huge surface just to show a few pixels
+        # (e.g., scaling a 1000x1000 image to draw only 10 pixels).
+        scale_whole = not (is_large_sprite and is_mostly_occluded)
 
         if scale_whole:
             try:
