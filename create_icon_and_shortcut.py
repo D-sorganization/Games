@@ -8,9 +8,11 @@ from pathlib import Path
 
 try:
     from PIL import Image
+
     PIL_AVAILABLE = True
 except ImportError:
     PIL_AVAILABLE = False
+
 
 def create_ico_from_png(png_path: Path, ico_path: Path) -> bool:
     """Convert PNG to ICO with multiple sizes"""
@@ -22,8 +24,8 @@ def create_ico_from_png(png_path: Path, ico_path: Path) -> bool:
         # Open the PNG image
         with Image.open(png_path) as img:
             # Convert to RGBA if not already
-            if img.mode != 'RGBA':
-                img = img.convert('RGBA')
+            if img.mode != "RGBA":
+                img = img.convert("RGBA")
 
             # Create multiple sizes for the ICO file
             sizes = [(16, 16), (32, 32), (48, 48), (64, 64)]
@@ -34,8 +36,10 @@ def create_ico_from_png(png_path: Path, ico_path: Path) -> bool:
                 images.append(resized)
 
             # Save as ICO with multiple sizes
-            sizes_list = [(img.width, img.height) for img in images]
-            img.save(ico_path, format='ICO', sizes=sizes_list)
+            sizes_list = [
+                (resized_img.width, resized_img.height) for resized_img in images
+            ]
+            img.save(ico_path, format="ICO", sizes=sizes_list)
 
             print(f"✅ Successfully created ICO file: {ico_path}")
             return True
@@ -44,7 +48,8 @@ def create_ico_from_png(png_path: Path, ico_path: Path) -> bool:
         print(f"❌ Error creating ICO file: {e}")
         return False
 
-def create_desktop_shortcut():
+
+def create_desktop_shortcut() -> bool:
     """Create desktop shortcut with proper icon"""
     current_dir = Path.cwd()
     launcher_path = current_dir / "game_launcher.py"
@@ -70,24 +75,25 @@ def create_desktop_shortcut():
     ico_created = create_ico_from_png(png_icon_path, ico_icon_path)
 
     # Create PowerShell script to make the shortcut
-    ps_script = f'''
+    # Use single quotes to prevent variable expansion
+    ps_script = f"""
 $WshShell = New-Object -comObject WScript.Shell
-$Shortcut = $WshShell.CreateShortcut("{shortcut_path}")
-$Shortcut.TargetPath = "python"
+$Shortcut = $WshShell.CreateShortcut('{shortcut_path}')
+$Shortcut.TargetPath = 'python'
 $Shortcut.Arguments = '"{launcher_path}"'
-$Shortcut.WorkingDirectory = "{current_dir}"
-$Shortcut.Description = "Launch Games Collection - Force Field, Tetris, Doom and more!"
+$Shortcut.WorkingDirectory = '{current_dir}'
+$Shortcut.Description = 'Launch Games Collection - Force Field, Tetris, Doom and more!'
 $Shortcut.WindowStyle = 1
-'''
+"""
 
     if ico_created and ico_icon_path.exists():
-        ps_script += f'$Shortcut.IconLocation = "{ico_icon_path}"\n'
+        ps_script += f"$Shortcut.IconLocation = '{ico_icon_path}'\n"
         print("🎨 Using custom ICO icon")
     else:
         print("⚠️  Using default Python icon")
 
-    ps_script += '$Shortcut.Save()\n'
-    ps_script += f'Write-Host "Desktop shortcut created: {shortcut_path}"\n'
+    ps_script += "$Shortcut.Save()\n"
+    ps_script += f"Write-Host 'Desktop shortcut created: {shortcut_path}'\n"
 
     # Execute PowerShell script
     try:
@@ -95,7 +101,7 @@ $Shortcut.WindowStyle = 1
             ["powershell", "-Command", ps_script],
             capture_output=True,
             text=True,
-            check=True
+            check=True,
         )
         print("✅ PowerShell execution successful:")
         print(result.stdout)
@@ -113,7 +119,8 @@ $Shortcut.WindowStyle = 1
         print(f"Error output: {e.stderr}")
         return False
 
-def main():
+
+def main() -> None:
     """Main function"""
     print("🚀 Games Launcher Desktop Shortcut Creator")
     print("=" * 50)
@@ -123,7 +130,12 @@ def main():
         try:
             subprocess.check_call([sys.executable, "-m", "pip", "install", "Pillow"])
             print("✅ Pillow installed successfully!")
-            # Re-import after installation
+            # Re-import after installation and update global state
+            global PIL_AVAILABLE, Image
+            from PIL import Image as _Image
+
+            Image = _Image
+            PIL_AVAILABLE = True
             print("📦 Pillow imported successfully!")
         except Exception as e:
             print(f"❌ Failed to install Pillow: {e}")
@@ -136,6 +148,7 @@ def main():
         print("Look for 'Games Launcher' on your desktop with a cool Force Field icon!")
     else:
         print("\n❌ Something went wrong. Check the error messages above.")
+
 
 if __name__ == "__main__":
     main()
