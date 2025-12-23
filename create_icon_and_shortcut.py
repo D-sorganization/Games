@@ -63,11 +63,13 @@ def create_ico_from_png(png_path: Path, ico_path: Path) -> bool:
                 resized = img.resize(size, PIL_Image.Resampling.LANCZOS)
                 images.append(resized)
 
-            # Save as ICO with multiple sizes
-            sizes_list = [
-                (resized_img.width, resized_img.height) for resized_img in images
-            ]
-            img.save(ico_path, format="ICO", sizes=sizes_list)
+            # Save as ICO with multiple sizes using proper multi-resolution approach
+            images[0].save(
+                ico_path,
+                format="ICO",
+                save_all=True,
+                append_images=images[1:],
+            )
 
             print(f"✅ Successfully created ICO file: {ico_path}")
             return True
