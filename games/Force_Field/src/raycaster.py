@@ -545,7 +545,11 @@ class Raycaster:
         ceiling_color = theme["ceiling"]
 
         # Gradient Sky
-        top_color = (max(0, ceiling_color[0] - 30), max(0, ceiling_color[1] - 30), max(0, ceiling_color[2] - 30))
+        top_color = (
+            max(0, ceiling_color[0] - 30),
+            max(0, ceiling_color[1] - 30),
+            max(0, ceiling_color[2] - 30),
+        )
         bottom_color = ceiling_color
 
         # Draw sky in 10px bands
@@ -554,8 +558,12 @@ class Raycaster:
             r = top_color[0] + (bottom_color[0] - top_color[0]) * ratio
             g = top_color[1] + (bottom_color[1] - top_color[1]) * ratio
             b = top_color[2] + (bottom_color[2] - top_color[2]) * ratio
-            height = min(10, horizon - y)
-            pygame.draw.rect(screen, (int(r), int(g), int(b)), (0, y, C.SCREEN_WIDTH, height))
+            height = int(min(10, horizon - y))
+            pygame.draw.rect(
+                screen,
+                (int(r), int(g), int(b)),
+                (0, y, C.SCREEN_WIDTH, height),
+            )
 
         star_offset = int(player_angle * 200) % C.SCREEN_WIDTH
 
@@ -581,7 +589,11 @@ class Raycaster:
 
         # Gradient Floor
         near_color = floor_color
-        far_color = (max(0, floor_color[0] - 40), max(0, floor_color[1] - 40), max(0, floor_color[2] - 40))
+        far_color = (
+            max(0, floor_color[0] - 40),
+            max(0, floor_color[1] - 40),
+            max(0, floor_color[2] - 40),
+        )
 
         floor_height = C.SCREEN_HEIGHT - horizon
         for y in range(0, floor_height, 10):
@@ -594,7 +606,11 @@ class Raycaster:
             draw_y = horizon + y
             height = min(10, C.SCREEN_HEIGHT - draw_y)
             if height > 0:
-                pygame.draw.rect(screen, (int(r), int(g), int(b)), (0, draw_y, C.SCREEN_WIDTH, height))
+                pygame.draw.rect(
+                    screen,
+                    (int(r), int(g), int(b)),
+                    (0, draw_y, C.SCREEN_WIDTH, height),
+                )
 
 
     def _generate_minimap_cache(self) -> None:
@@ -639,7 +655,12 @@ class Raycaster:
         pygame.draw.rect(
             screen,
             C.BLACK,
-            (minimap_x - 2, minimap_y - 2, self.minimap_size + 4, self.minimap_size + 4),
+            (
+                minimap_x - 2,
+                minimap_y - 2,
+                self.minimap_size + 4,
+                self.minimap_size + 4,
+            ),
         )
 
         # Blit cached map
@@ -655,12 +676,14 @@ class Raycaster:
                 temp_surface = self.minimap_surface.copy()
 
                 # Create fog mask
-                fog_surface = pygame.Surface((self.minimap_size, self.minimap_size), pygame.SRCALPHA)
-                fog_surface.fill((0, 0, 0, 255)) # Opaque black
+                fog_surface = pygame.Surface(
+                    (self.minimap_size, self.minimap_size), pygame.SRCALPHA
+                )
+                fog_surface.fill((0, 0, 0, 255))  # Opaque black
 
                 # Cut holes in fog
                 for vx, vy in visited_cells:
-                     pygame.draw.rect(
+                    pygame.draw.rect(
                         fog_surface,
                         (0, 0, 0, 0), # Transparent
                         (
