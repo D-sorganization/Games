@@ -25,6 +25,7 @@ class TestShieldFunctionality(unittest.TestCase):
     def test_shield_key_binding(self) -> None:
         """Test that shield is bound to SPACE key."""
         import pygame
+
         self.assertEqual(self.input_manager.bindings["shield"], pygame.K_SPACE)
 
     def test_shield_activation(self) -> None:
