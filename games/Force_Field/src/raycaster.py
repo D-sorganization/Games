@@ -3,7 +3,7 @@ from __future__ import annotations
 import itertools
 import math
 import random
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
 import pygame
 
@@ -16,6 +16,7 @@ LARGE_SPRITE_THRESHOLD = 200
 
 if TYPE_CHECKING:
     from .bot import Bot
+    from .custom_types import EnemyData
     from .map import Map
     from .player import Player
     from .projectile import Projectile
@@ -49,6 +50,11 @@ class Raycaster:
 
         # Sprite cache
         self.sprite_cache: dict[str, pygame.Surface] = {}
+
+        # Minimap cache
+        self.minimap_surface: pygame.Surface | None = None
+        self.minimap_size = 200
+        self.minimap_scale = self.minimap_size / self.map_size
 
         # Resolution settings
         self.render_scale = C.DEFAULT_RENDER_SCALE
@@ -165,7 +171,7 @@ class Raycaster:
         else:
             theme_idx = (level - 1) % len(C.LEVEL_THEMES)
             theme = C.LEVEL_THEMES[theme_idx]
-            wall_colors = cast("dict[int, tuple[int, int, int]]", theme["walls"])
+            wall_colors = theme["walls"]
             self._cached_level = level
             self._cached_wall_colors = wall_colors
 
@@ -361,7 +367,7 @@ class Raycaster:
         safe_dist = max(0.01, dist)
         base_sprite_size = C.SCREEN_HEIGHT / safe_dist
 
-        type_data: dict[str, Any] = bot.type_data
+        type_data: EnemyData = bot.type_data
         sprite_size = base_sprite_size * float(type_data.get("scale", 1.0))
 
         center_ray = self.num_rays / 2
@@ -536,14 +542,34 @@ class Raycaster:
 
         horizon = C.SCREEN_HEIGHT // 2 + int(player.pitch + view_offset_y)
 
-        ceiling_color = cast("tuple[int, int, int]", theme["ceiling"])
-        pygame.draw.rect(screen, ceiling_color, (0, 0, C.SCREEN_WIDTH, horizon))
+        ceiling_color = theme["ceiling"]
+
+        # Gradient Sky
+        top_color = (
+            max(0, ceiling_color[0] - 30),
+            max(0, ceiling_color[1] - 30),
+            max(0, ceiling_color[2] - 30),
+        )
+        bottom_color = ceiling_color
+
+        # Draw sky in 10px bands
+        for y in range(0, horizon, 10):
+            ratio = y / max(1, horizon)
+            r = top_color[0] + (bottom_color[0] - top_color[0]) * ratio
+            g = top_color[1] + (bottom_color[1] - top_color[1]) * ratio
+            b = top_color[2] + (bottom_color[2] - top_color[2]) * ratio
+            height = int(min(10, horizon - y))
+            pygame.draw.rect(
+                screen,
+                (int(r), int(g), int(b)),
+                (0, y, C.SCREEN_WIDTH, height),
+            )
 
         star_offset = int(player_angle * 200) % C.SCREEN_WIDTH
 
         for sx, sy, size, color in self.stars:
             x = (sx + star_offset) % C.SCREEN_WIDTH
-            y = sy + player.pitch + view_offset_y
+            y = int(sy + player.pitch + view_offset_y)
 
             if 0 <= y < horizon:
                 pygame.draw.circle(screen, color, (x, int(y)), int(size))
@@ -559,12 +585,53 @@ class Raycaster:
                 shadow_pos = (int(moon_x) - 10, moon_y)
                 pygame.draw.circle(screen, ceiling_color, shadow_pos, 40)
 
-        floor_color = cast("tuple[int, int, int]", theme["floor"])
-        pygame.draw.rect(
-            screen,
-            floor_color,
-            (0, horizon, C.SCREEN_WIDTH, C.SCREEN_HEIGHT - horizon),
+        floor_color = theme["floor"]
+
+        # Gradient Floor
+        near_color = floor_color
+        far_color = (
+            max(0, floor_color[0] - 40),
+            max(0, floor_color[1] - 40),
+            max(0, floor_color[2] - 40),
         )
+
+        floor_height = C.SCREEN_HEIGHT - horizon
+        for y in range(0, floor_height, 10):
+            ratio = y / max(1, floor_height)
+            # Reverse ratio for floor (top is far, bottom is near)
+            r = far_color[0] + (near_color[0] - far_color[0]) * ratio
+            g = far_color[1] + (near_color[1] - far_color[1]) * ratio
+            b = far_color[2] + (near_color[2] - far_color[2]) * ratio
+
+            draw_y = horizon + y
+            height = min(10, C.SCREEN_HEIGHT - draw_y)
+            if height > 0:
+                pygame.draw.rect(
+                    screen,
+                    (int(r), int(g), int(b)),
+                    (0, draw_y, C.SCREEN_WIDTH, height),
+                )
+
+    def _generate_minimap_cache(self) -> None:
+        """Generate static minimap surface."""
+        self.minimap_surface = pygame.Surface((self.minimap_size, self.minimap_size))
+        self.minimap_surface.fill(C.DARK_GRAY)
+
+        for i in range(self.map_size):
+            for j in range(self.map_size):
+                if self.grid[i][j] != 0:
+                    wall_type = self.grid[i][j]
+                    color = C.WALL_COLORS.get(wall_type, C.GRAY)
+                    pygame.draw.rect(
+                        self.minimap_surface,
+                        color,
+                        (
+                            j * self.minimap_scale,
+                            i * self.minimap_scale,
+                            self.minimap_scale,
+                            self.minimap_scale,
+                        ),
+                    )
 
     def render_minimap(
         self,
@@ -575,50 +642,68 @@ class Raycaster:
         portal: dict[str, Any] | None = None,
     ) -> None:
         """Render 2D minimap with fog of war support."""
-        minimap_size = 200
-        map_size = self.game_map.size
-        minimap_scale = minimap_size / map_size
-        minimap_x = C.SCREEN_WIDTH - minimap_size - 20
+        if self.minimap_surface is None:
+            self._generate_minimap_cache()
+
+        minimap_x = C.SCREEN_WIDTH - self.minimap_size - 20
         minimap_y = 20
 
+        # Draw Border
         pygame.draw.rect(
             screen,
             C.BLACK,
-            (minimap_x - 2, minimap_y - 2, minimap_size + 4, minimap_size + 4),
+            (
+                minimap_x - 2,
+                minimap_y - 2,
+                self.minimap_size + 4,
+                self.minimap_size + 4,
+            ),
         )
-        map_rect = (minimap_x, minimap_y, minimap_size, minimap_size)
-        pygame.draw.rect(screen, C.DARK_GRAY, map_rect)
 
-        for i in range(map_size):
-            for j in range(map_size):
-                if self.grid[i][j] != 0:
-                    if visited_cells is not None and (j, i) not in visited_cells:
-                        continue
+        # Blit cached map
+        if self.minimap_surface:
+            # Create a mask surface for visited cells if needed
+            if visited_cells is not None:
+                # Optimized approach: Blit the full map, then cover unvisited areas
+                # Or create a surface for visited areas.
+                # Since fog of war is dynamic, we can't fully cache the visible result
+                # but we can cache the base map.
 
-                    wall_type = self.grid[i][j]
-                    color = C.WALL_COLORS.get(wall_type, C.GRAY)
-                    pygame.draw.rect(
-                        screen,
-                        color,
-                        (
-                            minimap_x + j * minimap_scale,
-                            minimap_y + i * minimap_scale,
-                            minimap_scale,
-                            minimap_scale,
+                # Create fog mask
+                fog_surface = pygame.Surface(
+                    (self.minimap_size, self.minimap_size), pygame.SRCALPHA
+                )
+                fog_surface.fill((0, 0, 0, 255))  # Opaque black
+
+                # Cut holes in fog
+                for vx, vy in visited_cells:
+                    fog_surface.fill(
+                        (0, 0, 0, 0),
+                        rect=(
+                            vx * self.minimap_scale,
+                            vy * self.minimap_scale,
+                            self.minimap_scale,
+                            self.minimap_scale,
                         ),
                     )
+
+                # Apply fog to map (draw fog on top of the cached map on screen)
+                screen.blit(self.minimap_surface, (minimap_x, minimap_y))
+                screen.blit(fog_surface, (minimap_x, minimap_y))
+            else:
+                screen.blit(self.minimap_surface, (minimap_x, minimap_y))
 
         if portal:
             portal_x = int(portal["x"])
             portal_y = int(portal["y"])
             if visited_cells is None or (portal_x, portal_y) in visited_cells:
-                portal_map_x = minimap_x + portal_x * minimap_scale
-                portal_map_y = minimap_y + portal_y * minimap_scale
+                portal_map_x = minimap_x + portal_x * self.minimap_scale
+                portal_map_y = minimap_y + portal_y * self.minimap_scale
                 pygame.draw.circle(
                     screen,
                     C.CYAN,
                     (int(portal_map_x), int(portal_map_y)),
-                    int(minimap_scale * 2),
+                    int(self.minimap_scale * 2),  # Cast float to int
                 )
 
         for bot in bots:
@@ -630,12 +715,12 @@ class Raycaster:
                 bot_cell_x = int(bot.x)
                 bot_cell_y = int(bot.y)
                 if visited_cells is None or (bot_cell_x, bot_cell_y) in visited_cells:
-                    bot_x = minimap_x + bot.x * minimap_scale
-                    bot_y = minimap_y + bot.y * minimap_scale
+                    bot_x = minimap_x + bot.x * self.minimap_scale
+                    bot_y = minimap_y + bot.y * self.minimap_scale
                     pygame.draw.circle(screen, C.RED, (int(bot_x), int(bot_y)), 3)
 
-        player_x = minimap_x + player.x * minimap_scale
-        player_y = minimap_y + player.y * minimap_scale
+        player_x = minimap_x + player.x * self.minimap_scale
+        player_y = minimap_y + player.y * self.minimap_scale
         pygame.draw.circle(screen, C.GREEN, (int(player_x), int(player_y)), 3)
 
         dir_x = player_x + math.cos(player.angle) * 10

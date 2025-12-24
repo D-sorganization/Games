@@ -37,7 +37,7 @@ You are a CI/CD specialist maintaining GitHub Actions workflows and CI/CD docume
 
 **Key CI/CD principles (from UNIFIED_CI_APPROACH.md):**
 1. **Pinned versions:** All tool versions explicitly specified (ruff==0.5.0, mypy==1.10.0, black==24.4.2)
-2. **Comprehensive detection:** Automatically find source directories (python/src, python, src)
+2. **Comprehensive detection:** Automatically find source directories (games/src, games, src)
 3. **Proper exit codes:** Preserve failure codes for GitHub Actions (`|| exit 1`)
 4. **Conditional uploads:** Coverage only uploaded when available (check file existence)
 5. **Security checks:** Dependency scanning (Bandit, Safety), secret detection
@@ -118,13 +118,13 @@ on:
     # Add replicant branches if they exist:
     # branches: [main, master, claude/RepositoryName_Replicants]
     paths:
-      - 'python/**'
-      - '.github/workflows/python-ci.yml'
+      - 'games/**'
+      - '.github/workflows/games-ci.yml'
   pull_request:
     branches: [main, master]
     # Add replicant branches if they exist
     paths:
-      - 'python/**'
+      - 'games/**'
 
 jobs:
   test:
@@ -146,8 +146,8 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          # Check both root and python/ subdirectory
-          if [ -f python/requirements.txt ]; then pip install -r python/requirements.txt; fi
+          # Check both root and games/ subdirectory
+          if [ -f games/requirements.txt ]; then pip install -r games/requirements.txt; fi
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           # Pin tool versions (from UNIFIED_CI_APPROACH.md)
           pip install ruff==0.5.0 mypy==1.10.0 black==24.4.2 pytest pytest-cov
@@ -174,11 +174,11 @@ jobs:
 
       - name: Type check with mypy
         run: |
-          mypy python/ || exit 1
+          mypy games/ || exit 1
 
       - name: Run tests with coverage
         run: |
-          pytest python/tests/ --cov=python --cov-report=xml --cov-report=term
+          pytest games/*/tests/ --cov=games --cov-report=xml --cov-report=term
 
       - name: Upload coverage to Codecov
         if: matrix.python-version == '3.11' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
@@ -199,10 +199,10 @@ jobs:
 **Source detection:**
 \`\`\`bash
 # Automatically detect Python source directory
-if [ -d "python/src" ]; then
-    SOURCE_DIR="python/src"
-elif [ -d "python" ]; then
-    SOURCE_DIR="python"
+if [ -d "games/src" ]; then
+    SOURCE_DIR="games/src"
+elif [ -d "games" ]; then
+    SOURCE_DIR="games"
 elif [ -d "src" ]; then
     SOURCE_DIR="src"
 else
@@ -216,12 +216,12 @@ pytest "$SOURCE_DIR/tests/"
 **Exit code preservation:**
 \`\`\`bash
 # ✅ Good - Preserves exit code
-ruff check python/ || exit 1
-mypy python/ || exit 1
+ruff check games/ || exit 1
+mypy games/ || exit 1
 
 # ❌ Bad - Masks failures
-ruff check python/
-mypy python/
+ruff check games/
+mypy games/
 \`\`\`
 
 **Conditional coverage:**
@@ -333,7 +333,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install ruff==0.5.0 mypy==1.10.0 black==24.4.2
-          if [ -f python/requirements.txt ]; then pip install -r python/requirements.txt; fi
+          if [ -f games/requirements.txt ]; then pip install -r games/requirements.txt; fi
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       - name: Run quality check
         run: |
@@ -348,12 +348,12 @@ jobs:
           if [ -f ruff.toml ]; then
             ruff check . || exit 1
           else
-            ruff check python/ || exit 1
+            ruff check games/ || exit 1
           fi
       - name: Type check
         run: |
           # mypy with ignore-missing-imports (from UNIFIED_CI_APPROACH.md)
-          mypy python/ --ignore-missing-imports || exit 1
+          mypy games/ --ignore-missing-imports || exit 1
 
   test:
     name: Test
