@@ -1,3 +1,5 @@
+# Set dummy video driver before initializing pygame
+import os
 import sys
 import unittest
 from pathlib import Path
@@ -5,8 +7,6 @@ from unittest.mock import MagicMock, patch
 
 import pygame
 
-# Set dummy video driver before initializing pygame
-import os
 os.environ["SDL_VIDEODRIVER"] = "dummy"
 pygame.init()
 pygame.display.set_mode((1, 1))
@@ -14,22 +14,23 @@ pygame.display.set_mode((1, 1))
 # Add wizard_of_wor directory to path
 sys.path.append(str((Path(__file__).parent / "../wizard_of_wor").resolve()))
 
-from dungeon import Dungeon
-from game import WizardOfWorGame
-from player import Player
-from enemy import Enemy
-from constants import GAME_AREA_X, CELL_SIZE, GAME_AREA_WIDTH
+# noqa: E402
+from constants import GAME_AREA_X  # noqa: E402
+from dungeon import Dungeon  # noqa: E402
+from game import WizardOfWorGame  # noqa: E402
+
 
 class TestGameLogic(unittest.TestCase):
     def setUp(self):
         # Patch pygame.mixer to avoid audio issues
-        self.mixer_patch = patch('pygame.mixer')
+        self.mixer_patch = patch("pygame.mixer")
         self.mixer_mock = self.mixer_patch.start()
+        pygame.init()
 
         self.game = WizardOfWorGame()
         # Stop the intro sound to prevent errors if sound is somehow enabled
-        if hasattr(self.game, 'soundboard'):
-             self.game.soundboard.enabled = False
+        if hasattr(self.game, "soundboard"):
+            self.game.soundboard.enabled = False
 
     def tearDown(self):
         self.mixer_patch.stop()
@@ -60,7 +61,9 @@ class TestGameLogic(unittest.TestCase):
         self.game.respawn_player()
 
         # Verify get_random_spawn_position was called with prefer_player=True
-        self.game.dungeon.get_random_spawn_position.assert_called_with(prefer_player=True)
+        self.game.dungeon.get_random_spawn_position.assert_called_with(
+            prefer_player=True
+        )
 
         # Check player initialized correctly
         self.assertIsNotNone(self.game.player)
@@ -76,8 +79,8 @@ class TestGameLogic(unittest.TestCase):
         """
         from bullet import Bullet
 
-        p_bullet = Bullet(0, 0, (0,0), is_player_bullet=True)
-        e_bullet = Bullet(0, 0, (0,0), is_player_bullet=False)
+        p_bullet = Bullet(0, 0, (0, 0), is_player_bullet=True)
+        e_bullet = Bullet(0, 0, (0, 0), is_player_bullet=False)
 
         self.game.bullets = [p_bullet, e_bullet]
 
@@ -89,6 +92,7 @@ class TestGameLogic(unittest.TestCase):
 
         self.assertIn(p_bullet, self.game.bullets)
         self.assertNotIn(e_bullet, self.game.bullets)
+
 
 if __name__ == "__main__":
     unittest.main()
