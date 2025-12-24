@@ -21,7 +21,7 @@ from game import WizardOfWorGame  # noqa: E402
 
 
 class TestGameLogic(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         # Patch pygame.mixer to avoid audio issues
         self.mixer_patch = patch("pygame.mixer")
         self.mixer_mock = self.mixer_patch.start()
@@ -32,11 +32,11 @@ class TestGameLogic(unittest.TestCase):
         if hasattr(self.game, "soundboard"):
             self.game.soundboard.enabled = False
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         self.mixer_patch.stop()
         pygame.quit()
 
-    def test_dungeon_spawn_points(self):
+    def test_dungeon_spawn_points(self) -> None:
         dungeon = Dungeon()
 
         # Check enemy spawn points (default)
@@ -49,7 +49,7 @@ class TestGameLogic(unittest.TestCase):
 
         self.assertNotEqual(dungeon.player_spawn_cells, dungeon.enemy_spawn_cells)
 
-    def test_respawn_player_uses_correct_pool(self):
+    def test_respawn_player_uses_correct_pool(self) -> None:
         """
         Verify respawn_player uses prefer_player=True.
         """
@@ -70,7 +70,7 @@ class TestGameLogic(unittest.TestCase):
         self.assertEqual(self.game.player.x, 100)
         self.assertEqual(self.game.player.y, 100)
 
-    def test_respawn_clears_enemy_bullets(self):
+    def test_respawn_clears_enemy_bullets(self) -> None:
         """
         Verify respawn_player handles bullets correctly.
         (Actually the code keeps player bullets, filters out everything else?
