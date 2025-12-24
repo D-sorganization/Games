@@ -409,11 +409,11 @@ class Game:
                     enemy_type = random.choice(list(C.ENEMY_TYPES.keys()))
                     while enemy_type in [
                         "boss",
-                        "demon", 
+                        "demon",
                         "ball",
                         "beast",
                         "pickup_rifle",
-                        "pickup_shotgun", 
+                        "pickup_shotgun",
                         "pickup_plasma",
                         "pickup_minigun",
                         "health_pack",
@@ -433,7 +433,7 @@ class Game:
                         )
                     )
                     break
-        
+
         # Spawn Boss & Fast Enemy (Demon)
         boss_options = ["ball", "beast"]
         boss_type = random.choice(boss_options)
@@ -442,7 +442,7 @@ class Game:
         for attempt in range(100):  # More attempts for boss spawning
             cx = random.randint(2, upper_bound)
             cy = random.randint(2, upper_bound)
-            
+
             # More flexible distance for boss spawning - but keep safe
             min_boss_distance = 15.0 if attempt < 70 else 12.0
             if (
@@ -719,7 +719,7 @@ class Game:
             for _ in range(num_bullets):
                 angle_off = random.uniform(-0.15, 0.15)  # Increased spread for minigun
                 final_angle = self.player.angle + angle_off
-                
+
                 # Create minigun projectile with tracer effect
                 p = Projectile(
                     self.player.x,
@@ -730,10 +730,10 @@ class Game:
                     is_player=True,
                     color=(255, 255, 0),  # Yellow tracers for minigun
                     size=0.1,  # Smaller bullets
-                    weapon_type="minigun"
+                    weapon_type="minigun",
                 )
                 self.entity_manager.add_projectile(p)
-            
+
             # Add muzzle flash particles for minigun
             self.particle_system.add_explosion(
                 C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2, count=8, color=(255, 255, 0)
