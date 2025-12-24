@@ -4,7 +4,6 @@ Main game file for Wizard of Wor remake.
 
 # mypy: disable-error-code=unreachable
 
-
 import math
 import random
 import sys
@@ -187,11 +186,7 @@ class WizardOfWorGame:
         self.wizard_spawned = False
         self.effects = []
 
-        # Spawn player
-        player_pos = self.dungeon.get_random_spawn_position(prefer_player=True)
-        self.player = Player(player_pos[0], player_pos[1])
-        self.player.grant_shield(RESPAWN_SHIELD_FRAMES)
-        self.effects.append(SparkleBurst(player_pos, GREEN, count=14))
+        self.respawn_player()
 
         # Spawn enemies based on level
         self.enemies = []
@@ -258,6 +253,15 @@ class WizardOfWorGame:
 
         self.enemies.append(enemy_cls(chosen_pos[0], chosen_pos[1]))
         self.effects.append(SparkleBurst(chosen_pos, CYAN, count=12))
+
+    def respawn_player(self) -> None:
+        """Respawn the player at a valid spawn point."""
+        pos = self.dungeon.get_random_spawn_position(prefer_player=True)
+        self.player = Player(pos[0], pos[1])
+        self.player.grant_shield(RESPAWN_SHIELD_FRAMES)
+        self.effects.append(SparkleBurst(pos, GREEN, count=12))
+        # Keep only player bullets when player dies
+        self.bullets = [b for b in self.bullets if b.is_player_bullet]
 
     def handle_events(self) -> None:
         """Handle input events."""
@@ -365,13 +369,7 @@ class WizardOfWorGame:
         if self.player is not None and not self.player.alive:
             self.lives -= 1
             if self.lives > 0:
-                # Respawn player
-                pos = self.dungeon.get_random_spawn_position()
-                self.player = Player(pos[0], pos[1])
-                self.player.grant_shield(RESPAWN_SHIELD_FRAMES)
-
-                self.effects.append(SparkleBurst(pos, GREEN, count=12))
-                self.bullets = [b for b in self.bullets if b.is_player_bullet]
+                self.respawn_player()
             else:
                 self.state = "game_over"
 
