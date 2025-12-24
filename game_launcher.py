@@ -68,7 +68,8 @@ GAMES: list[dict[str, Any]] = [
 
 
 def main() -> None:
-    pygame.init()
+    pygame.display.init()
+    pygame.font.init()
     pygame.display.set_caption("Game Launcher")
 
     # Set window icon
