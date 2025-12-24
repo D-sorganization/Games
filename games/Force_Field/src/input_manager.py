@@ -22,11 +22,11 @@ class InputManager:
         "turn_right": pygame.K_RIGHT,
         "look_up": pygame.K_UP,
         "look_down": pygame.K_DOWN,
-        "shoot": pygame.K_SPACE,  # Primary shoot (also Mouse 1)
+        "shoot": pygame.K_LCTRL,  # Primary shoot (also Mouse 1)
         "reload": pygame.K_r,
         "zoom": pygame.K_z,
         "bomb": pygame.K_f,
-        "shield": pygame.K_x,  # Changed from LSHIFT to avoid sprint conflict
+        "shield": pygame.K_SPACE,  # Force Field Shield as documented
         "sprint": pygame.K_LSHIFT,
         "shoot_alt": pygame.K_KP0,
         "pause": pygame.K_ESCAPE,

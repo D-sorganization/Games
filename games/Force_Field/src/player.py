@@ -73,11 +73,11 @@ class Player:
         speed: float = C.PLAYER_SPEED,
     ) -> None:
         """Move player forward or backward"""
-        if self.shield_active or self.zoomed:
-            if self.zoomed:
-                return
-            if self.shield_active:
-                speed *= 0.8
+        if self.zoomed:
+            return  # No movement when zoomed
+        
+        if self.shield_active:
+            return  # No movement when shield is active (as per README)
 
         dx = math.cos(self.angle) * speed * (1 if forward else -1)
         dy = math.sin(self.angle) * speed * (1 if forward else -1)
@@ -95,10 +95,10 @@ class Player:
     ) -> None:
         """Strafe left or right"""
         if self.zoomed:
-            return
+            return  # No movement when zoomed
 
         if self.shield_active:
-            speed *= 0.8
+            return  # No movement when shield is active
 
         angle = self.angle + math.pi / 2 * (1 if right else -1)
         dx = math.cos(angle) * speed
