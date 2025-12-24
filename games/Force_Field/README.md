@@ -40,6 +40,7 @@ A raycasting-based first-person shooter game built with Python and Pygame, featu
 - **Combat**:
   - Left Click: Aim
   - Right Click: Shoot rifle
+  - Ctrl: Shoot (keyboard alternative)
   - ESC: Return to menu
 - **HUD Display**:
   - Health bar with color-coded status

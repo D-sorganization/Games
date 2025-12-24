@@ -235,7 +235,7 @@ class UIRenderer:
             "",
             "",
             "WASD: Move | Shift: Sprint | Mouse: Look | 1-4: Weapons",
-            "Click: Shoot | Z: Zoom | F: Bomb | Space: Shield",
+            "Ctrl: Shoot | Z: Zoom | F: Bomb | Space: Shield",
         ]
         y = C.SCREEN_HEIGHT - 260
         for line in instructions:
