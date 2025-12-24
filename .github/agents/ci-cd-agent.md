@@ -146,8 +146,8 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          # Check both root and python/ subdirectory
-          if [ -f python/requirements.txt ]; then pip install -r python/requirements.txt; fi
+          # Check both root and games/ subdirectory
+          if [ -f games/requirements.txt ]; then pip install -r games/requirements.txt; fi
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           # Pin tool versions (from UNIFIED_CI_APPROACH.md)
           pip install ruff==0.5.0 mypy==1.10.0 black==24.4.2 pytest pytest-cov
@@ -174,11 +174,11 @@ jobs:
 
       - name: Type check with mypy
         run: |
-          mypy python/ || exit 1
+          mypy games/ || exit 1
 
       - name: Run tests with coverage
         run: |
-          pytest python/tests/ --cov=python --cov-report=xml --cov-report=term
+          pytest games/*/tests/ --cov=games --cov-report=xml --cov-report=term
 
       - name: Upload coverage to Codecov
         if: matrix.python-version == '3.11' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
@@ -333,7 +333,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install ruff==0.5.0 mypy==1.10.0 black==24.4.2
-          if [ -f python/requirements.txt ]; then pip install -r python/requirements.txt; fi
+          if [ -f games/requirements.txt ]; then pip install -r games/requirements.txt; fi
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       - name: Run quality check
         run: |
