@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import math
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
 from . import constants as C  # noqa: N812
 
 if TYPE_CHECKING:
     from .bot import Bot
+    from .custom_types import WeaponData
     from .map import Map
 
 
@@ -40,7 +41,7 @@ class Player:
         # but user request implies specific mechanics per gun
         # For now, we assume "ammo" in constants refers to reserves.
         self.ammo: dict[str, int] = {
-            w: int(cast("int", C.WEAPONS[w]["ammo"])) for w in C.WEAPONS
+            w: int(C.WEAPONS[w]["ammo"]) for w in C.WEAPONS
         }
 
         self.current_weapon = "rifle"
@@ -120,7 +121,7 @@ class Player:
 
     def shoot(self) -> bool:
         """Initiate shooting, return True if shot was fired"""
-        weapon_data = C.WEAPONS[self.current_weapon]
+        weapon_data: WeaponData = C.WEAPONS[self.current_weapon]
         w_state = self.weapon_state[self.current_weapon]
 
         # 1. Check Global Cooldown
@@ -140,7 +141,7 @@ class Player:
 
         # Minigun Spin-up logic
         if self.current_weapon == "minigun":
-            spin_up = int(cast("int", weapon_data.get("spin_up_time", 30)))
+            spin_up = int(weapon_data.get("spin_up_time", 30))
             if w_state["spin_timer"] < spin_up:
                 w_state["spin_timer"] += 2  # Charge up
                 return False  # Not firing yet
@@ -148,7 +149,7 @@ class Player:
             w_state["spin_timer"] = 0
 
         self.shooting = True
-        self.shoot_timer = int(cast("int", weapon_data["cooldown"]))
+        self.shoot_timer = int(weapon_data["cooldown"])
 
         # Consumables
         if self.current_weapon == "plasma":
@@ -167,7 +168,7 @@ class Player:
 
     def reload(self) -> None:
         """Start reload process"""
-        w_data = C.WEAPONS[self.current_weapon]
+        w_data: WeaponData = C.WEAPONS[self.current_weapon]
         w_state = self.weapon_state[self.current_weapon]
 
         if w_state["reloading"] or w_state["overheated"]:
@@ -194,11 +195,11 @@ class Player:
 
     def get_current_weapon_damage(self) -> int:
         """Get damage of current weapon"""
-        return int(cast("int", C.WEAPONS[self.current_weapon]["damage"]))
+        return int(C.WEAPONS[self.current_weapon]["damage"])
 
     def get_current_weapon_range(self) -> int:
         """Get range of current weapon"""
-        return int(cast("int", C.WEAPONS[self.current_weapon]["range"]))
+        return int(C.WEAPONS[self.current_weapon]["range"])
 
     def take_damage(self, damage: int) -> None:
         """Take damage"""
@@ -290,8 +291,8 @@ class Player:
                     # Usually fixed wait. We'll linearly cool it down too
                     # so visual bar goes down
                     oh_penalty = C.WEAPONS[w_name].get("overheat_penalty", 180)
-                    penalty_time = int(cast("int", oh_penalty))
-                    max_heat = float(cast("float", C.WEAPONS[w_name]["max_heat"]))
+                    penalty_time = int(oh_penalty)
+                    max_heat = float(C.WEAPONS[w_name]["max_heat"])
                     cool_amount = max_heat / penalty_time
                     w_state["heat"] = max(0.0, w_state["heat"] - cool_amount)
 
