@@ -1,3 +1,5 @@
+"""Unit tests for Peanut Butter Panic game mechanics."""
+
 import os
 import sys
 
