@@ -18,7 +18,7 @@ def test_shockwave_clears_enemies_and_scores() -> None:
     world = GameWorld(seed=1)
     # Ensure player position is initialized
     if not world.player:
-        return # Skip if player not initialized (though GameWorld should init it)
+        return  # Skip if player not initialized (though GameWorld should init it)
 
     enemy_position = (world.player.position[0] + 10, world.player.position[1])
     world.add_enemy(enemy_position, reward=40)
