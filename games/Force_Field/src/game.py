@@ -1298,9 +1298,7 @@ class Game:
                             color = C.CYAN
                         else:
                             if w_name in self.player.ammo:
-                                clip_size = int(
-                                    C.WEAPONS[w_name]["clip_size"]
-                                )
+                                clip_size = int(C.WEAPONS[w_name]["clip_size"])
                                 self.player.ammo[w_name] += clip_size * 2
                                 pickup_msg = f"{w_name.upper()} AMMO"
                                 color = C.YELLOW

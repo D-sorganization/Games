@@ -612,12 +612,9 @@ class Raycaster:
                     (0, draw_y, C.SCREEN_WIDTH, height),
                 )
 
-
     def _generate_minimap_cache(self) -> None:
         """Generate static minimap surface."""
-        self.minimap_surface = pygame.Surface(
-            (self.minimap_size, self.minimap_size)
-        )
+        self.minimap_surface = pygame.Surface((self.minimap_size, self.minimap_size))
         self.minimap_surface.fill(C.DARK_GRAY)
 
         for i in range(self.map_size):
@@ -696,7 +693,6 @@ class Raycaster:
             else:
                 screen.blit(self.minimap_surface, (minimap_x, minimap_y))
 
-
         if portal:
             portal_x = int(portal["x"])
             portal_y = int(portal["y"])
@@ -707,7 +703,7 @@ class Raycaster:
                     screen,
                     C.CYAN,
                     (int(portal_map_x), int(portal_map_y)),
-                    int(self.minimap_scale * 2), # Cast float to int
+                    int(self.minimap_scale * 2),  # Cast float to int
                 )
 
         for bot in bots:
