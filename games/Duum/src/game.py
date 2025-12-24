@@ -928,9 +928,9 @@ class Game:
             self.particle_system.add_trace(
                 start=(weapon_start_x, weapon_start_y),
                 end=(screen_hit_x, screen_hit_y),
-                color=(255, 255, 100), # Pale yellow trace
+                color=(255, 255, 100),  # Pale yellow trace
                 timer=5,
-                width=1
+                width=1,
             )
 
             if not closest_bot:
@@ -942,9 +942,9 @@ class Game:
                         y=screen_hit_y,
                         dx=random.uniform(-3, 3),
                         dy=random.uniform(-3, 3),
-                        color=(255, 200, 100), # Spark color
+                        color=(255, 200, 100),  # Spark color
                         timer=20,
-                        size=random.randint(1, 3)
+                        size=random.randint(1, 3),
                     )
 
         except Exception:
