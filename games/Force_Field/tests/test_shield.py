@@ -16,7 +16,7 @@ class TestShieldFunctionality(unittest.TestCase):
         self.player = Player(10.0, 10.0, 0.0)
         self.game_map = Map(20)
         self.input_manager = InputManager()
-        
+
         # Clear center area for movement tests
         for y in range(5, 15):
             for x in range(5, 15):
@@ -32,11 +32,11 @@ class TestShieldFunctionality(unittest.TestCase):
         # Initially shield should be inactive
         self.assertFalse(self.player.shield_active)
         self.assertEqual(self.player.shield_timer, C.SHIELD_MAX_DURATION)
-        
+
         # Activate shield
         self.player.set_shield(True)
         self.assertTrue(self.player.shield_active)
-        
+
         # Deactivate shield
         self.player.set_shield(False)
         self.assertFalse(self.player.shield_active)
@@ -45,16 +45,16 @@ class TestShieldFunctionality(unittest.TestCase):
         """Test that shield prevents all movement."""
         initial_x = self.player.x
         initial_y = self.player.y
-        
+
         # Activate shield
         self.player.set_shield(True)
         self.assertTrue(self.player.shield_active)
-        
+
         # Try to move forward
         self.player.move(self.game_map, [])
         self.assertEqual(self.player.x, initial_x)
         self.assertEqual(self.player.y, initial_y)
-        
+
         # Try to strafe
         self.player.strafe(self.game_map, [])
         self.assertEqual(self.player.x, initial_x)
@@ -63,14 +63,14 @@ class TestShieldFunctionality(unittest.TestCase):
     def test_shield_blocks_damage(self) -> None:
         """Test that shield blocks all damage."""
         initial_health = self.player.health
-        
+
         # Activate shield
         self.player.set_shield(True)
-        
+
         # Take damage while shielded
         self.player.take_damage(50)
         self.assertEqual(self.player.health, initial_health)
-        
+
         # Deactivate shield and take damage
         self.player.set_shield(False)
         self.player.take_damage(25)
@@ -81,17 +81,17 @@ class TestShieldFunctionality(unittest.TestCase):
         # Activate shield
         self.player.set_shield(True)
         initial_timer = self.player.shield_timer
-        
+
         # Update player (simulates frame updates)
         self.player.update()
-        
+
         # Timer should decrease
         self.assertEqual(self.player.shield_timer, initial_timer - 1)
-        
+
         # Set shield timer to 0 and update - should deactivate immediately
         self.player.shield_timer = 0
         self.player.update()
-        
+
         # Shield should auto-deactivate
         self.assertFalse(self.player.shield_active)
         self.assertEqual(self.player.shield_recharge_delay, C.SHIELD_COOLDOWN_DEPLETED)
@@ -100,10 +100,10 @@ class TestShieldFunctionality(unittest.TestCase):
         """Test that shield cannot be activated during cooldown."""
         # Set cooldown
         self.player.shield_recharge_delay = 100
-        
+
         # Try to activate shield
         self.player.set_shield(True)
-        
+
         # Should not activate due to cooldown
         self.assertFalse(self.player.shield_active)
 
@@ -112,10 +112,10 @@ class TestShieldFunctionality(unittest.TestCase):
         # Deplete shield
         self.player.shield_timer = 0
         self.player.shield_recharge_delay = 0
-        
+
         # Update to trigger recharge
         self.player.update()
-        
+
         # Timer should increase
         self.assertEqual(self.player.shield_timer, 2)  # +2 per frame recharge rate
 
@@ -124,10 +124,10 @@ class TestShieldFunctionality(unittest.TestCase):
         # Ensure bomb is available
         self.player.bombs = 1
         self.player.bomb_cooldown = 0
-        
+
         # Activate bomb
         result = self.player.activate_bomb()
-        
+
         self.assertTrue(result)
         self.assertTrue(self.player.shield_active)
         self.assertEqual(self.player.bombs, 0)
@@ -136,13 +136,13 @@ class TestShieldFunctionality(unittest.TestCase):
     def test_god_mode_blocks_damage(self) -> None:
         """Test that god mode also blocks damage."""
         initial_health = self.player.health
-        
+
         # Enable god mode
         self.player.god_mode = True
-        
+
         # Take damage
         self.player.take_damage(50)
-        
+
         # Health should be unchanged
         self.assertEqual(self.player.health, initial_health)
 
@@ -152,11 +152,11 @@ class TestShieldFunctionality(unittest.TestCase):
         self.player.set_shield(True)
         self.player.set_shield(False)
         self.assertEqual(self.player.shield_recharge_delay, C.SHIELD_COOLDOWN_NORMAL)
-        
+
         # Reset for next test
         self.player.shield_recharge_delay = 0
         self.player.shield_timer = C.SHIELD_MAX_DURATION
-        
+
         # Depleted cooldown (timer runs out)
         self.player.set_shield(True)
         self.player.shield_timer = 0
