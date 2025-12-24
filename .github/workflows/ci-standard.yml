@@ -1,4 +1,5 @@
 name: CI Standard
+# Refreshed to sync with local correct paths
 on:
   push:
     branches: [main]
