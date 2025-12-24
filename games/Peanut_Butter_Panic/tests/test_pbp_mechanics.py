@@ -11,9 +11,9 @@ from peanut_butter_panic.core import GameConfig, GameWorld, InputState
 
 
 def distance(a: tuple[float, float], b: tuple[float, float]) -> float:
-    dx = a[0] - b[0]
-    dy = a[1] - b[1]
-    return (dx * dx + dy * dy) ** 0.5
+    dx: float = a[0] - b[0]
+    dy: float = a[1] - b[1]
+    return float((dx * dx + dy * dy) ** 0.5)
 
 
 def test_shockwave_clears_enemies_and_scores() -> None:
