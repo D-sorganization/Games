@@ -120,12 +120,46 @@ def run(config: GameConfig | None = None) -> None:
             if event.type == pygame.QUIT:
                 running = False
 
+        if world.defeated:
+            overlay = pygame.Surface((screen.get_width(), screen.get_height()))
+            overlay.set_alpha(10)
+            overlay.fill((0, 0, 0))
+            screen.blit(overlay, (0, 0))
+
+            _draw_text(
+                screen,
+                "GAME OVER",
+                (world_config.width // 2 - 60, world_config.height // 2 - 40),
+                hud_font,
+                (255, 50, 50),
+            )
+            _draw_text(
+                screen,
+                f"Final Score: {world.stats.score}",
+                (world_config.width // 2 - 60, world_config.height // 2),
+                hud_font,
+                (255, 255, 255),
+            )
+            _draw_text(
+                screen,
+                "Press R to Restart or Q to Quit",
+                (world_config.width // 2 - 100, world_config.height // 2 + 40),
+                hud_font,
+                (200, 200, 200),
+            )
+            pygame.display.flip()
+
+            # Check for restart
+            keys = pygame.key.get_pressed()
+            if keys[pygame.K_r]:
+                world.reset()
+            elif keys[pygame.K_q]:
+                running = False
+            continue
+
         world.update(dt, _build_input_state())
         _render_world(screen, world, hud_font)
         pygame.display.flip()
-
-        if world.defeated:
-            running = False
 
     pygame.quit()
 

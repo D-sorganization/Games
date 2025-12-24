@@ -58,6 +58,13 @@ startButton.addEventListener('click', () => {
   animate();
 });
 
+const restartButton = document.getElementById('restartButton');
+if (restartButton) {
+  restartButton.addEventListener('click', () => {
+    location.reload();
+  });
+}
+
 document.addEventListener('contextmenu', e => e.preventDefault());
 
 document.addEventListener('mousedown', (e) => {

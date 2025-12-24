@@ -1,6 +1,10 @@
+import socket
 import subprocess
 import sys
+import threading
 import webbrowser
+from functools import partial
+from http.server import HTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
 from typing import Any
 
@@ -21,6 +25,43 @@ ITEM_HEIGHT = 200
 BASE_DIR = Path(__file__).resolve().parent
 GAMES_DIR = BASE_DIR / "games"
 ASSETS_DIR = BASE_DIR / "launcher_assets"
+
+# Server Globals
+SERVER_PORT = 0
+SERVER_THREAD: threading.Thread | None = None
+
+
+def start_server() -> None:
+    """Start a local HTTP server to serve web games."""
+    global SERVER_PORT, SERVER_THREAD
+    if SERVER_THREAD is not None:
+        return
+
+    class CORSRequestHandler(SimpleHTTPRequestHandler):
+        def end_headers(self) -> None:
+            self.send_header("Access-Control-Allow-Origin", "*")
+            super().end_headers()
+
+    # Find a free port
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.bind(("localhost", 0))
+    SERVER_PORT = sock.getsockname()[1]
+    sock.close()
+
+    def run() -> None:
+        handler = partial(CORSRequestHandler, directory=str(GAMES_DIR))
+        # HTTPServer expects a callable that accepts (request, client_address, server)
+        # partial(CORSRequestHandler, directory=...) works because
+        # SimpleHTTPRequestHandler takes directory as kwarg.
+        try:
+            server = HTTPServer(("localhost", SERVER_PORT), handler)
+            server.serve_forever()
+        except Exception as e:
+            print(f"Server error: {e}")
+
+    SERVER_THREAD = threading.Thread(target=run, daemon=True)
+    SERVER_THREAD.start()
+
 
 # Game Definitions
 GAMES: list[dict[str, Any]] = [
@@ -53,10 +94,11 @@ GAMES: list[dict[str, Any]] = [
         "cwd": GAMES_DIR / "Wizard_of_Wor" / "wizard_of_wor",
     },
     {
-        "name": "Doom (Web)",
+        "name": "Duum",
         "icon": "doom_icon.png",
-        "type": "web",
-        "path": GAMES_DIR / "Doom" / "parent-doom-game" / "index.html",
+        "type": "python",
+        "path": GAMES_DIR / "Duum" / "duum.py",
+        "cwd": GAMES_DIR / "Duum",
     },
     {
         "name": "Zombie Games (Web)",
@@ -108,7 +150,17 @@ def main() -> None:
         else:
             surf.blit(t, pos)
 
+    last_launch_time = 0
+    LAUNCH_COOLDOWN = 1000
+
     def launch_game(game: dict[str, Any]) -> None:
+        nonlocal last_launch_time
+        current_time = pygame.time.get_ticks()
+        if current_time - last_launch_time < LAUNCH_COOLDOWN:
+            print("Launch ignored (cooldown).")
+            return
+        last_launch_time = current_time
+
         print(f"Launching {game['name']}...")
         if game["type"] == "python":
             try:
@@ -119,7 +171,23 @@ def main() -> None:
             except Exception as e:
                 print(f"Error launching {game['name']}: {e}")
         elif game["type"] == "web":
-            webbrowser.open(str(game["path"]))
+            path_obj = Path(game["path"])
+            try:
+                # Try to make path relative to GAMES_DIR
+                rel_path = path_obj.relative_to(GAMES_DIR)
+                start_server()
+                # Wait briefly for server to start
+                pygame.time.wait(100)
+                url = f"http://localhost:{SERVER_PORT}/{rel_path.as_posix()}"
+                print(f"Opening {url}")
+                webbrowser.open(url)
+            except ValueError:
+                # If not in GAMES_DIR, open normally
+                print(
+                    "Path not relative to games dir, opening file directly: "
+                    f"{game['path']}"
+                )
+                webbrowser.open(str(game["path"]))
 
     running = True
     clock = pygame.time.Clock()

@@ -9,6 +9,8 @@ body, html { margin: 0; padding: 0; overflow: hidden; background: #000; color: #
 canvas { display: block; }
 .damage { position: absolute; inset: 0; background: radial-gradient(circle, rgba(255,0,0,0.35) 0%, rgba(255,0,0,0) 60%); opacity: 0; transition: opacity 0.3s ease; pointer-events: none; z-index: 2; }
 .damage.active { opacity: 0.7; }
-.jumpscare { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: radial-gradient(circle at center, rgba(255,0,0,0.45), rgba(0,0,0,0.95)), url('https://i.imgur.com/7N4k1U4.png') center/cover no-repeat; color: #fff; font-size: 64px; z-index: 20; text-shadow: 0 0 24px #ff0000; animation: shake 0.5s linear infinite; }
+.jumpscare { position: fixed; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(circle at center, rgba(255,0,0,0.45), rgba(0,0,0,0.95)), url('jumpscare.png') center/cover no-repeat; color: #fff; font-size: 64px; z-index: 20; text-shadow: 0 0 24px #ff0000; animation: shake 0.5s linear infinite; }
 .jumpscare.active { display: flex; }
+.jumpscare button { margin-top: 30px; padding: 15px 40px; font-size: 24px; font-family: inherit; font-weight: bold; color: #fff; background-color: #8b0000; border: 2px solid #ff0000; box-shadow: 0 0 15px #ff0000; cursor: pointer; text-transform: uppercase; transition: transform 0.1s; pointer-events: auto; }
+.jumpscare button:hover { transform: scale(1.1); background-color: #ff0000; }
 @keyframes shake { 0% { transform: translate(3px, 0); } 25% { transform: translate(-3px, 2px); } 50% { transform: translate(2px, -2px); } 75% { transform: translate(-2px, 3px); } 100% { transform: translate(0,0); } }
