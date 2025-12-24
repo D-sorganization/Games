@@ -85,8 +85,8 @@ class Game:
         self.health = 100
         self.lives = C.DEFAULT_LIVES
 
-        # Unlocked weapons tracking
-        self.unlocked_weapons = {"pistol"}
+        # Unlocked weapons tracking - start with basic weapons
+        self.unlocked_weapons = {"pistol", "rifle"}
         self.cheat_mode_active = False
         self.current_cheat_input = ""
         self.god_mode = False
@@ -313,7 +313,7 @@ class Game:
         self.entity_manager.reset()
 
         # Reset Cheats/Progress
-        self.unlocked_weapons = {"pistol"}
+        self.unlocked_weapons = {"pistol", "rifle"}
         self.god_mode = False
         self.cheat_mode_active = False
 
@@ -392,31 +392,35 @@ class Game:
             )
         )
 
+        enemies_spawned = 0
         for _ in range(num_enemies):
-            # Try to place bot
-            for _ in range(20):
+            # Try to place bot with more attempts and flexible distance
+            for attempt in range(50):  # Increased attempts
                 bx = random.randint(2, self.game_map.size - 2)
                 by = random.randint(2, self.game_map.size - 2)
 
-                # Distance check (Increased safety but ensuring spawns)
+                # More flexible distance check - but maintain safe minimum
+                min_distance = 15.0 if attempt < 40 else 12.0  # Keep safer distance
                 dist = math.sqrt((bx - player_pos[0]) ** 2 + (by - player_pos[1]) ** 2)
-                if dist < 15.0:  # Safe zone radius (was 20.0, blocked too much)
+                if dist < min_distance:
                     continue
 
                 if not self.game_map.is_wall(bx, by):
-                    # Add bot
+                    # Add bot - exclude items and special bosses from regular spawning
                     enemy_type = random.choice(list(C.ENEMY_TYPES.keys()))
                     while enemy_type in [
                         "boss",
-                        "demon",
+                        "demon", 
                         "ball",
                         "beast",
                         "pickup_rifle",
-                        "pickup_shotgun",
+                        "pickup_shotgun", 
                         "pickup_plasma",
+                        "pickup_minigun",
                         "health_pack",
                         "ammo_box",
                         "bomb_item",
+                        "pickup_rocket",
                     ]:
                         enemy_type = random.choice(list(C.ENEMY_TYPES.keys()))
 
@@ -429,20 +433,25 @@ class Game:
                             difficulty=self.selected_difficulty,
                         )
                     )
+                    enemies_spawned += 1
                     break
-
+        
         # Spawn Boss & Fast Enemy (Demon)
         boss_options = ["ball", "beast"]
         boss_type = random.choice(boss_options)
 
         upper_bound = max(2, self.game_map.size - 3)
-        for _ in range(50):
+        boss_spawned = False
+        for attempt in range(100):  # More attempts for boss spawning
             cx = random.randint(2, upper_bound)
             cy = random.randint(2, upper_bound)
+            
+            # More flexible distance for boss spawning - but keep safe
+            min_boss_distance = 15.0 if attempt < 70 else 12.0
             if (
                 not self.game_map.is_wall(cx, cy)
                 and math.sqrt((cx - player_pos[0]) ** 2 + (cy - player_pos[1]) ** 2)
-                > 15
+                > min_boss_distance
             ):
                 self.entity_manager.add_bot(
                     Bot(
@@ -453,6 +462,7 @@ class Game:
                         difficulty=self.selected_difficulty,
                     )
                 )
+                boss_spawned = True
                 break
 
         # Spawn Pickups
@@ -707,9 +717,30 @@ class Game:
             return
 
         if weapon == "minigun" and not is_secondary:
-            # Minigun spread
-            angle_off = random.uniform(-0.1, 0.1)
-            self.check_shot_hit(angle_offset=angle_off)
+            # Minigun rapid fire with multiple projectiles and visual effects
+            num_bullets = 3  # Fire multiple bullets per shot for minigun effect
+            for _ in range(num_bullets):
+                angle_off = random.uniform(-0.15, 0.15)  # Increased spread for minigun
+                final_angle = self.player.angle + angle_off
+                
+                # Create minigun projectile with tracer effect
+                p = Projectile(
+                    self.player.x,
+                    self.player.y,
+                    final_angle,
+                    damage,
+                    speed=2.0,  # Fast bullets
+                    is_player=True,
+                    color=(255, 255, 0),  # Yellow tracers for minigun
+                    size=0.1,  # Smaller bullets
+                    weapon_type="minigun"
+                )
+                self.entity_manager.add_projectile(p)
+            
+            # Add muzzle flash particles for minigun
+            self.particle_system.add_explosion(
+                C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2, count=8, color=(255, 255, 0)
+            )
             return
 
         if weapon == "laser" and not is_secondary:

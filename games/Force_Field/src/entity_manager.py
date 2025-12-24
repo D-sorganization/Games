@@ -146,5 +146,5 @@ class EntityManager:
         return [
             b
             for b in self.bots
-            if b.alive and b.type_data.get("visual_style") != "item"
+            if b.alive and b.type_data.get("visual_style") not in ["item"]
         ]

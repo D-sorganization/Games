@@ -37,6 +37,7 @@ class InputManager:
         "weapon_4": pygame.K_4,
         "weapon_5": pygame.K_5,
         "weapon_6": pygame.K_6,
+        "weapon_minigun": pygame.K_7,  # Direct minigun access
     }
 
     def __init__(self, config_file: str = "keybindings.json"):
