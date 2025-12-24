@@ -392,7 +392,6 @@ class Game:
             )
         )
 
-        enemies_spawned = 0
         for _ in range(num_enemies):
             # Try to place bot with more attempts and flexible distance
             for attempt in range(50):  # Increased attempts
@@ -433,7 +432,6 @@ class Game:
                             difficulty=self.selected_difficulty,
                         )
                     )
-                    enemies_spawned += 1
                     break
         
         # Spawn Boss & Fast Enemy (Demon)
@@ -441,7 +439,6 @@ class Game:
         boss_type = random.choice(boss_options)
 
         upper_bound = max(2, self.game_map.size - 3)
-        boss_spawned = False
         for attempt in range(100):  # More attempts for boss spawning
             cx = random.randint(2, upper_bound)
             cy = random.randint(2, upper_bound)
@@ -462,7 +459,6 @@ class Game:
                         difficulty=self.selected_difficulty,
                     )
                 )
-                boss_spawned = True
                 break
 
         # Spawn Pickups
@@ -718,6 +714,7 @@ class Game:
 
         if weapon == "minigun" and not is_secondary:
             # Minigun rapid fire with multiple projectiles and visual effects
+            damage = self.player.get_current_weapon_damage()
             num_bullets = 3  # Fire multiple bullets per shot for minigun effect
             for _ in range(num_bullets):
                 angle_off = random.uniform(-0.15, 0.15)  # Increased spread for minigun

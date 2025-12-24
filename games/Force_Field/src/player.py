@@ -75,7 +75,6 @@ class Player:
         """Move player forward or backward"""
         if self.zoomed:
             return  # No movement when zoomed
-        
         if self.shield_active:
             return  # No movement when shield is active (as per README)
 
