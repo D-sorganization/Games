@@ -714,9 +714,9 @@ class Game:
         if weapon == "minigun" and not is_secondary:
             # Minigun rapid fire with multiple projectiles and visual effects
             damage = self.player.get_current_weapon_damage()
-            num_bullets = 3  # Fire multiple bullets per shot for minigun effect
+            num_bullets = C.MINIGUN_BULLETS_PER_SHOT
             for _ in range(num_bullets):
-                angle_off = random.uniform(-0.15, 0.15)  # Increased spread for minigun
+                angle_off = random.uniform(-C.MINIGUN_SPREAD, C.MINIGUN_SPREAD)
                 final_angle = self.player.angle + angle_off
 
                 # Create minigun projectile with tracer effect
@@ -725,17 +725,20 @@ class Game:
                     self.player.y,
                     final_angle,
                     damage,
-                    speed=2.0,  # Fast bullets
+                    speed=C.MINIGUN_PROJECTILE_SPEED,
                     is_player=True,
-                    color=(255, 255, 0),  # Yellow tracers for minigun
-                    size=0.1,  # Smaller bullets
+                    color=C.YELLOW,
+                    size=C.MINIGUN_PROJECTILE_SIZE,
                     weapon_type="minigun",
                 )
                 self.entity_manager.add_projectile(p)
 
             # Add muzzle flash particles for minigun
             self.particle_system.add_explosion(
-                C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2, count=8, color=(255, 255, 0)
+                C.SCREEN_WIDTH // 2,
+                C.SCREEN_HEIGHT // 2,
+                count=C.MINIGUN_MUZZLE_FLASH_PARTICLES,
+                color=C.YELLOW,
             )
             return
 

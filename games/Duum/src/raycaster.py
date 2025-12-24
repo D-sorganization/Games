@@ -378,9 +378,9 @@ class Raycaster:
         cached_size = int(round(cache_display_size / 10.0) * 10.0)
         cached_size = max(cached_size, 10)
 
-        # Calculate shade level (0-20)
+        # Calculate shade level
         distance_shade = max(0.2, 1.0 - dist / 50.0)  # Match wall shading intensity
-        shade_level = int(distance_shade * 20.0)
+        shade_level = int(distance_shade * C.MAX_SHADE_LEVELS)
 
         cache_key = (
             f"{bot.enemy_type}_{bot.type_data.get('visual_style')}_"
@@ -534,19 +534,19 @@ class Raycaster:
 
         # Gradient Sky
         top_color = (
-            max(0, ceiling_color[0] - 30),
-            max(0, ceiling_color[1] - 30),
-            max(0, ceiling_color[2] - 30),
+            max(0, ceiling_color[0] - C.SKY_GRADIENT_OFFSET),
+            max(0, ceiling_color[1] - C.SKY_GRADIENT_OFFSET),
+            max(0, ceiling_color[2] - C.SKY_GRADIENT_OFFSET),
         )
         bottom_color = ceiling_color
 
-        # Draw sky in 10px bands
-        for y in range(0, horizon, 10):
+        # Draw sky in bands
+        for y in range(0, horizon, C.GRADIENT_BAND_HEIGHT):
             ratio = y / max(1, horizon)
             r = top_color[0] + (bottom_color[0] - top_color[0]) * ratio
             g = top_color[1] + (bottom_color[1] - top_color[1]) * ratio
             b = top_color[2] + (bottom_color[2] - top_color[2]) * ratio
-            height = int(min(10, horizon - y))
+            height = int(min(C.GRADIENT_BAND_HEIGHT, horizon - y))
             pygame.draw.rect(
                 screen,
                 (int(r), int(g), int(b)),
@@ -578,13 +578,13 @@ class Raycaster:
         # Gradient Floor
         near_color = floor_color
         far_color = (
-            max(0, floor_color[0] - 40),
-            max(0, floor_color[1] - 40),
-            max(0, floor_color[2] - 40),
+            max(0, floor_color[0] - C.FLOOR_GRADIENT_OFFSET),
+            max(0, floor_color[1] - C.FLOOR_GRADIENT_OFFSET),
+            max(0, floor_color[2] - C.FLOOR_GRADIENT_OFFSET),
         )
 
         floor_height = C.SCREEN_HEIGHT - horizon
-        for y in range(0, floor_height, 10):
+        for y in range(0, floor_height, C.GRADIENT_BAND_HEIGHT):
             ratio = y / max(1, floor_height)
             # Reverse ratio for floor (top is far, bottom is near)
             r = far_color[0] + (near_color[0] - far_color[0]) * ratio
@@ -592,7 +592,7 @@ class Raycaster:
             b = far_color[2] + (near_color[2] - far_color[2]) * ratio
 
             draw_y = horizon + y
-            height = min(10, C.SCREEN_HEIGHT - draw_y)
+            height = min(C.GRADIENT_BAND_HEIGHT, C.SCREEN_HEIGHT - draw_y)
             if height > 0:
                 pygame.draw.rect(
                     screen,
