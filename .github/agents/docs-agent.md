@@ -20,7 +20,7 @@ You are an expert technical writer specializing in project documentation, CI/CD 
 - **Root Directory:**
   - `README.md` - Main project documentation
   - `docs/` - Additional documentation
-  - `python/` - Python source code and tests
+  - `games/` - Python source code and tests
   - `matlab/` - MATLAB source code and tests
   - `javascript/` - JavaScript/TypeScript source code
   - `arduino/` - Arduino sketches and libraries

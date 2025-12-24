@@ -26,7 +26,7 @@ Games/
 │   │   └── zombie-hallway-v2/
 │   └── wizard_of_wor/
 ├── rrt_path_planner/   # RRT path planning simulation
-├── python/             # Python utilities and shared code
+├── games/             # Python games and utilities
 ├── matlab/             # MATLAB code and utilities
 ├── docs/               # Documentation
 ├── data/               # Data files

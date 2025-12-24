@@ -2,13 +2,14 @@ from __future__ import annotations
 
 import math
 import random
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
 import pygame
 
 from . import constants as C  # noqa: N812
 
 if TYPE_CHECKING:
+    from .custom_types import WeaponData
     from .player import Player
 
 
@@ -39,8 +40,8 @@ class WeaponRenderer:
 
         w_state = player.weapon_state[weapon]
         if w_state["reloading"]:
-            w_data = C.WEAPONS.get(weapon, {})
-            reload_max = cast("int", w_data.get("reload_time", 60))
+            w_data: WeaponData = C.WEAPONS.get(weapon, {})
+            reload_max = int(w_data.get("reload_time", 60))
             if reload_max > 0:
                 pct = w_state["reload_timer"] / reload_max
                 dip = math.sin(pct * math.pi) * 150

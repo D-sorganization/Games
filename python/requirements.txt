@@ -1,0 +1,7 @@
+pygame
+opencv-python
+numpy
+pytest
+pytest-cov
+types-PyYAML
+types-requests

@@ -98,6 +98,28 @@ class ParticleSystem:
             )
         )
 
+    def add_trace(
+        self,
+        start: tuple[float, float],
+        end: tuple[float, float],
+        color: tuple[int, int, int],
+        timer: int = 5,
+        width: int = 1,
+    ) -> None:
+        """Add a bullet trace particle."""
+        self.particles.append(
+            Particle(
+                0,
+                0,
+                color=color,
+                timer=timer,
+                ptype="trace",
+                width=width,
+                start_pos=start,
+                end_pos=end,
+            )
+        )
+
     def add_explosion(
         self,
         x: float,

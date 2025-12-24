@@ -1,0 +1,15 @@
+project:
+  type: python
+  structure: games-based
+  source_directory: games
+  requirements_file: requirements.txt
+  
+ci:
+  python_source_path: games
+  requirements_path: requirements.txt
+  mypy_target: games
+  
+directories:
+  source: games
+  tests: games/*/tests
+  requirements: ./requirements.txt

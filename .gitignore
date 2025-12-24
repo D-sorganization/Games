@@ -56,3 +56,6 @@ ruff_output_ff_2.txt
 .jules/palette*
 .jules/pallette*
 .jules/sentinel*
+
+# Enforce NPM
+pnpm-lock.yaml

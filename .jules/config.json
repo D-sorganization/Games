@@ -1,0 +1,14 @@
+{
+  "project": {
+    "type": "python",
+    "structure": "games",
+    "source_directory": "games",
+    "requirements_file": "requirements.txt",
+    "test_directory": "games/*/tests"
+  },
+  "ci": {
+    "python_source_path": "games",
+    "requirements_path": "requirements.txt",
+    "mypy_target": "games"
+  }
+}

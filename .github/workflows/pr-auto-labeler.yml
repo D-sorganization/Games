@@ -31,7 +31,7 @@ jobs:
             const labels = new Set();
 
             // Language/Component labels
-            if (changedFiles.some(f => f.startsWith('python/'))) {
+            if (changedFiles.some(f => f.startsWith('games/'))) {
               labels.add('python');
             }
             if (changedFiles.some(f => f.startsWith('javascript/'))) {

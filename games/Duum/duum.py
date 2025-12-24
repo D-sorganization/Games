@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Duum - A Doom Clone
+Duum - The Reimagining
 """
 
 import logging

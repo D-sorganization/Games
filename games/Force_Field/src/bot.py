@@ -2,13 +2,14 @@ from __future__ import annotations
 
 import math
 import random
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from . import constants as C  # noqa: N812
 from .projectile import Projectile
 from .utils import has_line_of_sight
 
 if TYPE_CHECKING:
+    from .custom_types import EnemyData
     from .map import Map
     from .player import Player
 
@@ -43,17 +44,17 @@ class Bot:
 
         diff_stats = C.DIFFICULTIES.get(difficulty, C.DIFFICULTIES["NORMAL"])
 
-        type_data: dict[str, Any] = self.type_data
-        base_health = int(C.BASE_BOT_HEALTH * float(type_data["health_mult"]))
+        type_data: EnemyData = self.type_data
+        base_health = int(C.BASE_BOT_HEALTH * float(type_data.get("health_mult", 1.0)))
         # Apply difficulty to health
         self.health = int((base_health + (level - 1) * 3) * diff_stats["health_mult"])
         self.max_health = self.health
 
-        base_damage = int(C.BASE_BOT_DAMAGE * float(type_data["damage_mult"]))
+        base_damage = int(C.BASE_BOT_DAMAGE * float(type_data.get("damage_mult", 1.0)))
         # Apply difficulty to damage
         self.damage = int((base_damage + (level - 1) * 2) * diff_stats["damage_mult"])
 
-        self.speed = float(C.BOT_SPEED * float(type_data["speed_mult"]))
+        self.speed = float(C.BOT_SPEED * float(type_data.get("speed_mult", 1.0)))
         self.alive = True
         self.attack_timer = 0
         self.level = level
@@ -218,11 +219,30 @@ class Bot:
                     self.shoot_animation = 1.0
                     return projectile
 
+        if self.enemy_type == "sniper":
+            if distance < C.WEAPON_RANGE_SNIPER and self.attack_timer <= 0:
+                if self.has_line_of_sight(game_map, player):
+                    # Very Fast projectile
+                    projectile = Projectile(
+                        self.x,
+                        self.y,
+                        self.angle,
+                        damage=self.damage,
+                        speed=0.4,
+                        is_player=False,
+                        color=(255, 0, 0),
+                        size=0.1,
+                    )
+                    self.attack_timer = 180  # Slow fire
+                    self.shoot_animation = 1.0
+                    return projectile
+
         # Attack if in range
         if distance < C.BOT_ATTACK_RANGE and self.enemy_type not in [
             "beast",
             "ninja",
             "minigunner",
+            "sniper",
         ]:  # Beast and Ninja handled above
             if self.attack_timer <= 0:
                 # Check line of sight

@@ -712,9 +712,31 @@ class Game:
             return
 
         if weapon == "minigun" and not is_secondary:
-            # Minigun spread
-            angle_off = random.uniform(-0.1, 0.1)
-            self.check_shot_hit(angle_offset=angle_off)
+            # Minigun rapid fire with multiple projectiles and visual effects
+            damage = self.player.get_current_weapon_damage()
+            num_bullets = 3  # Fire multiple bullets per shot for minigun effect
+            for _ in range(num_bullets):
+                angle_off = random.uniform(-0.15, 0.15)  # Increased spread for minigun
+                final_angle = self.player.angle + angle_off
+
+                # Create minigun projectile with tracer effect
+                p = Projectile(
+                    self.player.x,
+                    self.player.y,
+                    final_angle,
+                    damage,
+                    speed=2.0,  # Fast bullets
+                    is_player=True,
+                    color=(255, 255, 0),  # Yellow tracers for minigun
+                    size=0.1,  # Smaller bullets
+                    weapon_type="minigun",
+                )
+                self.entity_manager.add_projectile(p)
+
+            # Add muzzle flash particles for minigun
+            self.particle_system.add_explosion(
+                C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2, count=8, color=(255, 255, 0)
+            )
             return
 
         if weapon == "laser" and not is_secondary:
@@ -890,6 +912,62 @@ class Game:
                     self.kill_combo_timer = 180
                     self.last_death_pos = (closest_bot.x, closest_bot.y)
                     self.sound_manager.play_sound("scream")
+
+            # Visual Traces
+            # Calculate Screen Hit Point
+            # We know the object hit is at distance closest_dist (bot) or wall_dist
+            # (wall)
+
+            # Simple screen projection for trace endpoint
+            # In a raycaster, x is derived from angle difference
+            angle_diff = aim_angle - self.player.angle
+            # Normalize to -PI to PI
+            angle_diff = (angle_diff + math.pi) % (2 * math.pi) - math.pi
+
+            # Project to screen X
+            # Screen width corresponds to FOV.
+            # x = (0.5 - angle_diff / FOV) * SCREEN_WIDTH
+            # But wait, angle increases counter-clockwise?
+            # Usually raycaster:
+            # screen_x 0 -> angle + FOV/2, screen_x Width -> angle - FOV/2
+            # Let's approximate:
+            screen_hit_x = (0.5 - angle_diff / C.FOV) * C.SCREEN_WIDTH
+
+            # Project to screen Y
+            # y = H/2 + (player_z - hit_z) / dist * height_scale + pitch_offset
+            # Assuming hit is at same height roughly (center of screen vertically if 0)
+            # But we have pitch.
+            # pitch_view adds offset in pixels.
+            # Wall height on screen is proportional to 1/dist.
+            # Let's aim for the "center" of the hit view.
+            screen_hit_y = C.SCREEN_HEIGHT // 2 + self.player.pitch
+
+            # Weapon Start Position (Bottom Center-ish)
+            weapon_start_x = C.SCREEN_WIDTH * 0.6  # Slightly right
+            weapon_start_y = C.SCREEN_HEIGHT
+
+            # Adjust start for "hand" position
+            self.particle_system.add_trace(
+                start=(weapon_start_x, weapon_start_y),
+                end=(screen_hit_x, screen_hit_y),
+                color=(255, 255, 100),  # Pale yellow trace
+                timer=5,
+                width=1,
+            )
+
+            if not closest_bot:
+                # Wall Hit Effect at screen_hit_x, screen_hit_y
+                # Add sparks
+                for _ in range(5):
+                    self.particle_system.add_particle(
+                        x=screen_hit_x,
+                        y=screen_hit_y,
+                        dx=random.uniform(-3, 3),
+                        dy=random.uniform(-3, 3),
+                        color=(255, 200, 100),  # Spark color
+                        timer=20,
+                        size=random.randint(1, 3),
+                    )
 
         except Exception:
             logger.exception("Error in check_shot_hit")
@@ -1284,10 +1362,13 @@ class Game:
                             pickup_msg = f"{w_name.upper()} ACQUIRED!"
                             color = C.CYAN
                         else:
-                            clip_size = int(cast("int", C.WEAPONS[w_name]["clip_size"]))
-                            self.player.ammo[w_name] += clip_size * 2
-                            pickup_msg = f"{w_name.upper()} AMMO"
-                            color = C.YELLOW
+                            if w_name in self.player.ammo:
+                                clip_size = int(
+                                    cast("int", C.WEAPONS[w_name]["clip_size"])
+                                )
+                                self.player.ammo[w_name] += clip_size * 2
+                                pickup_msg = f"{w_name.upper()} AMMO"
+                                color = C.YELLOW
 
                     if pickup_msg:
                         bot.alive = False
