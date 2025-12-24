@@ -893,8 +893,8 @@ class Game:
 
             # Visual Traces
             # Calculate Screen Hit Point
-            # We know the object hit is at distance closest_dist (if bot) or wall_dist (if wall)
-            hit_dist = closest_dist if closest_bot else wall_dist
+            # We know the object hit is at distance closest_dist (bot) or wall_dist
+            # (wall)
 
             # Simple screen projection for trace endpoint
             # In a raycaster, x is derived from angle difference
@@ -906,13 +906,14 @@ class Game:
             # Screen width corresponds to FOV.
             # x = (0.5 - angle_diff / FOV) * SCREEN_WIDTH
             # But wait, angle increases counter-clockwise?
-            # Usually raycaster: screen_x 0 -> angle + FOV/2, screen_x Width -> angle - FOV/2
+            # Usually raycaster:
+            # screen_x 0 -> angle + FOV/2, screen_x Width -> angle - FOV/2
             # Let's approximate:
             screen_hit_x = (0.5 - angle_diff / C.FOV) * C.SCREEN_WIDTH
 
             # Project to screen Y
-            # y = SCREEN_HEIGHT / 2 + (player_z - hit_z) / dist * height_scale + pitch_offset
-            # Assuming hit is at same height roughly (center of screen vertically if 0 pitch)
+            # y = H/2 + (player_z - hit_z) / dist * height_scale + pitch_offset
+            # Assuming hit is at same height roughly (center of screen vertically if 0)
             # But we have pitch.
             # pitch_view adds offset in pixels.
             # Wall height on screen is proportional to 1/dist.
