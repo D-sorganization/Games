@@ -53,10 +53,11 @@ GAMES: list[dict[str, Any]] = [
         "cwd": GAMES_DIR / "Wizard_of_Wor" / "wizard_of_wor",
     },
     {
-        "name": "Doom (Web)",
+        "name": "Duum",
         "icon": "doom_icon.png",
-        "type": "web",
-        "path": GAMES_DIR / "Doom" / "parent-doom-game" / "index.html",
+        "type": "python",
+        "path": GAMES_DIR / "Duum" / "duum.py",
+        "cwd": GAMES_DIR / "Duum",
     },
     {
         "name": "Zombie Games (Web)",

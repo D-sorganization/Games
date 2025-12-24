@@ -712,9 +712,31 @@ class Game:
             return
 
         if weapon == "minigun" and not is_secondary:
-            # Minigun spread
-            angle_off = random.uniform(-0.1, 0.1)
-            self.check_shot_hit(angle_offset=angle_off)
+            # Minigun rapid fire with multiple projectiles and visual effects
+            damage = self.player.get_current_weapon_damage()
+            num_bullets = 3  # Fire multiple bullets per shot for minigun effect
+            for _ in range(num_bullets):
+                angle_off = random.uniform(-0.15, 0.15)  # Increased spread for minigun
+                final_angle = self.player.angle + angle_off
+
+                # Create minigun projectile with tracer effect
+                p = Projectile(
+                    self.player.x,
+                    self.player.y,
+                    final_angle,
+                    damage,
+                    speed=2.0,  # Fast bullets
+                    is_player=True,
+                    color=(255, 255, 0),  # Yellow tracers for minigun
+                    size=0.1,  # Smaller bullets
+                    weapon_type="minigun",
+                )
+                self.entity_manager.add_projectile(p)
+
+            # Add muzzle flash particles for minigun
+            self.particle_system.add_explosion(
+                C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2, count=8, color=(255, 255, 0)
+            )
             return
 
         if weapon == "laser" and not is_secondary:
@@ -1340,10 +1362,13 @@ class Game:
                             pickup_msg = f"{w_name.upper()} ACQUIRED!"
                             color = C.CYAN
                         else:
-                            clip_size = int(cast("int", C.WEAPONS[w_name]["clip_size"]))
-                            self.player.ammo[w_name] += clip_size * 2
-                            pickup_msg = f"{w_name.upper()} AMMO"
-                            color = C.YELLOW
+                            if w_name in self.player.ammo:
+                                clip_size = int(
+                                    cast("int", C.WEAPONS[w_name]["clip_size"])
+                                )
+                                self.player.ammo[w_name] += clip_size * 2
+                                pickup_msg = f"{w_name.upper()} AMMO"
+                                color = C.YELLOW
 
                     if pickup_msg:
                         bot.alive = False
