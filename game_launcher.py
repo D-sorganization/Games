@@ -34,8 +34,8 @@ GAMES: list[dict[str, Any]] = [
     {
         "name": "Peanut Butter Panic",
         "icon": "peanut_butter_panic_icon.png",
-        "type": "python",
-        "path": GAMES_DIR / "Peanut_Butter_Panic" / "peanut_butter_panic" / "game.py",
+        "type": "module",
+        "module_name": "peanut_butter_panic.game",
         "cwd": GAMES_DIR / "Peanut_Butter_Panic",
     },
     {
@@ -115,6 +115,13 @@ def main() -> None:
                 # Use sys.executable to ensure we use the same python interpreter
                 subprocess.Popen(
                     [sys.executable, str(game["path"])], cwd=str(game["cwd"])
+                )
+            except Exception as e:
+                print(f"Error launching {game['name']}: {e}")
+        elif game["type"] == "module":
+            try:
+                subprocess.Popen(
+                    [sys.executable, "-m", game["module_name"]], cwd=str(game["cwd"])
                 )
             except Exception as e:
                 print(f"Error launching {game['name']}: {e}")
