@@ -891,6 +891,61 @@ class Game:
                     self.last_death_pos = (closest_bot.x, closest_bot.y)
                     self.sound_manager.play_sound("scream")
 
+            # Visual Traces
+            # Calculate Screen Hit Point
+            # We know the object hit is at distance closest_dist (if bot) or wall_dist (if wall)
+            hit_dist = closest_dist if closest_bot else wall_dist
+
+            # Simple screen projection for trace endpoint
+            # In a raycaster, x is derived from angle difference
+            angle_diff = aim_angle - self.player.angle
+            # Normalize to -PI to PI
+            angle_diff = (angle_diff + math.pi) % (2 * math.pi) - math.pi
+
+            # Project to screen X
+            # Screen width corresponds to FOV.
+            # x = (0.5 - angle_diff / FOV) * SCREEN_WIDTH
+            # But wait, angle increases counter-clockwise?
+            # Usually raycaster: screen_x 0 -> angle + FOV/2, screen_x Width -> angle - FOV/2
+            # Let's approximate:
+            screen_hit_x = (0.5 - angle_diff / C.FOV) * C.SCREEN_WIDTH
+
+            # Project to screen Y
+            # y = SCREEN_HEIGHT / 2 + (player_z - hit_z) / dist * height_scale + pitch_offset
+            # Assuming hit is at same height roughly (center of screen vertically if 0 pitch)
+            # But we have pitch.
+            # pitch_view adds offset in pixels.
+            # Wall height on screen is proportional to 1/dist.
+            # Let's aim for the "center" of the hit view.
+            screen_hit_y = C.SCREEN_HEIGHT // 2 + self.player.pitch
+
+            # Weapon Start Position (Bottom Center-ish)
+            weapon_start_x = C.SCREEN_WIDTH * 0.6  # Slightly right
+            weapon_start_y = C.SCREEN_HEIGHT
+
+            # Adjust start for "hand" position
+            self.particle_system.add_trace(
+                start=(weapon_start_x, weapon_start_y),
+                end=(screen_hit_x, screen_hit_y),
+                color=(255, 255, 100), # Pale yellow trace
+                timer=5,
+                width=1
+            )
+
+            if not closest_bot:
+                # Wall Hit Effect at screen_hit_x, screen_hit_y
+                # Add sparks
+                for _ in range(5):
+                    self.particle_system.add_particle(
+                        x=screen_hit_x,
+                        y=screen_hit_y,
+                        dx=random.uniform(-3, 3),
+                        dy=random.uniform(-3, 3),
+                        color=(255, 200, 100), # Spark color
+                        timer=20,
+                        size=random.randint(1, 3)
+                    )
+
         except Exception:
             logger.exception("Error in check_shot_hit")
 

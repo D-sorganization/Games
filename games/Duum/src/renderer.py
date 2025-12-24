@@ -94,6 +94,14 @@ class GameRenderer:
                         target_end,
                         max(1, p.width // 2),
                     )
+            elif p.ptype == "trace":
+                # Bullet trace
+                ratio = p.timer / 5  # Trace lifetime is short
+                alpha = int(255 * ratio)
+                start = p.start_pos
+                end = p.end_pos
+                color = (*p.color, alpha)
+                pygame.draw.line(self.effects_surface, color, start, end, p.width)
             elif p.ptype == "normal":
                 ratio = p.timer / C.PARTICLE_LIFETIME
                 alpha = int(255 * ratio)

@@ -68,7 +68,7 @@ class Bot:
         if self.enemy_type == "ball":
             self.damage = int(self.damage * 1.5)  # Impact damage
 
-        # Visuals (Doom style)
+        # Visuals (Retro style)
         self.mouth_open = False
         self.mouth_timer = 0
         self.eye_rotation = 0.0
