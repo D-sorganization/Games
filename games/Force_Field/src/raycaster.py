@@ -672,9 +672,6 @@ class Raycaster:
                 # Since fog of war is dynamic, we can't fully cache the visible result
                 # but we can cache the base map.
 
-                # Render cached map to a temp surface
-                temp_surface = self.minimap_surface.copy()
-
                 # Create fog mask
                 fog_surface = pygame.Surface(
                     (self.minimap_size, self.minimap_size), pygame.SRCALPHA
@@ -683,10 +680,9 @@ class Raycaster:
 
                 # Cut holes in fog
                 for vx, vy in visited_cells:
-                    pygame.draw.rect(
-                        fog_surface,
-                        (0, 0, 0, 0), # Transparent
-                        (
+                    fog_surface.fill(
+                        (0, 0, 0, 0),
+                        rect=(
                             vx * self.minimap_scale,
                             vy * self.minimap_scale,
                             self.minimap_scale,
@@ -694,11 +690,11 @@ class Raycaster:
                         ),
                     )
 
-                # Apply fog to temp map (or just draw fog on top)
-                screen.blit(temp_surface, (minimap_x, minimap_y))
+                # Apply fog to map (draw fog on top of the cached map on screen)
+                screen.blit(self.minimap_surface, (minimap_x, minimap_y))
                 screen.blit(fog_surface, (minimap_x, minimap_y))
             else:
-                 screen.blit(self.minimap_surface, (minimap_x, minimap_y))
+                screen.blit(self.minimap_surface, (minimap_x, minimap_y))
 
 
         if portal:
