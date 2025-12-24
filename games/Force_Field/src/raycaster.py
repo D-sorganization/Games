@@ -569,7 +569,7 @@ class Raycaster:
 
         for sx, sy, size, color in self.stars:
             x = (sx + star_offset) % C.SCREEN_WIDTH
-            y = sy + player.pitch + view_offset_y
+            y = int(sy + player.pitch + view_offset_y)
 
             if 0 <= y < horizon:
                 pygame.draw.circle(screen, color, (x, int(y)), int(size))
