@@ -446,6 +446,10 @@ class Game:
                         )
                     )
                     break
+            else:
+                logger.warning(
+                    "Failed to spawn enemy after 50 attempts. Map density might be too high."
+                )
 
         # Spawn Boss & Fast Enemy (Demon)
         boss_options = ["ball", "beast"]
