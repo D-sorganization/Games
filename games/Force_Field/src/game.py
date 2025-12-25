@@ -606,6 +606,9 @@ class Game:
                         self.show_minimap = not self.show_minimap
                     elif event.key == pygame.K_F9:
                         self.cycle_render_scale()
+                    elif self.input_manager.is_action_just_pressed(event, "dash"):
+                        assert self.player is not None
+                        self.player.dash()
 
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if self.paused:
@@ -774,7 +777,7 @@ class Game:
 
             # 1. Cast ray to find wall distance
             # Use Raycaster to avoid code duplication
-            wall_dist, _ = self.raycaster.cast_ray(
+            wall_dist, _, _ = self.raycaster.cast_ray(
                 self.player.x, self.player.y, aim_angle
             )
 
@@ -1221,6 +1224,7 @@ class Game:
 
         sprint_key = keys[pygame.K_RSHIFT]
         is_sprinting = self.input_manager.is_action_pressed("sprint") or sprint_key
+
         if is_sprinting and self.player.stamina > 0:
             current_speed = C.PLAYER_SPRINT_SPEED
             self.player.stamina -= 1

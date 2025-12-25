@@ -24,6 +24,12 @@ class Player:
         self.max_health = 100
         self.is_moving = False  # Track movement for bobbing
 
+        # Dash Constants
+        self.DASH_SPEED_MULT = 2.5
+        self.DASH_STAMINA_COST = 20
+        self.DASH_DURATION = 10
+        self.DASH_COOLDOWN = 60
+
         # Weapon State
         self.weapon_state: dict[str, dict[str, Any]] = {}
         for w_name, w_data in C.WEAPONS.items():
@@ -64,6 +70,11 @@ class Player:
         self.max_stamina = 100.0
         self.stamina_recharge_delay = 0
 
+        # Dash mechanics
+        self.dash_cooldown = 0
+        self.dash_active = False
+        self.dash_timer = 0
+
     def move(
         self,
         game_map: Map,
@@ -77,8 +88,12 @@ class Player:
         if self.shield_active:
             return  # No movement when shield is active (as per README)
 
-        dx = math.cos(self.angle) * speed * (1 if forward else -1)
-        dy = math.sin(self.angle) * speed * (1 if forward else -1)
+        current_speed = speed
+        if self.dash_active:
+            current_speed *= self.DASH_SPEED_MULT
+
+        dx = math.cos(self.angle) * current_speed * (1 if forward else -1)
+        dy = math.sin(self.angle) * current_speed * (1 if forward else -1)
 
         from .utils import try_move_entity
 
@@ -98,13 +113,26 @@ class Player:
         if self.shield_active:
             return  # No movement when shield is active
 
+        current_speed = speed
+        if self.dash_active:
+            current_speed *= self.DASH_SPEED_MULT
+
         angle = self.angle + math.pi / 2 * (1 if right else -1)
-        dx = math.cos(angle) * speed
-        dy = math.sin(angle) * speed
+        dx = math.cos(angle) * current_speed
+        dy = math.sin(angle) * current_speed
 
         from .utils import try_move_entity
 
         try_move_entity(self, dx, dy, game_map, bots, radius=0.5)
+
+    def dash(self) -> None:
+        """Attempt to perform a dash."""
+        if self.dash_cooldown <= 0 and self.stamina >= self.DASH_STAMINA_COST:
+            self.stamina -= self.DASH_STAMINA_COST
+            self.dash_active = True
+            self.dash_timer = self.DASH_DURATION
+            self.dash_cooldown = self.DASH_COOLDOWN
+            self.stamina_recharge_delay = self.DASH_COOLDOWN
 
     def rotate(self, delta: float) -> None:
         """Rotate player view"""
@@ -223,6 +251,15 @@ class Player:
         # Smoothly interpolate sway for better feel
         self.sway_amount = self.sway_amount * 0.8 + self.frame_turn * 0.2
         self.frame_turn = 0.0  # Reset for next frame accumulation
+
+        # Dash logic
+        if self.dash_active:
+            self.dash_timer -= 1
+            if self.dash_timer <= 0:
+                self.dash_active = False
+
+        if self.dash_cooldown > 0:
+            self.dash_cooldown -= 1
 
         # Global shoot timer
         if self.shoot_timer > 0:
