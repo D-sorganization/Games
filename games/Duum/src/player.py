@@ -285,22 +285,23 @@ class Player:
 
             # Plasma Heat / Overheat
             if w_name == "plasma":
+                w_data = C.WEAPONS[w_name]
                 if w_state["overheated"]:
                     w_state["overheat_timer"] -= 1
-                    # Cool down while overheated? Or fixed penalty?
-                    # Usually fixed wait. We'll linearly cool it down too
-                    # so visual bar goes down
-                    oh_penalty = C.WEAPONS[w_name].get("overheat_penalty", 180)
-                    penalty_time = int(cast("int", oh_penalty))
-                    max_heat = float(cast("float", C.WEAPONS[w_name]["max_heat"]))
-                    cool_amount = max_heat / penalty_time
-                    w_state["heat"] = max(0.0, w_state["heat"] - cool_amount)
+
+                    # Linearly cool down during overheat penalty for visual feedback
+                    penalty_time = int(cast("int", w_data.get("overheat_penalty", 180)))
+                    max_heat = float(cast("float", w_data["max_heat"]))
+
+                    if penalty_time > 0:
+                        cool_amount = max_heat / penalty_time
+                        w_state["heat"] = max(0.0, w_state["heat"] - cool_amount)
 
                     if w_state["overheat_timer"] <= 0:
                         w_state["overheated"] = False
                         w_state["heat"] = 0.0
                 elif w_state["heat"] > 0:
-                    w_state["heat"] -= C.WEAPONS[w_name].get("cooling_rate", 0.01)
+                    w_state["heat"] -= w_data.get("cooling_rate", 0.01)
                     w_state["heat"] = max(0.0, w_state["heat"])
 
     def can_secondary_fire(self) -> bool:
