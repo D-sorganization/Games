@@ -567,10 +567,12 @@ class Game:
                 if self.input_manager.is_action_just_pressed(event, "pause"):
                     self.paused = not self.paused
                     if self.paused:
+                        self.sound_manager.pause_all()
                         self.pause_start_time = pygame.time.get_ticks()
                         pygame.mouse.set_visible(True)
                         pygame.event.set_grab(False)
                     else:
+                        self.sound_manager.unpause_all()
                         if self.pause_start_time > 0:
                             now = pygame.time.get_ticks()
                             pause_duration = now - self.pause_start_time
@@ -634,6 +636,7 @@ class Game:
                     if 500 <= mx <= 700:
                         if 350 <= my <= 400:  # Resume
                             self.paused = False
+                            self.sound_manager.unpause_all()
                             if self.pause_start_time > 0:
                                 now = pygame.time.get_ticks()
                                 pause_duration = now - self.pause_start_time
@@ -1174,6 +1177,15 @@ class Game:
         keys = pygame.key.get_pressed()
 
         shield_active = self.input_manager.is_action_pressed("shield")
+
+        if self.joystick and not self.paused and self.player and self.player.alive:
+            pass  # Joystick handled below
+
+        # Keyboard Continuous Fire (for auto weapons like Minigun)
+        if not self.paused and self.player and self.player.alive:
+            if self.input_manager.is_action_pressed("shoot"):
+                if self.player.shoot():
+                    self.fire_weapon()
 
         if self.joystick and not self.paused and self.player and self.player.alive:
             axis_x = self.joystick.get_axis(0)
