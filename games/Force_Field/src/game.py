@@ -412,10 +412,12 @@ class Game:
                 min_distance = (
                     C.SPAWN_SAFE_ZONE_RADIUS
                     if attempt < 40
-                    else C.SPAWN_SAFE_ZONE_RADIUS * 0.7
+                    else C.SPAWN_SAFE_ZONE_RADIUS * 0.5
                 )
                 dist = math.sqrt((bx - player_pos[0]) ** 2 + (by - player_pos[1]) ** 2)
-                if dist < min_distance:
+
+                # Failsafe: if we are at attempt 49 (last one), ignore distance check
+                if dist < min_distance and attempt < 49:
                     continue
 
                 if not self.game_map.is_wall(bx, by):
@@ -446,6 +448,8 @@ class Game:
                         )
                     )
                     break
+            else:
+                logger.warning("Failed to spawn enemy after 50 attempts.")
 
         # Spawn Boss & Fast Enemy (Demon)
         boss_options = ["ball", "beast"]
