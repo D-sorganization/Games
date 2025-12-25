@@ -20,7 +20,7 @@ def main() -> None:
     if getattr(sys, "frozen", False):
         # Running as compiled executable
         # sys._MEIPASS holds the temp folder where resources are decompressed
-        base_path = sys._MEIPASS
+        base_path = sys._MEIPASS  # type: ignore[attr-defined]
     else:
         # Running as script
         base_path = Path(__file__).resolve().parent

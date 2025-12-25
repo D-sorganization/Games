@@ -24,6 +24,12 @@ class Player:
         self.max_health = 100
         self.is_moving = False  # Track movement for bobbing
 
+        # Dash Constants
+        self.DASH_SPEED_MULT = 2.5
+        self.DASH_STAMINA_COST = 20
+        self.DASH_DURATION = 10
+        self.DASH_COOLDOWN = 60
+
         # Weapon State
         self.weapon_state: dict[str, dict[str, Any]] = {}
         for w_name, w_data in C.WEAPONS.items():

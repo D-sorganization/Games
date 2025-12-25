@@ -82,7 +82,7 @@ class UIRenderer:
         """Load images and video"""
         try:
             if getattr(sys, "frozen", False):
-                base_dir = Path(sys._MEIPASS)
+                base_dir = Path(sys._MEIPASS)  # type: ignore[attr-defined]
             else:
                 base_dir = Path(__file__).resolve().parent.parent
 

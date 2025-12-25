@@ -289,6 +289,7 @@ class Raycaster:
                         # Note: we scale to wall_h_int, which might be > screen height.
                         # For very close walls, this can be slow.
                         # Limit max scaling size?
+                        # Limit max scaling size?
                         # Arbitrary limit to prevent memory explosion
                         if wall_h_int < 8000:
                             scaled_strip = pygame.transform.scale(
