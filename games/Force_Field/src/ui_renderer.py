@@ -5,6 +5,7 @@ import math
 import os
 import random
 from pathlib import Path
+import sys
 from typing import TYPE_CHECKING, Any, cast
 
 import pygame
@@ -80,7 +81,11 @@ class UIRenderer:
     def _load_assets(self) -> None:
         """Load images and video"""
         try:
-            base_dir = Path(__file__).resolve().parent.parent
+            if getattr(sys, "frozen", False):
+                base_dir = Path(sys._MEIPASS)
+            else:
+                base_dir = Path(__file__).resolve().parent.parent
+            
             self.assets_dir = str(base_dir / "assets")
             pics_dir = str(base_dir / "pics")
 
