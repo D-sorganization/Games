@@ -269,8 +269,10 @@ class Raycaster:
 
                     # Calculate texture X coordinate
                     tex_x = int(wall_x_hit * tex_w)
-                    if tex_x >= tex_w: tex_x = tex_w - 1
-                    if tex_x < 0: tex_x = 0
+                    if tex_x >= tex_w:
+                        tex_x = tex_w - 1
+                    if tex_x < 0:
+                        tex_x = 0
 
                     # Extract strip from texture
                     # Optimization: Don't create new surface if not needed?
@@ -281,7 +283,7 @@ class Raycaster:
                     # Pygame handles blitting outside surface bounds, but performance
                     # might suffer if we scale to huge sizes.
 
-                    # Optimization: If strip is very thin (far away), skip detailed texture?
+                    # Optimization: If strip is very thin, skip detailed texture?
                     # For now, full render.
 
                     try:
@@ -293,7 +295,8 @@ class Raycaster:
                         # For very close walls, this can be slow.
                         # Limit max scaling size?
                         # Limit max scaling size?
-                        if wall_h_int < 8000:  # Arbitrary limit to prevent memory explosion
+                        # Arbitrary limit to prevent memory explosion
+                        if wall_h_int < 8000:
                             scaled_strip = pygame.transform.scale(
                                 tex_strip, (1, wall_h_int)
                             )
