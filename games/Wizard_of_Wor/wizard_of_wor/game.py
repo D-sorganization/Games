@@ -49,7 +49,7 @@ class SoundBoard:
     def __init__(self) -> None:
         """Initialize the tone generator for arcade-style sound effects."""
         self.enabled = False
-        self.sounds: dict[str, pygame.mixer.Sound] = {}
+        self.sounds: dict[str, pygame.mixer.Sound | None] = {}
         try:
             if not pygame.mixer.get_init():
                 pygame.mixer.init(frequency=22050, size=-16, channels=1)
@@ -74,12 +74,19 @@ class SoundBoard:
             self.sounds = {}
             # We don't create intro_melody if mixer is not initialized
 
-    def _build_tone(self, frequency: int, duration_ms: int) -> pygame.mixer.Sound:
+    def _build_tone(
+        self, frequency: int, duration_ms: int
+    ) -> pygame.mixer.Sound | None:
         """Build a tone sound effect with the given frequency and duration."""
         if not self.enabled:
-            # Return a dummy or raise error.
-            # This method shouldn't be called if disabled
-            pass
+            # Create a dummy Sound object if mixer is not initialized
+            # This is a bit of a hack for testing/headless environments
+            try:
+                return pygame.mixer.Sound(buffer=b"")
+            except pygame.error:
+                # If even that fails (e.g. no audio device at all), simply return None
+                # so the game continues without sound.
+                return None
         sample_rate = 22050
         sample_count = int(sample_rate * duration_ms / 1000)
         waveform = array("h")
@@ -88,10 +95,13 @@ class SoundBoard:
             waveform.append(value)
         return pygame.mixer.Sound(buffer=waveform.tobytes())
 
-    def _build_intro_melody(self) -> pygame.mixer.Sound:
+    def _build_intro_melody(self) -> pygame.mixer.Sound | None:
         """Build a retro-style intro melody reminiscent of classic arcade games."""
         if not self.enabled:
-            pass
+            try:
+                return pygame.mixer.Sound(buffer=b"")
+            except pygame.error:
+                return None
         sample_rate = 22050
         duration_ms = 3000  # 3 second intro
         sample_count = int(sample_rate * duration_ms / 1000)
@@ -140,11 +150,13 @@ class SoundBoard:
     def play(self, name: str) -> None:
         """Play a sound effect by name."""
         if self.enabled and name in self.sounds:
-            self.sounds[name].play()
+            sound = self.sounds[name]
+            if sound:
+                sound.play()
 
     def play_intro(self) -> None:
         """Play the intro melody."""
-        if self.enabled and hasattr(self, "intro_melody"):
+        if self.enabled and hasattr(self, "intro_melody") and self.intro_melody:
             self.intro_melody.play()
 
 
