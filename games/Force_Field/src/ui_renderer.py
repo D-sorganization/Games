@@ -446,7 +446,7 @@ class UIRenderer:
 
         # Pause Menu
         if game.paused:
-            self._render_pause_menu()
+            self._render_pause_menu(game)
 
     def _render_damage_texts(self, texts: list[dict[str, Any]]) -> None:
         """Render floating damage text indicators."""
@@ -540,7 +540,7 @@ class UIRenderer:
                 (cx - bar_w // 2, cy, int(bar_w * charge_pct), bar_h),
             )
 
-    def _render_pause_menu(self) -> None:
+    def _render_pause_menu(self, game: Game) -> None:
         """Render the pause menu overlay."""
         overlay = pygame.Surface((C.SCREEN_WIDTH, C.SCREEN_HEIGHT), pygame.SRCALPHA)
         overlay.fill((0, 0, 0, 200))
@@ -550,7 +550,34 @@ class UIRenderer:
         title_rect = title.get_rect(center=(C.SCREEN_WIDTH // 2, 150))
         self.screen.blit(title, title_rect)
 
-        menu_items = ["RESUME", "SAVE GAME", "CONTROLS", "QUIT TO MENU"]
+        if game.cheat_mode_active:
+            # Render Cheat Input Box
+            cheats_surf = self.subtitle_font.render("ENTER CHEAT CODE:", True, C.CYAN)
+            cheats_rect = cheats_surf.get_rect(center=(C.SCREEN_WIDTH // 2, 350))
+            self.screen.blit(cheats_surf, cheats_rect)
+
+            # Input field
+            input_text = game.current_cheat_input + "_"
+            input_surf = self.font.render(input_text, True, C.WHITE)
+            input_rect = input_surf.get_rect(center=(C.SCREEN_WIDTH // 2, 400))
+
+            # Background for input
+            bg_rect = input_rect.copy()
+            bg_rect.inflate_ip(40, 20)
+            pygame.draw.rect(self.screen, C.DARK_GRAY, bg_rect)
+            pygame.draw.rect(self.screen, C.CYAN, bg_rect, 2)
+
+            self.screen.blit(input_surf, input_rect)
+
+            # Hint
+            hint = self.tiny_font.render(
+                "PRESS ENTER TO SUBMIT, ESC TO CANCEL", True, C.GRAY
+            )
+            hint_rect = hint.get_rect(center=(C.SCREEN_WIDTH // 2, 450))
+            self.screen.blit(hint, hint_rect)
+            return
+
+        menu_items = ["RESUME", "SAVE GAME", "ENTER CHEAT", "CONTROLS", "QUIT TO MENU"]
         mouse_pos = pygame.mouse.get_pos()
 
         for i, item in enumerate(menu_items):
