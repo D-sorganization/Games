@@ -285,14 +285,14 @@ class Player:
             if w_name == "plasma":
                 if w_state["overheated"]:
                     w_state["overheat_timer"] -= 1
-                    # Apply linear cooldown during overheat penalty phase
-                    # to provide visual feedback via the heat bar.
+                    # Cool down while overheated? Or fixed penalty?
+                    # Usually fixed wait. We'll linearly cool it down too
+                    # so visual bar goes down
                     oh_penalty = C.WEAPONS[w_name].get("overheat_penalty", 180)
                     penalty_time = int(oh_penalty)
-                    if penalty_time > 0:
-                        max_heat = float(C.WEAPONS[w_name]["max_heat"])
-                        cool_amount = max_heat / penalty_time
-                        w_state["heat"] = max(0.0, w_state["heat"] - cool_amount)
+                    max_heat = float(C.WEAPONS[w_name]["max_heat"])
+                    cool_amount = max_heat / penalty_time
+                    w_state["heat"] = max(0.0, w_state["heat"] - cool_amount)
 
                     if w_state["overheat_timer"] <= 0:
                         w_state["overheated"] = False
