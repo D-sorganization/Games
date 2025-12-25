@@ -35,7 +35,8 @@ HALF_FOV = FOV / 2
 MAX_DEPTH = 100  # Increased render distance (2x)
 
 DEFAULT_PLAYER_SPAWN = (2.5, 2.5, 0.0)
-SPAWN_SAFE_ZONE_RADIUS = 15.0
+SPAWN_SAFE_ZONE_RADIUS = 10.0  # Reduced safe zone (was 15.0)
+MIN_BOSS_DISTANCE = 10.0
 MAP_SIZES = [20, 30, 40, 50, 60]
 
 # New Game Defaults
@@ -66,8 +67,7 @@ WEAPONS: dict[str, WeaponData] = {
         "name": "Pistol",
         "damage": 25,
         "range": WEAPON_RANGE_PISTOL,
-        "ammo": 999,  # Infinite total ammo concept? Or max carry?
-        # Keeping 999 as "unlimited" pool for now
+        "ammo": 48,  # Reasonable starting ammo
         "cooldown": 10,
         "clip_size": 12,
         "reload_time": 60,  # 1 second
@@ -75,11 +75,11 @@ WEAPONS: dict[str, WeaponData] = {
     },
     "rifle": {
         "name": "Rifle",
-        "damage": 20,
+        "damage": 40,  # Increased damage (was 20)
         "range": WEAPON_RANGE_RIFLE,
-        "ammo": 999,
-        "cooldown": 20,
-        "clip_size": 30,
+        "ammo": 90,  # 3 clips
+        "cooldown": 40,  # Slower fire rate (was 20)
+        "clip_size": 15,  # Reduced clip size (was 30)
         "reload_time": 120,  # 2 seconds
         "key": "2",
     },
@@ -87,7 +87,7 @@ WEAPONS: dict[str, WeaponData] = {
         "name": "Shotgun",
         "damage": 20,
         "range": WEAPON_RANGE_SHOTGUN,
-        "ammo": 999,
+        "ammo": 24,  # 12 shots
         "cooldown": 30,
         "clip_size": 2,  # Two shots
         "reload_time": 80,
@@ -99,7 +99,7 @@ WEAPONS: dict[str, WeaponData] = {
         "name": "Minigun",
         "damage": 12,
         "range": WEAPON_RANGE_MINIGUN,
-        "ammo": 999,
+        "ammo": 200,  # 2 belts
         "cooldown": 3,
         "automatic": True,
         "clip_size": 100,
@@ -111,7 +111,7 @@ WEAPONS: dict[str, WeaponData] = {
         "name": "Plasma",
         "damage": 100,
         "range": WEAPON_RANGE_PLASMA,
-        "ammo": 999,
+        "ammo": 100,
         "cooldown": 8,
         "automatic": True,
         "clip_size": 999,
@@ -127,7 +127,7 @@ WEAPONS: dict[str, WeaponData] = {
         "name": "Laser",
         "damage": 50,  # Continuous damage capability
         "range": 50,  # Long range
-        "ammo": 999,
+        "ammo": 100,
         "cooldown": 5,  # Very fast fire
         "automatic": True,
         "clip_size": 100,
@@ -140,7 +140,7 @@ WEAPONS: dict[str, WeaponData] = {
         "name": "Rocket Launcher",
         "damage": 150,
         "range": 100,
-        "ammo": 999,
+        "ammo": 10,
         "cooldown": 45,
         "clip_size": 1,
         "reload_time": 180,

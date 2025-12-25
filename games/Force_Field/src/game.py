@@ -312,8 +312,11 @@ class Game:
         self.damage_texts = []
         self.entity_manager.reset()
 
-        # Reset Cheats/Progress
-        self.unlocked_weapons = {"pistol", "rifle"}
+        # Roguelike Weapon Start
+        # Always have pistol, plus one random higher-tier weapon
+        possible_starters = ["rifle", "shotgun", "minigun", "plasma", "laser", "rocket"]
+        starter = random.choice(possible_starters)
+        self.unlocked_weapons = {"pistol", starter}
         self.god_mode = False
         self.cheat_mode_active = False
 
@@ -371,6 +374,13 @@ class Game:
                 self.player.current_weapon = previous_weapon
             else:
                 self.player.current_weapon = "pistol"
+
+        # If Level 1 (New Game), equip the non-pistol starter
+        if self.level == 1:
+            for w in self.unlocked_weapons:
+                if w != "pistol":
+                    self.player.current_weapon = w
+                    break
         # Validate current weapon is unlocked
         # (e.g. Player init sets 'rifle' but it might be locked)
         if self.player.current_weapon not in self.unlocked_weapons:
@@ -399,7 +409,11 @@ class Game:
                 by = random.randint(2, self.game_map.size - 2)
 
                 # More flexible distance check - but maintain safe minimum
-                min_distance = 15.0 if attempt < 40 else 12.0  # Keep safer distance
+                min_distance = (
+                    C.SPAWN_SAFE_ZONE_RADIUS
+                    if attempt < 40
+                    else C.SPAWN_SAFE_ZONE_RADIUS * 0.7
+                )
                 dist = math.sqrt((bx - player_pos[0]) ** 2 + (by - player_pos[1]) ** 2)
                 if dist < min_distance:
                     continue
@@ -407,20 +421,19 @@ class Game:
                 if not self.game_map.is_wall(bx, by):
                     # Add bot - exclude items and special bosses from regular spawning
                     enemy_type = random.choice(list(C.ENEMY_TYPES.keys()))
-                    while enemy_type in [
+
+                    exclusions = [
                         "boss",
                         "demon",
                         "ball",
                         "beast",
-                        "pickup_rifle",
-                        "pickup_shotgun",
-                        "pickup_plasma",
-                        "pickup_minigun",
                         "health_pack",
                         "ammo_box",
                         "bomb_item",
                         "pickup_rocket",
-                    ]:
+                    ]
+                    # Also exclude pickups
+                    while enemy_type in exclusions or enemy_type.startswith("pickup"):
                         enemy_type = random.choice(list(C.ENEMY_TYPES.keys()))
 
                     self.entity_manager.add_bot(
@@ -444,12 +457,12 @@ class Game:
             cy = random.randint(2, upper_bound)
 
             # More flexible distance for boss spawning - but keep safe
-            min_boss_distance = 15.0 if attempt < 70 else 12.0
-            if (
-                not self.game_map.is_wall(cx, cy)
-                and math.sqrt((cx - player_pos[0]) ** 2 + (cy - player_pos[1]) ** 2)
-                > min_boss_distance
-            ):
+            min_boss_distance = (
+                C.MIN_BOSS_DISTANCE if attempt < 70 else C.MIN_BOSS_DISTANCE * 0.7
+            )
+            dist = math.sqrt((cx - player_pos[0]) ** 2 + (cy - player_pos[1]) ** 2)
+
+            if not self.game_map.is_wall(cx, cy) and dist > min_boss_distance:
                 self.entity_manager.add_bot(
                     Bot(
                         cx + 0.5,
@@ -627,10 +640,13 @@ class Game:
                         elif 410 <= my <= 460:  # Save
                             self.save_game()
                             self.add_message("GAME SAVED", C.GREEN)
-                        elif 470 <= my <= 520:  # Controls
+                        elif 470 <= my <= 520:  # Enter Cheat
+                            self.cheat_mode_active = True
+                            self.current_cheat_input = ""
+                        elif 530 <= my <= 580:  # Controls
                             self.state = "key_config"
                             self.binding_action = None  # Initialize binding state
-                        elif 530 <= my <= 580:  # Quit to Menu
+                        elif 590 <= my <= 640:  # Quit to Menu
                             self.state = "menu"
                             self.paused = False
                             self.sound_manager.start_music("music_loop")
