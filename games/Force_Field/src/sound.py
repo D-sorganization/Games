@@ -58,6 +58,7 @@ class SoundManager:
             "reload_rifle": "gun-reload-2-395177.mp3",
             "shoot_shotgun": "shotgun-firing-3-14483.mp3",
             "reload_shotgun": "realistic-shotgun-cocking-sound-38640.mp3",
+            "shoot_minigun": "pistol-shot-233473.mp3",  # Fast re-use of pistol sound
             "shoot_plasma": "bfg-laser-89662.mp3",  # BFG Sound
             "shoot_stormtrooper": "sci-fi-weapon-laser-shot-04-316416.mp3",
             "shoot_laser": "sci-fi-weapon-laser-shot-04-316416.mp3",
@@ -143,3 +144,13 @@ class SoundManager:
         # Fallback
         if "ambient" in self.sounds:
             self.sounds["ambient"].stop()
+
+    def pause_all(self) -> None:
+        """Pause all sounds and music"""
+        if self.sound_enabled:
+            pygame.mixer.pause()
+
+    def unpause_all(self) -> None:
+        """Unpause all sounds and music"""
+        if self.sound_enabled:
+            pygame.mixer.unpause()
