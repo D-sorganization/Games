@@ -607,8 +607,8 @@ class Game:
                     elif event.key == pygame.K_F9:
                         self.cycle_render_scale()
                     elif self.input_manager.is_action_just_pressed(event, "dash"):
-                         assert self.player is not None
-                         self.player.dash()
+                        assert self.player is not None
+                        self.player.dash()
 
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if self.paused:

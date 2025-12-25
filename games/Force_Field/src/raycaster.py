@@ -42,12 +42,7 @@ class Raycaster:
         self.textures = TextureGenerator.generate_textures()
 
         # Map wall types to texture names
-        self.texture_map = {
-            1: "stone",
-            2: "brick",
-            3: "metal",
-            4: "tech"
-        }
+        self.texture_map = {1: "stone", 2: "brick", 3: "metal", 4: "tech"}
 
         # Pre-generate stars
         self.stars = []
@@ -197,10 +192,10 @@ class Raycaster:
         # Reset Z-Buffer
         # Re-using the existing list is faster than creating a new one
         if len(self.z_buffer) != self.num_rays:
-             self.z_buffer = [float("inf")] * self.num_rays
+            self.z_buffer = [float("inf")] * self.num_rays
         else:
-             for i in range(self.num_rays):
-                 self.z_buffer[i] = float("inf")
+            for i in range(self.num_rays):
+                self.z_buffer[i] = float("inf")
 
         # Raycast and draw walls
         last_wall_type = 0
@@ -256,12 +251,12 @@ class Raycaster:
                 if use_textures and tex_name in self.textures:
                     # Flush any solid color strip being built
                     if strip_width > 0:
-                         pygame.draw.rect(
+                        pygame.draw.rect(
                             self.view_surface,
                             last_color,
                             (start_ray, last_top, strip_width, last_height),
                         )
-                         strip_width = 0
+                        strip_width = 0
 
                     texture = self.textures[tex_name]
                     tex_w = texture.get_width()

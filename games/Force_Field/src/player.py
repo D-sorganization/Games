@@ -90,7 +90,7 @@ class Player:
 
         current_speed = speed
         if self.dash_active:
-             current_speed *= self.DASH_SPEED_MULT
+            current_speed *= self.DASH_SPEED_MULT
 
         dx = math.cos(self.angle) * current_speed * (1 if forward else -1)
         dy = math.sin(self.angle) * current_speed * (1 if forward else -1)
@@ -115,7 +115,7 @@ class Player:
 
         current_speed = speed
         if self.dash_active:
-             current_speed *= self.DASH_SPEED_MULT
+            current_speed *= self.DASH_SPEED_MULT
 
         angle = self.angle + math.pi / 2 * (1 if right else -1)
         dx = math.cos(angle) * current_speed
@@ -128,11 +128,11 @@ class Player:
     def dash(self) -> None:
         """Attempt to perform a dash."""
         if self.dash_cooldown <= 0 and self.stamina >= self.DASH_STAMINA_COST:
-             self.stamina -= self.DASH_STAMINA_COST
-             self.dash_active = True
-             self.dash_timer = self.DASH_DURATION
-             self.dash_cooldown = self.DASH_COOLDOWN
-             self.stamina_recharge_delay = self.DASH_COOLDOWN
+            self.stamina -= self.DASH_STAMINA_COST
+            self.dash_active = True
+            self.dash_timer = self.DASH_DURATION
+            self.dash_cooldown = self.DASH_COOLDOWN
+            self.stamina_recharge_delay = self.DASH_COOLDOWN
 
     def rotate(self, delta: float) -> None:
         """Rotate player view"""
@@ -254,12 +254,12 @@ class Player:
 
         # Dash logic
         if self.dash_active:
-             self.dash_timer -= 1
-             if self.dash_timer <= 0:
-                  self.dash_active = False
+            self.dash_timer -= 1
+            if self.dash_timer <= 0:
+                self.dash_active = False
 
         if self.dash_cooldown > 0:
-             self.dash_cooldown -= 1
+            self.dash_cooldown -= 1
 
         # Global shoot timer
         if self.shoot_timer > 0:
