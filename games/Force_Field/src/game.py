@@ -777,7 +777,7 @@ class Game:
 
             # 1. Cast ray to find wall distance
             # Use Raycaster to avoid code duplication
-            wall_dist, _ = self.raycaster.cast_ray(
+            wall_dist, _, _ = self.raycaster.cast_ray(
                 self.player.x, self.player.y, aim_angle
             )
 

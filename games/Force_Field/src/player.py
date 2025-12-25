@@ -24,6 +24,12 @@ class Player:
         self.max_health = 100
         self.is_moving = False  # Track movement for bobbing
 
+        # Dash Constants
+        self.DASH_SPEED_MULT = 2.5
+        self.DASH_STAMINA_COST = 20
+        self.DASH_DURATION = 10
+        self.DASH_COOLDOWN = 60
+
         # Weapon State
         self.weapon_state: dict[str, dict[str, Any]] = {}
         for w_name, w_data in C.WEAPONS.items():
@@ -84,7 +90,7 @@ class Player:
 
         current_speed = speed
         if self.dash_active:
-             current_speed *= 2.5
+             current_speed *= self.DASH_SPEED_MULT
 
         dx = math.cos(self.angle) * current_speed * (1 if forward else -1)
         dy = math.sin(self.angle) * current_speed * (1 if forward else -1)
@@ -109,7 +115,7 @@ class Player:
 
         current_speed = speed
         if self.dash_active:
-             current_speed *= 2.5
+             current_speed *= self.DASH_SPEED_MULT
 
         angle = self.angle + math.pi / 2 * (1 if right else -1)
         dx = math.cos(angle) * current_speed
@@ -121,12 +127,12 @@ class Player:
 
     def dash(self) -> None:
         """Attempt to perform a dash."""
-        if self.dash_cooldown <= 0 and self.stamina >= 20:
-             self.stamina -= 20
+        if self.dash_cooldown <= 0 and self.stamina >= self.DASH_STAMINA_COST:
+             self.stamina -= self.DASH_STAMINA_COST
              self.dash_active = True
-             self.dash_timer = 10 # 10 frames of dash
-             self.dash_cooldown = 60 # 1 second cooldown
-             self.stamina_recharge_delay = 60
+             self.dash_timer = self.DASH_DURATION
+             self.dash_cooldown = self.DASH_COOLDOWN
+             self.stamina_recharge_delay = self.DASH_COOLDOWN
 
     def rotate(self, delta: float) -> None:
         """Rotate player view"""
