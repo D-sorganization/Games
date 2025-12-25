@@ -5,6 +5,7 @@ Refactored into modules.
 """
 
 import logging
+import os
 import sys
 from pathlib import Path
 
@@ -29,6 +30,8 @@ def main() -> None:
         handlers=[logging.StreamHandler()],
     )
 
+    # Center the game window
+    os.environ["SDL_VIDEO_CENTERED"] = "1"
     pygame.init()
     try:
         game = Game()
