@@ -70,6 +70,18 @@ class SoundBoard:
 
     def _build_tone(self, frequency: int, duration_ms: int) -> pygame.mixer.Sound:
         """Build a tone sound effect with the given frequency and duration."""
+        if not pygame.mixer.get_init():
+            # Create a dummy Sound object if mixer is not initialized
+            # This is a bit of a hack for testing/headless environments
+            try:
+                return pygame.mixer.Sound(buffer=b"")
+            except pygame.error:
+                # If even that fails (e.g. no audio device at all), we might need to
+                # mock it in tests but for the game logic, if mixer isn't init, we
+                # shouldn't be here ideally, or we should handle it gracefully.
+                pass
+            return None
+
         sample_rate = 22050
         sample_count = int(sample_rate * duration_ms / 1000)
         waveform = array("h")
@@ -80,6 +92,12 @@ class SoundBoard:
 
     def _build_intro_melody(self) -> pygame.mixer.Sound:
         """Build a retro-style intro melody reminiscent of classic arcade games."""
+        if not pygame.mixer.get_init():
+            try:
+                return pygame.mixer.Sound(buffer=b"")
+            except pygame.error:
+                return None
+
         sample_rate = 22050
         duration_ms = 3000  # 3 second intro
         sample_count = int(sample_rate * duration_ms / 1000)
@@ -127,12 +145,12 @@ class SoundBoard:
 
     def play(self, name: str) -> None:
         """Play a sound effect by name."""
-        if self.enabled and name in self.sounds:
+        if self.enabled and name in self.sounds and self.sounds[name]:
             self.sounds[name].play()
 
     def play_intro(self) -> None:
         """Play the intro melody."""
-        if self.enabled and hasattr(self, "intro_melody"):
+        if self.enabled and hasattr(self, "intro_melody") and self.intro_melody:
             self.intro_melody.play()
 
 
