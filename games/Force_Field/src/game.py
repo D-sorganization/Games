@@ -312,8 +312,11 @@ class Game:
         self.damage_texts = []
         self.entity_manager.reset()
 
-        # Reset Cheats/Progress
-        self.unlocked_weapons = {"pistol", "rifle"}
+        # Roguelike Weapon Start
+        # Always have pistol, plus one random higher-tier weapon
+        possible_starters = ["rifle", "shotgun", "minigun", "plasma", "laser", "rocket"]
+        starter = random.choice(possible_starters)
+        self.unlocked_weapons = {"pistol", starter}
         self.god_mode = False
         self.cheat_mode_active = False
 
@@ -371,6 +374,13 @@ class Game:
                 self.player.current_weapon = previous_weapon
             else:
                 self.player.current_weapon = "pistol"
+
+        # If Level 1 (New Game), equip the non-pistol starter
+        if self.level == 1:
+            for w in self.unlocked_weapons:
+                if w != "pistol":
+                    self.player.current_weapon = w
+                    break
         # Validate current weapon is unlocked
         # (e.g. Player init sets 'rifle' but it might be locked)
         if self.player.current_weapon not in self.unlocked_weapons:

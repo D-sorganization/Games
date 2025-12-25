@@ -75,11 +75,11 @@ WEAPONS: dict[str, WeaponData] = {
     },
     "rifle": {
         "name": "Rifle",
-        "damage": 20,
+        "damage": 40,  # Increased damage (was 20)
         "range": WEAPON_RANGE_RIFLE,
         "ammo": 90,  # 3 clips
-        "cooldown": 20,
-        "clip_size": 30,
+        "cooldown": 40,  # Slower fire rate (was 20)
+        "clip_size": 15,  # Reduced clip size (was 30)
         "reload_time": 120,  # 2 seconds
         "key": "2",
     },
