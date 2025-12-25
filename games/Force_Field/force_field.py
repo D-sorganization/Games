@@ -16,11 +16,17 @@ logger = logging.getLogger(__name__)
 
 def main() -> None:
     """Entry point of the FPS Shooter application."""
-    # Make sure the game directory is in path to import 'src'
-    # This allows running the script from any directory
-    game_dir = Path(__file__).resolve().parent
-    if str(game_dir) not in sys.path:
-        sys.path.insert(0, str(game_dir))
+    # Setup path for resource/module loading
+    if getattr(sys, "frozen", False):
+        # Running as compiled executable
+        # sys._MEIPASS holds the temp folder where resources are decompressed
+        base_path = sys._MEIPASS  # type: ignore[attr-defined]
+    else:
+        # Running as script
+        base_path = Path(__file__).resolve().parent
+
+    if str(base_path) not in sys.path:
+        sys.path.insert(0, str(base_path))
 
     from src.game import Game
 

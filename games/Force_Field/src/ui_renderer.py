@@ -4,6 +4,7 @@ import logging
 import math
 import os
 import random
+import sys
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
@@ -80,7 +81,11 @@ class UIRenderer:
     def _load_assets(self) -> None:
         """Load images and video"""
         try:
-            base_dir = Path(__file__).resolve().parent.parent
+            if getattr(sys, "frozen", False):
+                base_dir = Path(sys._MEIPASS)  # type: ignore[attr-defined]
+            else:
+                base_dir = Path(__file__).resolve().parent.parent
+
             self.assets_dir = str(base_dir / "assets")
             pics_dir = str(base_dir / "pics")
 
@@ -415,8 +420,9 @@ class UIRenderer:
             s_txt = self.tiny_font.render("STAMINA", True, C.WHITE)
             self.screen.blit(s_txt, (shield_x + shield_width + 5, stamina_y - 2))
 
+        msg = "WASD:Move|1-7:Wpn|R:Rel|Ctrl+C:Cheat|SPACE:Shield|M:Map|ESC:Menu"
         controls_hint = self.tiny_font.render(
-            "WASD:Move | 1-5:Wpn | R:Reload | F:Bomb | SPACE:Shield | M:Map | ESC:Menu",
+            msg,
             True,
             C.WHITE,
         )
