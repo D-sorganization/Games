@@ -290,7 +290,7 @@ function drawWalls() {
         const rayAngle = (player.angle - currentFov / 2) + (x / NUM_RAYS) * currentFov;
         const ray = castRay(rayAngle);
 
-        const distance = ray.distance * Math.cos(rayAngle - player.angle); // Fix fisheye
+        const distance = ray.distance * Math.cos(rayAngle - player.angle); // Corrects fisheye distortion
         const wallHeight = (TILE_SIZE / distance) * 277;
 
         // Wall color based on type and side
