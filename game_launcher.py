@@ -1,5 +1,6 @@
 import subprocess
 import sys
+import time
 import webbrowser
 from pathlib import Path
 from typing import Any
@@ -132,6 +133,7 @@ def main() -> None:
 
     running = True
     clock = pygame.time.Clock()
+    last_launch_time = 0.0
 
     while running:
         mx, my = pygame.mouse.get_pos()
@@ -153,7 +155,10 @@ def main() -> None:
 
                         rect = pygame.Rect(x, y, ITEM_WIDTH, ITEM_HEIGHT)
                         if rect.collidepoint(mx, my):
-                            launch_game(game)
+                            now = time.time()
+                            if now - last_launch_time > 1.0:
+                                last_launch_time = now
+                                launch_game(game)
 
         # Draw
         screen.fill(BG_COLOR)
