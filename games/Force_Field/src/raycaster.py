@@ -292,21 +292,31 @@ class Raycaster:
                         # Note: we scale to wall_h_int, which might be > screen height.
                         # For very close walls, this can be slow.
                         # Limit max scaling size?
-                        if wall_h_int < 8000: # Arbitrary limit to prevent memory explosion on huge scales
-                            scaled_strip = pygame.transform.scale(tex_strip, (1, wall_h_int))
+                        # Limit max scaling size?
+                        if wall_h_int < 8000:  # Arbitrary limit to prevent memory explosion
+                            scaled_strip = pygame.transform.scale(
+                                tex_strip, (1, wall_h_int)
+                            )
 
                             # Apply shading
                             if shade < 1.0:
                                 shade_val = int(255 * shade)
-                                shade_surf = pygame.Surface((1, wall_h_int), pygame.SRCALPHA)
-                                shade_surf.fill((0, 0, 0, 255 - shade_val)) # Alpha blending dark
-                                scaled_strip.blit(shade_surf, (0,0))
+                                shade_surf = pygame.Surface(
+                                    (1, wall_h_int), pygame.SRCALPHA
+                                )
+                                # Alpha blending dark
+                                shade_surf.fill((0, 0, 0, 255 - shade_val))
+                                scaled_strip.blit(shade_surf, (0, 0))
 
                             # Blit to view surface
                             self.view_surface.blit(scaled_strip, (ray, wall_top))
                         else:
-                             # Fallback to solid color for extreme closeups to save memory/time
-                             pygame.draw.rect(self.view_surface, base_color, (ray, wall_top, 1, wall_h_int))
+                            # Fallback to solid color for extreme closeups
+                            pygame.draw.rect(
+                                self.view_surface,
+                                base_color,
+                                (ray, wall_top, 1, wall_h_int),
+                            )
 
                     except (pygame.error, ValueError):
                         pass
