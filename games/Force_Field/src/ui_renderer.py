@@ -420,9 +420,7 @@ class UIRenderer:
             s_txt = self.tiny_font.render("STAMINA", True, C.WHITE)
             self.screen.blit(s_txt, (shield_x + shield_width + 5, stamina_y - 2))
 
-        msg = (
-            "WASD:Move|1-7:Wpn|R:Rel|Ctrl+C:Cheat|SPACE:Shield|M:Map|ESC:Menu"
-        )
+        msg = "WASD:Move|1-7:Wpn|R:Rel|Ctrl+C:Cheat|SPACE:Shield|M:Map|ESC:Menu"
         controls_hint = self.tiny_font.render(
             msg,
             True,
