@@ -57,20 +57,26 @@ class SoundBoard:
         except pygame.error:
             self.enabled = False
 
-        self.sounds = {
-            "shot": self._build_tone(920, 80),
-            "enemy_hit": self._build_tone(480, 120),
-            "player_hit": self._build_tone(220, 200),
-            "spawn": self._build_tone(640, 150),
-            "wizard": self._build_tone(300, 200),
-        }
+        if not pygame.mixer.get_init():
+            self.enabled = False
 
-        # Create simple intro melody
-        self.intro_melody = self._build_intro_melody()
+        if self.enabled:
+            self.sounds = {
+                "shot": self._build_tone(920, 80),
+                "enemy_hit": self._build_tone(480, 120),
+                "player_hit": self._build_tone(220, 200),
+                "spawn": self._build_tone(640, 150),
+                "wizard": self._build_tone(300, 200),
+            }
+            # Create simple intro melody
+            self.intro_melody = self._build_intro_melody()
+        else:
+            self.sounds = {}
+            # We don't create intro_melody if mixer is not initialized
 
     def _build_tone(self, frequency: int, duration_ms: int) -> pygame.mixer.Sound:
         """Build a tone sound effect with the given frequency and duration."""
-        if not pygame.mixer.get_init():
+        if not self.enabled:
             # Create a dummy Sound object if mixer is not initialized
             # This is a bit of a hack for testing/headless environments
             try:
@@ -80,7 +86,7 @@ class SoundBoard:
                 # mock it in tests but for the game logic, if mixer isn't init, we
                 # shouldn't be here ideally, or we should handle it gracefully.
                 pass
-            return None
+            return None  # type: ignore
 
         sample_rate = 22050
         sample_count = int(sample_rate * duration_ms / 1000)
@@ -92,11 +98,11 @@ class SoundBoard:
 
     def _build_intro_melody(self) -> pygame.mixer.Sound:
         """Build a retro-style intro melody reminiscent of classic arcade games."""
-        if not pygame.mixer.get_init():
+        if not self.enabled:
             try:
                 return pygame.mixer.Sound(buffer=b"")
             except pygame.error:
-                return None
+                return None  # type: ignore
 
         sample_rate = 22050
         duration_ms = 3000  # 3 second intro
