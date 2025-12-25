@@ -3,8 +3,8 @@ import math
 from .custom_types import EnemyData, LevelTheme, WeaponData
 
 # Constants
-SCREEN_WIDTH = 1200
-SCREEN_HEIGHT = 800
+SCREEN_WIDTH = 1024
+SCREEN_HEIGHT = 768
 FPS = 60
 
 # Map settings
