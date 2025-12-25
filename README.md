@@ -1,60 +1,75 @@
-# Games Repository
+# Jules' Game Collection
 
-A collection of fun game projects and interactive simulations.
+Welcome to the Game Collection repository! This project hosts a variety of games developed in Python (using Pygame) and Web technologies, all accessible through a unified launcher.
 
-## Projects
+## 🎮 Available Games
 
-### Games
+### 1. **Force Field**
+A robust First-Person Shooter (FPS) featuring a custom raycasting engine, 3D environments, and challenging bot AI.
+- **Location**: `games/Force_Field/`
+- **Type**: Python (Pygame)
 
-- **Tetris** (`games/tetris.py`) - Classic Tetris game implementation in Python
-- **Zombie Games Collection** (`games/zombie-games/`) - Three browser FPS experiences (Doom-inspired arena plus two zombie hallway variants) with rifles, sprinting, and zombie jump scares
-- **Wizard of Wor** (`games/wizard_of_wor/`) - Remake of the classic Wizard of Wor arcade game
+### 2. **Duum - The Reimagining**
+A high-octane FPS reimagining the classic Doom experience with modern mechanics, projectile weapons (Minigun!), and diverse enemies.
+- **Location**: `games/Duum/`
+- **Type**: Python (Pygame)
 
-### Simulations
+### 3. **Tetris (Enhanced)**
+A modern take on the classic puzzle game with hold mechanics, combos, particle effects, and difficulty selection.
+- **Location**: `games/Tetris/`
+- **Type**: Python (Pygame)
 
-- **RRT Path Planner** (`rrt_path_planner/`) - Star Wars themed Rapidly-Exploring Random Tree (RRT) path planning algorithm with 3D visualization
+### 4. **Wizard of Wor**
+A remake of the classic arcade shooter where you battle monsters in a maze. Supports 2-player co-op.
+- **Location**: `games/Wizard_of_Wor/`
+- **Type**: Python (Pygame)
 
-## Project Structure
+### 5. **Peanut Butter Panic**
+A quirky arcade-style game (Python package).
+- **Location**: `games/Peanut_Butter_Panic/`
+- **Type**: Python (Pygame)
 
+### 6. **Zombie Games (Web)**
+A collection of web-based 3D survival shooters.
+- **Location**: `games/Zombie_Games/`
+- **Type**: Web (HTML/JS)
+
+## 🚀 How to Play
+
+### Using the Game Launcher
+The easiest way to play is using the unified game launcher:
+
+```bash
+python game_launcher.py
 ```
-Games/
-├── games/              # Game implementations
-│   ├── tetris.py
-│   ├── zombie-games/
-│   │   ├── doom-game/
-│   │   ├── zombie-hallway-v1/
-│   │   └── zombie-hallway-v2/
-│   └── wizard_of_wor/
-├── rrt_path_planner/   # RRT path planning simulation
-├── games/             # Python games and utilities
-├── matlab/             # MATLAB code and utilities
-├── docs/               # Documentation
-├── data/               # Data files
-└── output/             # Output files
+This will open a GUI where you can select and launch any game.
+
+### Running Individual Games
+You can also launch games directly from the terminal. See the `README.md` in each game's directory for specific instructions.
+
+Example:
+```bash
+# Run Force Field
+python games/Force_Field/force_field.py
 ```
 
-## Game Launcher
+## 🛠️ Development
 
-To easily play all games, run the **Game Launcher**:
+### Prerequisites
+- Python 3.8+
+- Pygame (`pip install pygame`)
+- Other dependencies as listed in `requirements.txt` or game-specific requirements.
 
-1. Double-click `Play Games.bat` in the root directory.
-2. Or run:
+### Installation
+1. Clone the repository.
+2. Install dependencies:
    ```bash
-   python game_launcher.py
+   pip install -r requirements.txt
    ```
 
-## Getting Started
+### Documentation
+- **AGENTS.md**: Guidelines for AI agents working on this repo.
+- **Game Docs**: Each game folder contains its own `README.md` with detailed info.
 
-Each game/simulation has its own requirements and setup instructions. See the README files in each project directory for specific details.
-
-## Development
-
-This repository follows the project template standards with:
-- CI/CD workflows for quality checks
-- Pre-commit hooks for code quality
-- Type checking and linting
-- Comprehensive testing
-
-## License
-
-MIT License - See LICENSE file for details.
+## 🤝 Contributing
+Feel free to submit Pull Requests to improve existing games or add new ones! Please follow the coding standards outlined in `AGENTS.md`.
