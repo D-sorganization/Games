@@ -27,6 +27,7 @@ class InputManager:
         "zoom": pygame.K_z,
         "bomb": pygame.K_f,
         "shield": pygame.K_SPACE,  # Force Field Shield as documented
+        "dash": pygame.K_LSHIFT,
         "sprint": pygame.K_LSHIFT,
         "shoot_alt": pygame.K_KP0,
         "pause": pygame.K_ESCAPE,

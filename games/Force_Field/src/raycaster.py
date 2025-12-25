@@ -9,6 +9,7 @@ import pygame
 
 from . import constants as C  # noqa: N812
 from .bot_renderer import BotRenderer
+from .texture_generator import TextureGenerator
 
 # Sprite Rendering thresholds
 STRIP_VISIBILITY_THRESHOLD = 0.3
@@ -35,6 +36,18 @@ class Raycaster:
         # Cache for theme
         self._cached_level: int = -1
         self._cached_wall_colors: dict[int, tuple[int, int, int]] = {}
+
+        # Texture mapping
+        self.use_textures = True
+        self.textures = TextureGenerator.generate_textures()
+
+        # Map wall types to texture names
+        self.texture_map = {
+            1: "stone",
+            2: "brick",
+            3: "metal",
+            4: "tech"
+        }
 
         # Pre-generate stars
         self.stars = []
@@ -83,10 +96,11 @@ class Raycaster:
         origin_x: float,
         origin_y: float,
         angle: float,
-    ) -> tuple[float, int]:
+    ) -> tuple[float, int, float]:
         """Cast a single ray using DDA
-        Returns: (distance, wall_type)
+        Returns: (distance, wall_type, wall_x)
         Distance is Euclidean distance along the ray.
+        wall_x is the exact position of the hit on the wall (0.0 - 1.0)
         """
         ray_dir_x = math.cos(angle)
         ray_dir_y = math.sin(angle)
@@ -141,11 +155,16 @@ class Raycaster:
         if hit:
             if side == 0:
                 distance = side_dist_x - delta_dist_x
+                wall_x_hit = origin_y + distance * ray_dir_y
             else:
                 distance = side_dist_y - delta_dist_y
-            return distance, wall_type
+                wall_x_hit = origin_x + distance * ray_dir_x
 
-        return C.MAX_DEPTH, 0
+            # Normalize wall_x_hit to 0-1
+            wall_x_hit -= math.floor(wall_x_hit)
+            return distance, wall_type, wall_x_hit
+
+        return C.MAX_DEPTH, 0, 0.0
 
     def render_3d(
         self,
@@ -176,7 +195,12 @@ class Raycaster:
             self._cached_wall_colors = wall_colors
 
         # Reset Z-Buffer
-        self.z_buffer = [float("inf")] * self.num_rays
+        # Re-using the existing list is faster than creating a new one
+        if len(self.z_buffer) != self.num_rays:
+             self.z_buffer = [float("inf")] * self.num_rays
+        else:
+             for i in range(self.num_rays):
+                 self.z_buffer[i] = float("inf")
 
         # Raycast and draw walls
         last_wall_type = 0
@@ -186,8 +210,11 @@ class Raycaster:
         strip_width = 0
         start_ray = 0
 
+        # Texture rendering settings
+        use_textures = self.use_textures and len(self.textures) > 0
+
         for ray in range(self.num_rays):
-            distance, wall_type = self.cast_ray(
+            distance, wall_type, wall_x_hit = self.cast_ray(
                 player.x,
                 player.y,
                 ray_angle,
@@ -219,52 +246,115 @@ class Raycaster:
                 # Adjusted to be a bit darker for atmosphere
                 shade = max(0.2, 1.0 - distance / 50.0)
 
-                lit_r = base_color[0] * shade
-                lit_g = base_color[1] * shade
-                lit_b = base_color[2] * shade
-
-                # Mix with Fog
-                final_r = lit_r * (1 - fog_factor) + C.FOG_COLOR[0] * fog_factor
-                final_g = lit_g * (1 - fog_factor) + C.FOG_COLOR[1] * fog_factor
-                final_b = lit_b * (1 - fog_factor) + C.FOG_COLOR[2] * fog_factor
-
-                color = (int(final_r), int(final_g), int(final_b))
-
                 # Pitch Adjustment
                 pitch_off = player.pitch + view_offset_y
                 wall_top = int((C.SCREEN_HEIGHT - wall_height) // 2 + pitch_off)
                 wall_h_int = int(wall_height)
 
-                # Strip Rendering Logic
-                can_group = False
-                if strip_width > 0:
-                    # Check if we can group with previous strip
-                    if (
-                        wall_type == last_wall_type
-                        and color == last_color
-                        and abs(wall_top - last_top) <= 1
-                        and abs(wall_h_int - last_height) <= 1
-                    ):
-                        can_group = True
-
-                if can_group:
-                    strip_width += 1
-                else:
+                # Texture Rendering
+                tex_name = self.texture_map.get(wall_type, "brick")
+                if use_textures and tex_name in self.textures:
+                    # Flush any solid color strip being built
                     if strip_width > 0:
-                        # Draw accumulated strip
-                        pygame.draw.rect(
+                         pygame.draw.rect(
                             self.view_surface,
                             last_color,
                             (start_ray, last_top, strip_width, last_height),
                         )
+                         strip_width = 0
 
-                    # Start new strip
-                    last_wall_type = wall_type
-                    last_color = color
-                    last_top = wall_top
-                    last_height = wall_h_int
-                    strip_width = 1
-                    start_ray = ray
+                    texture = self.textures[tex_name]
+                    tex_w = texture.get_width()
+                    tex_h = texture.get_height()
+
+                    # Calculate texture X coordinate
+                    tex_x = int(wall_x_hit * tex_w)
+                    if tex_x >= tex_w: tex_x = tex_w - 1
+                    if tex_x < 0: tex_x = 0
+
+                    # Extract strip from texture
+                    # Optimization: Don't create new surface if not needed?
+                    # pygame.transform.scale is efficient.
+
+                    # Calculate height to scale to
+                    # If wall is bigger than screen, we need to handle clipping?
+                    # Pygame handles blitting outside surface bounds, but performance
+                    # might suffer if we scale to huge sizes.
+
+                    # Optimization: If strip is very thin (far away), skip detailed texture?
+                    # For now, full render.
+
+                    try:
+                        # Get 1px wide strip
+                        tex_strip = texture.subsurface((tex_x, 0, 1, tex_h))
+
+                        # Scale it to wall height
+                        # Note: we scale to wall_h_int, which might be > screen height.
+                        # For very close walls, this can be slow.
+                        # Limit max scaling size?
+                        if wall_h_int < 8000: # Arbitrary limit to prevent memory explosion on huge scales
+                            scaled_strip = pygame.transform.scale(tex_strip, (1, wall_h_int))
+
+                            # Apply shading
+                            if shade < 1.0:
+                                shade_val = int(255 * shade)
+                                shade_surf = pygame.Surface((1, wall_h_int), pygame.SRCALPHA)
+                                shade_surf.fill((0, 0, 0, 255 - shade_val)) # Alpha blending dark
+                                scaled_strip.blit(shade_surf, (0,0))
+
+                            # Blit to view surface
+                            self.view_surface.blit(scaled_strip, (ray, wall_top))
+                        else:
+                             # Fallback to solid color for extreme closeups to save memory/time
+                             pygame.draw.rect(self.view_surface, base_color, (ray, wall_top, 1, wall_h_int))
+
+                    except (pygame.error, ValueError):
+                        pass
+
+                else:
+                    # Fallback to Solid Color Rendering (Strip Optimization)
+
+                    lit_r = base_color[0] * shade
+                    lit_g = base_color[1] * shade
+                    lit_b = base_color[2] * shade
+
+                    # Mix with Fog
+                    final_r = lit_r * (1 - fog_factor) + C.FOG_COLOR[0] * fog_factor
+                    final_g = lit_g * (1 - fog_factor) + C.FOG_COLOR[1] * fog_factor
+                    final_b = lit_b * (1 - fog_factor) + C.FOG_COLOR[2] * fog_factor
+
+                    color = (int(final_r), int(final_g), int(final_b))
+
+                    # Strip Rendering Logic
+                    can_group = False
+                    if strip_width > 0:
+                        # Check if we can group with previous strip
+                        if (
+                            wall_type == last_wall_type
+                            and color == last_color
+                            and abs(wall_top - last_top) <= 1
+                            and abs(wall_h_int - last_height) <= 1
+                        ):
+                            can_group = True
+
+                    if can_group:
+                        strip_width += 1
+                    else:
+                        if strip_width > 0:
+                            # Draw accumulated strip
+                            pygame.draw.rect(
+                                self.view_surface,
+                                last_color,
+                                (start_ray, last_top, strip_width, last_height),
+                            )
+
+                        # Start new strip
+                        last_wall_type = wall_type
+                        last_color = color
+                        last_top = wall_top
+                        last_height = wall_h_int
+                        strip_width = 1
+                        start_ray = ray
             else:
                 # No wall hit (or too far)
                 if strip_width > 0:
