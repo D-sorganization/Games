@@ -618,6 +618,11 @@ class Game:
                     elif self.input_manager.is_action_just_pressed(event, "zoom"):
                         assert self.player is not None
                         self.player.zoomed = not self.player.zoomed
+                    elif event.key == pygame.K_q:  # Melee attack
+                        assert self.player is not None
+                        if self.player.melee_attack():
+                            self.execute_melee_attack()
+                            self.add_message("MELEE ATTACK!", C.RED)
                     elif self.input_manager.is_action_just_pressed(event, "bomb"):
                         assert self.player is not None
                         if self.player.activate_bomb():
@@ -1051,6 +1056,41 @@ class Game:
         except BaseException:
             logger.exception("Bomb Audio Failed")
 
+        # Enhanced bomb explosion visual effects
+        explosion_center = (C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2)
+        
+        # Multiple explosion rings
+        for ring in range(5):
+            ring_size = 50 + ring * 30
+            ring_alpha = 255 - ring * 40
+            explosion_surface = pygame.Surface((ring_size * 2, ring_size * 2), pygame.SRCALPHA)
+            
+            # Color gradient from white to orange to red
+            if ring == 0:
+                color = (255, 255, 255, ring_alpha)
+            elif ring <= 2:
+                color = (255, 200, 0, ring_alpha)
+            else:
+                color = (255, 100, 0, ring_alpha)
+            
+            pygame.draw.circle(explosion_surface, color, (ring_size, ring_size), ring_size)
+            self.screen.blit(explosion_surface, 
+                           (explosion_center[0] - ring_size, explosion_center[1] - ring_size))
+        
+        # Add screen shake effect by adding particles
+        for _ in range(50):
+            self.particle_system.add_particle(
+                x=explosion_center[0] + random.randint(-100, 100),
+                y=explosion_center[1] + random.randint(-100, 100),
+                dx=random.uniform(-15, 15),
+                dy=random.uniform(-15, 15),
+                color=(255, random.randint(100, 255), 0),
+                timer=60,
+                size=random.randint(4, 12),
+                gravity=0.1,
+                fade_color=(100, 0, 0)
+            )
+
         self.damage_texts.append(
             {
                 "x": C.SCREEN_WIDTH // 2,
@@ -1185,6 +1225,108 @@ class Game:
                     self.kill_combo_count += 1
                     self.kill_combo_timer = 180
                     self.last_death_pos = (bot.x, bot.y)
+
+    def execute_melee_attack(self) -> None:
+        """Execute melee attack - wide sweeping damage in front of player"""
+        assert self.player is not None
+        
+        # Melee attack parameters
+        melee_range = 3.0  # Attack range
+        melee_damage = 75  # High damage for melee
+        melee_arc = math.pi / 3  # 60-degree arc
+        
+        # Create visual sweep effect
+        self.create_melee_sweep_effect()
+        
+        # Play melee sound
+        try:
+            self.sound_manager.play_sound("shoot_shotgun")  # Use shotgun sound for now
+        except Exception:
+            pass
+        
+        # Check for enemies in melee range and arc
+        player_x, player_y = self.player.x, self.player.y
+        player_angle = self.player.angle
+        
+        hits = 0
+        for bot in self.bots:
+            if not bot.alive:
+                continue
+                
+            # Calculate distance and angle to bot
+            dx = bot.x - player_x
+            dy = bot.y - player_y
+            distance = math.sqrt(dx * dx + dy * dy)
+            
+            if distance <= melee_range:
+                # Check if bot is within attack arc
+                bot_angle = math.atan2(dy, dx)
+                angle_diff = abs(bot_angle - player_angle)
+                
+                # Normalize angle difference
+                while angle_diff > math.pi:
+                    angle_diff -= 2 * math.pi
+                angle_diff = abs(angle_diff)
+                
+                if angle_diff <= melee_arc / 2:
+                    # Bot is in range and arc - deal damage
+                    if bot.take_damage(melee_damage):
+                        self.sound_manager.play_sound("scream")
+                        self.kills += 1
+                        self.kill_combo_count += 1
+                        self.kill_combo_timer = 180
+                        self.last_death_pos = (bot.x, bot.y)
+                    
+                    hits += 1
+                    
+                    # Add blood particles
+                    for _ in range(5):
+                        self.particle_system.add_particle(
+                            x=bot.x * 64 + 32,  # Convert to screen coords
+                            y=bot.y * 64 + 32,
+                            dx=random.uniform(-3, 3),
+                            dy=random.uniform(-3, 3),
+                            color=(200, 0, 0),
+                            timer=30,
+                            size=random.randint(2, 4),
+                        )
+        
+        # Add hit feedback message
+        if hits > 0:
+            if hits == 1:
+                self.add_message("MELEE HIT!", C.RED)
+            else:
+                self.add_message(f"MELEE COMBO x{hits}!", C.RED)
+
+    def create_melee_sweep_effect(self) -> None:
+        """Create visual sweep effect for melee attack"""
+        assert self.player is not None
+        
+        # Create arc particles for sweep effect
+        player_angle = self.player.angle
+        arc_start = player_angle - math.pi / 6  # 30 degrees left
+        arc_end = player_angle + math.pi / 6    # 30 degrees right
+        
+        # Create sweep particles
+        for i in range(20):
+            t = i / 19.0  # 0 to 1
+            angle = arc_start + t * (arc_end - arc_start)
+            
+            # Distance from player (screen center)
+            distance = 100 + i * 10
+            
+            x = C.SCREEN_WIDTH // 2 + math.cos(angle) * distance
+            y = C.SCREEN_HEIGHT // 2 + math.sin(angle) * distance
+            
+            # Create sweep particle
+            self.particle_system.add_particle(
+                x=x, y=y,
+                dx=math.cos(angle) * 5,
+                dy=math.sin(angle) * 5,
+                color=(255, 255, 255),
+                timer=15,
+                size=3,
+            )
 
     def update_game(self) -> None:
         """Update game state"""
@@ -1475,17 +1617,46 @@ class Game:
             self.kill_combo_timer -= 1
             if self.kill_combo_timer <= 0:
                 if self.kill_combo_count >= 3:
-                    phrases = ["phrase_cool", "phrase_awesome", "phrase_brutal"]
+                    # Duke Nukem-style phrases (PG-13)
+                    phrases = [
+                        "DAMN, I'M GOOD!",
+                        "COME GET SOME!",
+                        "HAIL TO THE KING!",
+                        "GROOVY!",
+                        "PIECE OF CAKE!",
+                        "WHO WANTS SOME?",
+                        "BLOW IT OUT YOUR ASS!",
+                        "EAT THIS!",
+                        "SHAKE IT BABY!",
+                        "NOBODY STEALS OUR CHICKS!",
+                        "IT'S TIME TO KICK ASS!",
+                        "DAMN, THOSE ALIEN BASTARDS!",
+                        "YOUR FACE, YOUR ASS!",
+                        "WHAT'S THE DIFFERENCE?",
+                        "HOLY COW!",
+                        "TERMINATED!",
+                        "WASTED!",
+                        "OWNED!",
+                        "DOMINATING!",
+                        "UNSTOPPABLE!",
+                        "RAMPAGE!",
+                        "GODLIKE!",
+                    ]
+                    
                     phrase = random.choice(phrases)
-                    self.sound_manager.play_sound(phrase)
+                    self.sound_manager.play_sound("phrase_cool")  # Use existing sound
+                    
+                    # Enhanced message display with effects
                     self.damage_texts.append(
                         {
                             "x": C.SCREEN_WIDTH // 2,
                             "y": C.SCREEN_HEIGHT // 2 - 150,
-                            "text": phrase.replace("phrase_", "").upper() + "!",
+                            "text": phrase,
                             "color": C.YELLOW,
-                            "timer": 120,
+                            "timer": 180,  # Longer display time
                             "vy": -0.2,
+                            "size": "large",  # Add size indicator for special rendering
+                            "effect": "glow",  # Add glow effect
                         }
                     )
                 self.kill_combo_count = 0

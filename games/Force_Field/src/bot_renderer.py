@@ -149,24 +149,51 @@ class BotRenderer:
         screen: pygame.Surface, x: int, y: int, size: float, cx: float
     ) -> None:
         """Render a health pack item."""
+        time_ms = pygame.time.get_ticks()
+        
+        # Floating animation
+        float_offset = math.sin(time_ms * 0.003) * 8
+        
+        # Pulsing glow effect
+        glow_pulse = math.sin(time_ms * 0.008) * 0.3 + 0.7
+        glow_size = size * 0.8 * glow_pulse
+        
+        # Draw glow
+        glow_surface = pygame.Surface((glow_size * 2, glow_size * 2), pygame.SRCALPHA)
+        glow_color = (0, 255, 0, 40)
+        pygame.draw.circle(glow_surface, glow_color, 
+                         (glow_size, glow_size), int(glow_size))
+        screen.blit(glow_surface, 
+                   (cx - glow_size, y + size * 0.7 + float_offset - glow_size))
+        
+        # Main health pack
         rect_w = size * 0.4
         rect_h = size * 0.3
-        kit_y = y + size * 0.7
+        kit_y = y + size * 0.7 + float_offset
+        
+        # Pulsing brightness
+        brightness = int(220 + 35 * math.sin(time_ms * 0.01))
+        
         pygame.draw.rect(
             screen,
-            (220, 220, 220),
+            (brightness, brightness, brightness),
             (cx - rect_w / 2, kit_y, rect_w, rect_h),
             border_radius=4,
         )
+        
+        # Animated cross
         cross_thick = rect_w * 0.2
+        cross_brightness = int(200 + 55 * math.sin(time_ms * 0.012))
+        cross_color = (cross_brightness, 0, 0)
+        
         pygame.draw.rect(
             screen,
-            (200, 0, 0),
+            cross_color,
             (cx - cross_thick / 2, kit_y + 5, cross_thick, rect_h - 10),
         )
         pygame.draw.rect(
             screen,
-            (200, 0, 0),
+            cross_color,
             (
                 cx - rect_w / 2 + 5,
                 kit_y + rect_h / 2 - cross_thick / 2,
@@ -180,57 +207,190 @@ class BotRenderer:
         screen: pygame.Surface, x: int, y: int, size: float, cx: float
     ) -> None:
         """Render an ammo box item."""
+        time_ms = pygame.time.get_ticks()
+        
+        # Floating animation
+        float_offset = math.sin(time_ms * 0.004) * 6
+        
+        # Rotation animation
+        rotation_angle = time_ms * 0.001
+        
+        # Pulsing glow effect
+        glow_pulse = math.sin(time_ms * 0.006) * 0.4 + 0.6
+        glow_size = size * 0.7 * glow_pulse
+        
+        # Draw glow
+        glow_surface = pygame.Surface((glow_size * 2, glow_size * 2), pygame.SRCALPHA)
+        glow_color = (255, 255, 0, 35)
+        pygame.draw.circle(glow_surface, glow_color, 
+                         (glow_size, glow_size), int(glow_size))
+        screen.blit(glow_surface, 
+                   (cx - glow_size, y + size * 0.7 + float_offset - glow_size))
+        
+        # Main ammo box
         rect_w = size * 0.4
         rect_h = size * 0.3
-        box_y = y + size * 0.7
+        box_y = y + size * 0.7 + float_offset
+        
+        # Pulsing colors
+        base_brightness = int(100 + 50 * math.sin(time_ms * 0.008))
+        highlight_brightness = int(200 + 55 * math.sin(time_ms * 0.01))
+        
         rect = (cx - rect_w / 2, box_y, rect_w, rect_h)
-        pygame.draw.rect(screen, (100, 100, 50), rect)
+        pygame.draw.rect(screen, (base_brightness, base_brightness, 50), rect)
         pygame.draw.rect(
             screen,
-            (200, 200, 0),
+            (highlight_brightness, highlight_brightness, 0),
             (cx - rect_w / 2 + 2, box_y + 2, rect_w - 4, rect_h - 4),
         )
+        
+        # Add rotating sparkles
+        for i in range(3):
+            sparkle_angle = rotation_angle + (i * 2 * math.pi / 3)
+            sparkle_radius = rect_w * 0.4
+            sparkle_x = cx + math.cos(sparkle_angle) * sparkle_radius
+            sparkle_y = box_y + rect_h / 2 + math.sin(sparkle_angle) * sparkle_radius * 0.5
+            pygame.draw.circle(screen, (255, 255, 255), 
+                             (int(sparkle_x), int(sparkle_y)), 2)
 
     @staticmethod
     def _render_bomb_item(
         screen: pygame.Surface, x: int, y: int, size: float, cx: float
     ) -> None:
         """Render a bomb item."""
+        time_ms = pygame.time.get_ticks()
+        
+        # Floating animation
+        float_offset = math.sin(time_ms * 0.005) * 5
+        
+        # Pulsing danger glow
+        danger_pulse = math.sin(time_ms * 0.015) * 0.5 + 0.5
+        glow_size = size * 0.6 * (0.8 + danger_pulse * 0.4)
+        
+        # Draw danger glow
+        glow_surface = pygame.Surface((glow_size * 2, glow_size * 2), pygame.SRCALPHA)
+        glow_color = (255, 100, 0, int(60 * danger_pulse))
+        pygame.draw.circle(glow_surface, glow_color, 
+                         (glow_size, glow_size), int(glow_size))
+        screen.blit(glow_surface, 
+                   (cx - glow_size, y + size * 0.8 + float_offset - glow_size))
+        
+        # Main bomb
         r = size * 0.2
-        cy = y + size * 0.8
-        pygame.draw.circle(screen, (30, 30, 30), (int(cx), int(cy)), int(r))
-        # Fuse
+        cy = y + size * 0.8 + float_offset
+        
+        # Pulsing bomb body
+        bomb_brightness = int(30 + 25 * math.sin(time_ms * 0.01))
+        pygame.draw.circle(screen, (bomb_brightness, bomb_brightness, bomb_brightness), 
+                         (int(cx), int(cy)), int(r))
+        
+        # Animated fuse
+        fuse_flicker = math.sin(time_ms * 0.02) * 0.3 + 0.7
         start_fuse = (cx, cy - r)
         end_fuse = (cx + r / 2, cy - r * 1.5)
-        pygame.draw.line(screen, (200, 150, 0), start_fuse, end_fuse, 2)
-        if random.random() < 0.5:
+        fuse_color = (int(200 * fuse_flicker), int(150 * fuse_flicker), 0)
+        pygame.draw.line(screen, fuse_color, start_fuse, end_fuse, 3)
+        
+        # Enhanced sparks with particles
+        if random.random() < 0.7:  # More frequent sparks
             spark_pos = (int(cx + r / 2), int(cy - r * 1.5))
-            pygame.draw.circle(screen, (255, 100, 0), spark_pos, 2)
+            spark_size = int(3 + 2 * math.sin(time_ms * 0.03))
+            pygame.draw.circle(screen, (255, 200, 0), spark_pos, spark_size)
+            
+            # Add small spark particles
+            for i in range(3):
+                particle_x = spark_pos[0] + random.randint(-5, 5)
+                particle_y = spark_pos[1] + random.randint(-3, 3)
+                pygame.draw.circle(screen, (255, 150, 0), 
+                                 (particle_x, particle_y), 1)
 
     @staticmethod
     def _render_weapon_pickup(
         screen: pygame.Surface, bot: Bot, x: int, y: int, size: float, cx: float
     ) -> None:
         """Render a weapon pickup item."""
-        # Simple placeholder for weapon pickups
+        time_ms = pygame.time.get_ticks()
+        
+        # Floating animation
+        float_offset = math.sin(time_ms * 0.0035) * 7
+        
+        # Rotation animation
+        rotation_angle = time_ms * 0.002
+        
+        # Weapon-specific glow colors
+        weapon_glows = {
+            "minigun": (255, 100, 100),
+            "shotgun": (255, 200, 0),
+            "rifle": (100, 255, 100),
+            "rocket": (255, 50, 255),
+        }
+        
+        glow_color = (150, 150, 255)  # Default
+        for weapon_type, color in weapon_glows.items():
+            if weapon_type in bot.enemy_type:
+                glow_color = color
+                break
+        
+        # Pulsing glow effect
+        glow_pulse = math.sin(time_ms * 0.007) * 0.4 + 0.6
+        glow_size = size * 0.8 * glow_pulse
+        
+        # Draw glow
+        glow_surface = pygame.Surface((glow_size * 2, glow_size * 2), pygame.SRCALPHA)
+        glow_rgba = (*glow_color, 45)
+        pygame.draw.circle(glow_surface, glow_rgba, 
+                         (glow_size, glow_size), int(glow_size))
+        screen.blit(glow_surface, 
+                   (cx - glow_size, y + size * 0.75 + float_offset - glow_size))
+        
+        # Main weapon body
         rect_w = size * 0.6
         rect_h = size * 0.2
-        py = y + size * 0.75
+        py = y + size * 0.75 + float_offset
         color = bot.type_data["color"]
-        pygame.draw.rect(screen, color, (cx - rect_w / 2, py, rect_w, rect_h))
-        # Label/Detail
+        
+        # Enhanced weapon body with rotation effect
+        weapon_surface = pygame.Surface((rect_w * 1.5, rect_h * 1.5), pygame.SRCALPHA)
+        weapon_rect = pygame.Rect(rect_w * 0.25, rect_h * 0.25, rect_w, rect_h)
+        
+        # Pulsing weapon color
+        enhanced_color = tuple(min(255, c + int(50 * glow_pulse)) for c in color)
+        pygame.draw.rect(weapon_surface, enhanced_color, weapon_rect, border_radius=3)
+        
+        # Rotate the weapon surface
+        rotated_surface = pygame.transform.rotate(weapon_surface, 
+                                                math.degrees(rotation_angle))
+        rotated_rect = rotated_surface.get_rect(center=(cx, py))
+        screen.blit(rotated_surface, rotated_rect)
+        
+        # Enhanced details
+        detail_color = tuple(min(255, c + 100) for c in color)
         pygame.draw.line(
-            screen, (255, 255, 255), (cx - rect_w / 2, py), (cx + rect_w / 2, py), 2
+            screen, detail_color, 
+            (cx - rect_w / 2, py), (cx + rect_w / 2, py), 3
         )
+        
         if "minigun" in bot.enemy_type:
-            # Add extra barrels
-            pygame.draw.line(
-                screen,
-                (200, 200, 200),
-                (cx - rect_w / 2, py + 4),
-                (cx + rect_w / 2, py + 4),
-                2,
-            )
+            # Add extra barrels with glow
+            for i in range(3):
+                barrel_y = py + 4 + i * 3
+                barrel_brightness = int(200 + 55 * math.sin(time_ms * 0.01 + i))
+                barrel_color = (barrel_brightness, barrel_brightness, barrel_brightness)
+                pygame.draw.line(
+                    screen, barrel_color,
+                    (cx - rect_w / 2, barrel_y),
+                    (cx + rect_w / 2, barrel_y), 2
+                )
+        
+        # Add energy particles around weapon
+        for i in range(4):
+            particle_angle = rotation_angle * 2 + (i * math.pi / 2)
+            particle_radius = rect_w * 0.6
+            particle_x = cx + math.cos(particle_angle) * particle_radius
+            particle_y = py + math.sin(particle_angle) * particle_radius * 0.3
+            particle_size = int(2 + math.sin(time_ms * 0.02 + i) * 1)
+            pygame.draw.circle(screen, glow_color, 
+                             (int(particle_x), int(particle_y)), particle_size)
 
     @staticmethod
     def _render_baby(

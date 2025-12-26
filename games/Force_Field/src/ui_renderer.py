@@ -60,23 +60,32 @@ class UIRenderer:
         self.title_drips: list[dict[str, Any]] = []
 
     def _init_fonts(self) -> None:
-        """Initialize fonts"""
+        """Initialize fonts with modern gaming aesthetics"""
         try:
-            self.title_font = pygame.font.SysFont("impact", 100)
-            self.font = pygame.font.SysFont("franklingothicmedium", 40)
-            self.small_font = pygame.font.SysFont("franklingothicmedium", 28)
-            self.tiny_font = pygame.font.SysFont("consolas", 20)
-            self.subtitle_font = pygame.font.SysFont("georgia", 36)
-            # 'chiller' is a non-standard font used for intro slides.
-            # If unavailable, it falls back to title_font in the exception handler.
-            self.chiller_font = pygame.font.SysFont("chiller", 70)
+            # Try modern gaming fonts first
+            self.title_font = pygame.font.SysFont("orbitron", 100, bold=True)
+            self.font = pygame.font.SysFont("exo", 40, bold=True)
+            self.small_font = pygame.font.SysFont("exo", 28, bold=True)
+            self.tiny_font = pygame.font.SysFont("rajdhani", 20, bold=True)
+            self.subtitle_font = pygame.font.SysFont("orbitron", 36, bold=True)
+            self.chiller_font = pygame.font.SysFont("orbitron", 70, bold=True)
         except Exception:  # noqa: BLE001
-            self.title_font = pygame.font.Font(None, 80)
-            self.font = pygame.font.Font(None, 48)
-            self.small_font = pygame.font.Font(None, 32)
-            self.tiny_font = pygame.font.Font(None, 24)
-            self.subtitle_font = pygame.font.Font(None, 40)
-            self.chiller_font = self.title_font
+            # Fallback to available system fonts with gaming feel
+            try:
+                self.title_font = pygame.font.SysFont("impact", 100, bold=True)
+                self.font = pygame.font.SysFont("arial", 40, bold=True)
+                self.small_font = pygame.font.SysFont("arial", 28, bold=True)
+                self.tiny_font = pygame.font.SysFont("courier", 20, bold=True)
+                self.subtitle_font = pygame.font.SysFont("impact", 36, bold=True)
+                self.chiller_font = pygame.font.SysFont("impact", 70, bold=True)
+            except Exception:  # noqa: BLE001
+                # Final fallback to default fonts
+                self.title_font = pygame.font.Font(None, 100)
+                self.font = pygame.font.Font(None, 48)
+                self.small_font = pygame.font.Font(None, 32)
+                self.tiny_font = pygame.font.Font(None, 24)
+                self.subtitle_font = pygame.font.Font(None, 40)
+                self.chiller_font = pygame.font.Font(None, 80)
 
     def _load_assets(self) -> None:
         """Load images and video"""
@@ -449,11 +458,33 @@ class UIRenderer:
             self._render_pause_menu(game)
 
     def _render_damage_texts(self, texts: list[dict[str, Any]]) -> None:
-        """Render floating damage text indicators."""
+        """Render floating damage text indicators with enhanced effects."""
         for t in texts:
-            surf = self.small_font.render(t["text"], True, t["color"])
-            rect = surf.get_rect(center=(int(t["x"]), int(t["y"])))
-            self.screen.blit(surf, rect)
+            # Check for special effects
+            is_large = t.get("size") == "large"
+            has_glow = t.get("effect") == "glow"
+            
+            # Choose font based on size
+            font = self.subtitle_font if is_large else self.small_font
+            
+            # Create text surface
+            text_surf = font.render(t["text"], True, t["color"])
+            
+            # Add glow effect for special messages
+            if has_glow:
+                # Create glow surface
+                glow_surf = font.render(t["text"], True, (255, 255, 255))
+                
+                # Draw glow in multiple positions for blur effect
+                glow_positions = [(-2, -2), (-2, 2), (2, -2), (2, 2), (-1, 0), (1, 0), (0, -1), (0, 1)]
+                for gx, gy in glow_positions:
+                    glow_rect = glow_surf.get_rect(center=(int(t["x"]) + gx, int(t["y"]) + gy))
+                    glow_surf.set_alpha(50)  # Semi-transparent glow
+                    self.screen.blit(glow_surf, glow_rect)
+            
+            # Draw main text
+            rect = text_surf.get_rect(center=(int(t["x"]), int(t["y"])))
+            self.screen.blit(text_surf, rect)
 
     def _render_damage_flash(self, timer: int) -> None:
         """Render red screen flash effect when player takes damage."""

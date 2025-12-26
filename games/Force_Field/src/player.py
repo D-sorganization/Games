@@ -48,6 +48,11 @@ class Player:
         # For now, we assume "ammo" in constants refers to reserves.
         self.ammo: dict[str, int] = {w: int(C.WEAPONS[w]["ammo"]) for w in C.WEAPONS}
 
+        # Melee attack system
+        self.melee_cooldown = 0
+        self.melee_active = False
+        self.melee_timer = 0
+
         self.current_weapon = "rifle"
         self.shooting = False
         self.shoot_timer = 0
@@ -282,6 +287,15 @@ class Player:
         if self.secondary_cooldown > 0:
             self.secondary_cooldown -= 1
 
+        # Melee attack timers
+        if self.melee_cooldown > 0:
+            self.melee_cooldown -= 1
+        
+        if self.melee_timer > 0:
+            self.melee_timer -= 1
+            if self.melee_timer <= 0:
+                self.melee_active = False
+
         # Stamina Regen
         if self.stamina_recharge_delay > 0:
             self.stamina_recharge_delay -= 1
@@ -376,3 +390,12 @@ class Player:
                 # Was active, now stopping
                 self.shield_recharge_delay = C.SHIELD_COOLDOWN_NORMAL
             self.shield_active = False
+
+    def melee_attack(self) -> bool:
+        """Execute melee attack"""
+        if self.melee_cooldown <= 0:
+            self.melee_cooldown = 30  # 0.5 seconds at 60 FPS
+            self.melee_active = True
+            self.melee_timer = 15  # Attack duration
+            return True
+        return False
