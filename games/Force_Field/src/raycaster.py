@@ -3,7 +3,7 @@ from __future__ import annotations
 import itertools
 import math
 import random
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import pygame
 
@@ -411,7 +411,7 @@ class Raycaster:
         view_offset_y: float = 0.0,
     ) -> None:
         """Render all sprites (bots and projectiles) to the view surface"""
-        sprites_to_render = []
+        sprites_to_render: list[tuple[Any, bool]] = []
 
         # Optimization: Pre-calculate player direction vector
         p_cos = math.cos(player.angle)
@@ -419,13 +419,13 @@ class Raycaster:
         max_dist_sq = C.MAX_DEPTH * C.MAX_DEPTH
 
         max_dist_sq = C.MAX_DEPTH * C.MAX_DEPTH
-        
+
         # Merge bots and projectiles
         for bot in bots:
             if bot.removed:
                 continue
             sprites_to_render.append((bot, False))
-            
+
         for proj in projectiles:
             if not proj.alive:
                 continue
@@ -457,15 +457,21 @@ class Raycaster:
 
             if abs(angle_to_sprite) < half_fov + 0.5:
                 final_sprites.append((entity, dist, angle_to_sprite, is_projectile))
-        
+
         # Sort by distance (far to near)
         final_sprites.sort(key=lambda x: x[1], reverse=True)
 
         for entity, dist, angle, is_proj in final_sprites:
             if is_proj:
-                self._draw_single_projectile(player, entity, dist, angle, half_fov, view_offset_y) # type: ignore
+                proj = cast("Projectile", entity)
+                self._draw_single_projectile(
+                    player, proj, dist, angle, half_fov, view_offset_y
+                )
             else:
-                self._draw_single_sprite(player, entity, dist, angle, half_fov, view_offset_y) # type: ignore
+                bot = cast("Bot", entity)
+                self._draw_single_sprite(
+                    player, bot, dist, angle, half_fov, view_offset_y
+                )
 
     def _draw_single_sprite(
         self,
@@ -656,54 +662,70 @@ class Raycaster:
     ) -> None:
         """Draw a projectile sprite."""
         safe_dist = max(0.01, dist)
-        
+
         # Calculate screen position
         base_size = C.SCREEN_HEIGHT / safe_dist
         sprite_size = base_size * float(proj.size)
-        
+
         center_ray = self.num_rays / 2
         sprite_scale = sprite_size / self.render_scale
         ray_x = center_ray + (angle / half_fov) * center_ray - sprite_scale / 2
-        
+
         # Height offset for arc (z-axis)
-        # 0.5 is eye level (center screen). 
+        # 0.5 is eye level (center screen).
         # Screen Y = center - (z - 0.5) * height_scale
         # height_scale is roughly C.SCREEN_HEIGHT / dist
-        
+
         z_offset = (proj.z - 0.5) * (C.SCREEN_HEIGHT / safe_dist)
-        sprite_y = (C.SCREEN_HEIGHT / 2) - (sprite_size / 2) - z_offset + player.pitch + view_offset_y
+        sprite_y = (
+            (C.SCREEN_HEIGHT / 2)
+            - (sprite_size / 2)
+            - z_offset
+            + player.pitch
+            + view_offset_y
+        )
 
         # Draw checks
         if ray_x + sprite_scale < 0 or ray_x >= self.num_rays:
-             return
-             
+            return
+
         # Simple Circle Rendering for now (or specialized sprites)
         # We draw directly to view_surface
-        
+
         # Correctly check z-buffer for center point visibility?
         # A simple center check is usually enough for small particles
         center_ray_idx = int(ray_x + sprite_scale / 2)
         if 0 <= center_ray_idx < self.num_rays:
             if dist > self.z_buffer[center_ray_idx]:
-                return # Occluded
-        
+                return  # Occluded
+
         # Draw
         try:
-            rect = pygame.Rect(int(ray_x), int(sprite_y), int(sprite_scale), int(sprite_scale))
+            rect = pygame.Rect(
+                int(ray_x), int(sprite_y), int(sprite_scale), int(sprite_scale)
+            )
             if rect.width > 0 and rect.height > 0:
-                 # Check if projectile has type_data fallback
-                 # If bomb, draw black circle. If plasma/rocket, use proj.color
-                 color = proj.color
-                 pygame.draw.circle(self.view_surface, color, rect.center, rect.width // 2)
-                 
-                 # Glow
-                 if proj.weapon_type == "plasma":
-                     pygame.draw.circle(self.view_surface, (255, 255, 255), rect.center, rect.width // 4)
-                 elif proj.weapon_type == "rocket":
-                      pygame.draw.circle(self.view_surface, (255, 100, 0), rect.center, rect.width // 3)
-                 elif proj.weapon_type == "bomb":
-                      # Draw fuse?
-                      pygame.draw.circle(self.view_surface, (255, 0, 0), (rect.centerx, rect.top), 2)
+                # Check if projectile has type_data fallback
+                # If bomb, draw black circle. If plasma/rocket, use proj.color
+                color = proj.color
+                pygame.draw.circle(
+                    self.view_surface, color, rect.center, rect.width // 2
+                )
+
+                # Glow
+                if proj.weapon_type == "plasma":
+                    pygame.draw.circle(
+                        self.view_surface, (255, 255, 255), rect.center, rect.width // 4
+                    )
+                elif proj.weapon_type == "rocket":
+                    pygame.draw.circle(
+                        self.view_surface, (255, 100, 0), rect.center, rect.width // 3
+                    )
+                elif proj.weapon_type == "bomb":
+                    # Draw fuse?
+                    pygame.draw.circle(
+                        self.view_surface, (255, 0, 0), (rect.centerx, rect.top), 2
+                    )
         except (ValueError, pygame.error):
             pass
 

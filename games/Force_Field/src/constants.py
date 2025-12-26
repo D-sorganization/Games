@@ -74,7 +74,7 @@ WEAPONS: dict[str, WeaponData] = {
         "clip_size": 12,
         "reload_time": 60,  # 1 second
         "key": "1",
-        "automatic": False,  # Semi-auto, but felt "broken" if clicks missed.
+        "automatic": True,  # Semi-auto, but felt "broken" if clicks missed.
     },
     "rifle": {
         "name": "Rifle",
@@ -98,7 +98,7 @@ WEAPONS: dict[str, WeaponData] = {
         "pellets": 8,
         "spread": 0.15,
         "key": "3",
-        "automatic": False,
+        "automatic": True,
     },
     "minigun": {
         "name": "Minigun",
@@ -439,7 +439,13 @@ LEVEL_THEMES: list[LevelTheme] = [
     {
         "floor": DARK_GRAY,
         "ceiling": SKY_COLOR,
-        "walls": {1: GRAY, 2: BROWN, 3: DARK_BROWN, 4: (180, 180, 180), 5: (80, 80, 90)},
+        "walls": {
+            1: GRAY,
+            2: BROWN,
+            3: DARK_BROWN,
+            4: (180, 180, 180),
+            5: (80, 80, 90),
+        },
     },
     # 1: Mars (Red/Orange)
     {

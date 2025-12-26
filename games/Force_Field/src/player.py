@@ -75,6 +75,7 @@ class Player:
         # Weapon Sway / Turn tracking
         self.frame_turn = 0.0
         self.sway_amount = 0.0
+        self.sway_timer = 0
 
         # Stamina
         self.stamina = 100.0
