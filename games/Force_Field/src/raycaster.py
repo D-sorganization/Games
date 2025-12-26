@@ -26,6 +26,8 @@ if TYPE_CHECKING:
 class Raycaster:
     """Raycasting engine for 3D rendering"""
 
+    VISUAL_SCALE = 2.2  # Allow drawing outside logical bounds (glows, etc.)
+
     def __init__(self, game_map: Map):
         """Initialize raycaster"""
         self.game_map = game_map
@@ -500,7 +502,7 @@ class Raycaster:
 
         sprite_y = C.SCREEN_HEIGHT / 2 - sprite_size / 2 + player.pitch + view_offset_y
 
-        visual_scale = 2.2  # Allow drawing outside logical bounds (glows, etc.)
+        visual_scale = self.VISUAL_SCALE
 
         if sprite_ray_x + sprite_ray_width < 0:
             return
@@ -644,6 +646,10 @@ class Raycaster:
                     logical_top_edge_y = (final_h - target_height) // 2
                     dst_y = int(sprite_y - logical_top_edge_y)
 
+                    # Destination coordinates explanation:
+                    # x: Screen column at the start of this visible run.
+                    # y: Shifted upward for padding.
+
                     pos = (run_start, dst_y)
                     self.view_surface.blit(scaled_sprite, pos, area)
         else:
@@ -656,8 +662,13 @@ class Raycaster:
 
                 tex_width = sprite_surface.get_width()
                 tex_height = sprite_surface.get_height()
-                # sprite_ray_width is "logical" width (inner part)
-                # tex_scale = logical_tex_width / sprite_ray_width
+                # sprite_ray_width is "logical" width (inner part: unpadded sprite)
+                # logical_tex_width is the inner width mapping to sprite_ray_width.
+                # visual_scale describes comparison of padded texture to logical width.
+                # logical_tex_width = tex_width / visual_scale.
+                # The remaining width is symmetric padding; tex_padding is the offset
+                # from left edge to start of logical region.
+                # Texture coords = tex_padding + (world_x_offset * tex_scale).
 
                 logical_tex_width = tex_width / visual_scale
                 tex_scale = logical_tex_width / sprite_ray_width
