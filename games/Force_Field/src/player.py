@@ -173,6 +173,7 @@ class Player:
             if w_state["spin_timer"] < spin_up:
                 w_state["spin_timer"] += 2  # Charge up
                 return False  # Not firing yet
+            # Once spun up, continue firing normally
         else:
             # For non-minigun weapons, ensure spin is 0 (just in case)
             w_state["spin_timer"] = 0

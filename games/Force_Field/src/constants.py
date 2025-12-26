@@ -4,7 +4,7 @@ from .custom_types import EnemyData, LevelTheme, WeaponData
 
 # Constants
 SCREEN_WIDTH = 1024
-SCREEN_HEIGHT = 768
+SCREEN_HEIGHT = 600  # Reduced from 768 to fit better on laptop screens
 FPS = 60
 
 # Map settings

@@ -631,32 +631,56 @@ class Game:
 
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if self.paused:
-                    # Handle Pause Menu Clicks
+                    # Handle Pause Menu Clicks - use same sizing logic as UI renderer
                     mx, my = event.pos
-                    if 500 <= mx <= 700:
-                        if 350 <= my <= 400:  # Resume
-                            self.paused = False
-                            self.sound_manager.unpause_all()
-                            if self.pause_start_time > 0:
-                                now = pygame.time.get_ticks()
-                                pause_duration = now - self.pause_start_time
-                                self.total_paused_time += pause_duration
-                                self.pause_start_time = 0
-                            pygame.mouse.set_visible(False)
-                            pygame.event.set_grab(True)
-                        elif 410 <= my <= 460:  # Save
-                            self.save_game()
-                            self.add_message("GAME SAVED", C.GREEN)
-                        elif 470 <= my <= 520:  # Enter Cheat
-                            self.cheat_mode_active = True
-                            self.current_cheat_input = ""
-                        elif 530 <= my <= 580:  # Controls
-                            self.state = "key_config"
-                            self.binding_action = None  # Initialize binding state
-                        elif 590 <= my <= 640:  # Quit to Menu
-                            self.state = "menu"
-                            self.paused = False
-                            self.sound_manager.start_music("music_loop")
+
+                    # Calculate box dimensions (same as in ui_renderer.py)
+                    menu_items = [
+                        "RESUME", "SAVE GAME", "ENTER CHEAT", "CONTROLS", "QUIT TO MENU"
+                    ]
+                    max_text_width = 0
+                    for item in menu_items:
+                        text_surf = self.ui_renderer.subtitle_font.render(
+                            item, True, C.WHITE
+                        )
+                        max_text_width = max(max_text_width, text_surf.get_width())
+
+                    box_width = max_text_width + 60
+                    box_height = 50
+
+                    # Check each menu item
+                    for i, _ in enumerate(menu_items):
+                        rect = pygame.Rect(
+                            C.SCREEN_WIDTH // 2 - box_width // 2,
+                            350 + i * 60,
+                            box_width,
+                            box_height
+                        )
+                        if rect.collidepoint(mx, my):
+                            if i == 0:  # Resume
+                                self.paused = False
+                                self.sound_manager.unpause_all()
+                                if self.pause_start_time > 0:
+                                    now = pygame.time.get_ticks()
+                                    pause_duration = now - self.pause_start_time
+                                    self.total_paused_time += pause_duration
+                                    self.pause_start_time = 0
+                                pygame.mouse.set_visible(False)
+                                pygame.event.set_grab(True)
+                            elif i == 1:  # Save
+                                self.save_game()
+                                self.add_message("GAME SAVED", C.GREEN)
+                            elif i == 2:  # Enter Cheat
+                                self.cheat_mode_active = True
+                                self.current_cheat_input = ""
+                            elif i == 3:  # Controls
+                                self.state = "key_config"
+                                self.binding_action = None  # Initialize binding state
+                            elif i == 4:  # Quit to Menu
+                                self.state = "menu"
+                                self.paused = False
+                                self.sound_manager.start_music("music_loop")
+                            break
 
                 elif not self.cheat_mode_active:
                     assert self.player is not None
@@ -1649,20 +1673,9 @@ class Game:
                 elif self.state == "playing":
                     self.handle_game_events()
                     if self.paused:
-                        # Pause Menu Audio
-                        # Heartbeat: 70 BPM -> ~0.85s delay -> ~51 frames (at 60FPS)
-                        beat_delay = 51
-                        self.heartbeat_timer -= 1
-                        if self.heartbeat_timer <= 0:
-                            self.sound_manager.play_sound("heartbeat")
-                            self.sound_manager.play_sound("breath")
-                            self.heartbeat_timer = beat_delay
-
-                        if self.player and self.player.health < 50:
-                            self.groan_timer -= 1
-                            if self.groan_timer <= 0:
-                                self.sound_manager.play_sound("groan")
-                                self.groan_timer = 240
+                        # Don't play breathing/heartbeat sounds during pause menu
+                        # The pause_all() should handle stopping all sounds
+                        pass
                     else:
                         self.update_game()
                     self.renderer.render_game(self)

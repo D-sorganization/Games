@@ -561,9 +561,14 @@ class UIRenderer:
             input_surf = self.font.render(input_text, True, C.WHITE)
             input_rect = input_surf.get_rect(center=(C.SCREEN_WIDTH // 2, 400))
 
-            # Background for input
+            # Background for input - make it wider to accommodate longer cheat codes
             bg_rect = input_rect.copy()
-            bg_rect.inflate_ip(40, 20)
+            # Ensure minimum width for the input box and add generous padding
+            min_width = 300  # Minimum width for cheat input
+            bg_rect.width = max(min_width, input_rect.width + 80)
+            bg_rect.height = input_rect.height + 30
+            bg_rect.center = input_rect.center
+            
             pygame.draw.rect(self.screen, C.DARK_GRAY, bg_rect)
             pygame.draw.rect(self.screen, C.CYAN, bg_rect, 2)
 
@@ -580,9 +585,19 @@ class UIRenderer:
         menu_items = ["RESUME", "SAVE GAME", "ENTER CHEAT", "CONTROLS", "QUIT TO MENU"]
         mouse_pos = pygame.mouse.get_pos()
 
+        # Calculate the maximum text width to ensure all boxes are the same size
+        max_text_width = 0
+        for item in menu_items:
+            text_surf = self.subtitle_font.render(item, True, C.WHITE)
+            max_text_width = max(max_text_width, text_surf.get_width())
+        
+        # Add padding to ensure text fits comfortably
+        box_width = max_text_width + 60
+        box_height = 50
+
         for i, item in enumerate(menu_items):
             color = C.WHITE
-            rect = pygame.Rect(C.SCREEN_WIDTH // 2 - 100, 350 + i * 60, 200, 50)
+            rect = pygame.Rect(C.SCREEN_WIDTH // 2 - box_width // 2, 350 + i * 60, box_width, box_height)
             if rect.collidepoint(mouse_pos):
                 color = C.YELLOW
                 pygame.draw.rect(self.screen, (50, 0, 0), rect)
