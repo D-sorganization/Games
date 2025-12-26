@@ -19,6 +19,7 @@ class WeaponRenderer:
     def __init__(self, screen: pygame.Surface) -> None:
         """Initialize the weapon renderer"""
         self.screen = screen
+        self.font = pygame.font.SysFont("arial", 20, bold=True)
 
     def render_weapon(self, player: Player) -> tuple[int, int]:
         """Render weapon model and return its screen position (cx, cy)"""
@@ -69,7 +70,9 @@ class WeaponRenderer:
             self._render_plasma(cx, cy, player, w_state)
 
         elif weapon == "rocket":
-            self._render_rocket_launcher(cx, cy, player, gun_metal, gun_highlight, gun_dark)
+            self._render_rocket_launcher(
+                cx, cy, player, gun_metal, gun_highlight, gun_dark
+            )
 
         return cx, cy
 
@@ -285,65 +288,79 @@ class WeaponRenderer:
     ) -> None:
         """Render an impressive rocket launcher with glowing effects"""
         time_ms = pygame.time.get_ticks()
-        
+
         # Pulsing glow effect
         glow_pulse = math.sin(time_ms * 0.008) * 0.3 + 0.7
-        
+
         # Main launcher body - large and imposing
         body_width = 120
         body_height = 80
         body_rect = (cx - body_width // 2, cy - 200, body_width, body_height)
-        
+
         # Draw glow around launcher
-        glow_surface = pygame.Surface((body_width + 40, body_height + 40), pygame.SRCALPHA)
+        glow_surface = pygame.Surface(
+            (body_width + 40, body_height + 40), pygame.SRCALPHA
+        )
         glow_color = (255, 100, 0, int(30 * glow_pulse))
-        pygame.draw.rect(glow_surface, glow_color, 
-                        (20, 20, body_width, body_height), border_radius=10)
+        pygame.draw.rect(
+            glow_surface,
+            glow_color,
+            (20, 20, body_width, body_height),
+            border_radius=10,
+        )
         self.screen.blit(glow_surface, (cx - body_width // 2 - 20, cy - 220))
-        
+
         # Main body
         pygame.draw.rect(self.screen, gun_dark, body_rect, border_radius=8)
-        pygame.draw.rect(self.screen, gun_metal, 
-                        (cx - body_width // 2 + 10, cy - 190, body_width - 20, body_height - 20),
-                        border_radius=5)
-        
+        pygame.draw.rect(
+            self.screen,
+            gun_metal,
+            (cx - body_width // 2 + 10, cy - 190, body_width - 20, body_height - 20),
+            border_radius=5,
+        )
+
         # Rocket tube - large bore
         tube_width = 80
         tube_height = 200
         tube_rect = (cx - tube_width // 2, cy - 350, tube_width, tube_height)
-        
+
         # Tube exterior
         pygame.draw.rect(self.screen, gun_highlight, tube_rect, border_radius=40)
-        
+
         # Tube interior (dark bore)
         bore_width = tube_width - 20
-        pygame.draw.rect(self.screen, (10, 10, 10), 
-                        (cx - bore_width // 2, cy - 340, bore_width, tube_height - 20),
-                        border_radius=30)
-        
+        pygame.draw.rect(
+            self.screen,
+            (10, 10, 10),
+            (cx - bore_width // 2, cy - 340, bore_width, tube_height - 20),
+            border_radius=30,
+        )
+
         # Targeting system with glowing elements
         scope_y = cy - 280
-        pygame.draw.rect(self.screen, gun_dark, (cx - 40, scope_y, 80, 30), border_radius=5)
-        
+        pygame.draw.rect(
+            self.screen, gun_dark, (cx - 40, scope_y, 80, 30), border_radius=5
+        )
+
         # Glowing targeting reticle
         reticle_brightness = int(150 + 105 * math.sin(time_ms * 0.015))
         reticle_color = (reticle_brightness, 0, 0)
         pygame.draw.circle(self.screen, reticle_color, (cx, scope_y + 15), 8)
         pygame.draw.circle(self.screen, (255, 0, 0), (cx, scope_y + 15), 4)
-        
+
         # Side-mounted missile pods
         for side in [-1, 1]:
             pod_x = cx + side * 70
             pod_rect = (pod_x - 15, cy - 300, 30, 120)
             pygame.draw.rect(self.screen, gun_metal, pod_rect, border_radius=15)
-            
+
             # Mini missiles in pods
             for i in range(3):
                 missile_y = cy - 290 + i * 30
                 missile_color = (200, 50, 50) if i % 2 == 0 else (150, 150, 150)
                 pygame.draw.circle(self.screen, missile_color, (pod_x, missile_y), 8)
                 pygame.draw.circle(self.screen, (255, 100, 100), (pod_x, missile_y), 4)
-        
+
         # Grip and trigger assembly
         grip_points = [
             (cx - 30, cy - 120),
@@ -352,33 +369,56 @@ class WeaponRenderer:
             (cx - 50, cy - 80),
         ]
         pygame.draw.polygon(self.screen, gun_dark, grip_points)
-        
+
         # Trigger
         trigger_color = (200, 0, 0) if player.shooting else (100, 100, 100)
         pygame.draw.circle(self.screen, trigger_color, (cx - 35, cy - 60), 8)
-        
+
         # Exhaust vents with heat glow
         for i in range(4):
             vent_x = cx - 50 + i * 25
             vent_y = cy - 160
             vent_heat = int(100 + 155 * math.sin(time_ms * 0.01 + i))
             vent_color = (vent_heat, vent_heat // 3, 0)
-            pygame.draw.rect(self.screen, vent_color, (vent_x, vent_y, 8, 20), border_radius=4)
-        
+            pygame.draw.rect(
+                self.screen, vent_color, (vent_x, vent_y, 8, 20), border_radius=4
+            )
+
         # Ammo counter display
         ammo_count = player.weapon_state["rocket"]["clip"]
         counter_color = (0, 255, 0) if ammo_count > 0 else (255, 0, 0)
-        counter_text = f"AMMO: {ammo_count}"
-        
+        counter_text_str = f"AMMO: {ammo_count}"
+
         # Digital display background
-        display_rect = (cx + 30, cy - 320, 80, 25)
+        display_rect = pygame.Rect(cx + 30, cy - 320, 80, 25)
         pygame.draw.rect(self.screen, (10, 10, 10), display_rect, border_radius=3)
         pygame.draw.rect(self.screen, counter_color, display_rect, 2, border_radius=3)
-        
+
+        # Draw text
+        text_surf = self.font.render(counter_text_str, True, counter_color)
+        scale = min(0.8, (display_rect.width - 4) / max(1, text_surf.get_width()))
+        if scale < 0.8:
+            new_size = (
+                int(text_surf.get_width() * scale),
+                int(text_surf.get_height() * scale),
+            )
+            text_surf = pygame.transform.scale(text_surf, new_size)
+
+        text_rect = text_surf.get_rect(center=display_rect.center)
+        self.screen.blit(text_surf, text_rect)
+
         # Warning lights
         if ammo_count == 0:
             warning_brightness = int(255 * (math.sin(time_ms * 0.02) * 0.5 + 0.5))
-            pygame.draw.circle(self.screen, (warning_brightness, 0, 0), 
-                             (cx + 50, cy - 340), 6)
-            pygame.draw.circle(self.screen, (warning_brightness, 0, 0), 
-                             (cx + 70, cy - 340), 6)
+            pygame.draw.circle(
+                self.screen,
+                (warning_brightness, 0, 0),
+                (cx + 50, cy - 340),
+                6,
+            )
+            pygame.draw.circle(
+                self.screen,
+                (warning_brightness, 0, 0),
+                (cx + 70, cy - 340),
+                6,
+            )
