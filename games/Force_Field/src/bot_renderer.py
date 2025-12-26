@@ -568,7 +568,7 @@ class BotRenderer:
 
         # Central core with pulsing energy
         core_size = int(r * 0.3 * (1.0 + math.sin(time_ms * 0.02) * 0.3))
-        core_brightness = int(150 + 105 * math.sin(time_ms * 0.025))
+        core_brightness = max(0, min(255, int(150 + 105 * math.sin(time_ms * 0.025))))
         core_color = (core_brightness, core_brightness, 255)
         pygame.draw.circle(screen, core_color, (int(cx), int(cy)), core_size)
 
@@ -1079,7 +1079,7 @@ class BotRenderer:
         core_size = int(current_rw * 0.15)
         core_x = int(cx)
         core_y = int(body_y + body_height * 0.3)
-        core_brightness = int(100 + 155 * math.sin(time_ms * 0.02))
+        core_brightness = max(0, min(255, int(100 + 155 * math.sin(time_ms * 0.02))))
         core_color = (core_brightness, 0, 0)
         pygame.draw.circle(screen, core_color, (core_x, core_y), core_size)
         pygame.draw.circle(

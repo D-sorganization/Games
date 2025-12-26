@@ -1,17 +1,11 @@
 Traceback (most recent call last):
-  File "C:\Users\diete\Repositories\Games\games\Force_Field\src\game.py", line 1925, in run
-    # Decrement damage flash timer after rendering
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\diete\Repositories\Games\games\Force_Field\src\renderer.py", line 45, in render_game
-    game.raycaster.render_3d(
-  File "C:\Users\diete\Repositories\Games\games\Force_Field\src\raycaster.py", line 387, in render_3d
-    self._render_sprites(player, bots, half_fov, view_offset_y)
-  File "C:\Users\diete\Repositories\Games\games\Force_Field\src\raycaster.py", line 447, in _render_sprites
-    self._draw_single_sprite(
-  File "C:\Users\diete\Repositories\Games\games\Force_Field\src\raycaster.py", line 504, in _draw_single_sprite
-    BotRenderer.render_sprite(sprite_surface, bot, 0, 0, cached_size)
-  File "C:\Users\diete\Repositories\Games\games\Force_Field\src\bot_renderer.py", line 137, in render_sprite
-    BotRenderer._render_minigunner(
-  File "C:\Users\diete\Repositories\Games\games\Force_Field\src\bot_renderer.py", line 968, in _render_minigunner
-    pygame.draw.circle(screen, core_color, (core_x, core_y), core_size)
+  File "C:\Users\diete\Repositories\Games\games\Force_Field\src\game.py", line 1939, in run
+    self.renderer.render_game(self)
+  File "C:\Users\diete\Repositories\Games\games\Force_Field\src\renderer.py", line 61, in render_game
+    weapon_pos = self.weapon_renderer.render_weapon(game.player)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\diete\Repositories\Games\games\Force_Field\src\weapon_renderer.py", line 73, in render_weapon
+    self._render_rocket_launcher(
+  File "C:\Users\diete\Repositories\Games\games\Force_Field\src\weapon_renderer.py", line 383, in _render_rocket_launcher
+    pygame.draw.rect(
 ValueError: invalid color (color sequence must have size 3 or 4, and each element must be an integer in the range [0, 255])
