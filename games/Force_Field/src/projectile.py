@@ -34,7 +34,7 @@ class Projectile:
         self.size = size
         self.weapon_type = weapon_type
         self.alive = True
-        
+
         # 3D Arc Physics
         self.z = z
         self.vz = vz
@@ -70,8 +70,8 @@ class Projectile:
             if w_type == 5:  # Wall Secret
                 # Mark secret hit for Game to handle (destruction/loot)
                 self.hit_secret_pos = (int(new_x), int(new_y))
-                # If it's a bomb, it stops at wall. If projectile, it dies.
-            
+                # Any projectile (including bombs) is destroyed on wall hit.
+
             self.alive = False
             return
 

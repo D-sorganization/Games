@@ -418,8 +418,6 @@ class Raycaster:
         p_sin = math.sin(player.angle)
         max_dist_sq = C.MAX_DEPTH * C.MAX_DEPTH
 
-        max_dist_sq = C.MAX_DEPTH * C.MAX_DEPTH
-
         # Merge bots and projectiles
         for bot in bots:
             if bot.removed:
@@ -463,12 +461,12 @@ class Raycaster:
 
         for entity, dist, angle, is_proj in final_sprites:
             if is_proj:
-                proj = cast("Projectile", entity)
+                proj = cast(Projectile, entity)
                 self._draw_single_projectile(
                     player, proj, dist, angle, half_fov, view_offset_y
                 )
             else:
-                bot = cast("Bot", entity)
+                bot = cast(Bot, entity)
                 self._draw_single_sprite(
                     player, bot, dist, angle, half_fov, view_offset_y
                 )
