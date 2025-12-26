@@ -26,7 +26,12 @@ if TYPE_CHECKING:
 class Raycaster:
     """Raycasting engine for 3D rendering"""
 
-    VISUAL_SCALE = 2.2  # Allow drawing outside logical bounds (glows, etc.)
+    VISUAL_SCALE = 2.2
+    # Global overscan factor for rendering: allows sprites and effects (glows, muzzle
+    # flashes, etc.) to extend beyond their logical bounds without being clipped at
+    # the screen edges. The value 2.2 was empirically tuned to provide enough extra
+    # space for the largest glow/halo effects used in the game while avoiding
+    # excessive overdraw.
 
     def __init__(self, game_map: Map):
         """Initialize raycaster"""
@@ -633,16 +638,29 @@ class Raycaster:
                 if width > 0:
                     # Adjust for visual padding in x_offset
 
-                    logical_left_edge_x = (final_w - target_width) // 2
+                    # Adjust for visual padding in x_offset
+                    # The scaled sprite is larger than the logical (unpadded) sprite
+                    # by `visual_scale`, which introduces symmetric padding on all
+                    # sides. `target_width`/`target_height` describe the logical
+                    # region; `final_w`/`final_h` describe the scaled, padded texture.
+
+                    padding_x = (final_w - target_width) // 2
 
                     # X in the scaled sprite corresponding to run_start:
-                    src_x = int(logical_left_edge_x + (run_start - sprite_ray_x))
+                    # We first shift `run_start` into a logical offset
+                    # (`run_start - sprite_ray_x`), then add the left padding of
+                    # the scaled texture to find the matching source column.
+                    src_x = int(padding_x + (run_start - sprite_ray_x))
 
                     # We want to blit a slice of width 'width' from src_x
                     area = pygame.Rect(src_x, 0, width, final_h)
 
-                    # Destination is simply run_start?
-                    # Y needs to be offset upwards because the sprite is taller
+                    # In Y:
+                    #   - Scaling adds vertical padding above and below the logical
+                    #     sprite; `logical_top_edge_y` is the distance from the top
+                    #     of the scaled sprite to the top of the logical region.
+                    #   - We subtract this padding so that the logical sprite still
+                    #     appears anchored at `sprite_y`.
                     logical_top_edge_y = (final_h - target_height) // 2
                     dst_y = int(sprite_y - logical_top_edge_y)
 
