@@ -115,7 +115,7 @@ class Game:
 
         # Fog of War
         self.visited_cells: set[tuple[int, int]] = set()
-        self.show_minimap = False
+        self.show_minimap = True
 
         # Input Manager
         self.input_manager = InputManager()
@@ -822,7 +822,7 @@ class Game:
                 damage=self.player.get_current_weapon_damage(),
                 is_player=True,
                 color=C.WEAPONS["rocket"].get("projectile_color", (255, 100, 0)),
-                size=0.3,
+                size=0.6,
                 weapon_type="rocket",
             )
             self.entity_manager.add_projectile(p)
