@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import random
 
 import pygame
@@ -51,10 +52,10 @@ class Particle:
             self.x += self.dx
             self.y += self.dy
             self.dy += self.gravity  # Apply gravity
-            
+
             # Update rotation
             self.rotation += self.rotation_speed
-            
+
             # Size animation (shrink over time)
             life_ratio = self.timer / self.max_timer
             self.size = self.initial_size * life_ratio
@@ -66,14 +67,14 @@ class Particle:
         """Get current color with alpha based on lifetime."""
         life_ratio = max(0.0, self.timer / self.max_timer)
         alpha = int(255 * life_ratio)
-        
+
         # Interpolate between initial color and fade color
         if self.fade_color != self.color:
             r = int(self.color[0] * life_ratio + self.fade_color[0] * (1 - life_ratio))
             g = int(self.color[1] * life_ratio + self.fade_color[1] * (1 - life_ratio))
             b = int(self.color[2] * life_ratio + self.fade_color[2] * (1 - life_ratio))
             return (r, g, b, alpha)
-        
+
         return (*self.color, alpha)
 
     def render(self, screen: pygame.Surface) -> None:
@@ -109,10 +110,20 @@ class ParticleSystem:
         rotation_speed: float = 0.0,
     ) -> None:
         """Add a standard particle."""
-        self.particles.append(Particle(
-            x, y, dx, dy, color, timer, size, 
-            gravity=gravity, fade_color=fade_color, rotation_speed=rotation_speed
-        ))
+        self.particles.append(
+            Particle(
+                x,
+                y,
+                dx,
+                dy,
+                color,
+                timer,
+                size,
+                gravity=gravity,
+                fade_color=fade_color,
+                rotation_speed=rotation_speed,
+            )
+        )
 
     def add_plasma_particle(
         self,
@@ -125,25 +136,30 @@ class ParticleSystem:
         """Add a plasma particle with special effects."""
         # Main plasma particle
         self.add_particle(
-            x, y, dx, dy, 
+            x,
+            y,
+            dx,
+            dy,
             color=(0, 255, 255),
             timer=timer,
             size=random.uniform(3, 6),
             gravity=0.02,
             fade_color=(0, 100, 255),
-            rotation_speed=random.uniform(-0.1, 0.1)
+            rotation_speed=random.uniform(-0.1, 0.1),
         )
-        
+
         # Add trailing sparks
         for _ in range(2):
             self.add_particle(
-                x + random.uniform(-2, 2), y + random.uniform(-2, 2),
-                dx * 0.5 + random.uniform(-1, 1), dy * 0.5 + random.uniform(-1, 1),
+                x + random.uniform(-2, 2),
+                y + random.uniform(-2, 2),
+                dx * 0.5 + random.uniform(-1, 1),
+                dy * 0.5 + random.uniform(-1, 1),
                 color=(100, 255, 255),
                 timer=timer // 2,
                 size=random.uniform(1, 3),
                 gravity=0.01,
-                fade_color=(0, 50, 100)
+                fade_color=(0, 50, 100),
             )
 
     def add_spark_burst(
@@ -159,15 +175,18 @@ class ParticleSystem:
             speed = random.uniform(2, 8)
             dx = math.cos(angle) * speed
             dy = math.sin(angle) * speed
-            
+
             self.add_particle(
-                x, y, dx, dy,
+                x,
+                y,
+                dx,
+                dy,
                 color=color,
                 timer=random.randint(20, 40),
                 size=random.uniform(1, 3),
                 gravity=0.1,
                 fade_color=(100, 50, 0),
-                rotation_speed=random.uniform(-0.2, 0.2)
+                rotation_speed=random.uniform(-0.2, 0.2),
             )
 
     def add_laser(

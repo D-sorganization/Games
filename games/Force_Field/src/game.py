@@ -646,7 +646,11 @@ class Game:
 
                     # Calculate box dimensions (same as in ui_renderer.py)
                     menu_items = [
-                        "RESUME", "SAVE GAME", "ENTER CHEAT", "CONTROLS", "QUIT TO MENU"
+                        "RESUME",
+                        "SAVE GAME",
+                        "ENTER CHEAT",
+                        "CONTROLS",
+                        "QUIT TO MENU",
                     ]
                     max_text_width = 0
                     for item in menu_items:
@@ -664,7 +668,7 @@ class Game:
                             C.SCREEN_WIDTH // 2 - box_width // 2,
                             350 + i * 60,
                             box_width,
-                            box_height
+                            box_height,
                         )
                         if rect.collidepoint(mx, my):
                             if i == 0:  # Resume
@@ -728,7 +732,11 @@ class Game:
                     # Handle slider dragging
                     mx, my = event.pos
                     menu_items = [
-                        "RESUME", "SAVE GAME", "ENTER CHEAT", "CONTROLS", "QUIT TO MENU"
+                        "RESUME",
+                        "SAVE GAME",
+                        "ENTER CHEAT",
+                        "CONTROLS",
+                        "QUIT TO MENU",
                     ]
                     slider_y = 350 + len(menu_items) * 60 + 30 + 30
                     slider_width = 200
@@ -1057,13 +1065,15 @@ class Game:
 
         # Enhanced bomb explosion visual effects
         explosion_center = (C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2)
-        
+
         # Multiple explosion rings
         for ring in range(5):
             ring_size = 50 + ring * 30
             ring_alpha = 255 - ring * 40
-            explosion_surface = pygame.Surface((ring_size * 2, ring_size * 2), pygame.SRCALPHA)
-            
+            explosion_surface = pygame.Surface(
+                (ring_size * 2, ring_size * 2), pygame.SRCALPHA
+            )
+
             # Color gradient from white to orange to red
             if ring == 0:
                 color = (255, 255, 255, ring_alpha)
@@ -1071,11 +1081,15 @@ class Game:
                 color = (255, 200, 0, ring_alpha)
             else:
                 color = (255, 100, 0, ring_alpha)
-            
-            pygame.draw.circle(explosion_surface, color, (ring_size, ring_size), ring_size)
-            self.screen.blit(explosion_surface, 
-                           (explosion_center[0] - ring_size, explosion_center[1] - ring_size))
-        
+
+            pygame.draw.circle(
+                explosion_surface, color, (ring_size, ring_size), ring_size
+            )
+            self.screen.blit(
+                explosion_surface,
+                (explosion_center[0] - ring_size, explosion_center[1] - ring_size),
+            )
+
         # Add screen shake effect by adding particles
         for _ in range(50):
             self.particle_system.add_particle(
@@ -1087,7 +1101,7 @@ class Game:
                 timer=60,
                 size=random.randint(4, 12),
                 gravity=0.1,
-                fade_color=(100, 0, 0)
+                fade_color=(100, 0, 0),
             )
 
         self.damage_texts.append(
@@ -1228,45 +1242,45 @@ class Game:
     def execute_melee_attack(self) -> None:
         """Execute melee attack - wide sweeping damage in front of player"""
         assert self.player is not None
-        
+
         # Melee attack parameters
         melee_range = 3.0  # Attack range
         melee_damage = 75  # High damage for melee
         melee_arc = math.pi / 3  # 60-degree arc
-        
+
         # Create visual sweep effect
         self.create_melee_sweep_effect()
-        
+
         # Play melee sound
         try:
             self.sound_manager.play_sound("shoot_shotgun")  # Use shotgun sound for now
         except Exception:
             pass
-        
+
         # Check for enemies in melee range and arc
         player_x, player_y = self.player.x, self.player.y
         player_angle = self.player.angle
-        
+
         hits = 0
         for bot in self.bots:
             if not bot.alive:
                 continue
-                
+
             # Calculate distance and angle to bot
             dx = bot.x - player_x
             dy = bot.y - player_y
             distance = math.sqrt(dx * dx + dy * dy)
-            
+
             if distance <= melee_range:
                 # Check if bot is within attack arc
                 bot_angle = math.atan2(dy, dx)
                 angle_diff = abs(bot_angle - player_angle)
-                
+
                 # Normalize angle difference
                 while angle_diff > math.pi:
                     angle_diff -= 2 * math.pi
                 angle_diff = abs(angle_diff)
-                
+
                 if angle_diff <= melee_arc / 2:
                     # Bot is in range and arc - deal damage
                     if bot.take_damage(melee_damage):
@@ -1275,9 +1289,9 @@ class Game:
                         self.kill_combo_count += 1
                         self.kill_combo_timer = 180
                         self.last_death_pos = (bot.x, bot.y)
-                    
+
                     hits += 1
-                    
+
                     # Add blood particles
                     for _ in range(5):
                         self.particle_system.add_particle(
@@ -1289,7 +1303,7 @@ class Game:
                             timer=30,
                             size=random.randint(2, 4),
                         )
-        
+
         # Add hit feedback message
         if hits > 0:
             if hits == 1:
@@ -1300,28 +1314,27 @@ class Game:
     def create_melee_sweep_effect(self) -> None:
         """Create enhanced visual sweep effect for melee attack"""
         assert self.player is not None
-        
+
         # Create dramatic arc particles for sweep effect
         player_angle = self.player.angle
         arc_start = player_angle - math.pi / 4  # 45 degrees left
-        arc_end = player_angle + math.pi / 4    # 45 degrees right
-        
+        arc_end = player_angle + math.pi / 4  # 45 degrees right
+
         # Create multiple layers of sweep particles for depth
         for layer in range(3):
             layer_distance = 80 + layer * 40
-            layer_alpha = 255 - layer * 60
-            
+
             # Create sweep particles in arc
             for i in range(30):
                 t = i / 29.0  # 0 to 1
                 angle = arc_start + t * (arc_end - arc_start)
-                
+
                 # Distance from player (screen center)
                 distance = layer_distance + random.randint(-20, 20)
-                
+
                 x = C.SCREEN_WIDTH // 2 + math.cos(angle) * distance
                 y = C.SCREEN_HEIGHT // 2 + math.sin(angle) * distance
-                
+
                 # Create sweep particle with varying colors
                 if layer == 0:  # Inner layer - bright white/yellow
                     color = (255, 255, 200)
@@ -1329,18 +1342,19 @@ class Game:
                     color = (255, 150, 0)
                 else:  # Outer layer - red
                     color = (255, 50, 0)
-                
+
                 self.particle_system.add_particle(
-                    x=x, y=y,
+                    x=x,
+                    y=y,
                     dx=math.cos(angle) * 8,
                     dy=math.sin(angle) * 8,
                     color=color,
                     timer=20 - layer * 5,
                     size=4 + layer,
                     gravity=0.05,
-                    fade_color=(100, 0, 0)
+                    fade_color=(100, 0, 0),
                 )
-        
+
         # Add central impact burst
         for _ in range(15):
             angle = random.uniform(0, 2 * math.pi)
@@ -1354,7 +1368,7 @@ class Game:
                 timer=25,
                 size=random.randint(2, 6),
                 gravity=0.1,
-                fade_color=(255, 100, 0)
+                fade_color=(255, 100, 0),
             )
 
     def update_game(self) -> None:
@@ -1671,10 +1685,10 @@ class Game:
                         "GODLIKE!",
                         "BOOM BABY!",
                     ]
-                    
+
                     phrase = random.choice(phrases)
                     self.sound_manager.play_sound("phrase_cool")  # Use existing sound
-                    
+
                     # Enhanced message display with effects
                     self.damage_texts.append(
                         {

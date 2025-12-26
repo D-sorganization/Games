@@ -463,25 +463,36 @@ class UIRenderer:
             # Check for special effects
             is_large = t.get("size") == "large"
             has_glow = t.get("effect") == "glow"
-            
+
             # Choose font based on size
             font = self.subtitle_font if is_large else self.small_font
-            
+
             # Create text surface
             text_surf = font.render(t["text"], True, t["color"])
-            
+
             # Add glow effect for special messages
             if has_glow:
                 # Create glow surface
                 glow_surf = font.render(t["text"], True, (255, 255, 255))
-                
+
                 # Draw glow in multiple positions for blur effect
-                glow_positions = [(-2, -2), (-2, 2), (2, -2), (2, 2), (-1, 0), (1, 0), (0, -1), (0, 1)]
+                glow_positions = [
+                    (-2, -2),
+                    (-2, 2),
+                    (2, -2),
+                    (2, 2),
+                    (-1, 0),
+                    (1, 0),
+                    (0, -1),
+                    (0, 1),
+                ]
                 for gx, gy in glow_positions:
-                    glow_rect = glow_surf.get_rect(center=(int(t["x"]) + gx, int(t["y"]) + gy))
+                    glow_rect = glow_surf.get_rect(
+                        center=(int(t["x"]) + gx, int(t["y"]) + gy)
+                    )
                     glow_surf.set_alpha(50)  # Semi-transparent glow
                     self.screen.blit(glow_surf, glow_rect)
-            
+
             # Draw main text
             rect = text_surf.get_rect(center=(int(t["x"]), int(t["y"])))
             self.screen.blit(text_surf, rect)
@@ -599,7 +610,7 @@ class UIRenderer:
             bg_rect.width = max(min_width, input_rect.width + 80)
             bg_rect.height = input_rect.height + 30
             bg_rect.center = input_rect.center
-            
+
             pygame.draw.rect(self.screen, C.DARK_GRAY, bg_rect)
             pygame.draw.rect(self.screen, C.CYAN, bg_rect, 2)
 
@@ -621,7 +632,7 @@ class UIRenderer:
         for item in menu_items:
             text_surf = self.subtitle_font.render(item, True, C.WHITE)
             max_text_width = max(max_text_width, text_surf.get_width())
-        
+
         # Add padding to ensure text fits comfortably
         box_width = max_text_width + 60
         box_height = 50
@@ -632,7 +643,7 @@ class UIRenderer:
                 C.SCREEN_WIDTH // 2 - box_width // 2,
                 350 + i * 60,
                 box_width,
-                box_height
+                box_height,
             )
             if rect.collidepoint(mouse_pos):
                 color = C.YELLOW

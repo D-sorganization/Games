@@ -242,8 +242,6 @@ class Player:
         """Get range of current weapon"""
         return int(C.WEAPONS[self.current_weapon]["range"])
 
-
-
     def activate_bomb(self) -> bool:
         """Try to drop a bomb"""
         if self.bomb_cooldown <= 0 and self.bombs > 0:
@@ -289,7 +287,7 @@ class Player:
         # Melee attack timers
         if self.melee_cooldown > 0:
             self.melee_cooldown -= 1
-        
+
         if self.melee_timer > 0:
             self.melee_timer -= 1
             if self.melee_timer <= 0:
@@ -419,7 +417,7 @@ class Player:
         """Take damage and return True if player died"""
         if self.invincible or not self.alive:
             return False
-            
+
         self.health -= damage
         if self.health <= 0:
             self.health = 0
