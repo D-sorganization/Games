@@ -1178,6 +1178,12 @@ class Game:
 
         shield_active = self.input_manager.is_action_pressed("shield")
 
+        # Keyboard Continuous Fire (for auto weapons like Minigun)
+        if not self.paused and self.player and self.player.alive:
+            if self.input_manager.is_action_pressed("shoot"):
+                if self.player.shoot():
+                    self.fire_weapon()
+
         if self.joystick and not self.paused and self.player and self.player.alive:
             pass  # Joystick handled below
 

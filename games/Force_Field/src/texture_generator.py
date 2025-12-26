@@ -36,80 +36,147 @@ class TextureGenerator:
         color_mortar: tuple[int, int, int],
     ) -> pygame.Surface:
         """Generates a brick pattern."""
-        surface = TextureGenerator.generate_noise(width, height, color_brick, 20)
+        surface = pygame.Surface((width, height))
+        surface.fill(color_brick)
         arr = pygame.surfarray.pixels3d(surface)
 
+        # Subtle noise for texture (reduced variation)
+        noise = np.random.randint(-15, 15, (width, height, 3))
+        # Ensure we don't overflow uint8 wrapping
+        base_arr = np.array(arr, dtype=np.int16)
+        base_arr += noise
+        np.clip(base_arr, 0, 255, out=base_arr)
+        arr[:] = base_arr.astype(np.uint8)
+
         # Brick dimensions
-        brick_w = width // 4
+        brick_w = width // 2
         brick_h = height // 4
         mortar_size = 2
 
-        for y in range(0, height):
+        for y in range(height):
             row = y // brick_h
             offset = (brick_w // 2) if row % 2 == 1 else 0
 
-            for x in range(0, width):
-                # Mortar horizontal
-                if y % brick_h < mortar_size:
-                    arr[x, y] = color_mortar
-                    continue
+            # Mortar horizontal
+            if y % brick_h < mortar_size:
+                arr[:, y] = color_mortar
+                continue
 
-                # Mortar vertical
+            # Mortar vertical
+            for x in range(width):
                 if (x + offset) % brick_w < mortar_size:
                     arr[x, y] = color_mortar
-                    continue
 
         del arr  # Unlock surface
         return surface
 
     @staticmethod
     def generate_stone(width: int, height: int) -> pygame.Surface:
-        """Generates a stone/cobble pattern."""
-        return TextureGenerator.generate_noise(width, height, (100, 100, 100), 40)
+        """Generates a large slate blocks pattern."""
+        surface = pygame.Surface((width, height))
+        base_shade = 80
+        surface.fill((base_shade, base_shade, base_shade))
+        arr = pygame.surfarray.pixels3d(surface)
+
+        # Large blocky noise
+        block_size = 16
+        for bx in range(0, width, block_size):
+            for by in range(0, height, block_size):
+                shade = random.randint(-20, 20)
+                val = max(0, base_shade + shade)
+                color = (val, val, val)
+
+                # Safe slice assignment
+                x_end = min(width, bx + block_size)
+                y_end = min(height, by + block_size)
+                arr[bx:x_end, by:y_end] = color
+
+        # Add some cracks/variation
+        for _ in range(10):
+            x = random.randint(0, width - 1)
+            y = random.randint(0, height - 1)
+            # Safe slice for cracks
+            x_end = min(width, x + 2)
+            y_end = min(height, y + 6)
+            arr[x:x_end, y:y_end] = (40, 40, 40)
+
+        del arr
+        return surface
 
     @staticmethod
     def generate_metal(width: int, height: int) -> pygame.Surface:
-        """Generates a metal panel pattern."""
-        surface = TextureGenerator.generate_noise(width, height, (150, 150, 160), 10)
+        """Generates a metal panel pattern with rivets."""
+        surface = pygame.Surface((width, height))
+        surface.fill((140, 140, 150))
         arr = pygame.surfarray.pixels3d(surface)
 
-        # Draw some panel lines/rivets
-        color_line = (100, 100, 110)
+        # Work with int16 to handle negative shading safely
+        base_arr = np.array(arr, dtype=np.int16)
 
-        # Border
+        # Horizontal streaks (brushed)
+        for y in range(height):
+            shade = random.randint(-10, 10)
+            base_arr[:, y] += shade
+
+        np.clip(base_arr, 0, 255, out=base_arr)
+        arr[:] = base_arr.astype(np.uint8)
+
+        # Border/Panel lines
+        color_line = (80, 80, 90)
         arr[0:2, :] = color_line
         arr[width - 2 : width, :] = color_line
         arr[:, 0:2] = color_line
         arr[:, height - 2 : height] = color_line
 
-        # Cross
-        arr[width // 2 - 1 : width // 2 + 1, :] = color_line
-        arr[:, height // 2 - 1 : height // 2 + 1] = color_line
+        # Rivets
+        rivet_color = (180, 180, 190)
+        rivet_shadow = (50, 50, 60)
+        rivets = [(4, 4), (width - 6, 4), (4, height - 6), (width - 6, height - 6)]
+        for rx, ry in rivets:
+            # Safe slice
+            rx_end = min(width, rx + 2)
+            ry_end = min(height, ry + 2)
+            arr[rx:rx_end, ry:ry_end] = rivet_color
+            if rx + 2 < width and ry + 2 < height:
+                arr[rx + 2, ry + 2] = rivet_shadow
 
         del arr
         return surface
 
     @staticmethod
     def generate_tech(width: int, height: int) -> pygame.Surface:
-        """Generates a sci-fi tech pattern."""
-        surface = TextureGenerator.generate_noise(width, height, (20, 20, 40), 5)
+        """Generates a sci-fi tech pattern with clean grid and glow."""
+        surface = pygame.Surface((width, height))
+        surface.fill((20, 20, 30))
         arr = pygame.surfarray.pixels3d(surface)
 
-        color_glow = (0, 200, 255)
-        color_dark = (10, 10, 20)
+        color_glow = (0, 255, 255)
+        color_grid = (40, 40, 60)
 
-        # Grid
+        # Grid lines
         step = 16
-        for x in range(0, width, step):
-            arr[x : x + 1, :] = color_dark
-        for y in range(0, height, step):
-            arr[:, y : y + 1] = color_dark
+        arr[::step, :] = color_grid
+        arr[:, ::step] = color_grid
 
-        # Random glowing bits
-        for _ in range(5):
-            rx = random.randint(0, (width // step) - 1) * step
-            ry = random.randint(0, (height // step) - 1) * step
-            arr[rx + 2 : rx + step - 2, ry + 2 : ry + step - 2] = color_glow
+        # Random glowing rectangular panels
+        for _ in range(2):
+            w_rect = random.randint(4, 12)
+            h_rect = random.randint(4, 20)
+            x = random.randint(2, width - w_rect - 2)
+            y = random.randint(2, height - h_rect - 2)
+
+            # Safe bounds
+            x_end = min(width, x + w_rect)
+            y_end = min(height, y + h_rect)
+
+            # Fill rect
+            arr[x:x_end, y:y_end] = (30, 30, 50)
+
+            # Border glow (with safe clipping)
+            arr[x:x_end, y] = color_glow  # Top
+            arr[x:x_end, min(height - 1, y_end - 1)] = color_glow  # Bottom
+            arr[x, y:y_end] = color_glow  # Left
+            arr[min(width - 1, x_end - 1), y:y_end] = color_glow  # Right
 
         del arr
         return surface

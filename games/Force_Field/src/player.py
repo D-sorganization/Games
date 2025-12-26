@@ -166,12 +166,14 @@ class Player:
             return False
 
         # Minigun Spin-up logic
+        # If we are here, we are attempting to shoot.
         if self.current_weapon == "minigun":
             spin_up = int(weapon_data.get("spin_up_time", 30))
             if w_state["spin_timer"] < spin_up:
                 w_state["spin_timer"] += 2  # Charge up
                 return False  # Not firing yet
         else:
+            # For non-minigun weapons, ensure spin is 0 (just in case)
             w_state["spin_timer"] = 0
 
         self.shooting = True
@@ -337,6 +339,13 @@ class Player:
                 elif w_state["heat"] > 0:
                     w_state["heat"] -= C.WEAPONS[w_name].get("cooling_rate", 0.01)
                     w_state["heat"] = max(0.0, w_state["heat"])
+
+            # Decay Minigun Spin
+            if w_name == "minigun":
+                # Decay spin if not actively shooting.
+                # Simplify: w_state["spin_timer"] = max(0, w_state["spin_timer"] - 1)
+                if w_state["spin_timer"] > 0:
+                    w_state["spin_timer"] = max(0, w_state["spin_timer"] - 1)
 
     def can_secondary_fire(self) -> bool:
         """Check if secondary fire is ready"""
