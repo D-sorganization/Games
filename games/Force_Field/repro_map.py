@@ -7,7 +7,7 @@ sys.path.insert(0, os.getcwd())
 from src.map import Map
 
 
-def test_map_size():
+def test_map_size() -> None:
     print("Testing Map Generation for Small Areas...")
     small_maps = 0
     total = 100

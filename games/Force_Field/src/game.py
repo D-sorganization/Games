@@ -1076,14 +1076,14 @@ class Game:
 
             # Color gradient from white to orange to red
             if ring == 0:
-                color = (255, 255, 255, ring_alpha)
+                ring_color: tuple[int, int, int, int] = (255, 255, 255, ring_alpha)
             elif ring <= 2:
-                color = (255, 200, 0, ring_alpha)
+                ring_color = (255, 200, 0, ring_alpha)
             else:
-                color = (255, 100, 0, ring_alpha)
+                ring_color = (255, 100, 0, ring_alpha)
 
             pygame.draw.circle(
-                explosion_surface, color, (ring_size, ring_size), ring_size
+                explosion_surface, ring_color, (ring_size, ring_size), ring_size
             )
             self.screen.blit(
                 explosion_surface,

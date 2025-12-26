@@ -138,7 +138,7 @@ class GameRenderer:
                     rotation = time_ms * 0.002  # Rotation effect
 
                     # Multiple plasma rings with different colors and sizes
-                    rings = [
+                    rings: list[dict[str, Any]] = [
                         {
                             "size": base_size * 0.8 * pulse1,
                             "color": (0, 255, 255),
