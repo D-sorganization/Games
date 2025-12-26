@@ -379,7 +379,7 @@ class WeaponRenderer:
             vent_x = cx - 50 + i * 25
             vent_y = cy - 160
             vent_heat = max(0, min(255, int(100 + 155 * math.sin(time_ms * 0.01 + i))))
-            vent_color = (vent_heat, vent_heat // 3, 0)
+            vent_color = (int(vent_heat), int(vent_heat // 3), 0)
             pygame.draw.rect(
                 self.screen, vent_color, (vent_x, vent_y, 8, 20), border_radius=4
             )

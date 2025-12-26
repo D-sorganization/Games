@@ -60,23 +60,32 @@ class UIRenderer:
         self.title_drips: list[dict[str, Any]] = []
 
     def _init_fonts(self) -> None:
-        """Initialize fonts"""
+        """Initialize fonts with modern gaming aesthetics"""
         try:
-            self.title_font = pygame.font.SysFont("impact", 100)
-            self.font = pygame.font.SysFont("franklingothicmedium", 40)
-            self.small_font = pygame.font.SysFont("franklingothicmedium", 28)
-            self.tiny_font = pygame.font.SysFont("consolas", 20)
-            self.subtitle_font = pygame.font.SysFont("georgia", 36)
-            # 'chiller' is a non-standard font used for intro slides.
-            # If unavailable, it falls back to title_font in the exception handler.
-            self.chiller_font = pygame.font.SysFont("chiller", 70)
+            # Try modern gaming fonts first
+            self.title_font = pygame.font.SysFont("orbitron", 100, bold=True)
+            self.font = pygame.font.SysFont("exo", 40, bold=True)
+            self.small_font = pygame.font.SysFont("exo", 28, bold=True)
+            self.tiny_font = pygame.font.SysFont("rajdhani", 20, bold=True)
+            self.subtitle_font = pygame.font.SysFont("orbitron", 36, bold=True)
+            self.chiller_font = pygame.font.SysFont("orbitron", 70, bold=True)
         except Exception:  # noqa: BLE001
-            self.title_font = pygame.font.Font(None, 80)
-            self.font = pygame.font.Font(None, 48)
-            self.small_font = pygame.font.Font(None, 32)
-            self.tiny_font = pygame.font.Font(None, 24)
-            self.subtitle_font = pygame.font.Font(None, 40)
-            self.chiller_font = self.title_font
+            # Fallback to available system fonts with gaming feel
+            try:
+                self.title_font = pygame.font.SysFont("impact", 100, bold=True)
+                self.font = pygame.font.SysFont("arial", 40, bold=True)
+                self.small_font = pygame.font.SysFont("arial", 28, bold=True)
+                self.tiny_font = pygame.font.SysFont("courier", 20, bold=True)
+                self.subtitle_font = pygame.font.SysFont("impact", 36, bold=True)
+                self.chiller_font = pygame.font.SysFont("impact", 70, bold=True)
+            except Exception:  # noqa: BLE001
+                # Final fallback to default fonts
+                self.title_font = pygame.font.Font(None, 100)
+                self.font = pygame.font.Font(None, 48)
+                self.small_font = pygame.font.Font(None, 32)
+                self.tiny_font = pygame.font.Font(None, 24)
+                self.subtitle_font = pygame.font.Font(None, 40)
+                self.chiller_font = pygame.font.Font(None, 80)
 
         # Aliases for compatibility with recent layout changes
         self.retro_title_font = self.title_font
@@ -102,7 +111,7 @@ class UIRenderer:
             if os.path.exists(willy_path):
                 img = pygame.image.load(willy_path)
                 img = pygame.transform.rotate(img, -90)
-                # Reduced max height to prevents text overlap
+                # Reduced max height to prevent text overlap
                 # on smaller screens (600px height)
                 scale = min(350 / img.get_height(), 800 / img.get_width())
                 if scale < 1:
