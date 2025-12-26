@@ -102,7 +102,9 @@ class UIRenderer:
             if os.path.exists(willy_path):
                 img = pygame.image.load(willy_path)
                 img = pygame.transform.rotate(img, -90)
-                scale = min(500 / img.get_height(), 800 / img.get_width())
+                # Reduced max height to prevents text overlap
+                # on smaller screens (600px height)
+                scale = min(350 / img.get_height(), 800 / img.get_width())
                 if scale < 1:
                     new_size = (
                         int(img.get_width() * scale),
@@ -460,9 +462,8 @@ class UIRenderer:
             and player.shield_recharge_delay <= 0
         ):
             ready_text = self.tiny_font.render("SHIELD READY", True, C.CYAN)
-            # Position above stamina bar (which is at approx H-100)
-            # Let's put it clearly above
-            self.screen.blit(ready_text, (20, C.SCREEN_HEIGHT - 120))
+            # Position above stamina bar (which ends at ~H-130)
+            self.screen.blit(ready_text, (20, C.SCREEN_HEIGHT - 160))
 
     def _render_bar(
         self,
