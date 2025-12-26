@@ -31,7 +31,7 @@ def create_title_image() -> None:
         color_val = max(20, 100 - off * 10)
         shadow_color = (0, 0, color_val)  # Dark Blue/Black fade
         render = font.render(text, True, shadow_color)
-        rect = render.get_rect(center=(width//2 + off, height//2 + off))
+        rect = render.get_rect(center=(width // 2 + off, height // 2 + off))
         surface.blit(render, rect)
 
     # Blue outline
@@ -40,12 +40,12 @@ def create_title_image() -> None:
             if offx == 0 and offy == 0:
                 continue
             render = font.render(text, True, BLUE)
-            rect = render.get_rect(center=(width//2 + offx, height//2 + offy))
+            rect = render.get_rect(center=(width // 2 + offx, height // 2 + offy))
             surface.blit(render, rect)
 
     # Main text
     render = font.render(text, True, YELLOW)
-    rect = render.get_rect(center=(width//2, height//2))
+    rect = render.get_rect(center=(width // 2, height // 2))
     surface.blit(render, rect)
 
     # Add some "sparkles"
