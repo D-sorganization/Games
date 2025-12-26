@@ -246,17 +246,15 @@ class UIRenderer:
         self.start_button.draw(self.screen, self.font)
 
         instructions = [
-            "",
-            "",
-            "WASD: Move | Shift: Sprint | Mouse: Look | 1-4: Weapons",
+            "WASD: Move | Shift: Sprint | Mouse: Look | 1-7: Weapons",
             "Ctrl: Shoot | Z: Zoom | F: Bomb | Space: Shield",
         ]
-        y = C.SCREEN_HEIGHT - 260
+        y = C.SCREEN_HEIGHT - 200  # Position above the start button
         for line in instructions:
             text = self.tiny_font.render(line, True, C.RED)
             text_rect = text.get_rect(center=(C.SCREEN_WIDTH // 2, y))
             self.screen.blit(text, text_rect)
-            y += 30
+            y += 25
 
         pygame.display.flip()
 
