@@ -1,9 +1,11 @@
 Traceback (most recent call last):
-  File "C:\Users\diete\Repositories\Games\games\Force_Field\src\game.py", line 1950, in run
-    self.update_game()
-  File "C:\Users\diete\Repositories\Games\games\Force_Field\src\game.py", line 1574, in update_game
-    self.player.update()
-  File "C:\Users\diete\Repositories\Games\games\Force_Field\src\player.py", line 263, in update
-    self.sway_timer += 1
-    ^^^^^^^^^^^^^^^
-AttributeError: 'Player' object has no attribute 'sway_timer'. Did you mean: 'shoot_timer'?
+  File "C:\Users\diete\Repositories\Games\games\Force_Field\src\game.py", line 1970, in run
+    self.renderer.render_game(self)
+  File "C:\Users\diete\Repositories\Games\games\Force_Field\src\renderer.py", line 45, in render_game
+    game.raycaster.render_3d(
+  File "C:\Users\diete\Repositories\Games\games\Force_Field\src\raycaster.py", line 394, in render_3d
+    self._render_sprites(player, bots, projectiles, half_fov, view_offset_y)
+  File "C:\Users\diete\Repositories\Games\games\Force_Field\src\raycaster.py", line 469, in _render_sprites
+    bot = cast(Bot, entity)
+               ^^^
+NameError: name 'Bot' is not defined. Did you mean: 'bot'?
