@@ -415,7 +415,7 @@ class Player:
 
     def take_damage(self, damage: int) -> bool:
         """Take damage and return True if player died"""
-        if self.invincible or not self.alive:
+        if self.invincible or not self.alive or self.god_mode or self.shield_active:
             return False
 
         self.health -= damage

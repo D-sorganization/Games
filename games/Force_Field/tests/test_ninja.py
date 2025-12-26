@@ -18,6 +18,7 @@ class TestNinja(unittest.TestCase):
         """Test that ninja attacks when close."""
         ninja = Bot(15.0, 15.0, 1, enemy_type="ninja")
         player = Player(15.5, 15.0, 0.0)  # Very close (0.5 distance)
+        player.invincible = False
 
         initial_health = player.health
 
