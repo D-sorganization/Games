@@ -8,7 +8,9 @@ from typing import TYPE_CHECKING, Any, cast
 import pygame
 
 from . import constants as C  # noqa: N812
+from .bot import Bot
 from .bot_renderer import BotRenderer
+from .projectile import Projectile
 from .texture_generator import TextureGenerator
 
 # Sprite Rendering thresholds
@@ -16,11 +18,9 @@ STRIP_VISIBILITY_THRESHOLD = 0.3
 LARGE_SPRITE_THRESHOLD = 200
 
 if TYPE_CHECKING:
-    from .bot import Bot
     from .custom_types import EnemyData
     from .map import Map
     from .player import Player
-    from .projectile import Projectile
 
 
 class Raycaster:
