@@ -1192,6 +1192,8 @@ class Game:
                 if w_data.get("automatic", False):
                     if self.player.shoot():
                         self.fire_weapon()
+        if self.joystick and not self.paused and self.player and self.player.alive:
+            axis_x = self.joystick.get_axis(0)
 
         if self.joystick and not self.paused and self.player and self.player.alive:
             axis_x = self.joystick.get_axis(0)
