@@ -101,12 +101,16 @@ class TextureGenerator:
         surface.fill((140, 140, 150))
         arr = pygame.surfarray.pixels3d(surface)
 
+        # Work with int16 to handle negative shading safely
+        base_arr = np.array(arr, dtype=np.int16)
+
         # Horizontal streaks (brushed)
         for y in range(height):
             shade = random.randint(-10, 10)
-            arr[:, y] += shade
+            base_arr[:, y] += shade
 
-        np.clip(arr, 0, 255, out=arr)
+        np.clip(base_arr, 0, 255, out=base_arr)
+        arr[:] = base_arr.astype(np.uint8)
 
         # Border/Panel lines
         color_line = (80, 80, 90)
