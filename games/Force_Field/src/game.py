@@ -63,6 +63,12 @@ class Game:
         self.selected_lives = C.DEFAULT_LIVES
         self.selected_start_level = C.DEFAULT_START_LEVEL
 
+        # Movement speed multiplier (1.0 = default, 0.5 = half, 2.0 = double speed)
+        self.movement_speed_multiplier = 1.0
+
+        # Slider interaction state
+        self.dragging_speed_slider = False
+
         # Combo & Atmosphere
         self.kill_combo_count = 0
         self.kill_combo_timer = 0
@@ -612,6 +618,10 @@ class Game:
                     elif self.input_manager.is_action_just_pressed(event, "zoom"):
                         assert self.player is not None
                         self.player.zoomed = not self.player.zoomed
+                    elif event.key == pygame.K_q:  # Melee attack
+                        assert self.player is not None
+                        if self.player.melee_attack():
+                            self.execute_melee_attack()
                     elif self.input_manager.is_action_just_pressed(event, "bomb"):
                         assert self.player is not None
                         if self.player.activate_bomb():
@@ -631,32 +641,82 @@ class Game:
 
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if self.paused:
-                    # Handle Pause Menu Clicks
+                    # Handle Pause Menu Clicks - use same sizing logic as UI renderer
                     mx, my = event.pos
-                    if 500 <= mx <= 700:
-                        if 350 <= my <= 400:  # Resume
-                            self.paused = False
-                            self.sound_manager.unpause_all()
-                            if self.pause_start_time > 0:
-                                now = pygame.time.get_ticks()
-                                pause_duration = now - self.pause_start_time
-                                self.total_paused_time += pause_duration
-                                self.pause_start_time = 0
-                            pygame.mouse.set_visible(False)
-                            pygame.event.set_grab(True)
-                        elif 410 <= my <= 460:  # Save
-                            self.save_game()
-                            self.add_message("GAME SAVED", C.GREEN)
-                        elif 470 <= my <= 520:  # Enter Cheat
-                            self.cheat_mode_active = True
-                            self.current_cheat_input = ""
-                        elif 530 <= my <= 580:  # Controls
-                            self.state = "key_config"
-                            self.binding_action = None  # Initialize binding state
-                        elif 590 <= my <= 640:  # Quit to Menu
-                            self.state = "menu"
-                            self.paused = False
-                            self.sound_manager.start_music("music_loop")
+
+                    # Calculate box dimensions (same as in ui_renderer.py)
+                    menu_items = [
+                        "RESUME",
+                        "SAVE GAME",
+                        "ENTER CHEAT",
+                        "CONTROLS",
+                        "QUIT TO MENU",
+                    ]
+                    max_text_width = 0
+                    for item in menu_items:
+                        text_surf = self.ui_renderer.subtitle_font.render(
+                            item, True, C.WHITE
+                        )
+                        max_text_width = max(max_text_width, text_surf.get_width())
+
+                    box_width = max_text_width + 60
+                    box_height = 50
+
+                    # Check each menu item
+                    for i, _ in enumerate(menu_items):
+                        rect = pygame.Rect(
+                            C.SCREEN_WIDTH // 2 - box_width // 2,
+                            350 + i * 60,
+                            box_width,
+                            box_height,
+                        )
+                        if rect.collidepoint(mx, my):
+                            if i == 0:  # Resume
+                                self.paused = False
+                                self.sound_manager.unpause_all()
+                                if self.pause_start_time > 0:
+                                    now = pygame.time.get_ticks()
+                                    pause_duration = now - self.pause_start_time
+                                    self.total_paused_time += pause_duration
+                                    self.pause_start_time = 0
+                                pygame.mouse.set_visible(False)
+                                pygame.event.set_grab(True)
+                            elif i == 1:  # Save
+                                self.save_game()
+                                self.add_message("GAME SAVED", C.GREEN)
+                            elif i == 2:  # Enter Cheat
+                                self.cheat_mode_active = True
+                                self.current_cheat_input = ""
+                            elif i == 3:  # Controls
+                                self.state = "key_config"
+                                self.binding_action = None  # Initialize binding state
+                            elif i == 4:  # Quit to Menu
+                                self.state = "menu"
+                                self.paused = False
+                                self.sound_manager.start_music("music_loop")
+                            break
+
+                    # Check speed slider interaction
+                    # Position of slider bar
+                    slider_y = 350 + len(menu_items) * 60 + 30 + 30
+                    slider_width = 200
+                    slider_height = 10
+                    slider_x = C.SCREEN_WIDTH // 2 - slider_width // 2
+                    slider_rect = pygame.Rect(
+                        slider_x, slider_y, slider_width, slider_height + 10
+                    )
+
+                    if slider_rect.collidepoint(mx, my):
+                        # Calculate new speed based on click position
+                        relative_x = mx - slider_x
+                        speed_ratio = max(0.0, min(1.0, relative_x / slider_width))
+                        # Map to 0.5-2.0 range
+                        self.movement_speed_multiplier = 0.5 + speed_ratio * 1.5
+                        self.dragging_speed_slider = True
+
+            elif event.type == pygame.MOUSEBUTTONUP:
+                if event.button == 1:  # Left mouse button
+                    self.dragging_speed_slider = False
 
                 elif not self.cheat_mode_active:
                     assert self.player is not None
@@ -667,10 +727,30 @@ class Game:
                         if self.player.fire_secondary():
                             self.fire_weapon(is_secondary=True)
 
-            elif event.type == pygame.MOUSEMOTION and not self.paused:
-                assert self.player is not None
-                self.player.rotate(event.rel[0] * C.PLAYER_ROT_SPEED * C.SENSITIVITY_X)
-                self.player.pitch_view(-event.rel[1] * C.PLAYER_ROT_SPEED * 200)
+            elif event.type == pygame.MOUSEMOTION:
+                if self.paused and self.dragging_speed_slider:
+                    # Handle slider dragging
+                    mx, my = event.pos
+                    menu_items = [
+                        "RESUME",
+                        "SAVE GAME",
+                        "ENTER CHEAT",
+                        "CONTROLS",
+                        "QUIT TO MENU",
+                    ]
+                    slider_y = 350 + len(menu_items) * 60 + 30 + 30
+                    slider_width = 200
+                    slider_x = C.SCREEN_WIDTH // 2 - slider_width // 2
+
+                    relative_x = mx - slider_x
+                    speed_ratio = max(0.0, min(1.0, relative_x / slider_width))
+                    self.movement_speed_multiplier = 0.5 + speed_ratio * 1.5
+                elif not self.paused:
+                    assert self.player is not None
+                    self.player.rotate(
+                        event.rel[0] * C.PLAYER_ROT_SPEED * C.SENSITIVITY_X
+                    )
+                    self.player.pitch_view(-event.rel[1] * C.PLAYER_ROT_SPEED * 200)
 
     def save_game(self, filename: str = "savegame.txt") -> None:
         """Save game state to file.
@@ -983,6 +1063,47 @@ class Game:
         except BaseException:
             logger.exception("Bomb Audio Failed")
 
+        # Enhanced bomb explosion visual effects
+        explosion_center = (C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2)
+
+        # Multiple explosion rings
+        for ring in range(5):
+            ring_size = 50 + ring * 30
+            ring_alpha = 255 - ring * 40
+            explosion_surface = pygame.Surface(
+                (ring_size * 2, ring_size * 2), pygame.SRCALPHA
+            )
+
+            # Color gradient from white to orange to red
+            if ring == 0:
+                ring_color: tuple[int, int, int, int] = (255, 255, 255, ring_alpha)
+            elif ring <= 2:
+                ring_color = (255, 200, 0, ring_alpha)
+            else:
+                ring_color = (255, 100, 0, ring_alpha)
+
+            pygame.draw.circle(
+                explosion_surface, ring_color, (ring_size, ring_size), ring_size
+            )
+            self.screen.blit(
+                explosion_surface,
+                (explosion_center[0] - ring_size, explosion_center[1] - ring_size),
+            )
+
+        # Add screen shake effect by adding particles
+        for _ in range(50):
+            self.particle_system.add_particle(
+                x=explosion_center[0] + random.randint(-100, 100),
+                y=explosion_center[1] + random.randint(-100, 100),
+                dx=random.uniform(-15, 15),
+                dy=random.uniform(-15, 15),
+                color=(255, random.randint(100, 255), 0),
+                timer=60,
+                size=random.randint(4, 12),
+                gravity=0.1,
+                fade_color=(100, 0, 0),
+            )
+
         self.damage_texts.append(
             {
                 "x": C.SCREEN_WIDTH // 2,
@@ -1118,6 +1239,138 @@ class Game:
                     self.kill_combo_timer = 180
                     self.last_death_pos = (bot.x, bot.y)
 
+    def execute_melee_attack(self) -> None:
+        """Execute melee attack - wide sweeping damage in front of player"""
+        assert self.player is not None
+
+        # Melee attack parameters
+        melee_range = 3.0  # Attack range
+        melee_damage = 75  # High damage for melee
+        melee_arc = math.pi / 3  # 60-degree arc
+
+        # Create visual sweep effect
+        self.create_melee_sweep_effect()
+
+        # Play melee sound
+        try:
+            self.sound_manager.play_sound("shoot_shotgun")  # Use shotgun sound for now
+        except Exception:
+            pass
+
+        # Check for enemies in melee range and arc
+        player_x, player_y = self.player.x, self.player.y
+        player_angle = self.player.angle
+
+        hits = 0
+        for bot in self.bots:
+            if not bot.alive:
+                continue
+
+            # Calculate distance and angle to bot
+            dx = bot.x - player_x
+            dy = bot.y - player_y
+            distance = math.sqrt(dx * dx + dy * dy)
+
+            if distance <= melee_range:
+                # Check if bot is within attack arc
+                bot_angle = math.atan2(dy, dx)
+                angle_diff = abs(bot_angle - player_angle)
+
+                # Normalize angle difference
+                while angle_diff > math.pi:
+                    angle_diff -= 2 * math.pi
+                angle_diff = abs(angle_diff)
+
+                if angle_diff <= melee_arc / 2:
+                    # Bot is in range and arc - deal damage
+                    if bot.take_damage(melee_damage):
+                        self.sound_manager.play_sound("scream")
+                        self.kills += 1
+                        self.kill_combo_count += 1
+                        self.kill_combo_timer = 180
+                        self.last_death_pos = (bot.x, bot.y)
+
+                    hits += 1
+
+                    # Add blood particles
+                    for _ in range(5):
+                        self.particle_system.add_particle(
+                            x=bot.x * 64 + 32,  # Convert to screen coords
+                            y=bot.y * 64 + 32,
+                            dx=random.uniform(-3, 3),
+                            dy=random.uniform(-3, 3),
+                            color=(200, 0, 0),
+                            timer=30,
+                            size=random.randint(2, 4),
+                        )
+
+        # Add hit feedback message
+        if hits > 0:
+            if hits == 1:
+                self.add_message("CRITICAL HIT!", C.RED)
+            else:
+                self.add_message(f"COMBO x{hits}!", C.RED)
+
+    def create_melee_sweep_effect(self) -> None:
+        """Create enhanced visual sweep effect for melee attack"""
+        assert self.player is not None
+
+        # Create dramatic arc particles for sweep effect
+        player_angle = self.player.angle
+        arc_start = player_angle - math.pi / 4  # 45 degrees left
+        arc_end = player_angle + math.pi / 4  # 45 degrees right
+
+        # Create multiple layers of sweep particles for depth
+        for layer in range(3):
+            layer_distance = 80 + layer * 40
+
+            # Create sweep particles in arc
+            for i in range(30):
+                t = i / 29.0  # 0 to 1
+                angle = arc_start + t * (arc_end - arc_start)
+
+                # Distance from player (screen center)
+                distance = layer_distance + random.randint(-20, 20)
+
+                x = C.SCREEN_WIDTH // 2 + math.cos(angle) * distance
+                y = C.SCREEN_HEIGHT // 2 + math.sin(angle) * distance
+
+                # Create sweep particle with varying colors
+                if layer == 0:  # Inner layer - bright white/yellow
+                    color = (255, 255, 200)
+                elif layer == 1:  # Middle layer - orange
+                    color = (255, 150, 0)
+                else:  # Outer layer - red
+                    color = (255, 50, 0)
+
+                self.particle_system.add_particle(
+                    x=x,
+                    y=y,
+                    dx=math.cos(angle) * 8,
+                    dy=math.sin(angle) * 8,
+                    color=color,
+                    timer=20 - layer * 5,
+                    size=4 + layer,
+                    gravity=0.05,
+                    fade_color=(100, 0, 0),
+                )
+
+        # Add central impact burst
+        for _ in range(15):
+            angle = random.uniform(0, 2 * math.pi)
+            speed = random.uniform(3, 12)
+            self.particle_system.add_particle(
+                x=C.SCREEN_WIDTH // 2,
+                y=C.SCREEN_HEIGHT // 2,
+                dx=math.cos(angle) * speed,
+                dy=math.sin(angle) * speed,
+                color=(255, 255, 255),
+                timer=25,
+                size=random.randint(2, 6),
+                gravity=0.1,
+                fade_color=(255, 100, 0),
+            )
+
     def update_game(self) -> None:
         """Update game state"""
         if self.paused:
@@ -1204,7 +1457,7 @@ class Game:
                     self.game_map,
                     self.bots,
                     right=(axis_x > 0),
-                    speed=abs(axis_x) * C.PLAYER_SPEED,
+                    speed=abs(axis_x) * C.PLAYER_SPEED * self.movement_speed_multiplier,
                 )
                 self.player.is_moving = True
             if abs(axis_y) > C.JOYSTICK_DEADZONE:
@@ -1212,7 +1465,7 @@ class Game:
                     self.game_map,
                     self.bots,
                     forward=(axis_y < 0),
-                    speed=abs(axis_y) * C.PLAYER_SPEED,
+                    speed=abs(axis_y) * C.PLAYER_SPEED * self.movement_speed_multiplier,
                 )
                 self.player.is_moving = True
 
@@ -1266,11 +1519,11 @@ class Game:
         is_sprinting = self.input_manager.is_action_pressed("sprint") or sprint_key
 
         if is_sprinting and self.player.stamina > 0:
-            current_speed = C.PLAYER_SPRINT_SPEED
+            current_speed = C.PLAYER_SPRINT_SPEED * self.movement_speed_multiplier
             self.player.stamina -= 1
             self.player.stamina_recharge_delay = 60
         else:
-            current_speed = C.PLAYER_SPEED
+            current_speed = C.PLAYER_SPEED * self.movement_speed_multiplier
 
         moving = False
 
@@ -1407,17 +1660,46 @@ class Game:
             self.kill_combo_timer -= 1
             if self.kill_combo_timer <= 0:
                 if self.kill_combo_count >= 3:
-                    phrases = ["phrase_cool", "phrase_awesome", "phrase_brutal"]
+                    # Duke Nukem-style phrases (PG-13)
+                    phrases = [
+                        "DAMN, I'M GOOD!",
+                        "COME GET SOME!",
+                        "HAIL TO THE KING!",
+                        "GROOVY!",
+                        "PIECE OF CAKE!",
+                        "WHO WANTS SOME?",
+                        "EAT THIS!",
+                        "SHAKE IT BABY!",
+                        "NOBODY STEALS OUR CHICKS!",
+                        "IT'S TIME TO KICK ASS!",
+                        "DAMN, THOSE ALIEN BASTARDS!",
+                        "YOUR FACE, YOUR ASS!",
+                        "WHAT'S THE DIFFERENCE?",
+                        "HOLY COW!",
+                        "TERMINATED!",
+                        "WASTED!",
+                        "OWNED!",
+                        "DOMINATING!",
+                        "UNSTOPPABLE!",
+                        "RAMPAGE!",
+                        "GODLIKE!",
+                        "BOOM BABY!",
+                    ]
+
                     phrase = random.choice(phrases)
-                    self.sound_manager.play_sound(phrase)
+                    self.sound_manager.play_sound("phrase_cool")  # Use existing sound
+
+                    # Enhanced message display with effects
                     self.damage_texts.append(
                         {
                             "x": C.SCREEN_WIDTH // 2,
                             "y": C.SCREEN_HEIGHT // 2 - 150,
-                            "text": phrase.replace("phrase_", "").upper() + "!",
+                            "text": phrase,
                             "color": C.YELLOW,
-                            "timer": 120,
+                            "timer": 180,  # Longer display time
                             "vy": -0.2,
+                            "size": "large",  # Add size indicator for special rendering
+                            "effect": "glow",  # Add glow effect
                         }
                     )
                 self.kill_combo_count = 0
@@ -1649,20 +1931,9 @@ class Game:
                 elif self.state == "playing":
                     self.handle_game_events()
                     if self.paused:
-                        # Pause Menu Audio
-                        # Heartbeat: 70 BPM -> ~0.85s delay -> ~51 frames (at 60FPS)
-                        beat_delay = 51
-                        self.heartbeat_timer -= 1
-                        if self.heartbeat_timer <= 0:
-                            self.sound_manager.play_sound("heartbeat")
-                            self.sound_manager.play_sound("breath")
-                            self.heartbeat_timer = beat_delay
-
-                        if self.player and self.player.health < 50:
-                            self.groan_timer -= 1
-                            if self.groan_timer <= 0:
-                                self.sound_manager.play_sound("groan")
-                                self.groan_timer = 240
+                        # Don't play breathing/heartbeat sounds during pause menu
+                        # The pause_all() should handle stopping all sounds
+                        pass
                     else:
                         self.update_game()
                     self.renderer.render_game(self)

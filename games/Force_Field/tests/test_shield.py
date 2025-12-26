@@ -14,6 +14,7 @@ class TestShieldFunctionality(unittest.TestCase):
     def setUp(self) -> None:
         """Set up test fixtures."""
         self.player = Player(10.0, 10.0, 0.0)
+        self.player.invincible = False
         self.game_map = Map(20)
         self.input_manager = InputManager()
 

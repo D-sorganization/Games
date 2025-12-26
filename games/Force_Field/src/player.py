@@ -48,6 +48,17 @@ class Player:
         # For now, we assume "ammo" in constants refers to reserves.
         self.ammo: dict[str, int] = {w: int(C.WEAPONS[w]["ammo"]) for w in C.WEAPONS}
 
+        # Melee attack system
+        self.melee_cooldown = 0
+        self.melee_active = False
+        self.melee_timer = 0
+
+        # Invincibility system
+        self.invincible = True  # Start invincible
+        self.invincibility_timer = 300  # 5 seconds at 60 FPS
+        self.respawn_delay = 0
+        self.respawning = False
+
         self.current_weapon = "rifle"
         self.shooting = False
         self.shoot_timer = 0
@@ -173,6 +184,7 @@ class Player:
             if w_state["spin_timer"] < spin_up:
                 w_state["spin_timer"] += 2  # Charge up
                 return False  # Not firing yet
+            # Once spun up, continue firing normally
         else:
             # For non-minigun weapons, ensure spin is 0 (just in case)
             w_state["spin_timer"] = 0
@@ -230,15 +242,6 @@ class Player:
         """Get range of current weapon"""
         return int(C.WEAPONS[self.current_weapon]["range"])
 
-    def take_damage(self, damage: int) -> None:
-        """Take damage"""
-        if self.shield_active or self.god_mode:
-            return
-        self.health -= damage
-        if self.health <= 0:
-            self.health = 0
-            self.alive = False
-
     def activate_bomb(self) -> bool:
         """Try to drop a bomb"""
         if self.bomb_cooldown <= 0 and self.bombs > 0:
@@ -280,6 +283,31 @@ class Player:
 
         if self.secondary_cooldown > 0:
             self.secondary_cooldown -= 1
+
+        # Melee attack timers
+        if self.melee_cooldown > 0:
+            self.melee_cooldown -= 1
+
+        if self.melee_timer > 0:
+            self.melee_timer -= 1
+            if self.melee_timer <= 0:
+                self.melee_active = False
+
+        # Invincibility timer
+        if self.invincibility_timer > 0:
+            self.invincibility_timer -= 1
+            if self.invincibility_timer <= 0:
+                self.invincible = False
+
+        # Respawn delay
+        if self.respawn_delay > 0:
+            self.respawn_delay -= 1
+            if self.respawn_delay <= 0:
+                self.respawning = False
+                self.alive = True
+                self.health = self.max_health
+                self.invincible = True
+                self.invincibility_timer = 300  # 5 seconds of invincibility
 
         # Stamina Regen
         if self.stamina_recharge_delay > 0:
@@ -375,3 +403,26 @@ class Player:
                 # Was active, now stopping
                 self.shield_recharge_delay = C.SHIELD_COOLDOWN_NORMAL
             self.shield_active = False
+
+    def melee_attack(self) -> bool:
+        """Execute melee attack"""
+        if self.melee_cooldown <= 0:
+            self.melee_cooldown = 30  # 0.5 seconds at 60 FPS
+            self.melee_active = True
+            self.melee_timer = 15  # Attack duration
+            return True
+        return False
+
+    def take_damage(self, damage: int) -> bool:
+        """Take damage and return True if player died"""
+        if self.invincible or not self.alive or self.god_mode or self.shield_active:
+            return False
+
+        self.health -= damage
+        if self.health <= 0:
+            self.health = 0
+            self.alive = False
+            self.respawning = True
+            self.respawn_delay = 180  # 3 seconds delay at 60 FPS
+            return True
+        return False

@@ -60,23 +60,32 @@ class UIRenderer:
         self.title_drips: list[dict[str, Any]] = []
 
     def _init_fonts(self) -> None:
-        """Initialize fonts"""
+        """Initialize fonts with modern gaming aesthetics"""
         try:
-            self.title_font = pygame.font.SysFont("impact", 100)
-            self.font = pygame.font.SysFont("franklingothicmedium", 40)
-            self.small_font = pygame.font.SysFont("franklingothicmedium", 28)
-            self.tiny_font = pygame.font.SysFont("consolas", 20)
-            self.subtitle_font = pygame.font.SysFont("georgia", 36)
-            # 'chiller' is a non-standard font used for intro slides.
-            # If unavailable, it falls back to title_font in the exception handler.
-            self.chiller_font = pygame.font.SysFont("chiller", 70)
+            # Try modern gaming fonts first
+            self.title_font = pygame.font.SysFont("orbitron", 100, bold=True)
+            self.font = pygame.font.SysFont("exo", 40, bold=True)
+            self.small_font = pygame.font.SysFont("exo", 28, bold=True)
+            self.tiny_font = pygame.font.SysFont("rajdhani", 20, bold=True)
+            self.subtitle_font = pygame.font.SysFont("orbitron", 36, bold=True)
+            self.chiller_font = pygame.font.SysFont("orbitron", 70, bold=True)
         except Exception:  # noqa: BLE001
-            self.title_font = pygame.font.Font(None, 80)
-            self.font = pygame.font.Font(None, 48)
-            self.small_font = pygame.font.Font(None, 32)
-            self.tiny_font = pygame.font.Font(None, 24)
-            self.subtitle_font = pygame.font.Font(None, 40)
-            self.chiller_font = self.title_font
+            # Fallback to available system fonts with gaming feel
+            try:
+                self.title_font = pygame.font.SysFont("impact", 100, bold=True)
+                self.font = pygame.font.SysFont("arial", 40, bold=True)
+                self.small_font = pygame.font.SysFont("arial", 28, bold=True)
+                self.tiny_font = pygame.font.SysFont("courier", 20, bold=True)
+                self.subtitle_font = pygame.font.SysFont("impact", 36, bold=True)
+                self.chiller_font = pygame.font.SysFont("impact", 70, bold=True)
+            except Exception:  # noqa: BLE001
+                # Final fallback to default fonts
+                self.title_font = pygame.font.Font(None, 100)
+                self.font = pygame.font.Font(None, 48)
+                self.small_font = pygame.font.Font(None, 32)
+                self.tiny_font = pygame.font.Font(None, 24)
+                self.subtitle_font = pygame.font.Font(None, 40)
+                self.chiller_font = pygame.font.Font(None, 80)
 
     def _load_assets(self) -> None:
         """Load images and video"""
@@ -237,17 +246,15 @@ class UIRenderer:
         self.start_button.draw(self.screen, self.font)
 
         instructions = [
-            "",
-            "",
-            "WASD: Move | Shift: Sprint | Mouse: Look | 1-4: Weapons",
+            "WASD: Move | Shift: Sprint | Mouse: Look | 1-7: Weapons",
             "Ctrl: Shoot | Z: Zoom | F: Bomb | Space: Shield",
         ]
-        y = C.SCREEN_HEIGHT - 260
+        y = C.SCREEN_HEIGHT - 200  # Position above the start button
         for line in instructions:
             text = self.tiny_font.render(line, True, C.RED)
             text_rect = text.get_rect(center=(C.SCREEN_WIDTH // 2, y))
             self.screen.blit(text, text_rect)
-            y += 30
+            y += 25
 
         pygame.display.flip()
 
@@ -449,11 +456,44 @@ class UIRenderer:
             self._render_pause_menu(game)
 
     def _render_damage_texts(self, texts: list[dict[str, Any]]) -> None:
-        """Render floating damage text indicators."""
+        """Render floating damage text indicators with enhanced effects."""
         for t in texts:
-            surf = self.small_font.render(t["text"], True, t["color"])
-            rect = surf.get_rect(center=(int(t["x"]), int(t["y"])))
-            self.screen.blit(surf, rect)
+            # Check for special effects
+            is_large = t.get("size") == "large"
+            has_glow = t.get("effect") == "glow"
+
+            # Choose font based on size
+            font = self.subtitle_font if is_large else self.small_font
+
+            # Create text surface
+            text_surf = font.render(t["text"], True, t["color"])
+
+            # Add glow effect for special messages
+            if has_glow:
+                # Create glow surface
+                glow_surf = font.render(t["text"], True, (255, 255, 255))
+
+                # Draw glow in multiple positions for blur effect
+                glow_positions = [
+                    (-2, -2),
+                    (-2, 2),
+                    (2, -2),
+                    (2, 2),
+                    (-1, 0),
+                    (1, 0),
+                    (0, -1),
+                    (0, 1),
+                ]
+                for gx, gy in glow_positions:
+                    glow_rect = glow_surf.get_rect(
+                        center=(int(t["x"]) + gx, int(t["y"]) + gy)
+                    )
+                    glow_surf.set_alpha(50)  # Semi-transparent glow
+                    self.screen.blit(glow_surf, glow_rect)
+
+            # Draw main text
+            rect = text_surf.get_rect(center=(int(t["x"]), int(t["y"])))
+            self.screen.blit(text_surf, rect)
 
     def _render_damage_flash(self, timer: int) -> None:
         """Render red screen flash effect when player takes damage."""
@@ -561,9 +601,14 @@ class UIRenderer:
             input_surf = self.font.render(input_text, True, C.WHITE)
             input_rect = input_surf.get_rect(center=(C.SCREEN_WIDTH // 2, 400))
 
-            # Background for input
+            # Background for input - make it wider to accommodate longer cheat codes
             bg_rect = input_rect.copy()
-            bg_rect.inflate_ip(40, 20)
+            # Ensure minimum width for the input box and add generous padding
+            min_width = 300  # Minimum width for cheat input
+            bg_rect.width = max(min_width, input_rect.width + 80)
+            bg_rect.height = input_rect.height + 30
+            bg_rect.center = input_rect.center
+
             pygame.draw.rect(self.screen, C.DARK_GRAY, bg_rect)
             pygame.draw.rect(self.screen, C.CYAN, bg_rect, 2)
 
@@ -580,9 +625,24 @@ class UIRenderer:
         menu_items = ["RESUME", "SAVE GAME", "ENTER CHEAT", "CONTROLS", "QUIT TO MENU"]
         mouse_pos = pygame.mouse.get_pos()
 
+        # Calculate the maximum text width to ensure all boxes are the same size
+        max_text_width = 0
+        for item in menu_items:
+            text_surf = self.subtitle_font.render(item, True, C.WHITE)
+            max_text_width = max(max_text_width, text_surf.get_width())
+
+        # Add padding to ensure text fits comfortably
+        box_width = max_text_width + 60
+        box_height = 50
+
         for i, item in enumerate(menu_items):
             color = C.WHITE
-            rect = pygame.Rect(C.SCREEN_WIDTH // 2 - 100, 350 + i * 60, 200, 50)
+            rect = pygame.Rect(
+                C.SCREEN_WIDTH // 2 - box_width // 2,
+                350 + i * 60,
+                box_width,
+                box_height,
+            )
             if rect.collidepoint(mouse_pos):
                 color = C.YELLOW
                 pygame.draw.rect(self.screen, (50, 0, 0), rect)
@@ -591,6 +651,42 @@ class UIRenderer:
             text = self.subtitle_font.render(item, True, color)
             text_rect = text.get_rect(center=rect.center)
             self.screen.blit(text, text_rect)
+
+        # Movement Speed Slider
+        slider_y = 350 + len(menu_items) * 60 + 30
+        slider_label = self.font.render("Movement Speed:", True, C.WHITE)
+        label_rect = slider_label.get_rect(center=(C.SCREEN_WIDTH // 2, slider_y))
+        self.screen.blit(slider_label, label_rect)
+
+        # Slider bar
+        slider_bar_y = slider_y + 30
+        slider_width = 200
+        slider_height = 10
+        slider_x = C.SCREEN_WIDTH // 2 - slider_width // 2
+
+        # Background bar
+        slider_bg_rect = pygame.Rect(
+            slider_x, slider_bar_y, slider_width, slider_height
+        )
+        pygame.draw.rect(self.screen, C.DARK_GRAY, slider_bg_rect)
+        pygame.draw.rect(self.screen, C.WHITE, slider_bg_rect, 2)
+
+        # Slider handle position (0.5 to 2.0 range mapped to slider width)
+        # Map 0.5-2.0 to 0.0-1.0
+        speed_ratio = (game.movement_speed_multiplier - 0.5) / 1.5
+        handle_x = slider_x + int(speed_ratio * slider_width)
+        handle_rect = pygame.Rect(
+            handle_x - 5, slider_bar_y - 5, 10, slider_height + 10
+        )
+        pygame.draw.rect(self.screen, C.CYAN, handle_rect)
+
+        # Speed value display
+        speed_text = f"{game.movement_speed_multiplier:.1f}x"
+        speed_surf = self.font.render(speed_text, True, C.CYAN)
+        speed_rect = speed_surf.get_rect(
+            center=(C.SCREEN_WIDTH // 2, slider_bar_y + 25)
+        )
+        self.screen.blit(speed_surf, speed_rect)
 
     def render_level_complete(self, game: Game) -> None:
         """Render the level complete screen."""
