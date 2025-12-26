@@ -142,9 +142,15 @@ class Raycaster:
                 map_y += step_y
                 side = 1
 
-            if grid[map_y][map_x] > 0:
+            if 0 <= map_x < self.game_map.width and 0 <= map_y < self.game_map.height:
+                if grid[map_y][map_x] > 0:
+                    hit = True
+                    wall_type = grid[map_y][map_x]
+                    break
+            else:
+                # Treat out of bounds as a wall to stop the ray
                 hit = True
-                wall_type = grid[map_y][map_x]
+                wall_type = 1
                 break
 
         if hit:

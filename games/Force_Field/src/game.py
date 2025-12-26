@@ -712,13 +712,11 @@ class Game:
                         speed_ratio = max(0.0, min(1.0, relative_x / slider_width))
                         # Map to 0.5-2.0 range
                         self.movement_speed_multiplier = 0.5 + speed_ratio * 1.5
+                        self.movement_speed_multiplier = 0.5 + speed_ratio * 1.5
                         self.dragging_speed_slider = True
 
-            elif event.type == pygame.MOUSEBUTTONUP:
-                if event.button == 1:  # Left mouse button
-                    self.dragging_speed_slider = False
-
                 elif not self.cheat_mode_active:
+                    # Gameplay Clicks (Shooting)
                     assert self.player is not None
                     if event.button == 1:
                         if self.player.shoot():
@@ -726,6 +724,9 @@ class Game:
                     elif event.button == 3:
                         if self.player.fire_secondary():
                             self.fire_weapon(is_secondary=True)
+            elif event.type == pygame.MOUSEBUTTONUP:
+                if event.button == 1:  # Left mouse button
+                    self.dragging_speed_slider = False
 
             elif event.type == pygame.MOUSEMOTION:
                 if self.paused and self.dragging_speed_slider:

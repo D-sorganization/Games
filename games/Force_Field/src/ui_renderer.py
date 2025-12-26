@@ -60,32 +60,31 @@ class UIRenderer:
         self.title_drips: list[dict[str, Any]] = []
 
     def _init_fonts(self) -> None:
-        """Initialize fonts with modern gaming aesthetics"""
+        """Initialize fonts"""
         try:
-            # Try modern gaming fonts first
-            self.title_font = pygame.font.SysFont("orbitron", 100, bold=True)
-            self.font = pygame.font.SysFont("exo", 40, bold=True)
-            self.small_font = pygame.font.SysFont("exo", 28, bold=True)
-            self.tiny_font = pygame.font.SysFont("rajdhani", 20, bold=True)
-            self.subtitle_font = pygame.font.SysFont("orbitron", 36, bold=True)
-            self.chiller_font = pygame.font.SysFont("orbitron", 70, bold=True)
+            self.title_font = pygame.font.SysFont("impact", 100)
+            self.font = pygame.font.SysFont("franklingothicmedium", 40)
+            self.small_font = pygame.font.SysFont("franklingothicmedium", 28)
+            self.tiny_font = pygame.font.SysFont("consolas", 20)
+            self.subtitle_font = pygame.font.SysFont("georgia", 36)
+            # 'chiller' is a non-standard font used for intro slides.
+            # If unavailable, it falls back to title_font in the exception handler.
+            self.chiller_font = pygame.font.SysFont("chiller", 70)
         except Exception:  # noqa: BLE001
-            # Fallback to available system fonts with gaming feel
-            try:
-                self.title_font = pygame.font.SysFont("impact", 100, bold=True)
-                self.font = pygame.font.SysFont("arial", 40, bold=True)
-                self.small_font = pygame.font.SysFont("arial", 28, bold=True)
-                self.tiny_font = pygame.font.SysFont("courier", 20, bold=True)
-                self.subtitle_font = pygame.font.SysFont("impact", 36, bold=True)
-                self.chiller_font = pygame.font.SysFont("impact", 70, bold=True)
-            except Exception:  # noqa: BLE001
-                # Final fallback to default fonts
-                self.title_font = pygame.font.Font(None, 100)
-                self.font = pygame.font.Font(None, 48)
-                self.small_font = pygame.font.Font(None, 32)
-                self.tiny_font = pygame.font.Font(None, 24)
-                self.subtitle_font = pygame.font.Font(None, 40)
-                self.chiller_font = pygame.font.Font(None, 80)
+            self.title_font = pygame.font.Font(None, 80)
+            self.font = pygame.font.Font(None, 48)
+            self.small_font = pygame.font.Font(None, 32)
+            self.tiny_font = pygame.font.Font(None, 24)
+            self.subtitle_font = pygame.font.Font(None, 40)
+            self.chiller_font = self.title_font
+
+        # Aliases for compatibility with recent layout changes
+        self.retro_title_font = self.title_font
+        self.retro_subtitle_font = self.subtitle_font
+        self.retro_font = self.font
+        self.modern_font = self.font
+        self.modern_small_font = self.small_font
+        self.modern_tiny_font = self.tiny_font
 
     def _load_assets(self) -> None:
         """Load images and video"""
@@ -218,8 +217,8 @@ class UIRenderer:
         self.screen.blit(title, title_rect)
 
         mouse_pos = pygame.mouse.get_pos()
-        start_y = 200
-        line_height = 80
+        start_y = 150
+        line_height = 50
 
         settings = [
             ("Map Size", str(game.selected_map_size)),
@@ -234,22 +233,27 @@ class UIRenderer:
             if abs(mouse_pos[1] - y) < 20:
                 color = C.YELLOW
 
-            label_surf = self.subtitle_font.render(f"{label}:", True, C.GRAY)
+            # Use retro font for menu settings
+            label_surf = self.retro_subtitle_font.render(f"{label}:", True, C.GRAY)
             label_rect = label_surf.get_rect(right=C.SCREEN_WIDTH // 2 - 20, centery=y)
 
-            val_surf = self.subtitle_font.render(value, True, color)
+            val_surf = self.retro_subtitle_font.render(value, True, color)
             val_rect = val_surf.get_rect(left=C.SCREEN_WIDTH // 2 + 20, centery=y)
 
             self.screen.blit(label_surf, label_rect)
             self.screen.blit(val_surf, val_rect)
 
-        self.start_button.draw(self.screen, self.font)
+        # Draw Start Button (Position logic maintained inside Button.draw)
+        # But let's check position
+        # Button: y = H - 120 (480). Settings end at 150 + 200 = 350. Safe.
+        self.start_button.draw(self.screen, self.retro_font)
 
         instructions = [
             "WASD: Move | Shift: Sprint | Mouse: Look | 1-7: Weapons",
             "Ctrl: Shoot | Z: Zoom | F: Bomb | Space: Shield",
         ]
-        y = C.SCREEN_HEIGHT - 200  # Position above the start button
+        # Position instructions between settings and button
+        y = 380
         for line in instructions:
             text = self.tiny_font.render(line, True, C.RED)
             text_rect = text.get_rect(center=(C.SCREEN_WIDTH // 2, y))
@@ -277,155 +281,66 @@ class UIRenderer:
         # Damage texts
         self._render_damage_texts(game.damage_texts)
 
-        hud_bottom = C.SCREEN_HEIGHT - 80
-        health_width = 150
-        health_height = 25
-        health_x = 20
-        health_y = hud_bottom
+        # Stacked Bars Configuration
+        bar_height = 12
+        bar_spacing = 8
+        bar_width = 150
+        start_x = 20
+        start_y = C.SCREEN_HEIGHT - 40  # Start from bottom
 
-        # Health
-        pygame.draw.rect(
-            self.screen, C.DARK_GRAY, (health_x, health_y, health_width, health_height)
-        )
-        health_percent = max(0, game.player.health / game.player.max_health)
-        fill_width = int(health_width * health_percent)
-        health_color = C.RED
-        if health_percent > 0.5:
-            health_color = C.GREEN
-        elif health_percent > 0.25:
-            health_color = C.ORANGE
-        health_rect = (health_x, health_y, fill_width, health_height)
-        pygame.draw.rect(self.screen, health_color, health_rect)
-        pygame.draw.rect(
-            self.screen,
-            C.WHITE,
-            (health_x, health_y, health_width, health_height),
-            2,
+        # 1. Health Bar (Bottom)
+        health_y = start_y
+        self._render_bar(
+            start_x,
+            health_y,
+            bar_width,
+            bar_height,
+            game.player.health / game.player.max_health,
+            C.RED if game.player.health <= 50 else C.GREEN,
+            "HP",
         )
 
-        # Ammo / State
-        w_state = game.player.weapon_state[game.player.current_weapon]
-        w_name = C.WEAPONS[game.player.current_weapon]["name"]
-
-        status_text = ""
-        status_color = C.WHITE
-        if w_state["reloading"]:
-            status_text = "RELOADING..."
-            status_color = C.YELLOW
-        elif w_state["overheated"]:
-            status_text = "OVERHEATED!"
-            status_color = C.RED
-
-        if status_text:
-            txt = self.small_font.render(status_text, True, status_color)
-            tr = txt.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 60))
-            self.screen.blit(txt, tr)
-
-        ammo_val = game.player.ammo[game.player.current_weapon]
-        ammo_text = f"{w_name}: {w_state['clip']} / {ammo_val}"
-        bomb_text = f"BOMBS: {game.player.bombs}"
-
-        at = self.font.render(ammo_text, True, C.WHITE)
-        bt = self.font.render(bomb_text, True, C.ORANGE)
-        at_rect = at.get_rect(bottomright=(C.SCREEN_WIDTH - 20, hud_bottom + 25))
-        bt_rect = bt.get_rect(bottomright=(C.SCREEN_WIDTH - 20, hud_bottom - 15))
-        self.screen.blit(at, at_rect)
-        self.screen.blit(bt, bt_rect)
-
-        # Inventory
-        inv_y = hud_bottom - 80
-        for w in ["pistol", "rifle", "shotgun", "laser", "plasma", "rocket", "minigun"]:
-            color = C.GRAY
-            if w in game.unlocked_weapons:
-                color = C.GREEN if w == game.player.current_weapon else C.WHITE
-
-            key_display = C.WEAPONS[w]["key"]
-            # Just use key from dict
-
-            text_str = f"[{key_display}] {C.WEAPONS[w]['name']}"
-            inv_txt = self.tiny_font.render(text_str, True, color)
-            inv_rect = inv_txt.get_rect(bottomright=(C.SCREEN_WIDTH - 20, inv_y))
-            self.screen.blit(inv_txt, inv_rect)
-            inv_y -= 25
-
-        # Stats
-        level_text = self.small_font.render(f"Level: {game.level}", True, C.YELLOW)
-        level_rect = level_text.get_rect(topright=(C.SCREEN_WIDTH - 20, 20))
-        self.screen.blit(level_text, level_rect)
-
-        bots_alive = sum(
-            1
-            for bot in game.bots
-            if bot.alive
-            and bot.enemy_type != "health_pack"
-            and C.ENEMY_TYPES[bot.enemy_type].get("visual_style") != "item"
-        )
-        kills_text = self.small_font.render(f"Enemies: {bots_alive}", True, C.RED)
-        kills_rect = kills_text.get_rect(topright=(C.SCREEN_WIDTH - 20, 50))
-        self.screen.blit(kills_text, kills_rect)
-
-        # Score
-        score = game.kills * 100
-        score_text = self.small_font.render(f"Score: {score}", True, C.YELLOW)
-        score_rect = score_text.get_rect(topright=(C.SCREEN_WIDTH - 20, 80))
-        self.screen.blit(score_text, score_rect)
-
-        if game.show_minimap:
-            game.raycaster.render_minimap(
-                self.screen, game.player, game.bots, game.visited_cells, game.portal
-            )
-
-        # Shield Bar
-        shield_width = 150
-        shield_height = 10
-        shield_x = health_x
-        shield_y = health_y - 20
-
-        shield_pct = game.player.shield_timer / C.SHIELD_MAX_DURATION
-        pygame.draw.rect(
-            self.screen, C.DARK_GRAY, (shield_x, shield_y, shield_width, shield_height)
-        )
-        shield_rect = (
-            shield_x,
+        # 2. Shield Bar
+        shield_y = health_y - (bar_height + bar_spacing)
+        self._render_bar(
+            start_x,
             shield_y,
-            int(shield_width * shield_pct),
-            shield_height,
+            bar_width,
+            bar_height,
+            game.player.shield_timer / C.SHIELD_MAX_DURATION,
+            C.CYAN,
+            "SHLD",
         )
-        pygame.draw.rect(self.screen, C.CYAN, shield_rect)
-        border_rect = (shield_x, shield_y, shield_width, shield_height)
-        pygame.draw.rect(self.screen, C.WHITE, border_rect, 1)
-
+        # Shield Recharging/Cooldown Text
         if game.player.shield_recharge_delay > 0:
-            status_text = "RECHARGING" if game.player.shield_active else "COOLDOWN"
-            status_surf = self.tiny_font.render(status_text, True, C.WHITE)
-            self.screen.blit(status_surf, (shield_x + shield_width + 5, shield_y - 2))
+            status = "RECHRG" if game.player.shield_active else "COOL"
+            txt = self.tiny_font.render(status, True, C.GRAY)
+            self.screen.blit(txt, (start_x + bar_width + 5, shield_y - 2))
 
-        # Laser Charge
-        laser_y = shield_y - 15
-        laser_pct = 1.0 - (game.player.secondary_cooldown / C.SECONDARY_COOLDOWN)
-        laser_pct = max(0, min(1, laser_pct))
-        bg_rect = (shield_x, laser_y, shield_width, shield_height)
-        pygame.draw.rect(self.screen, C.DARK_GRAY, bg_rect)
-        pygame.draw.rect(
-            self.screen,
-            (255, 50, 50),
-            (shield_x, laser_y, int(shield_width * laser_pct), shield_height),
+        # 3. Secondary Charge
+        charge_y = shield_y - (bar_height + bar_spacing)
+        charge_pct = 1.0 - (game.player.secondary_cooldown / C.SECONDARY_COOLDOWN)
+        self._render_bar(
+            start_x,
+            charge_y,
+            bar_width,
+            bar_height,
+            max(0, min(1, charge_pct)),
+            (255, 100, 100),
+            "CHRG",
         )
 
-        # Stamina Bar
-        stamina_y = laser_y - 15
-        stamina_pct = game.player.stamina / game.player.max_stamina
-        pygame.draw.rect(
-            self.screen, C.DARK_GRAY, (shield_x, stamina_y, shield_width, shield_height)
+        # 4. Stamina
+        stamina_y = charge_y - (bar_height + bar_spacing)
+        self._render_bar(
+            start_x,
+            stamina_y,
+            bar_width,
+            bar_height,
+            game.player.stamina / game.player.max_stamina,
+            C.YELLOW,
+            "STM",
         )
-        pygame.draw.rect(
-            self.screen,
-            (255, 255, 0),
-            (shield_x, stamina_y, int(shield_width * stamina_pct), shield_height),
-        )
-        if stamina_pct < 1.0:
-            s_txt = self.tiny_font.render("STAMINA", True, C.WHITE)
-            self.screen.blit(s_txt, (shield_x + shield_width + 5, stamina_y - 2))
 
         msg = "WASD:Move|1-7:Wpn|R:Rel|Ctrl+C:Cheat|SPACE:Shield|M:Map|ESC:Menu"
         controls_hint = self.tiny_font.render(
@@ -545,7 +460,33 @@ class UIRenderer:
             and player.shield_recharge_delay <= 0
         ):
             ready_text = self.tiny_font.render("SHIELD READY", True, C.CYAN)
+            # Position above stamina bar (which is at approx H-100)
+            # Let's put it clearly above
             self.screen.blit(ready_text, (20, C.SCREEN_HEIGHT - 120))
+
+    def _render_bar(
+        self,
+        x: int,
+        y: int,
+        w: int,
+        h: int,
+        pct: float,
+        color: tuple[int, int, int],
+        label: str,
+    ) -> None:
+        """Helper to render a labeled HUD bar."""
+        # Background
+        pygame.draw.rect(self.screen, C.DARK_GRAY, (x, y, w, h))
+        # Fill
+        fill_w = int(w * max(0.0, min(1.0, pct)))
+        if fill_w > 0:
+            pygame.draw.rect(self.screen, color, (x, y, fill_w, h))
+        # Border
+        pygame.draw.rect(self.screen, C.WHITE, (x, y, w, h), 1)
+        # Label
+        lbl = self.tiny_font.render(label, True, C.WHITE)
+        # Place label to right of bar
+        self.screen.blit(lbl, (x + w + 5, y - 2))
 
     def _render_low_health_tint(self, player: Player) -> None:
         """Render red screen tint when health is low."""
@@ -759,10 +700,6 @@ class UIRenderer:
         self.screen.fill(C.BLACK)
 
         if intro_phase == 0:
-            text = self.subtitle_font.render(
-                "A Willy Wonk Production", True, (255, 182, 193)
-            )
-            self.screen.blit(text, text.get_rect(center=(C.SCREEN_WIDTH // 2, 100)))
             if "willy" in self.intro_images:
                 img = self.intro_images["willy"]
                 r = img.get_rect(
@@ -770,6 +707,11 @@ class UIRenderer:
                 )
                 self.screen.blit(img, r)
                 pygame.draw.rect(self.screen, (255, 192, 203), r, 4, border_radius=10)
+
+            text = self.subtitle_font.render(
+                "A Willy Wonk Production", True, (255, 182, 193)
+            )
+            self.screen.blit(text, text.get_rect(center=(C.SCREEN_WIDTH // 2, 100)))
 
         elif intro_phase == 1:
             stylish = pygame.font.SysFont("impact", 70)
