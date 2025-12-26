@@ -182,6 +182,35 @@ class TextureGenerator:
         return surface
 
     @staticmethod
+    def generate_secret(width: int, height: int) -> pygame.Surface:
+        """Generates a secret wall (cracked)."""
+        # Start with standard bricks but darker/different tint
+        surface = TextureGenerator.generate_bricks(
+            width, height, (130, 60, 50), (100, 100, 100)
+        )
+        arr = pygame.surfarray.pixels3d(surface)
+
+        # Add visual hint (Dark Cracks)
+        # Use simple random walk for a crack
+        center_x = width // 2
+        color_crack = (20, 20, 20)
+
+        # Draw a jagged crack
+        curr_x = center_x
+        for y in range(10, height - 10):
+            if 0 <= curr_x < width:
+                # Draw thick line
+                for dx in range(-1, 2):
+                    nx = curr_x + dx
+                    if 0 <= nx < width:
+                        arr[nx, y] = color_crack
+
+            curr_x += random.randint(-1, 1)
+
+        del arr
+        return surface
+
+    @staticmethod
     def generate_textures() -> dict[str, pygame.Surface]:
         """Generates all textures and returns them in a dictionary."""
         # Ensure pygame is initialized for surface creation (mostly for format)
@@ -197,5 +226,6 @@ class TextureGenerator:
         textures["stone"] = TextureGenerator.generate_stone(size, size)
         textures["metal"] = TextureGenerator.generate_metal(size, size)
         textures["tech"] = TextureGenerator.generate_tech(size, size)
+        textures["secret"] = TextureGenerator.generate_secret(size, size)
 
         return textures

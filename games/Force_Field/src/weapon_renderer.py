@@ -38,6 +38,11 @@ class WeaponRenderer:
             # Add some horizontal bob too
             bob_x = int(math.cos(pygame.time.get_ticks() * 0.006) * 10)
             cx += bob_x
+        else:
+            # Idle bob (breathing)
+            bob_y = int(math.sin(pygame.time.get_ticks() * 0.005) * 5)
+            # Gentle horizontal sway
+            cx += int(math.cos(pygame.time.get_ticks() * 0.003) * 3)
 
         w_state = player.weapon_state[weapon]
         if w_state["reloading"]:
@@ -65,6 +70,9 @@ class WeaponRenderer:
 
         elif weapon == "minigun":
             self._render_minigun(cx, cy, player)
+
+        elif weapon == "laser":
+            self._render_laser(cx, cy, player)
 
         elif weapon == "plasma":
             self._render_plasma(cx, cy, player, w_state)
@@ -422,3 +430,31 @@ class WeaponRenderer:
                 (cx + 70, cy - 340),
                 6,
             )
+
+    def _render_laser(self, cx: int, cy: int, player: Player) -> None:
+        """Render a black gun model for the Laser"""
+        # A sleek, black, futuristic rifle
+        gun_color = (10, 10, 10)  # Almost black
+        highlight = (40, 40, 40)
+
+        # Main body
+        pygame.draw.rect(self.screen, gun_color, (cx - 25, cy - 180, 50, 180))
+
+        # Barrel (Longer)
+        pygame.draw.rect(self.screen, (20, 20, 20), (cx - 15, cy - 250, 30, 250))
+
+        # Side details (Vents)
+        for i in range(5):
+            y = cy - 140 + i * 20
+            pygame.draw.rect(self.screen, highlight, (cx - 20, y, 40, 5))
+
+        # Glowing bits
+        pulse = int(127 + 127 * math.sin(pygame.time.get_ticks() * 0.01))
+        energy_color = (pulse, 0, 0)  # Red pulse
+
+        # Energy core
+        pygame.draw.circle(self.screen, energy_color, (cx, cy - 100), 10)
+        pygame.draw.rect(self.screen, energy_color, (cx - 2, cy - 240, 4, 140))
+
+        if player.shooting:
+            pygame.draw.circle(self.screen, (255, 255, 255), (cx, cy - 255), 15)

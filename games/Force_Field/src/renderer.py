@@ -43,10 +43,12 @@ class GameRenderer:
             self.screen, game.player, game.level, view_offset_y=bob_offset
         )
         game.raycaster.render_3d(
-            self.screen, game.player, game.bots, game.level, view_offset_y=bob_offset
-        )
-        game.raycaster.render_projectiles(
-            self.screen, game.player, game.projectiles, view_offset_y=bob_offset
+            self.screen,
+            game.player,
+            game.bots,
+            game.projectiles,
+            game.level,
+            view_offset_y=bob_offset,
         )
 
         # 2. Effects
@@ -65,6 +67,14 @@ class GameRenderer:
             )
 
         # 5. UI / HUD
+        if game.show_minimap:
+            game.raycaster.render_minimap(
+                self.screen,
+                game.player,
+                game.bots,
+                game.visited_cells,
+                game.portal,
+            )
         game.ui_renderer.render_hud(game)
 
         pygame.display.flip()

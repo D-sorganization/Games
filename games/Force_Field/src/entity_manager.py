@@ -93,6 +93,8 @@ class EntityManager:
                     game.explode_plasma(projectile)
                 elif w_type == "rocket":
                     game.explode_rocket(projectile)
+                elif w_type == "bomb":
+                    game.explode_bomb(projectile)
 
             if projectile.alive:
                 if not projectile.is_player:

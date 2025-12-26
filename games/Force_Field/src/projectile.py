@@ -19,6 +19,9 @@ class Projectile:
         color: tuple[int, int, int] = (255, 0, 0),
         size: float = 0.2,
         weapon_type: str = "normal",
+        z: float = 0.5,
+        vz: float = 0.0,
+        gravity: float = 0.0,
     ):
         """Initialize projectile"""
         self.x = x
@@ -32,6 +35,12 @@ class Projectile:
         self.weapon_type = weapon_type
         self.alive = True
 
+        # 3D Arc Physics
+        self.z = z
+        self.vz = vz
+        self.gravity = gravity
+        self.hit_secret_pos: tuple[int, int] | None = None
+
     def update(self, game_map: "Map") -> None:
         """Update projectile position"""
         if not self.alive:
@@ -43,8 +52,26 @@ class Projectile:
         new_x = self.x + dx
         new_y = self.y + dy
 
+        # Update height
+        self.z += self.vz
+        self.vz -= self.gravity
+
+        # Bounds check / Ground Hit
+        if self.z <= 0:
+            self.z = 0
+            if self.weapon_type == "bomb":
+                self.alive = False
+                return
+
         # Check wall collision
         if game_map.is_wall(new_x, new_y):
+            # Check for Secret Wall Hit
+            w_type = game_map.get_wall_type(new_x, new_y)
+            if w_type == 5:  # Wall Secret
+                # Mark secret hit for Game to handle (destruction/loot)
+                self.hit_secret_pos = (int(new_x), int(new_y))
+                # Any projectile (including bombs) is destroyed on wall hit.
+
             self.alive = False
             return
 
