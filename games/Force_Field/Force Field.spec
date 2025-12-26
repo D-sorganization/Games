@@ -23,6 +23,7 @@ exe = EXE(
     a.datas,
     [],
     name='Force Field',
+    icon='force_field_icon.ico',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
