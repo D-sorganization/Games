@@ -40,7 +40,6 @@ logs/
 # Build Artifacts
 build/
 dist/
-*.spec
 *.toc
 build/
 dist/
