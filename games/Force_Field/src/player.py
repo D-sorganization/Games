@@ -343,9 +343,9 @@ class Player:
             # Decay Minigun Spin
             if w_name == "minigun":
                 # Decay spin if not actively shooting.
+                # Simplify: w_state["spin_timer"] = max(0, w_state["spin_timer"] - 1)
                 if w_state["spin_timer"] > 0:
-                    w_state["spin_timer"] -= 1
-                    w_state["spin_timer"] = max(0, w_state["spin_timer"])
+                    w_state["spin_timer"] = max(0, w_state["spin_timer"] - 1)
 
     def can_secondary_fire(self) -> bool:
         """Check if secondary fire is ready"""

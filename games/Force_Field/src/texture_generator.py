@@ -74,7 +74,8 @@ class TextureGenerator:
     def generate_stone(width: int, height: int) -> pygame.Surface:
         """Generates a large slate blocks pattern."""
         surface = pygame.Surface((width, height))
-        surface.fill((80, 80, 80))
+        base_shade = 80
+        surface.fill((base_shade, base_shade, base_shade))
         arr = pygame.surfarray.pixels3d(surface)
 
         # Large blocky noise
@@ -82,14 +83,22 @@ class TextureGenerator:
         for bx in range(0, width, block_size):
             for by in range(0, height, block_size):
                 shade = random.randint(-20, 20)
-                color = (max(0, 80 + shade), max(0, 80 + shade), max(0, 80 + shade))
-                arr[bx : bx + block_size, by : by + block_size] = color
+                val = max(0, base_shade + shade)
+                color = (val, val, val)
+
+                # Safe slice assignment
+                x_end = min(width, bx + block_size)
+                y_end = min(height, by + block_size)
+                arr[bx:x_end, by:y_end] = color
 
         # Add some cracks/variation
         for _ in range(10):
             x = random.randint(0, width - 1)
             y = random.randint(0, height - 1)
-            arr[x : x + 2, y : y + 6] = (40, 40, 40)
+            # Safe slice for cracks
+            x_end = min(width, x + 2)
+            y_end = min(height, y + 6)
+            arr[x:x_end, y:y_end] = (40, 40, 40)
 
         del arr
         return surface
@@ -124,8 +133,12 @@ class TextureGenerator:
         rivet_shadow = (50, 50, 60)
         rivets = [(4, 4), (width - 6, 4), (4, height - 6), (width - 6, height - 6)]
         for rx, ry in rivets:
-            arr[rx : rx + 2, ry : ry + 2] = rivet_color
-            arr[rx + 2, ry + 2] = rivet_shadow
+            # Safe slice
+            rx_end = min(width, rx + 2)
+            ry_end = min(height, ry + 2)
+            arr[rx:rx_end, ry:ry_end] = rivet_color
+            if rx + 2 < width and ry + 2 < height:
+                arr[rx + 2, ry + 2] = rivet_shadow
 
         del arr
         return surface
@@ -152,13 +165,18 @@ class TextureGenerator:
             x = random.randint(2, width - w_rect - 2)
             y = random.randint(2, height - h_rect - 2)
 
+            # Safe bounds
+            x_end = min(width, x + w_rect)
+            y_end = min(height, y + h_rect)
+
             # Fill rect
-            arr[x : x + w_rect, y : y + h_rect] = (30, 30, 50)
-            # Border glow
-            arr[x : x + w_rect, y] = color_glow
-            arr[x : x + w_rect, y + h_rect] = color_glow
-            arr[x, y : y + h_rect] = color_glow
-            arr[x + w_rect, y : y + h_rect] = color_glow
+            arr[x:x_end, y:y_end] = (30, 30, 50)
+
+            # Border glow (with safe clipping)
+            arr[x:x_end, y] = color_glow  # Top
+            arr[x:x_end, min(height - 1, y_end - 1)] = color_glow  # Bottom
+            arr[x, y:y_end] = color_glow  # Left
+            arr[min(width - 1, x_end - 1), y:y_end] = color_glow  # Right
 
         del arr
         return surface
