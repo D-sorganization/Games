@@ -115,7 +115,7 @@ class Game:
 
         # Fog of War
         self.visited_cells: set[tuple[int, int]] = set()
-        self.show_minimap = True
+        self.show_minimap = False
 
         # Input Manager
         self.input_manager = InputManager()
@@ -625,7 +625,23 @@ class Game:
                     elif self.input_manager.is_action_just_pressed(event, "bomb"):
                         assert self.player is not None
                         if self.player.activate_bomb():
-                            self.handle_bomb_explosion()
+                            # Spawn Bomb Projectile
+                            # Throw with upward arc
+                            bomb = Projectile(
+                                self.player.x,
+                                self.player.y,
+                                self.player.angle,
+                                damage=1000,
+                                speed=0.4,  # Moderate throw speed
+                                is_player=True,
+                                color=(50, 50, 50),
+                                size=0.4,
+                                weapon_type="bomb",
+                                z=0.5,  # Start at mid-height
+                                vz=0.15,  # Throw UP
+                                gravity=0.015,
+                            )
+                            self.entity_manager.add_projectile(bomb)
                     # Alt Shoot (e.g. Numpad 0)
                     elif self.input_manager.is_action_just_pressed(event, "shoot_alt"):
                         assert self.player is not None
@@ -1017,104 +1033,103 @@ class Game:
         except Exception:
             logger.exception("Error in check_shot_hit")
 
-    def handle_bomb_explosion(self) -> None:
+    def explode_bomb(self, projectile: Projectile) -> None:
         """Handle bomb explosion logic"""
         assert self.player is not None
-        self.particle_system.add_particle(
-            x=C.SCREEN_WIDTH // 2,
-            y=C.SCREEN_HEIGHT // 2,
-            dx=0,
-            dy=0,
-            color=C.WHITE,
-            timer=40,
-            size=3000,
+
+        # Calculate distance to player for visual effects intensity
+        dist_to_player = math.sqrt(
+            (projectile.x - self.player.x) ** 2 + (projectile.y - self.player.y) ** 2
         )
-        for _ in range(300):
-            angle = random.uniform(0, 2 * math.pi)
-            speed = random.uniform(5, 25)
-            color = random.choice([C.ORANGE, C.RED, C.YELLOW, C.DARK_RED, (50, 50, 50)])
-            self.particle_system.add_particle(
-                x=C.SCREEN_WIDTH // 2,
-                y=C.SCREEN_HEIGHT // 2,
-                dx=math.cos(angle) * speed,
-                dy=math.sin(angle) * speed,
-                color=color,
-                timer=random.randint(40, 100),
-                size=random.randint(5, 25),
-            )
-
-        for bot in self.bots:
-            if not bot.alive:
-                continue
-            dx = bot.x - self.player.x
-            dy = bot.y - self.player.y
-            dist = math.sqrt(dx * dx + dy * dy)
-            if dist < C.BOMB_RADIUS:
-                if bot.take_damage(1000):
-                    self.sound_manager.play_sound("scream")
-                    self.kills += 1
-                    self.kill_combo_count += 1
-                    self.kill_combo_timer = 180
-                    self.last_death_pos = (bot.x, bot.y)
-
-                if dist < 5.0:
-                    self.particle_system.add_explosion(
-                        C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2, count=3
-                    )
 
         try:
             self.sound_manager.play_sound("bomb")
         except BaseException:
             logger.exception("Bomb Audio Failed")
 
-        # Enhanced bomb explosion visual effects
-        explosion_center = (C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2)
+        # Visual Effects (Logic similar to _explode_generic)
+        if dist_to_player < 20:
+            # Only show massive screen effects if reasonably close
 
-        # Multiple explosion rings
-        for ring in range(5):
-            ring_size = 50 + ring * 30
-            ring_alpha = 255 - ring * 40
-            explosion_surface = pygame.Surface(
-                (ring_size * 2, ring_size * 2), pygame.SRCALPHA
-            )
+            # 1. Screen Shake / Whiteout (if very close)
+            if dist_to_player < 10:
+                self.particle_system.add_particle(
+                    x=C.SCREEN_WIDTH // 2,
+                    y=C.SCREEN_HEIGHT // 2,
+                    dx=0,
+                    dy=0,
+                    color=C.WHITE,
+                    timer=20,
+                    size=3000,
+                )
 
-            # Color gradient from white to orange to red
-            if ring == 0:
-                ring_color: tuple[int, int, int, int] = (255, 255, 255, ring_alpha)
-            elif ring <= 2:
-                ring_color = (255, 200, 0, ring_alpha)
-            else:
-                ring_color = (255, 100, 0, ring_alpha)
+            # 2. Particles
+            explosion_center = (C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2)
 
-            pygame.draw.circle(
-                explosion_surface, ring_color, (ring_size, ring_size), ring_size
-            )
-            self.screen.blit(
-                explosion_surface,
-                (explosion_center[0] - ring_size, explosion_center[1] - ring_size),
-            )
+            for _ in range(100):
+                angle = random.uniform(0, 2 * math.pi)
+                speed = random.uniform(5, 20)
+                color = random.choice([C.ORANGE, C.RED, C.YELLOW, (50, 50, 50)])
+                self.particle_system.add_particle(
+                    x=explosion_center[0],
+                    y=explosion_center[1],
+                    dx=math.cos(angle) * speed,
+                    dy=math.sin(angle) * speed,
+                    color=color,
+                    timer=random.randint(40, 80),
+                    size=random.randint(5, 15),
+                )
 
-        # Add screen shake effect by adding particles
-        for _ in range(50):
-            self.particle_system.add_particle(
-                x=explosion_center[0] + random.randint(-100, 100),
-                y=explosion_center[1] + random.randint(-100, 100),
-                dx=random.uniform(-15, 15),
-                dy=random.uniform(-15, 15),
-                color=(255, random.randint(100, 255), 0),
-                timer=60,
-                size=random.randint(4, 12),
-                gravity=0.1,
-                fade_color=(100, 0, 0),
-            )
+            # Rings
+            for ring in range(3):
+                ring_size = 50 + ring * 30
+                ring_alpha = 200 - ring * 50
+                explosion_surface = pygame.Surface(
+                    (ring_size * 2, ring_size * 2), pygame.SRCALPHA
+                )
+                pygame.draw.circle(
+                    explosion_surface,
+                    (255, 100, 0, ring_alpha),
+                    (ring_size, ring_size),
+                    ring_size,
+                )
+                self.screen.blit(
+                    explosion_surface,
+                    (explosion_center[0] - ring_size, explosion_center[1] - ring_size),
+                )
+
+        # Damage Logic (World Space)
+        for bot in self.bots:
+            if not bot.alive:
+                continue
+            dx = bot.x - projectile.x
+            dy = bot.y - projectile.y
+            dist = math.sqrt(dx * dx + dy * dy)
+
+            if dist < C.BOMB_RADIUS:
+                # Linear falloff
+                damage_factor = 1.0 - (dist / C.BOMB_RADIUS)
+                damage = int(1000 * damage_factor)
+
+                if bot.take_damage(damage):
+                    self.sound_manager.play_sound("scream")
+                    self.kills += 1
+                    self.kill_combo_count += 1
+                    self.kill_combo_timer = 180
+                    self.last_death_pos = (bot.x, bot.y)
+
+                if dist < 5.0 and dist_to_player < 20:
+                    self.particle_system.add_explosion(
+                        C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2, count=3
+                    )
 
         self.damage_texts.append(
             {
                 "x": C.SCREEN_WIDTH // 2,
                 "y": C.SCREEN_HEIGHT // 2 - 100,
-                "text": "BOMB DROPPED!",
+                "text": "BOOM!",
                 "color": C.ORANGE,
-                "timer": 120,
+                "timer": 90,
                 "vy": -0.5,
             }
         )
@@ -1451,9 +1466,6 @@ class Game:
                         self.fire_weapon()
         if self.joystick and not self.paused and self.player and self.player.alive:
             axis_x = self.joystick.get_axis(0)
-
-        if self.joystick and not self.paused and self.player and self.player.alive:
-            axis_x = self.joystick.get_axis(0)
             axis_y = self.joystick.get_axis(1)
 
             if abs(axis_x) > C.JOYSTICK_DEADZONE:
@@ -1564,6 +1576,21 @@ class Game:
             self.player.pitch_view(-5)
 
         self.player.update()
+
+        # Update Visited Cells for Minimap
+        px, py = int(self.player.x), int(self.player.y)
+        # Mark immediate area as visited
+        for dy in range(-4, 5):
+            for dx in range(-4, 5):
+                # Simple radius check
+                if dx * dx + dy * dy <= 16:
+                    cx, cy = px + dx, py + dy
+                    if (
+                        self.game_map
+                        and 0 <= cx < self.game_map.width
+                        and 0 <= cy < self.game_map.height
+                    ):
+                        self.visited_cells.add((cx, cy))
 
         self.entity_manager.update_bots(self.game_map, self.player, self)
 

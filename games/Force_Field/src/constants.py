@@ -11,6 +11,8 @@ FPS = 60
 MAP_SIZE = 40  # Will be set by user
 TILE_SIZE = 64
 MIN_BUILDING_OFFSET = 3  # Minimum offset from map edges for building generation
+WALL_SECRET = 5
+BOMBS_START = 3
 
 # Rendering Quality
 # 1 = Ultra (Full Res), 2 = High (Half Res),
@@ -72,13 +74,15 @@ WEAPONS: dict[str, WeaponData] = {
         "clip_size": 12,
         "reload_time": 60,  # 1 second
         "key": "1",
+        "automatic": False,  # Semi-auto, but felt "broken" if clicks missed.
     },
     "rifle": {
         "name": "Rifle",
         "damage": 40,  # Increased damage (was 20)
         "range": WEAPON_RANGE_RIFLE,
         "ammo": 90,  # 3 clips
-        "cooldown": 40,  # Slower fire rate (was 20)
+        "cooldown": 8,  # Faster fire rate (was 40, then 20)
+        "automatic": True,  # Fix: Make it automatic
         "clip_size": 15,  # Reduced clip size (was 30)
         "reload_time": 120,  # 2 seconds
         "key": "2",
@@ -94,6 +98,7 @@ WEAPONS: dict[str, WeaponData] = {
         "pellets": 8,
         "spread": 0.15,
         "key": "3",
+        "automatic": False,
     },
     "minigun": {
         "name": "Minigun",
@@ -134,7 +139,7 @@ WEAPONS: dict[str, WeaponData] = {
         "reload_time": 100,
         "key": "4",
         "beam_color": (255, 0, 0),  # Red laser
-        "beam_width": 3,
+        "beam_width": 15,  # Thicker beam (STAR WARS style)
     },
     "rocket": {
         "name": "Rocket Launcher",
@@ -425,6 +430,7 @@ WALL_COLORS = {
     2: (139, 69, 19),
     3: (150, 75, 0),
     4: (180, 180, 180),
+    5: (80, 80, 90),
 }
 
 # Level Themes (Wall Color Palette per level modulo)
@@ -433,7 +439,7 @@ LEVEL_THEMES: list[LevelTheme] = [
     {
         "floor": DARK_GRAY,
         "ceiling": SKY_COLOR,
-        "walls": {1: GRAY, 2: BROWN, 3: DARK_BROWN, 4: (180, 180, 180)},
+        "walls": {1: GRAY, 2: BROWN, 3: DARK_BROWN, 4: (180, 180, 180), 5: (80, 80, 90)},
     },
     # 1: Mars (Red/Orange)
     {
@@ -444,6 +450,7 @@ LEVEL_THEMES: list[LevelTheme] = [
             2: (180, 80, 40),
             3: (100, 30, 30),
             4: (200, 100, 50),
+            5: (100, 40, 40),
         },
     },
     # 2: Cyber (Neon/Dark)
@@ -455,6 +462,7 @@ LEVEL_THEMES: list[LevelTheme] = [
             2: (0, 200, 200),
             3: (0, 50, 150),
             4: (100, 0, 200),
+            5: (50, 0, 100),
         },
     },
     # 3: Toxic (Green)
@@ -466,6 +474,7 @@ LEVEL_THEMES: list[LevelTheme] = [
             2: (100, 180, 40),
             3: (30, 100, 30),
             4: (150, 200, 100),
+            5: (40, 100, 40),
         },
     },
 ]

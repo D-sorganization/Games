@@ -67,7 +67,7 @@ class Player:
         self.shield_timer = C.SHIELD_MAX_DURATION
         self.shield_recharge_delay = 0
         self.bomb_cooldown = 0
-        self.bombs = 1  # Start with 1 bomb
+        self.bombs = C.BOMBS_START
         self.secondary_cooldown = 0
         self.zoomed = False
         self.god_mode = False
@@ -257,6 +257,19 @@ class Player:
         # Smoothly interpolate sway for better feel
         self.sway_amount = self.sway_amount * 0.8 + self.frame_turn * 0.2
         self.frame_turn = 0.0  # Reset for next frame accumulation
+
+        # Idle Sway (Breathing)
+        if not self.is_moving:
+            self.sway_timer += 1
+            # Small figure-8 sway
+            sway_pitch = math.sin(self.sway_timer * 0.03) * 2.0
+            sway_angle = math.cos(self.sway_timer * 0.015) * 0.001
+
+            self.pitch += sway_pitch * 0.05
+            self.angle += sway_angle
+
+            # Constrain pitch
+            self.pitch = max(-C.PITCH_LIMIT, min(C.PITCH_LIMIT, self.pitch))
 
         # Dash logic
         if self.dash_active:

@@ -42,7 +42,7 @@ class Raycaster:
         self.textures = TextureGenerator.generate_textures()
 
         # Map wall types to texture names
-        self.texture_map = {1: "stone", 2: "brick", 3: "metal", 4: "tech"}
+        self.texture_map = {1: "stone", 2: "brick", 3: "metal", 4: "tech", 5: "secret"}
 
         # Pre-generate stars
         self.stars = []
@@ -91,9 +91,9 @@ class Raycaster:
         origin_x: float,
         origin_y: float,
         angle: float,
-    ) -> tuple[float, int, float]:
+    ) -> tuple[float, int, float, int, int]:
         """Cast a single ray using DDA
-        Returns: (distance, wall_type, wall_x)
+        Returns: (distance, wall_type, wall_x, map_x, map_y)
         Distance is Euclidean distance along the ray.
         wall_x is the exact position of the hit on the wall (0.0 - 1.0)
         """
@@ -163,15 +163,16 @@ class Raycaster:
 
             # Normalize wall_x_hit to 0-1
             wall_x_hit -= math.floor(wall_x_hit)
-            return distance, wall_type, wall_x_hit
+            return distance, wall_type, wall_x_hit, map_x, map_y
 
-        return C.MAX_DEPTH, 0, 0.0
+        return C.MAX_DEPTH, 0, 0.0, 0, 0
 
     def render_3d(
         self,
         screen: pygame.Surface,
         player: Player,
         bots: list[Bot],
+        projectiles: list[Projectile],
         level: int,
         view_offset_y: float = 0.0,
     ) -> None:
@@ -215,7 +216,7 @@ class Raycaster:
         use_textures = self.use_textures and len(self.textures) > 0
 
         for ray in range(self.num_rays):
-            distance, wall_type, wall_x_hit = self.cast_ray(
+            distance, wall_type, wall_x_hit, _, _ = self.cast_ray(
                 player.x,
                 player.y,
                 ray_angle,
@@ -390,7 +391,7 @@ class Raycaster:
             )
 
         # Render Sprites
-        self._render_sprites(player, bots, half_fov, view_offset_y)
+        self._render_sprites(player, bots, projectiles, half_fov, view_offset_y)
 
         # Scale view surface to screen size and blit
         if self.render_scale == 1:
@@ -405,54 +406,66 @@ class Raycaster:
         self,
         player: Player,
         bots: list[Bot],
+        projectiles: list[Projectile],
         half_fov: float,
         view_offset_y: float = 0.0,
     ) -> None:
-        """Render all sprites to the view surface"""
-        bots_to_render = []
+        """Render all sprites (bots and projectiles) to the view surface"""
+        sprites_to_render = []
 
         # Optimization: Pre-calculate player direction vector
         p_cos = math.cos(player.angle)
         p_sin = math.sin(player.angle)
         max_dist_sq = C.MAX_DEPTH * C.MAX_DEPTH
 
+        max_dist_sq = C.MAX_DEPTH * C.MAX_DEPTH
+        
+        # Merge bots and projectiles
         for bot in bots:
             if bot.removed:
                 continue
+            sprites_to_render.append((bot, False))
+            
+        for proj in projectiles:
+            if not proj.alive:
+                continue
+            sprites_to_render.append((proj, True))
 
-            dx = bot.x - player.x
-            dy = bot.y - player.y
+        final_sprites = []
+
+        for entity, is_projectile in sprites_to_render:
+            dx = entity.x - player.x
+            dy = entity.y - player.y
 
             # Distance culling
             dist_sq = dx * dx + dy * dy
             if dist_sq > max_dist_sq:
                 continue
 
-            # Dot product check (Coarse culling for objects behind player)
-            # FOV is 60 degrees, so roughly +/- 30 degrees.
-            # Anything behind the player (proj < 0) can be safely skipped.
+            # Dot product check
             if dx * p_cos + dy * p_sin < 0:
                 continue
 
-            bot_dist = math.sqrt(dist_sq)
+            dist = math.sqrt(dist_sq)
+            angle = math.atan2(dy, dx)
+            angle_to_sprite = angle - player.angle
 
-            bot_angle = math.atan2(dy, dx)
-            angle_to_bot = bot_angle - player.angle
+            while angle_to_sprite > math.pi:
+                angle_to_sprite -= 2 * math.pi
+            while angle_to_sprite < -math.pi:
+                angle_to_sprite += 2 * math.pi
 
-            while angle_to_bot > math.pi:
-                angle_to_bot -= 2 * math.pi
-            while angle_to_bot < -math.pi:
-                angle_to_bot += 2 * math.pi
+            if abs(angle_to_sprite) < half_fov + 0.5:
+                final_sprites.append((entity, dist, angle_to_sprite, is_projectile))
+        
+        # Sort by distance (far to near)
+        final_sprites.sort(key=lambda x: x[1], reverse=True)
 
-            if abs(angle_to_bot) < half_fov + 0.5:
-                bots_to_render.append((bot, bot_dist, angle_to_bot))
-
-        bots_to_render.sort(key=lambda x: x[1], reverse=True)
-
-        for bot, bot_dist, angle_to_bot in bots_to_render:
-            self._draw_single_sprite(
-                player, bot, bot_dist, angle_to_bot, half_fov, view_offset_y
-            )
+        for entity, dist, angle, is_proj in final_sprites:
+            if is_proj:
+                self._draw_single_projectile(player, entity, dist, angle, half_fov, view_offset_y) # type: ignore
+            else:
+                self._draw_single_sprite(player, entity, dist, angle, half_fov, view_offset_y) # type: ignore
 
     def _draw_single_sprite(
         self,
@@ -631,6 +644,68 @@ class Raycaster:
                     self.view_surface.blit(scaled_slice, (run_start, int(sprite_y)))
                 except (ValueError, pygame.error):
                     continue
+
+    def _draw_single_projectile(
+        self,
+        player: Player,
+        proj: Projectile,
+        dist: float,
+        angle: float,
+        half_fov: float,
+        view_offset_y: float = 0.0,
+    ) -> None:
+        """Draw a projectile sprite."""
+        safe_dist = max(0.01, dist)
+        
+        # Calculate screen position
+        base_size = C.SCREEN_HEIGHT / safe_dist
+        sprite_size = base_size * float(proj.size)
+        
+        center_ray = self.num_rays / 2
+        sprite_scale = sprite_size / self.render_scale
+        ray_x = center_ray + (angle / half_fov) * center_ray - sprite_scale / 2
+        
+        # Height offset for arc (z-axis)
+        # 0.5 is eye level (center screen). 
+        # Screen Y = center - (z - 0.5) * height_scale
+        # height_scale is roughly C.SCREEN_HEIGHT / dist
+        
+        z_offset = (proj.z - 0.5) * (C.SCREEN_HEIGHT / safe_dist)
+        sprite_y = (C.SCREEN_HEIGHT / 2) - (sprite_size / 2) - z_offset + player.pitch + view_offset_y
+
+        # Draw checks
+        if ray_x + sprite_scale < 0 or ray_x >= self.num_rays:
+             return
+             
+        # Simple Circle Rendering for now (or specialized sprites)
+        # We draw directly to view_surface
+        
+        # Correctly check z-buffer for center point visibility?
+        # A simple center check is usually enough for small particles
+        center_ray_idx = int(ray_x + sprite_scale / 2)
+        if 0 <= center_ray_idx < self.num_rays:
+            if dist > self.z_buffer[center_ray_idx]:
+                return # Occluded
+        
+        # Draw
+        try:
+            rect = pygame.Rect(int(ray_x), int(sprite_y), int(sprite_scale), int(sprite_scale))
+            if rect.width > 0 and rect.height > 0:
+                 # Check if projectile has type_data fallback
+                 # If bomb, draw black circle. If plasma/rocket, use proj.color
+                 color = proj.color
+                 pygame.draw.circle(self.view_surface, color, rect.center, rect.width // 2)
+                 
+                 # Glow
+                 if proj.weapon_type == "plasma":
+                     pygame.draw.circle(self.view_surface, (255, 255, 255), rect.center, rect.width // 4)
+                 elif proj.weapon_type == "rocket":
+                      pygame.draw.circle(self.view_surface, (255, 100, 0), rect.center, rect.width // 3)
+                 elif proj.weapon_type == "bomb":
+                      # Draw fuse?
+                      pygame.draw.circle(self.view_surface, (255, 0, 0), (rect.centerx, rect.top), 2)
+        except (ValueError, pygame.error):
+            pass
 
     def render_floor_ceiling(
         self,
