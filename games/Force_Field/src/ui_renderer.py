@@ -597,7 +597,12 @@ class UIRenderer:
 
         for i, item in enumerate(menu_items):
             color = C.WHITE
-            rect = pygame.Rect(C.SCREEN_WIDTH // 2 - box_width // 2, 350 + i * 60, box_width, box_height)
+            rect = pygame.Rect(
+                C.SCREEN_WIDTH // 2 - box_width // 2,
+                350 + i * 60,
+                box_width,
+                box_height
+            )
             if rect.collidepoint(mouse_pos):
                 color = C.YELLOW
                 pygame.draw.rect(self.screen, (50, 0, 0), rect)
@@ -606,6 +611,42 @@ class UIRenderer:
             text = self.subtitle_font.render(item, True, color)
             text_rect = text.get_rect(center=rect.center)
             self.screen.blit(text, text_rect)
+
+        # Movement Speed Slider
+        slider_y = 350 + len(menu_items) * 60 + 30
+        slider_label = self.font.render("Movement Speed:", True, C.WHITE)
+        label_rect = slider_label.get_rect(center=(C.SCREEN_WIDTH // 2, slider_y))
+        self.screen.blit(slider_label, label_rect)
+
+        # Slider bar
+        slider_bar_y = slider_y + 30
+        slider_width = 200
+        slider_height = 10
+        slider_x = C.SCREEN_WIDTH // 2 - slider_width // 2
+
+        # Background bar
+        slider_bg_rect = pygame.Rect(
+            slider_x, slider_bar_y, slider_width, slider_height
+        )
+        pygame.draw.rect(self.screen, C.DARK_GRAY, slider_bg_rect)
+        pygame.draw.rect(self.screen, C.WHITE, slider_bg_rect, 2)
+
+        # Slider handle position (0.5 to 2.0 range mapped to slider width)
+        # Map 0.5-2.0 to 0.0-1.0
+        speed_ratio = (game.movement_speed_multiplier - 0.5) / 1.5
+        handle_x = slider_x + int(speed_ratio * slider_width)
+        handle_rect = pygame.Rect(
+            handle_x - 5, slider_bar_y - 5, 10, slider_height + 10
+        )
+        pygame.draw.rect(self.screen, C.CYAN, handle_rect)
+
+        # Speed value display
+        speed_text = f"{game.movement_speed_multiplier:.1f}x"
+        speed_surf = self.font.render(speed_text, True, C.CYAN)
+        speed_rect = speed_surf.get_rect(
+            center=(C.SCREEN_WIDTH // 2, slider_bar_y + 25)
+        )
+        self.screen.blit(speed_surf, speed_rect)
 
     def render_level_complete(self, game: Game) -> None:
         """Render the level complete screen."""

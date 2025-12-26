@@ -63,6 +63,12 @@ class Game:
         self.selected_lives = C.DEFAULT_LIVES
         self.selected_start_level = C.DEFAULT_START_LEVEL
 
+        # Movement speed multiplier (1.0 = default, 0.5 = half, 2.0 = double speed)
+        self.movement_speed_multiplier = 1.0
+
+        # Slider interaction state
+        self.dragging_speed_slider = False
+
         # Combo & Atmosphere
         self.kill_combo_count = 0
         self.kill_combo_timer = 0
@@ -682,6 +688,28 @@ class Game:
                                 self.sound_manager.start_music("music_loop")
                             break
 
+                    # Check speed slider interaction
+                    # Position of slider bar
+                    slider_y = 350 + len(menu_items) * 60 + 30 + 30
+                    slider_width = 200
+                    slider_height = 10
+                    slider_x = C.SCREEN_WIDTH // 2 - slider_width // 2
+                    slider_rect = pygame.Rect(
+                        slider_x, slider_y, slider_width, slider_height + 10
+                    )
+
+                    if slider_rect.collidepoint(mx, my):
+                        # Calculate new speed based on click position
+                        relative_x = mx - slider_x
+                        speed_ratio = max(0.0, min(1.0, relative_x / slider_width))
+                        # Map to 0.5-2.0 range
+                        self.movement_speed_multiplier = 0.5 + speed_ratio * 1.5
+                        self.dragging_speed_slider = True
+
+            elif event.type == pygame.MOUSEBUTTONUP:
+                if event.button == 1:  # Left mouse button
+                    self.dragging_speed_slider = False
+
                 elif not self.cheat_mode_active:
                     assert self.player is not None
                     if event.button == 1:
@@ -691,10 +719,26 @@ class Game:
                         if self.player.fire_secondary():
                             self.fire_weapon(is_secondary=True)
 
-            elif event.type == pygame.MOUSEMOTION and not self.paused:
-                assert self.player is not None
-                self.player.rotate(event.rel[0] * C.PLAYER_ROT_SPEED * C.SENSITIVITY_X)
-                self.player.pitch_view(-event.rel[1] * C.PLAYER_ROT_SPEED * 200)
+            elif event.type == pygame.MOUSEMOTION:
+                if self.paused and self.dragging_speed_slider:
+                    # Handle slider dragging
+                    mx, my = event.pos
+                    menu_items = [
+                        "RESUME", "SAVE GAME", "ENTER CHEAT", "CONTROLS", "QUIT TO MENU"
+                    ]
+                    slider_y = 350 + len(menu_items) * 60 + 30 + 30
+                    slider_width = 200
+                    slider_x = C.SCREEN_WIDTH // 2 - slider_width // 2
+
+                    relative_x = mx - slider_x
+                    speed_ratio = max(0.0, min(1.0, relative_x / slider_width))
+                    self.movement_speed_multiplier = 0.5 + speed_ratio * 1.5
+                elif not self.paused:
+                    assert self.player is not None
+                    self.player.rotate(
+                        event.rel[0] * C.PLAYER_ROT_SPEED * C.SENSITIVITY_X
+                    )
+                    self.player.pitch_view(-event.rel[1] * C.PLAYER_ROT_SPEED * 200)
 
     def save_game(self, filename: str = "savegame.txt") -> None:
         """Save game state to file.
@@ -1228,7 +1272,7 @@ class Game:
                     self.game_map,
                     self.bots,
                     right=(axis_x > 0),
-                    speed=abs(axis_x) * C.PLAYER_SPEED,
+                    speed=abs(axis_x) * C.PLAYER_SPEED * self.movement_speed_multiplier,
                 )
                 self.player.is_moving = True
             if abs(axis_y) > C.JOYSTICK_DEADZONE:
@@ -1236,7 +1280,7 @@ class Game:
                     self.game_map,
                     self.bots,
                     forward=(axis_y < 0),
-                    speed=abs(axis_y) * C.PLAYER_SPEED,
+                    speed=abs(axis_y) * C.PLAYER_SPEED * self.movement_speed_multiplier,
                 )
                 self.player.is_moving = True
 
@@ -1290,11 +1334,11 @@ class Game:
         is_sprinting = self.input_manager.is_action_pressed("sprint") or sprint_key
 
         if is_sprinting and self.player.stamina > 0:
-            current_speed = C.PLAYER_SPRINT_SPEED
+            current_speed = C.PLAYER_SPRINT_SPEED * self.movement_speed_multiplier
             self.player.stamina -= 1
             self.player.stamina_recharge_delay = 60
         else:
-            current_speed = C.PLAYER_SPEED
+            current_speed = C.PLAYER_SPEED * self.movement_speed_multiplier
 
         moving = False
 

@@ -18,9 +18,9 @@ MIN_BUILDING_OFFSET = 3  # Minimum offset from map edges for building generation
 DEFAULT_RENDER_SCALE = 2
 
 # Player settings
-# Speeds reduced to improve game pacing
-PLAYER_SPEED = 0.375
-PLAYER_SPRINT_SPEED = 0.575
+# Speeds reduced to improve game pacing - further reduced for better control
+PLAYER_SPEED = 0.19  # Reduced from 0.375 (about half)
+PLAYER_SPRINT_SPEED = 0.29  # Reduced from 0.575 (about half)
 PLAYER_ROT_SPEED = 0.0015
 SENSITIVITY_X = 1.0
 DASH_SPEED_MULT = 2.5
