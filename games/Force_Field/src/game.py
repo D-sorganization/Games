@@ -1178,11 +1178,20 @@ class Game:
 
         shield_active = self.input_manager.is_action_pressed("shield")
 
-        # Keyboard Continuous Fire (for auto weapons like Minigun)
+        # Continuous Fire (Mouse/Keyboard) for Automatic Weapons
         if not self.paused and self.player and self.player.alive:
-            if self.input_manager.is_action_pressed("shoot"):
-                if self.player.shoot():
-                    self.fire_weapon()
+            # Check Input (Mouse Left or Shoot Key)
+            is_firing = (
+                self.input_manager.is_action_pressed("shoot")
+                or pygame.mouse.get_pressed()[0]
+            )
+
+            if is_firing:
+                # Only allow hold-to-fire if weapon is automatic
+                w_data = C.WEAPONS.get(self.player.current_weapon, {})
+                if w_data.get("automatic", False):
+                    if self.player.shoot():
+                        self.fire_weapon()
 
         if self.joystick and not self.paused and self.player and self.player.alive:
             axis_x = self.joystick.get_axis(0)
