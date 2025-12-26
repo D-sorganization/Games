@@ -53,6 +53,12 @@ class Player:
         self.melee_active = False
         self.melee_timer = 0
 
+        # Invincibility system
+        self.invincible = True  # Start invincible
+        self.invincibility_timer = 300  # 5 seconds at 60 FPS
+        self.respawn_delay = 0
+        self.respawning = False
+
         self.current_weapon = "rifle"
         self.shooting = False
         self.shoot_timer = 0
@@ -236,14 +242,7 @@ class Player:
         """Get range of current weapon"""
         return int(C.WEAPONS[self.current_weapon]["range"])
 
-    def take_damage(self, damage: int) -> None:
-        """Take damage"""
-        if self.shield_active or self.god_mode:
-            return
-        self.health -= damage
-        if self.health <= 0:
-            self.health = 0
-            self.alive = False
+
 
     def activate_bomb(self) -> bool:
         """Try to drop a bomb"""
@@ -295,6 +294,22 @@ class Player:
             self.melee_timer -= 1
             if self.melee_timer <= 0:
                 self.melee_active = False
+
+        # Invincibility timer
+        if self.invincibility_timer > 0:
+            self.invincibility_timer -= 1
+            if self.invincibility_timer <= 0:
+                self.invincible = False
+
+        # Respawn delay
+        if self.respawn_delay > 0:
+            self.respawn_delay -= 1
+            if self.respawn_delay <= 0:
+                self.respawning = False
+                self.alive = True
+                self.health = self.max_health
+                self.invincible = True
+                self.invincibility_timer = 300  # 5 seconds of invincibility
 
         # Stamina Regen
         if self.stamina_recharge_delay > 0:
@@ -397,5 +412,19 @@ class Player:
             self.melee_cooldown = 30  # 0.5 seconds at 60 FPS
             self.melee_active = True
             self.melee_timer = 15  # Attack duration
+            return True
+        return False
+
+    def take_damage(self, damage: int) -> bool:
+        """Take damage and return True if player died"""
+        if self.invincible or not self.alive:
+            return False
+            
+        self.health -= damage
+        if self.health <= 0:
+            self.health = 0
+            self.alive = False
+            self.respawning = True
+            self.respawn_delay = 180  # 3 seconds delay at 60 FPS
             return True
         return False

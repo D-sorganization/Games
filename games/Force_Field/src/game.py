@@ -622,7 +622,6 @@ class Game:
                         assert self.player is not None
                         if self.player.melee_attack():
                             self.execute_melee_attack()
-                            self.add_message("MELEE ATTACK!", C.RED)
                     elif self.input_manager.is_action_just_pressed(event, "bomb"):
                         assert self.player is not None
                         if self.player.activate_bomb():
@@ -1294,38 +1293,68 @@ class Game:
         # Add hit feedback message
         if hits > 0:
             if hits == 1:
-                self.add_message("MELEE HIT!", C.RED)
+                self.add_message("CRITICAL HIT!", C.RED)
             else:
-                self.add_message(f"MELEE COMBO x{hits}!", C.RED)
+                self.add_message(f"COMBO x{hits}!", C.RED)
 
     def create_melee_sweep_effect(self) -> None:
-        """Create visual sweep effect for melee attack"""
+        """Create enhanced visual sweep effect for melee attack"""
         assert self.player is not None
         
-        # Create arc particles for sweep effect
+        # Create dramatic arc particles for sweep effect
         player_angle = self.player.angle
-        arc_start = player_angle - math.pi / 6  # 30 degrees left
-        arc_end = player_angle + math.pi / 6    # 30 degrees right
+        arc_start = player_angle - math.pi / 4  # 45 degrees left
+        arc_end = player_angle + math.pi / 4    # 45 degrees right
         
-        # Create sweep particles
-        for i in range(20):
-            t = i / 19.0  # 0 to 1
-            angle = arc_start + t * (arc_end - arc_start)
+        # Create multiple layers of sweep particles for depth
+        for layer in range(3):
+            layer_distance = 80 + layer * 40
+            layer_alpha = 255 - layer * 60
             
-            # Distance from player (screen center)
-            distance = 100 + i * 10
-            
-            x = C.SCREEN_WIDTH // 2 + math.cos(angle) * distance
-            y = C.SCREEN_HEIGHT // 2 + math.sin(angle) * distance
-            
-            # Create sweep particle
+            # Create sweep particles in arc
+            for i in range(30):
+                t = i / 29.0  # 0 to 1
+                angle = arc_start + t * (arc_end - arc_start)
+                
+                # Distance from player (screen center)
+                distance = layer_distance + random.randint(-20, 20)
+                
+                x = C.SCREEN_WIDTH // 2 + math.cos(angle) * distance
+                y = C.SCREEN_HEIGHT // 2 + math.sin(angle) * distance
+                
+                # Create sweep particle with varying colors
+                if layer == 0:  # Inner layer - bright white/yellow
+                    color = (255, 255, 200)
+                elif layer == 1:  # Middle layer - orange
+                    color = (255, 150, 0)
+                else:  # Outer layer - red
+                    color = (255, 50, 0)
+                
+                self.particle_system.add_particle(
+                    x=x, y=y,
+                    dx=math.cos(angle) * 8,
+                    dy=math.sin(angle) * 8,
+                    color=color,
+                    timer=20 - layer * 5,
+                    size=4 + layer,
+                    gravity=0.05,
+                    fade_color=(100, 0, 0)
+                )
+        
+        # Add central impact burst
+        for _ in range(15):
+            angle = random.uniform(0, 2 * math.pi)
+            speed = random.uniform(3, 12)
             self.particle_system.add_particle(
-                x=x, y=y,
-                dx=math.cos(angle) * 5,
-                dy=math.sin(angle) * 5,
+                x=C.SCREEN_WIDTH // 2,
+                y=C.SCREEN_HEIGHT // 2,
+                dx=math.cos(angle) * speed,
+                dy=math.sin(angle) * speed,
                 color=(255, 255, 255),
-                timer=15,
-                size=3,
+                timer=25,
+                size=random.randint(2, 6),
+                gravity=0.1,
+                fade_color=(255, 100, 0)
             )
 
     def update_game(self) -> None:
@@ -1625,7 +1654,6 @@ class Game:
                         "GROOVY!",
                         "PIECE OF CAKE!",
                         "WHO WANTS SOME?",
-                        "BLOW IT OUT YOUR ASS!",
                         "EAT THIS!",
                         "SHAKE IT BABY!",
                         "NOBODY STEALS OUR CHICKS!",
@@ -1641,6 +1669,7 @@ class Game:
                         "UNSTOPPABLE!",
                         "RAMPAGE!",
                         "GODLIKE!",
+                        "BOOM BABY!",
                     ]
                     
                     phrase = random.choice(phrases)
