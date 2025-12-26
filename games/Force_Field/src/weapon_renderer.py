@@ -74,6 +74,9 @@ class WeaponRenderer:
                 cx, cy, player, gun_metal, gun_highlight, gun_dark
             )
 
+        elif weapon == "laser":
+            self._render_laser(cx, cy, player)
+
         return cx, cy
 
     def render_muzzle_flash(
@@ -422,3 +425,23 @@ class WeaponRenderer:
                 (cx + 70, cy - 340),
                 6,
             )
+
+    def _render_laser(self, cx: int, cy: int, player: Player) -> None:
+        """Render a high-tech laser rifle"""
+        # Main body
+        pygame.draw.rect(self.screen, (20, 20, 20), (cx - 20, cy - 100, 40, 100))
+
+        # Glowing Barrel Assembly
+        # Pulsing effect
+        pulse = int(55 * math.sin(pygame.time.get_ticks() * 0.01)) + 200
+        glow_color = (pulse, 0, 0)
+
+        pygame.draw.rect(self.screen, (100, 0, 0), (cx - 10, cy - 200, 20, 150))
+        pygame.draw.rect(self.screen, glow_color, (cx - 5, cy - 200, 10, 150))
+
+        # Base/Grip
+        pygame.draw.rect(self.screen, (50, 50, 50), (cx - 30, cy - 80, 60, 40))
+
+        # Emitter tip
+        pygame.draw.circle(self.screen, glow_color, (cx, cy - 200), 12)
+        pygame.draw.circle(self.screen, (255, 255, 255), (cx, cy - 200), 6)

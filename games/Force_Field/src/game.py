@@ -714,10 +714,6 @@ class Game:
                         self.movement_speed_multiplier = 0.5 + speed_ratio * 1.5
                         self.dragging_speed_slider = True
 
-            elif event.type == pygame.MOUSEBUTTONUP:
-                if event.button == 1:  # Left mouse button
-                    self.dragging_speed_slider = False
-
                 elif not self.cheat_mode_active:
                     # Gameplay Clicks (Shooting)
                     assert self.player is not None
@@ -727,6 +723,7 @@ class Game:
                     elif event.button == 3:
                         if self.player.fire_secondary():
                             self.fire_weapon(is_secondary=True)
+
             elif event.type == pygame.MOUSEBUTTONUP:
                 if event.button == 1:  # Left mouse button
                     self.dragging_speed_slider = False
