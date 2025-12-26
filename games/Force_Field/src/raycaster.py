@@ -26,6 +26,13 @@ if TYPE_CHECKING:
 class Raycaster:
     """Raycasting engine for 3D rendering"""
 
+    VISUAL_SCALE = 2.2
+    # Global overscan factor for rendering: allows sprites and effects (glows, muzzle
+    # flashes, etc.) to extend beyond their logical bounds without being clipped at
+    # the screen edges. The value 2.2 was empirically tuned to provide enough extra
+    # space for the largest glow/halo effects used in the game while avoiding
+    # excessive overdraw.
+
     def __init__(self, game_map: Map):
         """Initialize raycaster"""
         self.game_map = game_map
@@ -500,6 +507,8 @@ class Raycaster:
 
         sprite_y = C.SCREEN_HEIGHT / 2 - sprite_size / 2 + player.pitch + view_offset_y
 
+        visual_scale = self.VISUAL_SCALE
+
         if sprite_ray_x + sprite_ray_width < 0:
             return
         if sprite_ray_x >= self.num_rays:
@@ -522,9 +531,15 @@ class Raycaster:
         if cache_key in self.sprite_cache:
             sprite_surface = self.sprite_cache[cache_key]
         else:
-            # Create base surface
-            sprite_surface = pygame.Surface((cached_size, cached_size), pygame.SRCALPHA)
-            BotRenderer.render_sprite(sprite_surface, bot, 0, 0, cached_size)
+            # Create base surface with visual padding
+            # Size is visually scaled to allow glows/effects outside logical bounds
+            surf_size = int(cached_size * visual_scale)
+            padding = (surf_size - cached_size) // 2
+
+            sprite_surface = pygame.Surface((surf_size, surf_size), pygame.SRCALPHA)
+            BotRenderer.render_sprite(
+                sprite_surface, bot, padding, padding, cached_size
+            )
 
             # Apply shading cache
             shade_val = int(255 * distance_shade)
@@ -595,9 +610,13 @@ class Raycaster:
             scale_whole = False
 
         if scale_whole:
+            # Scale to visual size (includes padding)
+            final_w = int(target_width * visual_scale)
+            final_h = int(target_height * visual_scale)
+
             try:
                 scaled_sprite = pygame.transform.scale(
-                    sprite_surface, (target_width, target_height)
+                    sprite_surface, (final_w, final_h)
                 )
             except (ValueError, pygame.error):
                 return
@@ -617,20 +636,65 @@ class Raycaster:
                     width = target_width - x_offset
 
                 if width > 0:
-                    area = pygame.Rect(x_offset, 0, width, target_height)
-                    pos = (run_start, int(sprite_y))
+                    # Adjust for visual padding in x_offset
+
+                    # Adjust for visual padding in x_offset
+                    # The scaled sprite is larger than the logical (unpadded) sprite
+                    # by `visual_scale`, which introduces symmetric padding on all
+                    # sides. `target_width`/`target_height` describe the logical
+                    # region; `final_w`/`final_h` describe the scaled, padded texture.
+
+                    padding_x = (final_w - target_width) // 2
+
+                    # X in the scaled sprite corresponding to run_start:
+                    # We first shift `run_start` into a logical offset
+                    # (`run_start - sprite_ray_x`), then add the left padding of
+                    # the scaled texture to find the matching source column.
+                    src_x = int(padding_x + (run_start - sprite_ray_x))
+
+                    # We want to blit a slice of width 'width' from src_x
+                    area = pygame.Rect(src_x, 0, width, final_h)
+
+                    # In Y:
+                    #   - Scaling adds vertical padding above and below the logical
+                    #     sprite; `logical_top_edge_y` is the distance from the top
+                    #     of the scaled sprite to the top of the logical region.
+                    #   - We subtract this padding so that the logical sprite still
+                    #     appears anchored at `sprite_y`.
+                    logical_top_edge_y = (final_h - target_height) // 2
+                    dst_y = int(sprite_y - logical_top_edge_y)
+
+                    # Destination coordinates explanation:
+                    # x: Screen column at the start of this visible run.
+                    # y: Shifted upward for padding.
+
+                    pos = (run_start, dst_y)
                     self.view_surface.blit(scaled_sprite, pos, area)
         else:
             # Fallback: Strip scaling (only for large occluded sprites)
-            tex_width = sprite_surface.get_width()
-            tex_height = sprite_surface.get_height()
-            tex_scale = tex_width / sprite_ray_width
+            # This path is complex and rarely used by this engine config,
+            # so we rely on the main scaling path for most cases.
 
             for run_start, run_end in visible_runs:
                 run_width = run_end - run_start
 
-                tex_x_start = int((run_start - sprite_ray_x) * tex_scale)
-                tex_x_end = int((run_end - sprite_ray_x) * tex_scale)
+                tex_width = sprite_surface.get_width()
+                tex_height = sprite_surface.get_height()
+                # sprite_ray_width is "logical" width (inner part: unpadded sprite)
+                # logical_tex_width is the inner width mapping to sprite_ray_width.
+                # visual_scale describes comparison of padded texture to logical width.
+                # logical_tex_width = tex_width / visual_scale.
+                # The remaining width is symmetric padding; tex_padding is the offset
+                # from left edge to start of logical region.
+                # Texture coords = tex_padding + (world_x_offset * tex_scale).
+
+                logical_tex_width = tex_width / visual_scale
+                tex_scale = logical_tex_width / sprite_ray_width
+
+                tex_padding = (tex_width - logical_tex_width) / 2
+
+                tex_x_start = int(tex_padding + (run_start - sprite_ray_x) * tex_scale)
+                tex_x_end = int(tex_padding + (run_end - sprite_ray_x) * tex_scale)
 
                 tex_x_start = max(0, min(tex_width, tex_x_start))
                 tex_x_end = max(0, min(tex_width, tex_x_end))
