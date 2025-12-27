@@ -122,7 +122,9 @@ class WeaponRenderer:
                 dist = random.randint(50, 100)
                 end_x = flash_x + math.cos(angle) * dist
                 end_y = flash_y + math.sin(angle) * dist
-                pygame.draw.line(self.screen, (0, 255, 0), (flash_x, flash_y), (end_x, end_y), 3)
+                pygame.draw.line(
+                    self.screen, (0, 255, 0), (flash_x, flash_y), (end_x, end_y), 3
+                )
         else:
             pygame.draw.circle(self.screen, C.YELLOW, (flash_x, flash_y), 25)
             pygame.draw.circle(self.screen, C.ORANGE, (flash_x, flash_y), 15)
@@ -488,7 +490,9 @@ class WeaponRenderer:
 
         # Massive bulk
         pygame.draw.rect(self.screen, gun_metal, (cx - 60, cy - 150, 120, 150))
-        pygame.draw.rect(self.screen, gun_dark, (cx - 70, cy - 100, 140, 100), border_radius=10)
+        pygame.draw.rect(
+            self.screen, gun_dark, (cx - 70, cy - 100, 140, 100), border_radius=10
+        )
 
         # Glowing Energy Core
         pulse = int(127 + 127 * math.sin(time_ms * 0.005))
@@ -502,7 +506,9 @@ class WeaponRenderer:
 
         # Energy buildup
         if player.shooting:
-             pygame.draw.circle(self.screen, (0, 255, 0), (cx, cy - 220), 30 + random.randint(-5, 5))
+            pygame.draw.circle(
+                self.screen, (0, 255, 0), (cx, cy - 220), 30 + random.randint(-5, 5)
+            )
 
         # Side Vents
         for i in range(3):

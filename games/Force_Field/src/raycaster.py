@@ -784,7 +784,7 @@ class Raycaster:
                         self.view_surface, (255, 100, 0), rect.center, rect.width // 3
                     )
                 elif proj.weapon_type == "bfg":
-                     pygame.draw.circle(
+                    pygame.draw.circle(
                         self.view_surface, (200, 255, 200), rect.center, rect.width // 3
                     )
                 elif proj.weapon_type == "bomb":

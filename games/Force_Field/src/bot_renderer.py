@@ -128,10 +128,10 @@ class BotRenderer:
             return
 
         if visual_style == "cyber_demon":
-             BotRenderer._render_cyber_demon(
+            BotRenderer._render_cyber_demon(
                 screen, bot, center_x, render_y, render_width, render_height, base_color
             )
-             return
+            return
 
         if visual_style == "ghost":
             BotRenderer._render_ghost(
@@ -641,7 +641,9 @@ class BotRenderer:
         # Left Leg (Metal)
         pygame.draw.rect(screen, metal_color, (cx - rw * 0.4, leg_y, leg_w, leg_h))
         # Hydraulic piston details
-        pygame.draw.rect(screen, (50, 50, 50), (cx - rw * 0.35, leg_y + 10, leg_w * 0.5, leg_h - 20))
+        pygame.draw.rect(
+            screen, (50, 50, 50), (cx - rw * 0.35, leg_y + 10, leg_w * 0.5, leg_h - 20)
+        )
 
         # Right Leg (Flesh/Metal mix)
         pygame.draw.rect(screen, flesh_color, (cx + rw * 0.05, leg_y, leg_w, leg_h))
@@ -667,11 +669,28 @@ class BotRenderer:
         pygame.draw.rect(screen, flesh_color, (head_x, head_y, head_size, head_size))
 
         # Horns
-        pygame.draw.polygon(screen, (200, 200, 200), [(head_x, head_y), (head_x + 10, head_y - 20), (head_x + 20, head_y)])
-        pygame.draw.polygon(screen, (200, 200, 200), [(head_x + head_size, head_y), (head_x + head_size - 10, head_y - 20), (head_x + head_size - 20, head_y)])
+        pygame.draw.polygon(
+            screen,
+            (200, 200, 200),
+            [(head_x, head_y), (head_x + 10, head_y - 20), (head_x + 20, head_y)],
+        )
+        pygame.draw.polygon(
+            screen,
+            (200, 200, 200),
+            [
+                (head_x + head_size, head_y),
+                (head_x + head_size - 10, head_y - 20),
+                (head_x + head_size - 20, head_y),
+            ],
+        )
 
         # Eye (Cybernetic)
-        pygame.draw.circle(screen, (255, 0, 0), (int(cx), int(head_y + head_size * 0.4)), int(head_size * 0.15))
+        pygame.draw.circle(
+            screen,
+            (255, 0, 0),
+            (int(cx), int(head_y + head_size * 0.4)),
+            int(head_size * 0.15),
+        )
 
         # Arm Cannon (Right Arm)
         cannon_w = rw * 0.5
@@ -682,7 +701,12 @@ class BotRenderer:
 
         # Cannon Glow
         if bot.shoot_animation > 0:
-            pygame.draw.circle(screen, (255, 100, 0), (int(cannon_x + cannon_w), int(cannon_y + cannon_h/2)), int(20 + bot.shoot_animation * 10))
+            pygame.draw.circle(
+                screen,
+                (255, 100, 0),
+                (int(cannon_x + cannon_w), int(cannon_y + cannon_h / 2)),
+                int(20 + bot.shoot_animation * 10),
+            )
 
         # Left Arm (Claw)
         arm_x = cx - rw * 0.5 - rw * 0.1

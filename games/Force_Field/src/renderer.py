@@ -58,7 +58,9 @@ class GameRenderer:
         # Damage Flash
         if game.player.damage_flash_timer > 0:
             alpha = int((game.player.damage_flash_timer / 15.0) * 128)
-            flash_surf = pygame.Surface((C.SCREEN_WIDTH, C.SCREEN_HEIGHT), pygame.SRCALPHA)
+            flash_surf = pygame.Surface(
+                (C.SCREEN_WIDTH, C.SCREEN_HEIGHT), pygame.SRCALPHA
+            )
             flash_surf.fill((255, 0, 0, alpha))
             self.effects_surface.blit(flash_surf, (0, 0))
 
