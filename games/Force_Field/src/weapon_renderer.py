@@ -82,6 +82,9 @@ class WeaponRenderer:
                 cx, cy, player, gun_metal, gun_highlight, gun_dark
             )
 
+        elif weapon == "bfg":
+            self._render_bfg(cx, cy, player, gun_metal, gun_highlight, gun_dark)
+
         return cx, cy
 
     def render_muzzle_flash(
@@ -108,6 +111,20 @@ class WeaponRenderer:
             pygame.draw.circle(
                 self.screen, C.WHITE, (flash_x + offset_x, flash_y + offset_y), 15
             )
+        elif weapon_name == "bfg":
+            # Big Green Flash
+            pygame.draw.circle(self.screen, (0, 255, 0), (flash_x, flash_y), 60)
+            pygame.draw.circle(self.screen, (200, 255, 200), (flash_x, flash_y), 40)
+            pygame.draw.circle(self.screen, C.WHITE, (flash_x, flash_y), 20)
+            # Rays
+            for _ in range(8):
+                angle = random.uniform(0, 2 * math.pi)
+                dist = random.randint(50, 100)
+                end_x = flash_x + math.cos(angle) * dist
+                end_y = flash_y + math.sin(angle) * dist
+                pygame.draw.line(
+                    self.screen, (0, 255, 0), (flash_x, flash_y), (end_x, end_y), 3
+                )
         else:
             pygame.draw.circle(self.screen, C.YELLOW, (flash_x, flash_y), 25)
             pygame.draw.circle(self.screen, C.ORANGE, (flash_x, flash_y), 15)
@@ -458,3 +475,43 @@ class WeaponRenderer:
 
         if player.shooting:
             pygame.draw.circle(self.screen, (255, 255, 255), (cx, cy - 255), 15)
+
+    def _render_bfg(
+        self,
+        cx: int,
+        cy: int,
+        player: Player,
+        gun_metal: tuple[int, int, int],
+        gun_highlight: tuple[int, int, int],
+        gun_dark: tuple[int, int, int],
+    ) -> None:
+        """Render the BFG 9000"""
+        time_ms = pygame.time.get_ticks()
+
+        # Massive bulk
+        pygame.draw.rect(self.screen, gun_metal, (cx - 60, cy - 150, 120, 150))
+        pygame.draw.rect(
+            self.screen, gun_dark, (cx - 70, cy - 100, 140, 100), border_radius=10
+        )
+
+        # Glowing Energy Core
+        pulse = int(127 + 127 * math.sin(time_ms * 0.005))
+        core_color = (0, pulse, 0)
+        pygame.draw.circle(self.screen, core_color, (cx, cy - 100), 40)
+        pygame.draw.circle(self.screen, (200, 255, 200), (cx, cy - 100), 20)
+
+        # Barrel
+        pygame.draw.rect(self.screen, gun_highlight, (cx - 40, cy - 220, 80, 100))
+        pygame.draw.circle(self.screen, (10, 50, 10), (cx, cy - 220), 35)
+
+        # Energy buildup
+        if player.shooting:
+            pygame.draw.circle(
+                self.screen, (0, 255, 0), (cx, cy - 220), 30 + random.randint(-5, 5)
+            )
+
+        # Side Vents
+        for i in range(3):
+            y_vent = cy - 80 + i * 20
+            pygame.draw.rect(self.screen, core_color, (cx - 65, y_vent, 10, 10))
+            pygame.draw.rect(self.screen, core_color, (cx + 55, y_vent, 10, 10))

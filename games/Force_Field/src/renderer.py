@@ -54,6 +54,16 @@ class GameRenderer:
         # 2. Effects
         self.effects_surface.fill((0, 0, 0, 0))
         self._render_particles(game.particle_system.particles)
+
+        # Damage Flash
+        if game.player.damage_flash_timer > 0:
+            alpha = int((game.player.damage_flash_timer / 15.0) * 128)
+            flash_surf = pygame.Surface(
+                (C.SCREEN_WIDTH, C.SCREEN_HEIGHT), pygame.SRCALPHA
+            )
+            flash_surf.fill((255, 0, 0, alpha))
+            self.effects_surface.blit(flash_surf, (0, 0))
+
         self.screen.blit(self.effects_surface, (0, 0))
 
         # 3. Portal

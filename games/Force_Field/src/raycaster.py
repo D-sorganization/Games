@@ -783,6 +783,10 @@ class Raycaster:
                     pygame.draw.circle(
                         self.view_surface, (255, 100, 0), rect.center, rect.width // 3
                     )
+                elif proj.weapon_type == "bfg":
+                    pygame.draw.circle(
+                        self.view_surface, (200, 255, 200), rect.center, rect.width // 3
+                    )
                 elif proj.weapon_type == "bomb":
                     # Draw fuse?
                     pygame.draw.circle(
@@ -989,70 +993,3 @@ class Raycaster:
         dir_x = player_x + math.cos(player.angle) * 10
         dir_y = player_y + math.sin(player.angle) * 10
         pygame.draw.line(screen, C.GREEN, (player_x, player_y), (dir_x, dir_y), 2)
-
-    def render_projectiles(
-        self,
-        screen: pygame.Surface,
-        player: Player,
-        projectiles: list[Projectile],
-        view_offset_y: float = 0.0,
-    ) -> None:
-        """Render bot projectiles"""
-        current_fov = C.FOV * (C.ZOOM_FOV_MULT if player.zoomed else 1.0)
-        half_fov = current_fov / 2
-
-        # Optimization
-        p_cos = math.cos(player.angle)
-        p_sin = math.sin(player.angle)
-        max_dist_sq = C.MAX_DEPTH * C.MAX_DEPTH
-
-        for projectile in projectiles:
-            if not projectile.alive:
-                continue
-
-            dx = projectile.x - player.x
-            dy = projectile.y - player.y
-
-            dist_sq = dx * dx + dy * dy
-            if dist_sq > max_dist_sq:
-                continue
-
-            if dx * p_cos + dy * p_sin < 0:
-                continue
-
-            proj_dist = math.sqrt(dist_sq)
-
-            proj_angle = math.atan2(dy, dx)
-            angle_to_proj = proj_angle - player.angle
-
-            while angle_to_proj > math.pi:
-                angle_to_proj -= 2 * math.pi
-            while angle_to_proj < -math.pi:
-                angle_to_proj += 2 * math.pi
-
-            if abs(angle_to_proj) < half_fov:
-                proj_size = max(2, 10 / proj_dist) if proj_dist > 0.1 else 100
-                offset_x = (angle_to_proj / half_fov) * C.SCREEN_WIDTH / 2
-                proj_x = C.SCREEN_WIDTH / 2 + offset_x
-                proj_y = C.SCREEN_HEIGHT / 2 + player.pitch + view_offset_y
-
-                # Simple Z-Check
-                # Map angle to ray index
-                center_ray = self.num_rays // 2
-                ray_idx = int(center_ray + (angle_to_proj / half_fov) * center_ray)
-
-                # Check bounds and Z-Buffer
-                if 0 <= ray_idx < self.num_rays:
-                    # Check if center is occluded
-                    if proj_dist > self.z_buffer[ray_idx]:
-                        # Occluded
-                        continue
-
-                center = (int(proj_x), int(proj_y))
-                pygame.draw.circle(screen, C.RED, center, int(proj_size))
-                pygame.draw.circle(
-                    screen,
-                    C.ORANGE,
-                    (int(proj_x), int(proj_y)),
-                    int(proj_size * 0.6),
-                )
