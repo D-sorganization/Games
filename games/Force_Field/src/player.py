@@ -87,6 +87,9 @@ class Player:
         self.dash_active = False
         self.dash_timer = 0
 
+        # Visual Effects
+        self.damage_flash_timer = 0
+
     def move(
         self,
         game_map: Map,
@@ -323,6 +326,10 @@ class Player:
                 self.invincible = True
                 self.invincibility_timer = 300  # 5 seconds of invincibility
 
+        # Visual Effects
+        if self.damage_flash_timer > 0:
+            self.damage_flash_timer -= 1
+
         # Stamina Regen
         if self.stamina_recharge_delay > 0:
             self.stamina_recharge_delay -= 1
@@ -433,6 +440,8 @@ class Player:
             return False
 
         self.health -= damage
+        self.damage_flash_timer = 15  # 15 frames of red flash
+
         if self.health <= 0:
             self.health = 0
             self.alive = False

@@ -127,6 +127,12 @@ class BotRenderer:
             )
             return
 
+        if visual_style == "cyber_demon":
+             BotRenderer._render_cyber_demon(
+                screen, bot, center_x, render_y, render_width, render_height, base_color
+            )
+             return
+
         if visual_style == "ghost":
             BotRenderer._render_ghost(
                 screen, bot, center_x, render_y, render_width, render_height, base_color
@@ -604,6 +610,84 @@ class BotRenderer:
                         trail_surface,
                         (trail_pos[0] - trail_size, trail_pos[1] - trail_size),
                     )
+
+    @staticmethod
+    def _render_cyber_demon(
+        screen: pygame.Surface,
+        bot: Bot,
+        cx: float,
+        ry: float,
+        rw: float,
+        rh: float,
+        color: tuple[int, int, int],
+    ) -> None:
+        """Render the Cyber Demon enemy"""
+        time_ms = pygame.time.get_ticks()
+
+        # Mechanical Breathing
+        breath = 1.0 + math.sin(time_ms * 0.005) * 0.05
+        rw *= breath
+        rh *= breath
+
+        # Cybernetic Metal + Flesh
+        flesh_color = (150, 100, 100)
+        metal_color = (100, 100, 100)
+
+        # Legs (Mechanical)
+        leg_w = rw * 0.4
+        leg_h = rh * 0.5
+        leg_y = ry + rh * 0.5
+
+        # Left Leg (Metal)
+        pygame.draw.rect(screen, metal_color, (cx - rw * 0.4, leg_y, leg_w, leg_h))
+        # Hydraulic piston details
+        pygame.draw.rect(screen, (50, 50, 50), (cx - rw * 0.35, leg_y + 10, leg_w * 0.5, leg_h - 20))
+
+        # Right Leg (Flesh/Metal mix)
+        pygame.draw.rect(screen, flesh_color, (cx + rw * 0.05, leg_y, leg_w, leg_h))
+
+        # Torso (Massive)
+        torso_rect = (cx - rw * 0.5, ry, rw, rh * 0.6)
+        pygame.draw.rect(screen, flesh_color, torso_rect, border_radius=10)
+
+        # Cybernetic Chest Plate
+        chest_plate = (cx - rw * 0.3, ry + rh * 0.1, rw * 0.6, rh * 0.3)
+        pygame.draw.rect(screen, metal_color, chest_plate, border_radius=5)
+
+        # Wires
+        for i in range(3):
+            start = (cx - rw * 0.2 + i * 10, ry + rh * 0.4)
+            end = (cx - rw * 0.25 + i * 15, ry + rh * 0.6)
+            pygame.draw.line(screen, (30, 30, 30), start, end, 3)
+
+        # Head (Horned)
+        head_size = rw * 0.4
+        head_x = cx - head_size / 2
+        head_y = ry - head_size * 0.5
+        pygame.draw.rect(screen, flesh_color, (head_x, head_y, head_size, head_size))
+
+        # Horns
+        pygame.draw.polygon(screen, (200, 200, 200), [(head_x, head_y), (head_x + 10, head_y - 20), (head_x + 20, head_y)])
+        pygame.draw.polygon(screen, (200, 200, 200), [(head_x + head_size, head_y), (head_x + head_size - 10, head_y - 20), (head_x + head_size - 20, head_y)])
+
+        # Eye (Cybernetic)
+        pygame.draw.circle(screen, (255, 0, 0), (int(cx), int(head_y + head_size * 0.4)), int(head_size * 0.15))
+
+        # Arm Cannon (Right Arm)
+        cannon_w = rw * 0.5
+        cannon_h = rh * 0.2
+        cannon_x = cx + rw * 0.4
+        cannon_y = ry + rh * 0.2
+        pygame.draw.rect(screen, (40, 40, 40), (cannon_x, cannon_y, cannon_w, cannon_h))
+
+        # Cannon Glow
+        if bot.shoot_animation > 0:
+            pygame.draw.circle(screen, (255, 100, 0), (int(cannon_x + cannon_w), int(cannon_y + cannon_h/2)), int(20 + bot.shoot_animation * 10))
+
+        # Left Arm (Claw)
+        arm_x = cx - rw * 0.5 - rw * 0.1
+        arm_y = ry + rh * 0.2
+        pygame.draw.rect(screen, flesh_color, (arm_x, arm_y, rw * 0.2, rh * 0.4))
 
     @staticmethod
     def _render_beast(

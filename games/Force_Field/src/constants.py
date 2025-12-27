@@ -154,6 +154,19 @@ WEAPONS: dict[str, WeaponData] = {
         "projectile_color": (255, 100, 0),
         "aoe_radius": 6.0,
     },
+    "bfg": {
+        "name": "BFG 9000",
+        "damage": 500,
+        "range": 100,
+        "ammo": 5,
+        "cooldown": 60,
+        "clip_size": 1,
+        "reload_time": 200,
+        "key": "8",
+        "projectile_speed": 0.2,
+        "projectile_color": (0, 255, 0),
+        "aoe_radius": 15.0,
+    },
 }
 
 # Combat settings
@@ -421,6 +434,14 @@ ENEMY_TYPES: dict[str, EnemyData] = {
         "damage_mult": 2.5,
         "scale": 3.0,  # Huge
         "visual_style": "beast",
+    },
+    "cyber_demon": {
+        "color": (50, 50, 50),
+        "health_mult": 15.0,
+        "speed_mult": 0.3,
+        "damage_mult": 4.0,
+        "scale": 4.0,  # Massive
+        "visual_style": "cyber_demon",
     },
 }
 
