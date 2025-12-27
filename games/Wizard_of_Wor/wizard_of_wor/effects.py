@@ -203,4 +203,4 @@ class Vignette:
 
     def draw(self, screen: pygame.Surface) -> None:
         """Draw the vignette effect on the screen."""
-        screen.blit(self.surface, self.top_left, special_flags=pygame.BLEND_RGBA_MULT)
+        screen.blit(self.surface, self.top_left)
