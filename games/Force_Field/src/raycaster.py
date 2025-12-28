@@ -79,7 +79,7 @@ class Raycaster:
         self.view_surface = pygame.Surface(size, pygame.SRCALPHA)
 
         # Z-Buffer for occlusion (Euclidean distance)
-        self.z_buffer: np.ndarray = np.full(
+        self.z_buffer: np.ndarray[Any, Any] = np.full(
             self.num_rays, float("inf"), dtype=np.float64
         )
 
@@ -367,12 +367,12 @@ class Raycaster:
 
     def _render_walls_vectorized(
         self,
-        distances: np.ndarray,
-        wall_types: np.ndarray,
-        wall_x_hits: np.ndarray,
-        sides: np.ndarray,
+        distances: np.ndarray[Any, Any],
+        wall_types: np.ndarray[Any, Any],
+        wall_x_hits: np.ndarray[Any, Any],
+        sides: np.ndarray[Any, Any],
         player: Player,
-        ray_angles: np.ndarray,
+        ray_angles: np.ndarray[Any, Any],
         level: int,
         view_offset_y: float,
     ) -> None:
