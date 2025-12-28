@@ -187,7 +187,11 @@ class Raycaster:
     ) -> None:
         """Render 3D view using vectorized raycasting."""
         # Check if map changed
-        if self.game_map.grid != self.grid:
+        # Optimization: Check object identity first to avoid expensive deep comparison
+        if self.game_map.grid is not self.grid:
+            self.grid = self.game_map.grid
+            self.np_grid = np.array(self.game_map.grid, dtype=np.int8)
+        elif self.game_map.grid != self.grid:
             self.grid = self.game_map.grid
             self.np_grid = np.array(self.game_map.grid, dtype=np.int8)
 
@@ -267,10 +271,7 @@ class Raycaster:
 
             # Bounds check
             in_bounds = (
-                (map_x >= 0)
-                & (map_x < map_width)
-                & (map_y >= 0)
-                & (map_y < map_height)
+                (map_x >= 0) & (map_x < map_width) & (map_y >= 0) & (map_y < map_height)
             )
 
             # Out of bounds are hits (wall type 1)
@@ -391,9 +392,7 @@ class Raycaster:
         safe_dists = np.maximum(0.01, corrected_dists)
 
         # Calculate heights
-        wall_heights = np.minimum(
-            C.SCREEN_HEIGHT * 2, (C.SCREEN_HEIGHT / safe_dists)
-        )
+        wall_heights = np.minimum(C.SCREEN_HEIGHT * 2, (C.SCREEN_HEIGHT / safe_dists))
         wall_tops = (
             (C.SCREEN_HEIGHT - wall_heights) // 2 + player.pitch + view_offset_y
         ).astype(np.int32)
@@ -404,8 +403,7 @@ class Raycaster:
 
         # Fog
         fog_factors = np.clip(
-            (distances - C.MAX_DEPTH * C.FOG_START)
-            / (C.MAX_DEPTH * (1 - C.FOG_START)),
+            (distances - C.MAX_DEPTH * C.FOG_START) / (C.MAX_DEPTH * (1 - C.FOG_START)),
             0.0,
             1.0,
         )
@@ -442,10 +440,8 @@ class Raycaster:
                 # Optimization: wall_x_hits is already 0-1
                 tex_x = int(wall_x_hits[i] * tex_w)
                 # Clamp
-                if tex_x >= tex_w:
-                    tex_x = tex_w - 1
-                if tex_x < 0:
-                    tex_x = 0
+                # Clamp
+                tex_x = int(np.clip(tex_x, 0, tex_w - 1))
 
                 # Only render if height is reasonable
                 # If too small, solid color is better/faster
@@ -471,9 +467,7 @@ class Raycaster:
                             # 255 - (255 * shade) = alpha
                             alpha = int(255 * (1.0 - shade))
                             if alpha > 0:
-                                shade_surf = pygame.Surface(
-                                    (1, h), pygame.SRCALPHA
-                                )
+                                shade_surf = pygame.Surface((1, h), pygame.SRCALPHA)
                                 shade_surf.fill((0, 0, 0, alpha))
                                 scaled_strip.blit(shade_surf, (0, 0))
 
@@ -484,9 +478,7 @@ class Raycaster:
                         if fog > 0:
                             fog_alpha = int(255 * fog)
                             if fog_alpha > 0:
-                                fog_surf = pygame.Surface(
-                                    (1, h), pygame.SRCALPHA
-                                )
+                                fog_surf = pygame.Surface((1, h), pygame.SRCALPHA)
                                 fog_surf.fill((*C.FOG_COLOR, fog_alpha))
                                 scaled_strip.blit(fog_surf, (0, 0))
 
@@ -621,9 +613,7 @@ class Raycaster:
         sprite_ray_width = sprite_size / self.render_scale
         sprite_ray_x = ray_x
 
-        sprite_y = (
-            C.SCREEN_HEIGHT / 2 - sprite_size / 2 + player.pitch + view_offset_y
-        )
+        sprite_y = C.SCREEN_HEIGHT / 2 - sprite_size / 2 + player.pitch + view_offset_y
 
         visual_scale = self.VISUAL_SCALE
 

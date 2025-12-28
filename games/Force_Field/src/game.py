@@ -623,16 +623,15 @@ class Game:
                     self.pause_start_time = 0
                 pygame.mouse.set_visible(False)
                 pygame.event.set_grab(True)
-            return
 
         # Activate Cheat Mode
-        if event.key == pygame.K_c and (pygame.key.get_mods() & pygame.KMOD_CTRL):
+        elif event.key == pygame.K_c and (pygame.key.get_mods() & pygame.KMOD_CTRL):
             self.cheat_mode_active = True
             self.current_cheat_input = ""
             self.add_message("CHEAT MODE: TYPE CODE", C.PURPLE)
-            return
 
-        if not self.paused:
+        # Standard Gameplay Controls (only if not paused)
+        elif not self.paused:
             if self.input_manager.is_action_just_pressed(event, "weapon_1"):
                 self.switch_weapon_with_message("pistol")
             elif self.input_manager.is_action_just_pressed(event, "weapon_2"):
@@ -745,9 +744,7 @@ class Game:
         slider_width = 200
         slider_height = 10
         slider_x = C.SCREEN_WIDTH // 2 - slider_width // 2
-        slider_rect = pygame.Rect(
-            slider_x, slider_y, slider_width, slider_height + 10
-        )
+        slider_rect = pygame.Rect(slider_x, slider_y, slider_width, slider_height + 10)
 
         if slider_rect.collidepoint(mx, my):
             relative_x = mx - slider_x
