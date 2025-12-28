@@ -320,7 +320,15 @@ class Game:
 
         # Roguelike Weapon Start
         # Always have pistol, plus one random higher-tier weapon
-        possible_starters = ["rifle", "shotgun", "minigun", "plasma", "laser", "rocket", "flamethrower"]
+        possible_starters = [
+            "rifle",
+            "shotgun",
+            "minigun",
+            "plasma",
+            "laser",
+            "rocket",
+            "flamethrower",
+        ]
         starter = random.choice(possible_starters)
         self.unlocked_weapons = {"pistol", starter}
         self.god_mode = False
@@ -749,15 +757,7 @@ class Game:
 
     def _handle_speed_slider(self, event: pygame.event.Event) -> None:
         """Handle dragging the speed slider."""
-        mx, my = event.pos
-        menu_items = [
-            "RESUME",
-            "SAVE GAME",
-            "ENTER CHEAT",
-            "CONTROLS",
-            "QUIT TO MENU",
-        ]
-        slider_y = 350 + len(menu_items) * 60 + 30 + 30
+        mx, _ = event.pos
         slider_width = 200
         slider_x = C.SCREEN_WIDTH // 2 - slider_width // 2
 
@@ -831,7 +831,9 @@ class Game:
                     damage,
                     speed=speed,
                     is_player=True,
-                    color=C.WEAPONS["flamethrower"].get("projectile_color", (255, 140, 0)),
+                    color=C.WEAPONS["flamethrower"].get(
+                        "projectile_color", (255, 140, 0)
+                    ),
                     size=0.4,
                     weapon_type="flamethrower",
                 )

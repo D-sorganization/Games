@@ -79,7 +79,9 @@ class Raycaster:
         self.view_surface = pygame.Surface(size, pygame.SRCALPHA)
 
         # Z-Buffer for occlusion (Euclidean distance)
-        self.z_buffer: np.ndarray = np.full(self.num_rays, float("inf"), dtype=np.float64)
+        self.z_buffer: np.ndarray = np.full(
+            self.num_rays, float("inf"), dtype=np.float64
+        )
 
         # Precalculate ray angles relative to player angle
         self._update_ray_angles()
@@ -109,7 +111,8 @@ class Raycaster:
     ) -> tuple[float, int, float, int, int]:
         """Legacy single ray cast (kept for utility purposes)."""
         # This implementation is kept for non-rendering logic (e.g. AI line of sight)
-        # Using the pure Python implementation from before as it's sufficient for single rays
+        # Using the pure Python implementation from before as it's sufficient for
+        # single rays.
         ray_dir_x = math.cos(angle)
         ray_dir_y = math.sin(angle)
 
@@ -185,8 +188,8 @@ class Raycaster:
         """Render 3D view using vectorized raycasting."""
         # Check if map changed
         if self.game_map.grid != self.grid:
-             self.grid = self.game_map.grid
-             self.np_grid = np.array(self.game_map.grid, dtype=np.int8)
+            self.grid = self.game_map.grid
+            self.np_grid = np.array(self.game_map.grid, dtype=np.int8)
 
         # Clear view surface
         self.view_surface.fill((0, 0, 0, 0))
@@ -194,9 +197,9 @@ class Raycaster:
         # Vectorized Raycasting
         # 1. Setup Rays
         current_fov = C.FOV * (C.ZOOM_FOV_MULT if player.zoomed else 1.0)
-        # Recalculate deltas if FOV changes (zoom)
-        # This is cheap enough to do every frame if needed, or we can cache based on zoom state
-        ray_angles = player.angle + np.linspace(-current_fov/2, current_fov/2, self.num_rays)
+        ray_angles = player.angle + np.linspace(
+            -current_fov / 2, current_fov / 2, self.num_rays
+        )
 
         # 2. Directions
         ray_dir_x = np.cos(ray_angles)
@@ -217,20 +220,25 @@ class Raycaster:
         step_x = np.where(ray_dir_x < 0, -1, 1).astype(np.int32)
         step_y = np.where(ray_dir_y < 0, -1, 1).astype(np.int32)
 
-        side_dist_x = np.where(ray_dir_x < 0, (player.x - map_x) * delta_dist_x, (map_x + 1.0 - player.x) * delta_dist_x)
-        side_dist_y = np.where(ray_dir_y < 0, (player.y - map_y) * delta_dist_y, (map_y + 1.0 - player.y) * delta_dist_y)
+        side_dist_x = np.where(
+            ray_dir_x < 0,
+            (player.x - map_x) * delta_dist_x,
+            (map_x + 1.0 - player.x) * delta_dist_x,
+        )
+        side_dist_y = np.where(
+            ray_dir_y < 0,
+            (player.y - map_y) * delta_dist_y,
+            (map_y + 1.0 - player.y) * delta_dist_y,
+        )
 
         # 4. DDA Loop
         hits = np.zeros(self.num_rays, dtype=bool)
-        side = np.zeros(self.num_rays, dtype=np.int32) # 0 for NS, 1 for EW
+        side = np.zeros(self.num_rays, dtype=np.int32)  # 0 for NS, 1 for EW
         wall_types = np.zeros(self.num_rays, dtype=np.int32)
 
         max_steps = int(C.MAX_DEPTH * 1.5)
 
         # Loop until all rays hit or max steps
-        # We track active rays to avoid useless computation?
-        # Actually numpy works best with full arrays usually, masking might be slower for small arrays.
-        # But for 300-600 rays, masking is good.
         active = np.ones(self.num_rays, dtype=bool)
 
         map_width = self.map_width
@@ -258,7 +266,12 @@ class Raycaster:
             # Update active set
 
             # Bounds check
-            in_bounds = (map_x >= 0) & (map_x < map_width) & (map_y >= 0) & (map_y < map_height)
+            in_bounds = (
+                (map_x >= 0)
+                & (map_x < map_width)
+                & (map_y >= 0)
+                & (map_y < map_height)
+            )
 
             # Out of bounds are hits (wall type 1)
             out_of_bounds = (~in_bounds) & active
@@ -271,25 +284,15 @@ class Raycaster:
             check_mask = in_bounds & active
             if np.any(check_mask):
                 # Efficient grid lookup
-                # grid_vals = np_grid[map_y[check_mask], map_x[check_mask]]
-                # This indexing is fancy indexing.
-                # We need to be careful. map_y and map_x are 1D arrays of size num_rays.
-                # But we only want to check 'check_mask' indices.
-
                 # Let's extract indices
                 current_map_y = map_y[check_mask]
                 current_map_x = map_x[check_mask]
 
                 grid_vals = np_grid[current_map_y, current_map_x]
 
-                wall_hit_mask = (grid_vals > 0)
+                wall_hit_mask = grid_vals > 0
 
                 # Update hits
-                # We need to map back to full array
-                # check_indices = np.where(check_mask)[0]
-                # hit_indices = check_indices[wall_hit_mask]
-
-                # A slightly faster way might be:
                 active_indices = np.nonzero(check_mask)[0]
                 hit_local_indices = np.nonzero(wall_hit_mask)[0]
                 hit_global_indices = active_indices[hit_local_indices]
@@ -307,21 +310,29 @@ class Raycaster:
         perp_wall_dist = np.zeros(self.num_rays, dtype=np.float64)
 
         # Side 0: (side_dist_x - delta_dist_x)
-        mask_side_0 = (side == 0)
-        perp_wall_dist[mask_side_0] = side_dist_x[mask_side_0] - delta_dist_x[mask_side_0]
+        mask_side_0 = side == 0
+        perp_wall_dist[mask_side_0] = (
+            side_dist_x[mask_side_0] - delta_dist_x[mask_side_0]
+        )
 
         # Side 1: (side_dist_y - delta_dist_y)
-        mask_side_1 = (side == 1)
-        perp_wall_dist[mask_side_1] = side_dist_y[mask_side_1] - delta_dist_y[mask_side_1]
+        mask_side_1 = side == 1
+        perp_wall_dist[mask_side_1] = (
+            side_dist_y[mask_side_1] - delta_dist_y[mask_side_1]
+        )
 
         # Wall X Hit
         wall_x_hit = np.zeros(self.num_rays, dtype=np.float64)
 
         # Side 0: y + dist * ray_dir_y
-        wall_x_hit[mask_side_0] = player.y + perp_wall_dist[mask_side_0] * ray_dir_y[mask_side_0]
+        wall_x_hit[mask_side_0] = (
+            player.y + perp_wall_dist[mask_side_0] * ray_dir_y[mask_side_0]
+        )
 
         # Side 1: x + dist * ray_dir_x
-        wall_x_hit[mask_side_1] = player.x + perp_wall_dist[mask_side_1] * ray_dir_x[mask_side_1]
+        wall_x_hit[mask_side_1] = (
+            player.x + perp_wall_dist[mask_side_1] * ray_dir_x[mask_side_1]
+        )
 
         # Normalize
         wall_x_hit -= np.floor(wall_x_hit)
@@ -338,11 +349,11 @@ class Raycaster:
             player,
             ray_angles,
             level,
-            view_offset_y
+            view_offset_y,
         )
 
         # 7. Render Sprites
-        self._render_sprites(player, bots, projectiles, current_fov/2, view_offset_y)
+        self._render_sprites(player, bots, projectiles, current_fov / 2, view_offset_y)
 
         # 8. Blit to Screen
         if self.render_scale == 1:
@@ -362,10 +373,9 @@ class Raycaster:
         player: Player,
         ray_angles: np.ndarray,
         level: int,
-        view_offset_y: float
+        view_offset_y: float,
     ) -> None:
         """Render walls using computed arrays."""
-
         # Theme Setup
         if hasattr(self, "_cached_level") and self._cached_level == level:
             wall_colors = self._cached_wall_colors
@@ -381,8 +391,12 @@ class Raycaster:
         safe_dists = np.maximum(0.01, corrected_dists)
 
         # Calculate heights
-        wall_heights = np.minimum(C.SCREEN_HEIGHT * 2, (C.SCREEN_HEIGHT / safe_dists))
-        wall_tops = ((C.SCREEN_HEIGHT - wall_heights) // 2 + player.pitch + view_offset_y).astype(np.int32)
+        wall_heights = np.minimum(
+            C.SCREEN_HEIGHT * 2, (C.SCREEN_HEIGHT / safe_dists)
+        )
+        wall_tops = (
+            (C.SCREEN_HEIGHT - wall_heights) // 2 + player.pitch + view_offset_y
+        ).astype(np.int32)
         wall_heights_int = wall_heights.astype(np.int32)
 
         # Shading
@@ -390,24 +404,13 @@ class Raycaster:
 
         # Fog
         fog_factors = np.clip(
-            (distances - C.MAX_DEPTH * C.FOG_START) / (C.MAX_DEPTH * (1 - C.FOG_START)),
-            0.0, 1.0
+            (distances - C.MAX_DEPTH * C.FOG_START)
+            / (C.MAX_DEPTH * (1 - C.FOG_START)),
+            0.0,
+            1.0,
         )
 
         use_textures = self.use_textures and len(self.textures) > 0
-
-        # We process column by column? Or optimized grouping?
-        # Python loop over columns is slow.
-        # But blitting requires a loop unless we use surfarray for the whole screen (complex).
-        # We can optimize by grouping same-type strips.
-        # But textures break grouping usually.
-
-        # For textured rendering, we must loop.
-        # Optimizations:
-        # 1. Skip expensive texture work for far walls (solid color fallback)
-        # 2. Use the fastest scaling method (pygame.transform.scale)
-
-        screen_h = C.SCREEN_HEIGHT
 
         # Pre-fetch textures
         # Map integer wall types to texture surfaces
@@ -439,8 +442,10 @@ class Raycaster:
                 # Optimization: wall_x_hits is already 0-1
                 tex_x = int(wall_x_hits[i] * tex_w)
                 # Clamp
-                if tex_x >= tex_w: tex_x = tex_w - 1
-                if tex_x < 0: tex_x = 0
+                if tex_x >= tex_w:
+                    tex_x = tex_w - 1
+                if tex_x < 0:
+                    tex_x = 0
 
                 # Only render if height is reasonable
                 # If too small, solid color is better/faster
@@ -448,7 +453,8 @@ class Raycaster:
 
                 if h < 8000:
                     try:
-                        # Optimization: cache 1px strips? No, simple subsurface is fast.
+                        # Optimization: cache 1px strips? No, simple subsurface
+                        # is fast.
                         # Using subsurface is effectively a view, very cheap.
                         tex_strip = tex.subsurface((tex_x, 0, 1, tex_h))
 
@@ -459,26 +465,28 @@ class Raycaster:
                         shade = shades[i]
                         if shade < 1.0:
                             # Apply shade
-                            # Faster method: fill a surface with black and specific alpha
-                            # and blit on top.
-                            # Reusing a single shade surface and scaling it?
-                            # Or create one on the fly? creating on fly is slow.
-
+                            # Faster method: fill a surface with black and
+                            # specific alpha and blit on top.
                             # Optimization: Just use a black overlay with alpha.
                             # 255 - (255 * shade) = alpha
                             alpha = int(255 * (1.0 - shade))
                             if alpha > 0:
-                                shade_surf = pygame.Surface((1, h), pygame.SRCALPHA)
+                                shade_surf = pygame.Surface(
+                                    (1, h), pygame.SRCALPHA
+                                )
                                 shade_surf.fill((0, 0, 0, alpha))
                                 scaled_strip.blit(shade_surf, (0, 0))
 
                         # Fog mixing is hard with blit.
-                        # We can simulate fog by drawing a semi-transparent fog color rect over it.
+                        # We can simulate fog by drawing a semi-transparent fog
+                        # color rect over it.
                         fog = fog_factors[i]
                         if fog > 0:
                             fog_alpha = int(255 * fog)
                             if fog_alpha > 0:
-                                fog_surf = pygame.Surface((1, h), pygame.SRCALPHA)
+                                fog_surf = pygame.Surface(
+                                    (1, h), pygame.SRCALPHA
+                                )
                                 fog_surf.fill((*C.FOG_COLOR, fog_alpha))
                                 scaled_strip.blit(fog_surf, (0, 0))
 
@@ -492,7 +500,11 @@ class Raycaster:
                     col = wall_colors.get(wt, C.GRAY)
                     # Apply shade
                     shade = shades[i]
-                    col = (int(col[0]*shade), int(col[1]*shade), int(col[2]*shade))
+                    col = (
+                        int(col[0] * shade),
+                        int(col[1] * shade),
+                        int(col[2] * shade),
+                    )
                     pygame.draw.rect(self.view_surface, col, (i, top, 1, h))
             else:
                 # Solid Color Fallback
@@ -609,7 +621,9 @@ class Raycaster:
         sprite_ray_width = sprite_size / self.render_scale
         sprite_ray_x = ray_x
 
-        sprite_y = C.SCREEN_HEIGHT / 2 - sprite_size / 2 + player.pitch + view_offset_y
+        sprite_y = (
+            C.SCREEN_HEIGHT / 2 - sprite_size / 2 + player.pitch + view_offset_y
+        )
 
         visual_scale = self.VISUAL_SCALE
 
@@ -825,19 +839,31 @@ class Raycaster:
 
                 if proj.weapon_type == "plasma":
                     pygame.draw.circle(
-                        self.view_surface, (255, 255, 255), rect.center, rect.width // 4
+                        self.view_surface,
+                        (255, 255, 255),
+                        rect.center,
+                        rect.width // 4,
                     )
                 elif proj.weapon_type == "rocket":
                     pygame.draw.circle(
-                        self.view_surface, (255, 100, 0), rect.center, rect.width // 3
+                        self.view_surface,
+                        (255, 100, 0),
+                        rect.center,
+                        rect.width // 3,
                     )
                 elif proj.weapon_type == "bfg":
                     pygame.draw.circle(
-                        self.view_surface, (200, 255, 200), rect.center, rect.width // 3
+                        self.view_surface,
+                        (200, 255, 200),
+                        rect.center,
+                        rect.width // 3,
                     )
                 elif proj.weapon_type == "bomb":
                     pygame.draw.circle(
-                        self.view_surface, (255, 0, 0), (rect.centerx, rect.top), 2
+                        self.view_surface,
+                        (255, 0, 0),
+                        (rect.centerx, rect.top),
+                        2,
                     )
                 elif proj.weapon_type == "flamethrower":
                     # Dynamic flame effect
