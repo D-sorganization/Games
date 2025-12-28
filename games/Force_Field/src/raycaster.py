@@ -5,6 +5,7 @@ import math
 import random
 from typing import TYPE_CHECKING, Any, cast
 
+import numpy as np
 import pygame
 
 from . import constants as C  # noqa: N812
@@ -27,18 +28,16 @@ class Raycaster:
     """Raycasting engine for 3D rendering"""
 
     VISUAL_SCALE = 2.2
-    # Global overscan factor for rendering: allows sprites and effects (glows, muzzle
-    # flashes, etc.) to extend beyond their logical bounds without being clipped at
-    # the screen edges. The value 2.2 was empirically tuned to provide enough extra
-    # space for the largest glow/halo effects used in the game while avoiding
-    # excessive overdraw.
 
     def __init__(self, game_map: Map):
         """Initialize raycaster"""
         self.game_map = game_map
-        # Optimization: Cache grid for faster access
+        # Create numpy grid for faster access in vectorized calculations
         self.grid = game_map.grid
+        self.np_grid = np.array(game_map.grid, dtype=np.int8)
         self.map_size = game_map.size
+        self.map_width = game_map.width
+        self.map_height = game_map.height
 
         # Cache for theme
         self._cached_level: int = -1
@@ -80,7 +79,17 @@ class Raycaster:
         self.view_surface = pygame.Surface(size, pygame.SRCALPHA)
 
         # Z-Buffer for occlusion (Euclidean distance)
-        self.z_buffer: list[float] = [float("inf")] * self.num_rays
+        self.z_buffer: np.ndarray[Any, Any] = np.full(
+            self.num_rays, float("inf"), dtype=np.float64
+        )
+
+        # Precalculate ray angles relative to player angle
+        self._update_ray_angles()
+
+    def _update_ray_angles(self) -> None:
+        """Pre-calculate relative ray angles."""
+        self.deltas = np.linspace(-C.HALF_FOV, C.HALF_FOV, self.num_rays)
+        # We'll calculate exact rays per frame by adding player angle
 
     def set_render_scale(self, scale: int) -> None:
         """Update render scale and related buffers."""
@@ -91,7 +100,8 @@ class Raycaster:
         self.view_surface = pygame.Surface(
             (self.num_rays, C.SCREEN_HEIGHT), pygame.SRCALPHA
         )
-        self.z_buffer = [float("inf")] * self.num_rays
+        self.z_buffer = np.full(self.num_rays, float("inf"), dtype=np.float64)
+        self._update_ray_angles()
 
     def cast_ray(
         self,
@@ -99,22 +109,19 @@ class Raycaster:
         origin_y: float,
         angle: float,
     ) -> tuple[float, int, float, int, int]:
-        """Cast a single ray using DDA
-        Returns: (distance, wall_type, wall_x, map_x, map_y)
-        Distance is Euclidean distance along the ray.
-        wall_x is the exact position of the hit on the wall (0.0 - 1.0)
-        """
+        """Legacy single ray cast (kept for utility purposes)."""
+        # This implementation is kept for non-rendering logic (e.g. AI line of sight)
+        # Using the pure Python implementation from before as it's sufficient for
+        # single rays.
         ray_dir_x = math.cos(angle)
         ray_dir_y = math.sin(angle)
 
         map_x = int(origin_x)
         map_y = int(origin_y)
 
-        # Calculate delta distance
         delta_dist_x = abs(1 / ray_dir_x) if ray_dir_x != 0 else 1e30
         delta_dist_y = abs(1 / ray_dir_y) if ray_dir_y != 0 else 1e30
 
-        # Calculate step and initial side distance
         if ray_dir_x < 0:
             step_x = -1
             side_dist_x = (origin_x - map_x) * delta_dist_x
@@ -130,13 +137,10 @@ class Raycaster:
             side_dist_y = (map_y + 1.0 - origin_y) * delta_dist_y
 
         hit = False
-        side = 0  # 0 for NS, 1 for EW
+        side = 0
         wall_type = 0
+        max_steps = 100
 
-        # Max depth check to prevent infinite loop
-        max_steps = int(C.MAX_DEPTH * 1.5)
-
-        # Local variable access for speed
         grid = self.grid
 
         for _ in range(max_steps):
@@ -149,13 +153,12 @@ class Raycaster:
                 map_y += step_y
                 side = 1
 
-            if 0 <= map_x < self.game_map.width and 0 <= map_y < self.game_map.height:
+            if 0 <= map_x < self.map_width and 0 <= map_y < self.map_height:
                 if grid[map_y][map_x] > 0:
                     hit = True
                     wall_type = grid[map_y][map_x]
                     break
             else:
-                # Treat out of bounds as a wall to stop the ray
                 hit = True
                 wall_type = 1
                 break
@@ -168,7 +171,6 @@ class Raycaster:
                 distance = side_dist_y - delta_dist_y
                 wall_x_hit = origin_x + distance * ray_dir_x
 
-            # Normalize wall_x_hit to 0-1
             wall_x_hit -= math.floor(wall_x_hit)
             return distance, wall_type, wall_x_hit, map_x, map_y
 
@@ -183,17 +185,199 @@ class Raycaster:
         level: int,
         view_offset_y: float = 0.0,
     ) -> None:
-        """Render 3D view using raycasting"""
-        # Clear view surface with transparent color
+        """Render 3D view using vectorized raycasting."""
+        # Check if map changed
+        # Optimization: Check object identity first to avoid expensive deep comparison
+        if self.game_map.grid is not self.grid:
+            self.grid = self.game_map.grid
+            self.np_grid = np.array(self.game_map.grid, dtype=np.int8)
+        elif self.game_map.grid != self.grid:
+            self.grid = self.game_map.grid
+            self.np_grid = np.array(self.game_map.grid, dtype=np.int8)
+
+        # Clear view surface
         self.view_surface.fill((0, 0, 0, 0))
 
+        # Vectorized Raycasting
+        # 1. Setup Rays
         current_fov = C.FOV * (C.ZOOM_FOV_MULT if player.zoomed else 1.0)
-        half_fov = current_fov / 2
-        delta_angle = current_fov / self.num_rays
+        ray_angles = player.angle + np.linspace(
+            -current_fov / 2, current_fov / 2, self.num_rays
+        )
 
-        ray_angle = player.angle - half_fov
+        # 2. Directions
+        ray_dir_x = np.cos(ray_angles)
+        ray_dir_y = np.sin(ray_angles)
 
-        # Select theme
+        # Avoid division by zero
+        # Add epsilon to 0 values
+        ray_dir_x[ray_dir_x == 0] = 1e-30
+        ray_dir_y[ray_dir_y == 0] = 1e-30
+
+        # 3. Initialize DDA
+        map_x = np.full(self.num_rays, int(player.x), dtype=np.int32)
+        map_y = np.full(self.num_rays, int(player.y), dtype=np.int32)
+
+        delta_dist_x = np.abs(1.0 / ray_dir_x)
+        delta_dist_y = np.abs(1.0 / ray_dir_y)
+
+        step_x = np.where(ray_dir_x < 0, -1, 1).astype(np.int32)
+        step_y = np.where(ray_dir_y < 0, -1, 1).astype(np.int32)
+
+        side_dist_x = np.where(
+            ray_dir_x < 0,
+            (player.x - map_x) * delta_dist_x,
+            (map_x + 1.0 - player.x) * delta_dist_x,
+        )
+        side_dist_y = np.where(
+            ray_dir_y < 0,
+            (player.y - map_y) * delta_dist_y,
+            (map_y + 1.0 - player.y) * delta_dist_y,
+        )
+
+        # 4. DDA Loop
+        hits = np.zeros(self.num_rays, dtype=bool)
+        side = np.zeros(self.num_rays, dtype=np.int32)  # 0 for NS, 1 for EW
+        wall_types = np.zeros(self.num_rays, dtype=np.int32)
+
+        max_steps = int(C.MAX_DEPTH * 1.5)
+
+        # Loop until all rays hit or max steps
+        active = np.ones(self.num_rays, dtype=bool)
+
+        map_width = self.map_width
+        map_height = self.map_height
+        np_grid = self.np_grid
+
+        for _ in range(max_steps):
+            # Find next step
+            # We perform step for ALL active rays
+            # mask_x: True where side_dist_x < side_dist_y
+            mask_x = (side_dist_x < side_dist_y) & active
+            mask_y = (~mask_x) & active
+
+            # Step X
+            side_dist_x[mask_x] += delta_dist_x[mask_x]
+            map_x[mask_x] += step_x[mask_x]
+            side[mask_x] = 0
+
+            # Step Y
+            side_dist_y[mask_y] += delta_dist_y[mask_y]
+            map_y[mask_y] += step_y[mask_y]
+            side[mask_y] = 1
+
+            # Check bounds and walls
+            # Update active set
+
+            # Bounds check
+            in_bounds = (
+                (map_x >= 0) & (map_x < map_width) & (map_y >= 0) & (map_y < map_height)
+            )
+
+            # Out of bounds are hits (wall type 1)
+            out_of_bounds = (~in_bounds) & active
+            if np.any(out_of_bounds):
+                hits[out_of_bounds] = True
+                wall_types[out_of_bounds] = 1
+                active[out_of_bounds] = False
+
+            # Check walls for in-bounds
+            check_mask = in_bounds & active
+            if np.any(check_mask):
+                # Efficient grid lookup
+                # Let's extract indices
+                current_map_y = map_y[check_mask]
+                current_map_x = map_x[check_mask]
+
+                grid_vals = np_grid[current_map_y, current_map_x]
+
+                wall_hit_mask = grid_vals > 0
+
+                # Update hits
+                active_indices = np.nonzero(check_mask)[0]
+                hit_local_indices = np.nonzero(wall_hit_mask)[0]
+                hit_global_indices = active_indices[hit_local_indices]
+
+                if len(hit_global_indices) > 0:
+                    hits[hit_global_indices] = True
+                    wall_types[hit_global_indices] = grid_vals[wall_hit_mask]
+                    active[hit_global_indices] = False
+
+            if not np.any(active):
+                break
+
+        # 5. Calculate Distances and Wall X
+        # perp_wall_dist
+        perp_wall_dist = np.zeros(self.num_rays, dtype=np.float64)
+
+        # Side 0: (side_dist_x - delta_dist_x)
+        mask_side_0 = side == 0
+        perp_wall_dist[mask_side_0] = (
+            side_dist_x[mask_side_0] - delta_dist_x[mask_side_0]
+        )
+
+        # Side 1: (side_dist_y - delta_dist_y)
+        mask_side_1 = side == 1
+        perp_wall_dist[mask_side_1] = (
+            side_dist_y[mask_side_1] - delta_dist_y[mask_side_1]
+        )
+
+        # Wall X Hit
+        wall_x_hit = np.zeros(self.num_rays, dtype=np.float64)
+
+        # Side 0: y + dist * ray_dir_y
+        wall_x_hit[mask_side_0] = (
+            player.y + perp_wall_dist[mask_side_0] * ray_dir_y[mask_side_0]
+        )
+
+        # Side 1: x + dist * ray_dir_x
+        wall_x_hit[mask_side_1] = (
+            player.x + perp_wall_dist[mask_side_1] * ray_dir_x[mask_side_1]
+        )
+
+        # Normalize
+        wall_x_hit -= np.floor(wall_x_hit)
+
+        # Update Z Buffer
+        self.z_buffer = perp_wall_dist
+
+        # 6. Render Walls
+        self._render_walls_vectorized(
+            perp_wall_dist,
+            wall_types,
+            wall_x_hit,
+            side,
+            player,
+            ray_angles,
+            level,
+            view_offset_y,
+        )
+
+        # 7. Render Sprites
+        self._render_sprites(player, bots, projectiles, current_fov / 2, view_offset_y)
+
+        # 8. Blit to Screen
+        if self.render_scale == 1:
+            screen.blit(self.view_surface, (0, 0))
+        else:
+            scaled_surface = pygame.transform.scale(
+                self.view_surface, (C.SCREEN_WIDTH, C.SCREEN_HEIGHT)
+            )
+            screen.blit(scaled_surface, (0, 0))
+
+    def _render_walls_vectorized(
+        self,
+        distances: np.ndarray[Any, Any],
+        wall_types: np.ndarray[Any, Any],
+        wall_x_hits: np.ndarray[Any, Any],
+        sides: np.ndarray[Any, Any],
+        player: Player,
+        ray_angles: np.ndarray[Any, Any],
+        level: int,
+        view_offset_y: float,
+    ) -> None:
+        """Render walls using computed arrays."""
+        # Theme Setup
         if hasattr(self, "_cached_level") and self._cached_level == level:
             wall_colors = self._cached_wall_colors
         else:
@@ -203,211 +387,135 @@ class Raycaster:
             self._cached_level = level
             self._cached_wall_colors = wall_colors
 
-        # Reset Z-Buffer
-        # Re-using the existing list is faster than creating a new one
-        if len(self.z_buffer) != self.num_rays:
-            self.z_buffer = [float("inf")] * self.num_rays
-        else:
-            for i in range(self.num_rays):
-                self.z_buffer[i] = float("inf")
+        # Fisheye correction
+        corrected_dists = distances * np.cos(player.angle - ray_angles)
+        safe_dists = np.maximum(0.01, corrected_dists)
 
-        # Raycast and draw walls
-        last_wall_type = 0
-        last_color = (0, 0, 0)
-        last_top = 0
-        last_height = 0
-        strip_width = 0
-        start_ray = 0
+        # Calculate heights
+        wall_heights = np.minimum(C.SCREEN_HEIGHT * 2, (C.SCREEN_HEIGHT / safe_dists))
+        wall_tops = (
+            (C.SCREEN_HEIGHT - wall_heights) // 2 + player.pitch + view_offset_y
+        ).astype(np.int32)
+        wall_heights_int = wall_heights.astype(np.int32)
 
-        # Texture rendering settings
+        # Shading
+        shades = np.maximum(0.2, 1.0 - distances / 50.0)
+
+        # Fog
+        fog_factors = np.clip(
+            (distances - C.MAX_DEPTH * C.FOG_START) / (C.MAX_DEPTH * (1 - C.FOG_START)),
+            0.0,
+            1.0,
+        )
+
         use_textures = self.use_textures and len(self.textures) > 0
 
-        for ray in range(self.num_rays):
-            distance, wall_type, wall_x_hit, _, _ = self.cast_ray(
-                player.x,
-                player.y,
-                ray_angle,
-            )
+        # Pre-fetch textures
+        # Map integer wall types to texture surfaces
+        texture_surfs = {}
+        for wt in wall_colors.keys():
+            tname = self.texture_map.get(wt, "brick")
+            if tname in self.textures:
+                texture_surfs[wt] = self.textures[tname]
 
-            self.z_buffer[ray] = distance
+        # Loop
+        for i in range(self.num_rays):
+            if distances[i] >= C.MAX_DEPTH:
+                continue
 
-            if wall_type > 0 and distance < C.MAX_DEPTH:
-                # Fisheye correction
-                corrected_dist = distance * math.cos(player.angle - ray_angle)
+            wt = wall_types[i]
+            if wt == 0:
+                continue
 
-                # Prevent division by zero
-                safe_dist = max(0.01, corrected_dist)
-                wall_height = min(C.SCREEN_HEIGHT, (C.SCREEN_HEIGHT / safe_dist))
+            h = wall_heights_int[i]
+            top = wall_tops[i]
 
-                base_color = wall_colors.get(wall_type, C.GRAY)
+            # Texture rendering
+            if use_textures and wt in texture_surfs:
+                tex = texture_surfs[wt]
+                tex_w = tex.get_width()
+                tex_h = tex.get_height()
 
-                # Fog Logic
-                fog_factor = max(
-                    0.0,
-                    min(
-                        1.0,
-                        (distance - C.MAX_DEPTH * C.FOG_START)
-                        / (C.MAX_DEPTH * (1 - C.FOG_START)),
-                    ),
-                )
+                # Calculate texture X
+                # Optimization: wall_x_hits is already 0-1
+                tex_x = int(wall_x_hits[i] * tex_w)
+                # Clamp
+                # Clamp
+                tex_x = int(np.clip(tex_x, 0, tex_w - 1))
 
-                # Local lighting (Shade)
-                # Adjusted to be a bit darker for atmosphere
-                shade = max(0.2, 1.0 - distance / 50.0)
+                # Only render if height is reasonable
+                # If too small, solid color is better/faster
+                # If too big, we are very close.
 
-                # Pitch Adjustment
-                pitch_off = player.pitch + view_offset_y
-                wall_top = int((C.SCREEN_HEIGHT - wall_height) // 2 + pitch_off)
-                wall_h_int = int(wall_height)
-
-                # Texture Rendering
-                tex_name = self.texture_map.get(wall_type, "brick")
-                if use_textures and tex_name in self.textures:
-                    # Flush any solid color strip being built
-                    if strip_width > 0:
-                        pygame.draw.rect(
-                            self.view_surface,
-                            last_color,
-                            (start_ray, last_top, strip_width, last_height),
-                        )
-                        strip_width = 0
-
-                    texture = self.textures[tex_name]
-                    tex_w = texture.get_width()
-                    tex_h = texture.get_height()
-
-                    # Calculate texture X coordinate
-                    tex_x = int(wall_x_hit * tex_w)
-                    if tex_x >= tex_w:
-                        tex_x = tex_w - 1
-                    if tex_x < 0:
-                        tex_x = 0
-
-                    # Extract strip from texture
-                    # Optimization: Don't create new surface if not needed?
-                    # pygame.transform.scale is efficient.
-
-                    # Calculate height to scale to
-                    # If wall is bigger than screen, we need to handle clipping?
-                    # Pygame handles blitting outside surface bounds, but performance
-                    # might suffer if we scale to huge sizes.
-
-                    # Optimization: If strip is very thin, skip detailed texture?
-                    # For now, full render.
-
+                if h < 8000:
                     try:
-                        # Get 1px wide strip
-                        tex_strip = texture.subsurface((tex_x, 0, 1, tex_h))
+                        # Optimization: cache 1px strips? No, simple subsurface
+                        # is fast.
+                        # Using subsurface is effectively a view, very cheap.
+                        tex_strip = tex.subsurface((tex_x, 0, 1, tex_h))
 
-                        # Scale it to wall height
-                        # Note: we scale to wall_h_int, which might be > screen height.
-                        # For very close walls, this can be slow.
-                        # Limit max scaling size?
-                        # Limit max scaling size?
-                        # Arbitrary limit to prevent memory explosion
-                        if wall_h_int < 8000:
-                            scaled_strip = pygame.transform.scale(
-                                tex_strip, (1, wall_h_int)
-                            )
+                        # Scale
+                        scaled_strip = pygame.transform.scale(tex_strip, (1, h))
 
-                            # Apply shading
-                            if shade < 1.0:
-                                shade_val = int(255 * shade)
-                                shade_surf = pygame.Surface(
-                                    (1, wall_h_int), pygame.SRCALPHA
-                                )
-                                # Alpha blending dark
-                                shade_surf.fill((0, 0, 0, 255 - shade_val))
+                        # Shading (Darken)
+                        shade = shades[i]
+                        if shade < 1.0:
+                            # Apply shade
+                            # Faster method: fill a surface with black and
+                            # specific alpha and blit on top.
+                            # Optimization: Just use a black overlay with alpha.
+                            # 255 - (255 * shade) = alpha
+                            alpha = int(255 * (1.0 - shade))
+                            if alpha > 0:
+                                shade_surf = pygame.Surface((1, h), pygame.SRCALPHA)
+                                shade_surf.fill((0, 0, 0, alpha))
                                 scaled_strip.blit(shade_surf, (0, 0))
 
-                            # Blit to view surface
-                            self.view_surface.blit(scaled_strip, (ray, wall_top))
-                        else:
-                            # Fallback to solid color for extreme closeups
-                            pygame.draw.rect(
-                                self.view_surface,
-                                base_color,
-                                (ray, wall_top, 1, wall_h_int),
-                            )
+                        # Fog mixing is hard with blit.
+                        # We can simulate fog by drawing a semi-transparent fog
+                        # color rect over it.
+                        fog = fog_factors[i]
+                        if fog > 0:
+                            fog_alpha = int(255 * fog)
+                            if fog_alpha > 0:
+                                fog_surf = pygame.Surface((1, h), pygame.SRCALPHA)
+                                fog_surf.fill((*C.FOG_COLOR, fog_alpha))
+                                scaled_strip.blit(fog_surf, (0, 0))
+
+                        self.view_surface.blit(scaled_strip, (i, top))
 
                     except (pygame.error, ValueError):
                         pass
-
                 else:
-                    # Fallback to Solid Color Rendering (Strip Optimization)
-
-                    lit_r = base_color[0] * shade
-                    lit_g = base_color[1] * shade
-                    lit_b = base_color[2] * shade
-
-                    # Mix with Fog
-                    final_r = lit_r * (1 - fog_factor) + C.FOG_COLOR[0] * fog_factor
-                    final_g = lit_g * (1 - fog_factor) + C.FOG_COLOR[1] * fog_factor
-                    final_b = lit_b * (1 - fog_factor) + C.FOG_COLOR[2] * fog_factor
-
-                    color = (int(final_r), int(final_g), int(final_b))
-
-                    # Strip Rendering Logic
-                    can_group = False
-                    if strip_width > 0:
-                        # Check if we can group with previous strip
-                        if (
-                            wall_type == last_wall_type
-                            and color == last_color
-                            and abs(wall_top - last_top) <= 1
-                            and abs(wall_h_int - last_height) <= 1
-                        ):
-                            can_group = True
-
-                    if can_group:
-                        strip_width += 1
-                    else:
-                        if strip_width > 0:
-                            # Draw accumulated strip
-                            pygame.draw.rect(
-                                self.view_surface,
-                                last_color,
-                                (start_ray, last_top, strip_width, last_height),
-                            )
-
-                        # Start new strip
-                        last_wall_type = wall_type
-                        last_color = color
-                        last_top = wall_top
-                        last_height = wall_h_int
-                        strip_width = 1
-                        start_ray = ray
-            else:
-                # No wall hit (or too far)
-                if strip_width > 0:
-                    pygame.draw.rect(
-                        self.view_surface,
-                        last_color,
-                        (start_ray, last_top, strip_width, last_height),
+                    # Solid color fallback for massive closeness
+                    # (Avoids memory error on huge surfaces)
+                    col = wall_colors.get(wt, C.GRAY)
+                    # Apply shade
+                    shade = shades[i]
+                    col = (
+                        int(col[0] * shade),
+                        int(col[1] * shade),
+                        int(col[2] * shade),
                     )
-                strip_width = 0
+                    pygame.draw.rect(self.view_surface, col, (i, top, 1, h))
+            else:
+                # Solid Color Fallback
+                col = wall_colors.get(wt, C.GRAY)
+                shade = shades[i]
+                fog = fog_factors[i]
 
-            ray_angle += delta_angle
+                # Mix color
+                r = col[0] * shade
+                g = col[1] * shade
+                b = col[2] * shade
 
-        # Draw final strip
-        if strip_width > 0:
-            pygame.draw.rect(
-                self.view_surface,
-                last_color,
-                (start_ray, last_top, strip_width, last_height),
-            )
+                fr = r * (1 - fog) + C.FOG_COLOR[0] * fog
+                fg = g * (1 - fog) + C.FOG_COLOR[1] * fog
+                fb = b * (1 - fog) + C.FOG_COLOR[2] * fog
 
-        # Render Sprites
-        self._render_sprites(player, bots, projectiles, half_fov, view_offset_y)
+                final_col = (int(fr), int(fg), int(fb))
 
-        # Scale view surface to screen size and blit
-        if self.render_scale == 1:
-            screen.blit(self.view_surface, (0, 0))
-        else:
-            scaled_surface = pygame.transform.scale(
-                self.view_surface, (C.SCREEN_WIDTH, C.SCREEN_HEIGHT)
-            )
-            screen.blit(scaled_surface, (0, 0))
+                pygame.draw.rect(self.view_surface, final_col, (i, top, 1, h))
 
     def _render_sprites(
         self,
@@ -594,19 +702,12 @@ class Raycaster:
         if not visible_runs:
             return
 
-        # Strategy:
-        # If the sprite is mostly visible or small, scale the whole surface once.
-        # This avoids calling pygame.transform.scale many times for small strips.
+        # Scale whole strategy (most common)
         scale_whole = True
         if (
             total_visible_pixels < target_width * STRIP_VISIBILITY_THRESHOLD
             and target_width > LARGE_SPRITE_THRESHOLD
         ):
-            # If only a small fraction is visible and it's large, maybe strip
-            # scaling is better? But strip scaling involves creating subsurfaces
-            # which has overhead too. Modern Pygame/SDL is fast at scaling.
-            # Let's default to scale_whole for simplicity.
-            # actually, scaling a 1000x1000 image to just show 10 pixels is bad.
             scale_whole = False
 
         if scale_whole:
@@ -623,11 +724,10 @@ class Raycaster:
 
             for run_start, run_end in visible_runs:
                 # Calculate x offset in the scaled sprite
-                # sprite_ray_x corresponds to 0
                 x_offset = int(run_start - sprite_ray_x)
                 width = run_end - run_start
 
-                # Clamp (just in case float math drifted)
+                # Clamp
                 if x_offset < 0:
                     width += x_offset
                     x_offset = 0
@@ -636,57 +736,22 @@ class Raycaster:
                     width = target_width - x_offset
 
                 if width > 0:
-                    # Adjust for visual padding in x_offset
-
-                    # Adjust for visual padding in x_offset
-                    # The scaled sprite is larger than the logical (unpadded) sprite
-                    # by `visual_scale`, which introduces symmetric padding on all
-                    # sides. `target_width`/`target_height` describe the logical
-                    # region; `final_w`/`final_h` describe the scaled, padded texture.
-
                     padding_x = (final_w - target_width) // 2
-
-                    # X in the scaled sprite corresponding to run_start:
-                    # We first shift `run_start` into a logical offset
-                    # (`run_start - sprite_ray_x`), then add the left padding of
-                    # the scaled texture to find the matching source column.
                     src_x = int(padding_x + (run_start - sprite_ray_x))
 
-                    # We want to blit a slice of width 'width' from src_x
                     area = pygame.Rect(src_x, 0, width, final_h)
-
-                    # In Y:
-                    #   - Scaling adds vertical padding above and below the logical
-                    #     sprite; `logical_top_edge_y` is the distance from the top
-                    #     of the scaled sprite to the top of the logical region.
-                    #   - We subtract this padding so that the logical sprite still
-                    #     appears anchored at `sprite_y`.
                     logical_top_edge_y = (final_h - target_height) // 2
                     dst_y = int(sprite_y - logical_top_edge_y)
-
-                    # Destination coordinates explanation:
-                    # x: Screen column at the start of this visible run.
-                    # y: Shifted upward for padding.
 
                     pos = (run_start, dst_y)
                     self.view_surface.blit(scaled_sprite, pos, area)
         else:
-            # Fallback: Strip scaling (only for large occluded sprites)
-            # This path is complex and rarely used by this engine config,
-            # so we rely on the main scaling path for most cases.
-
+            # Fallback: Strip scaling
             for run_start, run_end in visible_runs:
                 run_width = run_end - run_start
 
                 tex_width = sprite_surface.get_width()
                 tex_height = sprite_surface.get_height()
-                # sprite_ray_width is "logical" width (inner part: unpadded sprite)
-                # logical_tex_width is the inner width mapping to sprite_ray_width.
-                # visual_scale describes comparison of padded texture to logical width.
-                # logical_tex_width = tex_width / visual_scale.
-                # The remaining width is symmetric padding; tex_padding is the offset
-                # from left edge to start of logical region.
-                # Texture coords = tex_padding + (world_x_offset * tex_scale).
 
                 logical_tex_width = tex_width / visual_scale
                 tex_scale = logical_tex_width / sprite_ray_width
@@ -733,11 +798,6 @@ class Raycaster:
         sprite_scale = sprite_size / self.render_scale
         ray_x = center_ray + (angle / half_fov) * center_ray - sprite_scale / 2
 
-        # Height offset for arc (z-axis)
-        # 0.5 is eye level (center screen).
-        # Screen Y = center - (z - 0.5) * height_scale
-        # height_scale is roughly C.SCREEN_HEIGHT / dist
-
         z_offset = (proj.z - 0.5) * (C.SCREEN_HEIGHT / safe_dist)
         sprite_y = (
             (C.SCREEN_HEIGHT / 2)
@@ -747,15 +807,10 @@ class Raycaster:
             + view_offset_y
         )
 
-        # Draw checks
         if ray_x + sprite_scale < 0 or ray_x >= self.num_rays:
             return
 
-        # Simple Circle Rendering for now (or specialized sprites)
-        # We draw directly to view_surface
-
-        # Correctly check z-buffer for center point visibility?
-        # A simple center check is usually enough for small particles
+        # Simple Center occlusion check
         center_ray_idx = int(ray_x + sprite_scale / 2)
         if 0 <= center_ray_idx < self.num_rays:
             if dist > self.z_buffer[center_ray_idx]:
@@ -767,30 +822,58 @@ class Raycaster:
                 int(ray_x), int(sprite_y), int(sprite_scale), int(sprite_scale)
             )
             if rect.width > 0 and rect.height > 0:
-                # Check if projectile has type_data fallback
-                # If bomb, draw black circle. If plasma/rocket, use proj.color
                 color = proj.color
                 pygame.draw.circle(
                     self.view_surface, color, rect.center, rect.width // 2
                 )
 
-                # Glow
                 if proj.weapon_type == "plasma":
                     pygame.draw.circle(
-                        self.view_surface, (255, 255, 255), rect.center, rect.width // 4
+                        self.view_surface,
+                        (255, 255, 255),
+                        rect.center,
+                        rect.width // 4,
                     )
                 elif proj.weapon_type == "rocket":
                     pygame.draw.circle(
-                        self.view_surface, (255, 100, 0), rect.center, rect.width // 3
+                        self.view_surface,
+                        (255, 100, 0),
+                        rect.center,
+                        rect.width // 3,
                     )
                 elif proj.weapon_type == "bfg":
                     pygame.draw.circle(
-                        self.view_surface, (200, 255, 200), rect.center, rect.width // 3
+                        self.view_surface,
+                        (200, 255, 200),
+                        rect.center,
+                        rect.width // 3,
                     )
                 elif proj.weapon_type == "bomb":
-                    # Draw fuse?
                     pygame.draw.circle(
-                        self.view_surface, (255, 0, 0), (rect.centerx, rect.top), 2
+                        self.view_surface,
+                        (255, 0, 0),
+                        (rect.centerx, rect.top),
+                        2,
+                    )
+                elif proj.weapon_type == "flamethrower":
+                    # Dynamic flame effect
+                    flame_color = (
+                        255,
+                        random.randint(100, 200),
+                        0,
+                    )
+                    # Draw multiple circles for fluffy fire
+                    pygame.draw.circle(
+                        self.view_surface,
+                        flame_color,
+                        rect.center,
+                        rect.width // 2,
+                    )
+                    pygame.draw.circle(
+                        self.view_surface,
+                        (255, 50, 0),
+                        (rect.centerx, rect.centery),
+                        rect.width // 3,
                     )
         except (ValueError, pygame.error):
             pass
@@ -819,7 +902,8 @@ class Raycaster:
         )
         bottom_color = ceiling_color
 
-        # Draw sky in 10px bands
+        # Optimized gradient drawing: bigger bands or pre-rendered
+        # Drawing 10px bands is fine.
         for y in range(0, horizon, 10):
             ratio = y / max(1, horizon)
             r = top_color[0] + (bottom_color[0] - top_color[0]) * ratio
@@ -853,8 +937,6 @@ class Raycaster:
                 pygame.draw.circle(screen, ceiling_color, shadow_pos, 40)
 
         floor_color = theme["floor"]
-
-        # Gradient Floor
         near_color = floor_color
         far_color = (
             max(0, floor_color[0] - 40),
@@ -865,7 +947,6 @@ class Raycaster:
         floor_height = C.SCREEN_HEIGHT - horizon
         for y in range(0, floor_height, 10):
             ratio = y / max(1, floor_height)
-            # Reverse ratio for floor (top is far, bottom is near)
             r = far_color[0] + (near_color[0] - far_color[0]) * ratio
             g = far_color[1] + (near_color[1] - far_color[1]) * ratio
             b = far_color[2] + (near_color[2] - far_color[2]) * ratio
@@ -927,22 +1008,13 @@ class Raycaster:
             ),
         )
 
-        # Blit cached map
         if self.minimap_surface:
-            # Create a mask surface for visited cells if needed
             if visited_cells is not None:
-                # Optimized approach: Blit the full map, then cover unvisited areas
-                # Or create a surface for visited areas.
-                # Since fog of war is dynamic, we can't fully cache the visible result
-                # but we can cache the base map.
-
-                # Create fog mask
                 fog_surface = pygame.Surface(
                     (self.minimap_size, self.minimap_size), pygame.SRCALPHA
                 )
-                fog_surface.fill((0, 0, 0, 255))  # Opaque black
+                fog_surface.fill((0, 0, 0, 255))
 
-                # Cut holes in fog
                 for vx, vy in visited_cells:
                     fog_surface.fill(
                         (0, 0, 0, 0),
@@ -953,8 +1025,6 @@ class Raycaster:
                             self.minimap_scale,
                         ),
                     )
-
-                # Apply fog to map (draw fog on top of the cached map on screen)
                 screen.blit(self.minimap_surface, (minimap_x, minimap_y))
                 screen.blit(fog_surface, (minimap_x, minimap_y))
             else:
@@ -970,7 +1040,7 @@ class Raycaster:
                     screen,
                     C.CYAN,
                     (int(portal_map_x), int(portal_map_y)),
-                    int(self.minimap_scale * 2),  # Cast float to int
+                    int(self.minimap_scale * 2),
                 )
 
         for bot in bots:
