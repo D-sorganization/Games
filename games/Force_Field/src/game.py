@@ -320,7 +320,7 @@ class Game:
 
         # Roguelike Weapon Start
         # Always have pistol, plus one random higher-tier weapon
-        possible_starters = ["rifle", "shotgun", "minigun", "plasma", "laser", "rocket"]
+        possible_starters = ["rifle", "shotgun", "minigun", "plasma", "laser", "rocket", "flamethrower"]
         starter = random.choice(possible_starters)
         self.unlocked_weapons = {"pistol", starter}
         self.god_mode = False
@@ -388,7 +388,6 @@ class Game:
                     self.player.current_weapon = w
                     break
         # Validate current weapon is unlocked
-        # (e.g. Player init sets 'rifle' but it might be locked)
         if self.player.current_weapon not in self.unlocked_weapons:
             self.player.current_weapon = "pistol"
 
@@ -410,7 +409,7 @@ class Game:
 
         for _ in range(num_enemies):
             # Try to place bot with more attempts and flexible distance
-            for attempt in range(50):  # Increased attempts
+            for attempt in range(50):
                 bx = random.randint(2, self.game_map.size - 2)
                 by = random.randint(2, self.game_map.size - 2)
 
@@ -439,6 +438,7 @@ class Game:
                         "ammo_box",
                         "bomb_item",
                         "pickup_rocket",
+                        "pickup_flamethrower",
                     ]
                     # Also exclude pickups
                     while enemy_type in exclusions or enemy_type.startswith("pickup"):
@@ -466,7 +466,6 @@ class Game:
             cx = random.randint(2, upper_bound)
             cy = random.randint(2, upper_bound)
 
-            # More flexible distance for boss spawning - but keep safe
             min_boss_distance = (
                 C.MIN_BOSS_DISTANCE if attempt < 70 else C.MIN_BOSS_DISTANCE * 0.7
             )
@@ -490,6 +489,7 @@ class Game:
             "pickup_shotgun",
             "pickup_plasma",
             "pickup_minigun",
+            "pickup_flamethrower",
         ]
         for w_pickup in possible_weapons:
             if random.random() < 0.4:  # 40% chance per level
@@ -537,203 +537,14 @@ class Game:
             if event.type == pygame.QUIT:
                 self.running = False
             elif event.type == pygame.KEYDOWN:
-                # Cheat Input Handling
                 if self.cheat_mode_active:
-                    if event.key == pygame.K_RETURN or event.key == pygame.K_ESCAPE:
-                        self.cheat_mode_active = False
-                        self.add_message("CHEAT INPUT CLOSED", C.GRAY)
-                    elif event.key == pygame.K_BACKSPACE:
-                        self.current_cheat_input = self.current_cheat_input[:-1]
-                    else:
-                        self.current_cheat_input += event.unicode
-                        # Check cheats
-                        code = self.current_cheat_input.upper()
-                        if code.endswith("IDFA"):
-                            # Unlock all weapons, full ammo
-                            self.unlocked_weapons = set(C.WEAPONS.keys())
-                            if self.player:
-                                for w in self.player.ammo:
-                                    self.player.ammo[w] = 999
-                            self.add_message("ALL WEAPONS UNLOCKED", C.YELLOW)
-                            self.current_cheat_input = ""
-                            self.cheat_mode_active = False
-                        elif code.endswith("IDDQD"):
-                            # God Mode
-                            self.god_mode = not self.god_mode
-                            msg = "GOD MODE ON" if self.god_mode else "GOD MODE OFF"
-                            self.add_message(msg, C.YELLOW)
-                            if self.player:
-                                self.player.health = 100
-                                self.player.god_mode = self.god_mode
-                            self.current_cheat_input = ""
-                            self.cheat_mode_active = False
-                    continue
-
-                # Pause Toggle
-                if self.input_manager.is_action_just_pressed(event, "pause"):
-                    self.paused = not self.paused
-                    if self.paused:
-                        self.sound_manager.pause_all()
-                        self.pause_start_time = pygame.time.get_ticks()
-                        pygame.mouse.set_visible(True)
-                        pygame.event.set_grab(False)
-                    else:
-                        self.sound_manager.unpause_all()
-                        if self.pause_start_time > 0:
-                            now = pygame.time.get_ticks()
-                            pause_duration = now - self.pause_start_time
-                            self.total_paused_time += pause_duration
-                            self.pause_start_time = 0
-                        pygame.mouse.set_visible(False)
-                        pygame.event.set_grab(True)
-
-                # Activate Cheat Mode
-                elif event.key == pygame.K_c and (
-                    pygame.key.get_mods() & pygame.KMOD_CTRL
-                ):
-                    self.cheat_mode_active = True
-                    self.current_cheat_input = ""
-                    self.add_message("CHEAT MODE: TYPE CODE", C.PURPLE)
-                    continue
-
-                # Single press actions (switches, reload, etc)
-                if not self.paused:
-                    if self.input_manager.is_action_just_pressed(event, "weapon_1"):
-                        self.switch_weapon_with_message("pistol")
-                    elif self.input_manager.is_action_just_pressed(event, "weapon_2"):
-                        self.switch_weapon_with_message("rifle")
-                    elif self.input_manager.is_action_just_pressed(event, "weapon_3"):
-                        self.switch_weapon_with_message("shotgun")
-                    elif self.input_manager.is_action_just_pressed(event, "weapon_4"):
-                        self.switch_weapon_with_message("laser")
-                    elif self.input_manager.is_action_just_pressed(event, "weapon_5"):
-                        self.switch_weapon_with_message("plasma")
-                    elif self.input_manager.is_action_just_pressed(event, "weapon_6"):
-                        self.switch_weapon_with_message("rocket")
-                    elif event.key == pygame.K_7:
-                        self.switch_weapon_with_message("minigun")
-                    elif self.input_manager.is_action_just_pressed(event, "reload"):
-                        assert self.player is not None
-                        self.player.reload()
-                    elif self.input_manager.is_action_just_pressed(event, "zoom"):
-                        assert self.player is not None
-                        self.player.zoomed = not self.player.zoomed
-                    elif event.key == pygame.K_q:  # Melee attack
-                        assert self.player is not None
-                        if self.player.melee_attack():
-                            self.execute_melee_attack()
-                    elif self.input_manager.is_action_just_pressed(event, "bomb"):
-                        assert self.player is not None
-                        if self.player.activate_bomb():
-                            # Spawn Bomb Projectile
-                            # Throw with upward arc
-                            bomb = Projectile(
-                                self.player.x,
-                                self.player.y,
-                                self.player.angle,
-                                damage=1000,
-                                speed=0.4,  # Moderate throw speed
-                                is_player=True,
-                                color=(50, 50, 50),
-                                size=0.4,
-                                weapon_type="bomb",
-                                z=0.5,  # Start at mid-height
-                                vz=0.15,  # Throw UP
-                                gravity=0.015,
-                            )
-                            self.entity_manager.add_projectile(bomb)
-                    # Alt Shoot (e.g. Numpad 0)
-                    elif self.input_manager.is_action_just_pressed(event, "shoot_alt"):
-                        assert self.player is not None
-                        if self.player.shoot():
-                            self.fire_weapon()
-                    elif event.key == pygame.K_m:
-                        self.show_minimap = not self.show_minimap
-                    elif event.key == pygame.K_F9:
-                        self.cycle_render_scale()
-                    elif self.input_manager.is_action_just_pressed(event, "dash"):
-                        assert self.player is not None
-                        self.player.dash()
+                    self._handle_cheat_input(event)
+                else:
+                    self._handle_gameplay_input(event)
 
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if self.paused:
-                    # Handle Pause Menu Clicks - use same sizing logic as UI renderer
-                    mx, my = event.pos
-
-                    # Calculate box dimensions (same as in ui_renderer.py)
-                    menu_items = [
-                        "RESUME",
-                        "SAVE GAME",
-                        "ENTER CHEAT",
-                        "CONTROLS",
-                        "QUIT TO MENU",
-                    ]
-                    max_text_width = 0
-                    for item in menu_items:
-                        text_surf = self.ui_renderer.subtitle_font.render(
-                            item, True, C.WHITE
-                        )
-                        max_text_width = max(max_text_width, text_surf.get_width())
-
-                    box_width = max_text_width + 60
-                    box_height = 50
-
-                    # Check each menu item
-                    for i, _ in enumerate(menu_items):
-                        rect = pygame.Rect(
-                            C.SCREEN_WIDTH // 2 - box_width // 2,
-                            350 + i * 60,
-                            box_width,
-                            box_height,
-                        )
-                        if rect.collidepoint(mx, my):
-                            if i == 0:  # Resume
-                                self.paused = False
-                                self.sound_manager.unpause_all()
-                                if self.pause_start_time > 0:
-                                    now = pygame.time.get_ticks()
-                                    pause_duration = now - self.pause_start_time
-                                    self.total_paused_time += pause_duration
-                                    self.pause_start_time = 0
-                                pygame.mouse.set_visible(False)
-                                pygame.event.set_grab(True)
-                            elif i == 1:  # Save
-                                self.save_game()
-                                self.add_message("GAME SAVED", C.GREEN)
-                            elif i == 2:  # Enter Cheat
-                                self.cheat_mode_active = True
-                                self.current_cheat_input = ""
-                            elif i == 3:  # Controls
-                                self.state = "key_config"
-                                self.binding_action = None  # Initialize binding state
-                            elif i == 4:  # Quit to Menu
-                                self.state = "menu"
-                                self.paused = False
-                                self.sound_manager.start_music("music_loop")
-                            break
-
-                    # Check speed slider interaction
-                    # Position of slider bar
-                    slider_y = 350 + len(menu_items) * 60 + 30 + 30
-                    slider_width = 200
-                    slider_height = 10
-                    slider_x = C.SCREEN_WIDTH // 2 - slider_width // 2
-                    slider_rect = pygame.Rect(
-                        slider_x, slider_y, slider_width, slider_height + 10
-                    )
-
-                    if slider_rect.collidepoint(mx, my):
-                        # Calculate new speed based on click position
-                        relative_x = mx - slider_x
-                        speed_ratio = max(0.0, min(1.0, relative_x / slider_width))
-                        # Map to 0.5-2.0 range
-                        self.movement_speed_multiplier = 0.5 + speed_ratio * 1.5
-                        self.dragging_speed_slider = True
-
-            elif event.type == pygame.MOUSEBUTTONUP:
-                if event.button == 1:  # Left mouse button
-                    self.dragging_speed_slider = False
-
+                    self._handle_pause_menu_click(event)
                 elif not self.cheat_mode_active:
                     # Gameplay Clicks (Shooting)
                     assert self.player is not None
@@ -744,27 +555,12 @@ class Game:
                         if self.player.fire_secondary():
                             self.fire_weapon(is_secondary=True)
             elif event.type == pygame.MOUSEBUTTONUP:
-                if event.button == 1:  # Left mouse button
+                if event.button == 1:
                     self.dragging_speed_slider = False
 
             elif event.type == pygame.MOUSEMOTION:
                 if self.paused and self.dragging_speed_slider:
-                    # Handle slider dragging
-                    mx, my = event.pos
-                    menu_items = [
-                        "RESUME",
-                        "SAVE GAME",
-                        "ENTER CHEAT",
-                        "CONTROLS",
-                        "QUIT TO MENU",
-                    ]
-                    slider_y = 350 + len(menu_items) * 60 + 30 + 30
-                    slider_width = 200
-                    slider_x = C.SCREEN_WIDTH // 2 - slider_width // 2
-
-                    relative_x = mx - slider_x
-                    speed_ratio = max(0.0, min(1.0, relative_x / slider_width))
-                    self.movement_speed_multiplier = 0.5 + speed_ratio * 1.5
+                    self._handle_speed_slider(event)
                 elif not self.paused:
                     assert self.player is not None
                     self.player.rotate(
@@ -772,14 +568,205 @@ class Game:
                     )
                     self.player.pitch_view(-event.rel[1] * C.PLAYER_ROT_SPEED * 200)
 
-    def save_game(self, filename: str = "savegame.txt") -> None:
-        """Save game state to file.
+    def _handle_cheat_input(self, event: pygame.event.Event) -> None:
+        """Handle input when cheat mode is active."""
+        if event.key == pygame.K_RETURN or event.key == pygame.K_ESCAPE:
+            self.cheat_mode_active = False
+            self.add_message("CHEAT INPUT CLOSED", C.GRAY)
+        elif event.key == pygame.K_BACKSPACE:
+            self.current_cheat_input = self.current_cheat_input[:-1]
+        else:
+            self.current_cheat_input += event.unicode
+            code = self.current_cheat_input.upper()
+            if code.endswith("IDFA"):
+                self.unlocked_weapons = set(C.WEAPONS.keys())
+                if self.player:
+                    for w in self.player.ammo:
+                        self.player.ammo[w] = 999
+                self.add_message("ALL WEAPONS UNLOCKED", C.YELLOW)
+                self.current_cheat_input = ""
+                self.cheat_mode_active = False
+            elif code.endswith("IDDQD"):
+                self.god_mode = not self.god_mode
+                msg = "GOD MODE ON" if self.god_mode else "GOD MODE OFF"
+                self.add_message(msg, C.YELLOW)
+                if self.player:
+                    self.player.health = 100
+                    self.player.god_mode = self.god_mode
+                self.current_cheat_input = ""
+                self.cheat_mode_active = False
 
-        Args:
-            filename (str): The file path to save the game state.
-                Defaults to "savegame.txt".
-        """
-        # Simple save implementation
+    def _handle_gameplay_input(self, event: pygame.event.Event) -> None:
+        """Handle standard gameplay keyboard events."""
+        # Pause Toggle
+        if self.input_manager.is_action_just_pressed(event, "pause"):
+            self.paused = not self.paused
+            if self.paused:
+                self.sound_manager.pause_all()
+                self.pause_start_time = pygame.time.get_ticks()
+                pygame.mouse.set_visible(True)
+                pygame.event.set_grab(False)
+            else:
+                self.sound_manager.unpause_all()
+                if self.pause_start_time > 0:
+                    now = pygame.time.get_ticks()
+                    pause_duration = now - self.pause_start_time
+                    self.total_paused_time += pause_duration
+                    self.pause_start_time = 0
+                pygame.mouse.set_visible(False)
+                pygame.event.set_grab(True)
+            return
+
+        # Activate Cheat Mode
+        if event.key == pygame.K_c and (pygame.key.get_mods() & pygame.KMOD_CTRL):
+            self.cheat_mode_active = True
+            self.current_cheat_input = ""
+            self.add_message("CHEAT MODE: TYPE CODE", C.PURPLE)
+            return
+
+        if not self.paused:
+            if self.input_manager.is_action_just_pressed(event, "weapon_1"):
+                self.switch_weapon_with_message("pistol")
+            elif self.input_manager.is_action_just_pressed(event, "weapon_2"):
+                self.switch_weapon_with_message("rifle")
+            elif self.input_manager.is_action_just_pressed(event, "weapon_3"):
+                self.switch_weapon_with_message("shotgun")
+            elif self.input_manager.is_action_just_pressed(event, "weapon_4"):
+                self.switch_weapon_with_message("laser")
+            elif self.input_manager.is_action_just_pressed(event, "weapon_5"):
+                self.switch_weapon_with_message("plasma")
+            elif self.input_manager.is_action_just_pressed(event, "weapon_6"):
+                self.switch_weapon_with_message("rocket")
+            elif event.key == pygame.K_7:
+                self.switch_weapon_with_message("minigun")
+            elif event.key == pygame.K_9:
+                self.switch_weapon_with_message("flamethrower")
+            elif self.input_manager.is_action_just_pressed(event, "reload"):
+                assert self.player is not None
+                self.player.reload()
+            elif self.input_manager.is_action_just_pressed(event, "zoom"):
+                assert self.player is not None
+                self.player.zoomed = not self.player.zoomed
+            elif event.key == pygame.K_q:
+                assert self.player is not None
+                if self.player.melee_attack():
+                    self.execute_melee_attack()
+            elif self.input_manager.is_action_just_pressed(event, "bomb"):
+                assert self.player is not None
+                if self.player.activate_bomb():
+                    bomb = Projectile(
+                        self.player.x,
+                        self.player.y,
+                        self.player.angle,
+                        damage=1000,
+                        speed=0.4,
+                        is_player=True,
+                        color=(50, 50, 50),
+                        size=0.4,
+                        weapon_type="bomb",
+                        z=0.5,
+                        vz=0.15,
+                        gravity=0.015,
+                    )
+                    self.entity_manager.add_projectile(bomb)
+            elif self.input_manager.is_action_just_pressed(event, "shoot_alt"):
+                assert self.player is not None
+                if self.player.shoot():
+                    self.fire_weapon()
+            elif event.key == pygame.K_m:
+                self.show_minimap = not self.show_minimap
+            elif event.key == pygame.K_F9:
+                self.cycle_render_scale()
+            elif self.input_manager.is_action_just_pressed(event, "dash"):
+                assert self.player is not None
+                self.player.dash()
+
+    def _handle_pause_menu_click(self, event: pygame.event.Event) -> None:
+        """Handle clicks in pause menu."""
+        mx, my = event.pos
+        menu_items = [
+            "RESUME",
+            "SAVE GAME",
+            "ENTER CHEAT",
+            "CONTROLS",
+            "QUIT TO MENU",
+        ]
+        max_text_width = 0
+        for item in menu_items:
+            text_surf = self.ui_renderer.subtitle_font.render(item, True, C.WHITE)
+            max_text_width = max(max_text_width, text_surf.get_width())
+
+        box_width = max_text_width + 60
+        box_height = 50
+
+        for i, _ in enumerate(menu_items):
+            rect = pygame.Rect(
+                C.SCREEN_WIDTH // 2 - box_width // 2,
+                350 + i * 60,
+                box_width,
+                box_height,
+            )
+            if rect.collidepoint(mx, my):
+                if i == 0:  # Resume
+                    self.paused = False
+                    self.sound_manager.unpause_all()
+                    if self.pause_start_time > 0:
+                        now = pygame.time.get_ticks()
+                        pause_duration = now - self.pause_start_time
+                        self.total_paused_time += pause_duration
+                        self.pause_start_time = 0
+                    pygame.mouse.set_visible(False)
+                    pygame.event.set_grab(True)
+                elif i == 1:  # Save
+                    self.save_game()
+                    self.add_message("GAME SAVED", C.GREEN)
+                elif i == 2:  # Enter Cheat
+                    self.cheat_mode_active = True
+                    self.current_cheat_input = ""
+                elif i == 3:  # Controls
+                    self.state = "key_config"
+                    self.binding_action = None
+                elif i == 4:  # Quit to Menu
+                    self.state = "menu"
+                    self.paused = False
+                    self.sound_manager.start_music("music_loop")
+                return
+
+        # Check speed slider interaction
+        slider_y = 350 + len(menu_items) * 60 + 30 + 30
+        slider_width = 200
+        slider_height = 10
+        slider_x = C.SCREEN_WIDTH // 2 - slider_width // 2
+        slider_rect = pygame.Rect(
+            slider_x, slider_y, slider_width, slider_height + 10
+        )
+
+        if slider_rect.collidepoint(mx, my):
+            relative_x = mx - slider_x
+            speed_ratio = max(0.0, min(1.0, relative_x / slider_width))
+            self.movement_speed_multiplier = 0.5 + speed_ratio * 1.5
+            self.dragging_speed_slider = True
+
+    def _handle_speed_slider(self, event: pygame.event.Event) -> None:
+        """Handle dragging the speed slider."""
+        mx, my = event.pos
+        menu_items = [
+            "RESUME",
+            "SAVE GAME",
+            "ENTER CHEAT",
+            "CONTROLS",
+            "QUIT TO MENU",
+        ]
+        slider_y = 350 + len(menu_items) * 60 + 30 + 30
+        slider_width = 200
+        slider_x = C.SCREEN_WIDTH // 2 - slider_width // 2
+
+        relative_x = mx - slider_x
+        speed_ratio = max(0.0, min(1.0, relative_x / slider_width))
+        self.movement_speed_multiplier = 0.5 + speed_ratio * 1.5
+
+    def save_game(self, filename: str = "savegame.txt") -> None:
+        """Save game state to file."""
         try:
             with open(filename, "w") as f:
                 f.write(f"{self.level}")
@@ -797,7 +784,6 @@ class Game:
 
         # Visuals & Logic
         if weapon == "plasma" and not is_secondary:
-            # Spawn Projectile
             p = Projectile(
                 self.player.x,
                 self.player.y,
@@ -813,7 +799,6 @@ class Game:
             return
 
         if weapon == "rocket" and not is_secondary:
-            # Spawn Rocket
             p = Projectile(
                 self.player.x,
                 self.player.y,
@@ -828,48 +813,67 @@ class Game:
             self.entity_manager.add_projectile(p)
             return
 
-        if weapon == "minigun" and not is_secondary:
-            # Minigun rapid fire with multiple projectiles and visual effects
+        if weapon == "flamethrower" and not is_secondary:
             damage = self.player.get_current_weapon_damage()
-            num_bullets = 3  # Fire multiple bullets per shot for minigun effect
-            for _ in range(num_bullets):
-                angle_off = random.uniform(-0.15, 0.15)  # Increased spread for minigun
+            # Spawn multiple flame particles
+            for _ in range(2):
+                angle_off = random.uniform(-0.15, 0.15)
                 final_angle = self.player.angle + angle_off
+                speed = float(C.WEAPONS["flamethrower"].get("projectile_speed", 0.35))
 
-                # Create minigun projectile with tracer effect
+                # Add slight speed variation
+                speed *= random.uniform(0.8, 1.2)
+
                 p = Projectile(
                     self.player.x,
                     self.player.y,
                     final_angle,
                     damage,
-                    speed=2.0,  # Fast bullets
+                    speed=speed,
                     is_player=True,
-                    color=(255, 255, 0),  # Yellow tracers for minigun
-                    size=0.1,  # Smaller bullets
+                    color=C.WEAPONS["flamethrower"].get("projectile_color", (255, 140, 0)),
+                    size=0.4,
+                    weapon_type="flamethrower",
+                )
+                self.entity_manager.add_projectile(p)
+            return
+
+        if weapon == "minigun" and not is_secondary:
+            damage = self.player.get_current_weapon_damage()
+            num_bullets = 3
+            for _ in range(num_bullets):
+                angle_off = random.uniform(-0.15, 0.15)
+                final_angle = self.player.angle + angle_off
+
+                p = Projectile(
+                    self.player.x,
+                    self.player.y,
+                    final_angle,
+                    damage,
+                    speed=2.0,
+                    is_player=True,
+                    color=(255, 255, 0),
+                    size=0.1,
                     weapon_type="minigun",
                 )
                 self.entity_manager.add_projectile(p)
 
-            # Add muzzle flash particles for minigun
             self.particle_system.add_explosion(
                 C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2, count=8, color=(255, 255, 0)
             )
             return
 
         if weapon == "laser" and not is_secondary:
-            # Hitscan with Beam Visual
             self.check_shot_hit(is_secondary=False, is_laser=True)
             return
 
         if weapon == "shotgun" and not is_secondary:
-            # Spread Fire
             pellets = int(C.WEAPONS["shotgun"].get("pellets", 8))
             spread = float(C.WEAPONS["shotgun"].get("spread", 0.15))
             for _ in range(pellets):
                 angle_off = random.uniform(-spread, spread)
                 self.check_shot_hit(angle_offset=angle_off)
         else:
-            # Single Hitscan
             self.check_shot_hit(is_secondary=is_secondary)
 
     def check_shot_hit(
@@ -888,7 +892,6 @@ class Game:
 
             weapon_damage = self.player.get_current_weapon_damage()
 
-            # Aim Logic
             current_spread = C.SPREAD_ZOOM if self.player.zoomed else C.SPREAD_BASE
             if angle_offset == 0.0:
                 spread_offset = random.uniform(-current_spread, current_spread)
@@ -898,13 +901,10 @@ class Game:
 
             aim_angle %= 2 * math.pi
 
-            # 1. Cast ray to find wall distance
-            # Use Raycaster to avoid code duplication
             wall_dist, _, _, _, _ = self.raycaster.cast_ray(
                 self.player.x, self.player.y, aim_angle
             )
 
-            # Cap at weapon range
             if wall_dist > weapon_range:
                 wall_dist = float(weapon_range)
 
@@ -912,8 +912,6 @@ class Game:
             closest_dist = float("inf")
             is_headshot = False
 
-            # 2. Check bots
-            # Optimization: Use squared distance check first
             wall_dist_sq = wall_dist * wall_dist
 
             for bot in self.bots:
@@ -1037,7 +1035,6 @@ class Game:
         """Handle bomb explosion logic"""
         assert self.player is not None
 
-        # Calculate distance to player for visual effects intensity
         dist_to_player = math.sqrt(
             (projectile.x - self.player.x) ** 2 + (projectile.y - self.player.y) ** 2
         )
@@ -1047,11 +1044,7 @@ class Game:
         except BaseException:
             logger.exception("Bomb Audio Failed")
 
-        # Visual Effects (Logic similar to _explode_generic)
         if dist_to_player < 20:
-            # Only show massive screen effects if reasonably close
-
-            # 1. Screen Shake / Whiteout (if very close)
             if dist_to_player < 10:
                 self.particle_system.add_particle(
                     x=C.SCREEN_WIDTH // 2,
@@ -1063,7 +1056,6 @@ class Game:
                     size=3000,
                 )
 
-            # 2. Particles
             explosion_center = (C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2)
 
             for _ in range(100):
@@ -1080,7 +1072,6 @@ class Game:
                     size=random.randint(5, 15),
                 )
 
-            # Rings
             for ring in range(3):
                 ring_size = 50 + ring * 30
                 ring_alpha = 200 - ring * 50
@@ -1098,7 +1089,6 @@ class Game:
                     (explosion_center[0] - ring_size, explosion_center[1] - ring_size),
                 )
 
-        # Damage Logic (World Space)
         for bot in self.bots:
             if not bot.alive:
                 continue
@@ -1107,7 +1097,6 @@ class Game:
             dist = math.sqrt(dx * dx + dy * dy)
 
             if dist < C.BOMB_RADIUS:
-                # Linear falloff
                 damage_factor = 1.0 - (dist / C.BOMB_RADIUS)
                 damage = int(1000 * damage_factor)
 
@@ -1197,7 +1186,6 @@ class Game:
 
     def explode_rocket(self, projectile: Projectile) -> None:
         """Trigger rocket AOE explosion"""
-        # Rocket has larger AOE
         radius = float(C.WEAPONS["rocket"].get("aoe_radius", 6.0))
         self._explode_generic(projectile, radius, "rocket")
 
@@ -1212,14 +1200,12 @@ class Game:
         if dist_to_player < 15:
             self.damage_flash_timer = 15
 
-        # Visuals
         if dist_to_player < 20:
             count = 5 if weapon_type == "rocket" else 3
             self.particle_system.add_explosion(
                 C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2, count=count
             )
 
-            # Add some colored particles
             color = C.CYAN if weapon_type == "plasma" else C.ORANGE
             for _ in range(20):
                 self.particle_system.add_particle(
@@ -1247,7 +1233,6 @@ class Game:
             dist = math.sqrt(dx * dx + dy * dy)
 
             if dist < radius:
-                # Falloff damage
                 damage_factor = 1.0 - (dist / radius)
                 damage = int(projectile.damage * damage_factor)
 
@@ -1262,21 +1247,17 @@ class Game:
         """Execute melee attack - wide sweeping damage in front of player"""
         assert self.player is not None
 
-        # Melee attack parameters
-        melee_range = 3.0  # Attack range
-        melee_damage = 75  # High damage for melee
-        melee_arc = math.pi / 3  # 60-degree arc
+        melee_range = 3.0
+        melee_damage = 75
+        melee_arc = math.pi / 3
 
-        # Create visual sweep effect
         self.create_melee_sweep_effect()
 
-        # Play melee sound
         try:
-            self.sound_manager.play_sound("shoot_shotgun")  # Use shotgun sound for now
+            self.sound_manager.play_sound("shoot_shotgun")
         except Exception:
             pass
 
-        # Check for enemies in melee range and arc
         player_x, player_y = self.player.x, self.player.y
         player_angle = self.player.angle
 
@@ -1285,23 +1266,19 @@ class Game:
             if not bot.alive:
                 continue
 
-            # Calculate distance and angle to bot
             dx = bot.x - player_x
             dy = bot.y - player_y
             distance = math.sqrt(dx * dx + dy * dy)
 
             if distance <= melee_range:
-                # Check if bot is within attack arc
                 bot_angle = math.atan2(dy, dx)
                 angle_diff = abs(bot_angle - player_angle)
 
-                # Normalize angle difference
                 while angle_diff > math.pi:
                     angle_diff -= 2 * math.pi
                 angle_diff = abs(angle_diff)
 
                 if angle_diff <= melee_arc / 2:
-                    # Bot is in range and arc - deal damage
                     if bot.take_damage(melee_damage):
                         self.sound_manager.play_sound("scream")
                         self.kills += 1
@@ -1311,10 +1288,9 @@ class Game:
 
                     hits += 1
 
-                    # Add blood particles
                     for _ in range(5):
                         self.particle_system.add_particle(
-                            x=bot.x * 64 + 32,  # Convert to screen coords
+                            x=bot.x * 64 + 32,
                             y=bot.y * 64 + 32,
                             dx=random.uniform(-3, 3),
                             dy=random.uniform(-3, 3),
@@ -1323,7 +1299,6 @@ class Game:
                             size=random.randint(2, 4),
                         )
 
-        # Add hit feedback message
         if hits > 0:
             if hits == 1:
                 self.add_message("CRITICAL HIT!", C.RED)
@@ -1334,32 +1309,27 @@ class Game:
         """Create enhanced visual sweep effect for melee attack"""
         assert self.player is not None
 
-        # Create dramatic arc particles for sweep effect
         player_angle = self.player.angle
-        arc_start = player_angle - math.pi / 4  # 45 degrees left
-        arc_end = player_angle + math.pi / 4  # 45 degrees right
+        arc_start = player_angle - math.pi / 4
+        arc_end = player_angle + math.pi / 4
 
-        # Create multiple layers of sweep particles for depth
         for layer in range(3):
             layer_distance = 80 + layer * 40
 
-            # Create sweep particles in arc
             for i in range(30):
-                t = i / 29.0  # 0 to 1
+                t = i / 29.0
                 angle = arc_start + t * (arc_end - arc_start)
 
-                # Distance from player (screen center)
                 distance = layer_distance + random.randint(-20, 20)
 
                 x = C.SCREEN_WIDTH // 2 + math.cos(angle) * distance
                 y = C.SCREEN_HEIGHT // 2 + math.sin(angle) * distance
 
-                # Create sweep particle with varying colors
-                if layer == 0:  # Inner layer - bright white/yellow
+                if layer == 0:
                     color = (255, 255, 200)
-                elif layer == 1:  # Middle layer - orange
+                elif layer == 1:
                     color = (255, 150, 0)
-                else:  # Outer layer - red
+                else:
                     color = (255, 50, 0)
 
                 self.particle_system.add_particle(
@@ -1374,7 +1344,6 @@ class Game:
                     fade_color=(100, 0, 0),
                 )
 
-        # Add central impact burst
         for _ in range(15):
             angle = random.uniform(0, 2 * math.pi)
             speed = random.uniform(3, 12)
@@ -1450,20 +1419,18 @@ class Game:
 
         shield_active = self.input_manager.is_action_pressed("shield")
 
-        # Continuous Fire (Mouse/Keyboard) for Automatic Weapons
         if not self.paused and self.player and self.player.alive:
-            # Check Input (Mouse Left or Shoot Key)
             is_firing = (
                 self.input_manager.is_action_pressed("shoot")
                 or pygame.mouse.get_pressed()[0]
             )
 
             if is_firing:
-                # Only allow hold-to-fire if weapon is automatic
                 w_data = C.WEAPONS.get(self.player.current_weapon, {})
                 if w_data.get("automatic", False):
                     if self.player.shoot():
                         self.fire_weapon()
+
         if self.joystick and not self.paused and self.player and self.player.alive:
             axis_x = self.joystick.get_axis(0)
             axis_y = self.joystick.get_axis(1)
@@ -1577,12 +1544,9 @@ class Game:
 
         self.player.update()
 
-        # Update Visited Cells for Minimap
         px, py = int(self.player.x), int(self.player.y)
-        # Mark immediate area as visited
         for dy in range(-4, 5):
             for dx in range(-4, 5):
-                # Simple radius check
                 if dx * dx + dy * dy <= 16:
                     cx, cy = px + dx, py + dy
                     if (
@@ -1691,7 +1655,6 @@ class Game:
             self.kill_combo_timer -= 1
             if self.kill_combo_timer <= 0:
                 if self.kill_combo_count >= 3:
-                    # Duke Nukem-style phrases (PG-13)
                     phrases = [
                         "DAMN, I'M GOOD!",
                         "COME GET SOME!",
@@ -1718,19 +1681,18 @@ class Game:
                     ]
 
                     phrase = random.choice(phrases)
-                    self.sound_manager.play_sound("phrase_cool")  # Use existing sound
+                    self.sound_manager.play_sound("phrase_cool")
 
-                    # Enhanced message display with effects
                     self.damage_texts.append(
                         {
                             "x": C.SCREEN_WIDTH // 2,
                             "y": C.SCREEN_HEIGHT // 2 - 150,
                             "text": phrase,
                             "color": C.YELLOW,
-                            "timer": 180,  # Longer display time
+                            "timer": 180,
                             "vy": -0.2,
-                            "size": "large",  # Add size indicator for special rendering
-                            "effect": "glow",  # Add glow effect
+                            "size": "large",
+                            "effect": "glow",
                         }
                     )
                 self.kill_combo_count = 0
@@ -1826,7 +1788,6 @@ class Game:
 
     def handle_game_over_events(self) -> None:
         """Handle input events during the game over screen."""
-        # Sequence Sound Logic
         self.game_over_timer += 1
         if self.game_over_timer == 120:
             self.sound_manager.play_sound("game_over2")
@@ -1849,7 +1810,6 @@ class Game:
 
             elif event.type == pygame.KEYDOWN:
                 if self.binding_action:
-                    # Bind the key
                     if event.key != pygame.K_ESCAPE:
                         self.input_manager.bind_key(self.binding_action, event.key)
                     self.binding_action = None
@@ -1859,7 +1819,6 @@ class Game:
             elif event.type == pygame.MOUSEBUTTONDOWN and not self.binding_action:
                 mx, my = event.pos
 
-                # Check clicks on bindings
                 bindings = self.input_manager.bindings
                 actions = sorted(bindings.keys())
                 start_y = 120
@@ -1873,15 +1832,11 @@ class Game:
                     x = col_1_x if col == 0 else col_2_x
                     y = start_y + idx * 40
 
-                    # Approximate hit box (Name + Key)
-                    # Name ends at x-150, Key starts at x+20.
-                    # Let's say click area is x-150 to x+150, height 30.
                     rect = pygame.Rect(x - 150, y, 300, 30)
                     if rect.collidepoint(mx, my):
                         self.binding_action = action
                         return
 
-                # Back Button
                 center_x = C.SCREEN_WIDTH // 2 - 50
                 top_y = C.SCREEN_HEIGHT - 80
                 back_rect = pygame.Rect(center_x, top_y, 100, 40)
@@ -1889,11 +1844,7 @@ class Game:
                     self.state = "playing" if self.paused else "menu"
 
     def _update_intro_logic(self, elapsed: int) -> None:
-        """Update intro sequence logic and transitions.
-
-        Args:
-            elapsed: Elapsed time in milliseconds since intro started.
-        """
+        """Update intro sequence logic and transitions."""
         duration = 0
         if self.intro_phase == 0:
             duration = 3000
@@ -1927,7 +1878,6 @@ class Game:
             if elapsed > duration:
                 self.intro_phase += 1
                 self.intro_start_time = 0
-                # Only release video when transitioning from phase 1 to phase 2
                 if self.intro_phase == 2 and self.ui_renderer.intro_video:
                     self.ui_renderer.intro_video.release()
                     self.ui_renderer.intro_video = None
@@ -1961,15 +1911,12 @@ class Game:
 
                 elif self.state == "playing":
                     self.handle_game_events()
-                    if self.paused:
-                        # Don't play breathing/heartbeat sounds during pause menu
-                        # The pause_all() should handle stopping all sounds
-                        pass
-                    else:
+                    # Only update logic if not paused
+                    if not self.paused:
                         self.update_game()
+
                     self.renderer.render_game(self)
-                    # Decrement damage flash timer after rendering
-                    # to maintain correct frame count
+
                     if not self.paused and self.damage_flash_timer > 0:
                         self.damage_flash_timer -= 1
 

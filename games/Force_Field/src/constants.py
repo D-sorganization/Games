@@ -167,6 +167,19 @@ WEAPONS: dict[str, WeaponData] = {
         "projectile_color": (0, 255, 0),
         "aoe_radius": 15.0,
     },
+    "flamethrower": {
+        "name": "Flamethrower",
+        "damage": 8,
+        "range": 18,
+        "ammo": 300,
+        "cooldown": 2,
+        "automatic": True,
+        "clip_size": 100,
+        "reload_time": 180,
+        "key": "9",
+        "projectile_speed": 0.35,
+        "projectile_color": (255, 140, 0),
+    },
 }
 
 # Combat settings
@@ -405,6 +418,14 @@ ENEMY_TYPES: dict[str, EnemyData] = {
     },
     "pickup_minigun": {
         "color": (150, 150, 255),
+        "health_mult": 1.0,
+        "speed_mult": 0.0,
+        "damage_mult": 0.0,
+        "scale": 0.5,
+        "visual_style": "item",
+    },
+    "pickup_flamethrower": {
+        "color": (255, 140, 0),
         "health_mult": 1.0,
         "speed_mult": 0.0,
         "damage_mult": 0.0,

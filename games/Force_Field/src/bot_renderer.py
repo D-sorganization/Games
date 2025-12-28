@@ -341,6 +341,7 @@ class BotRenderer:
             "shotgun": (255, 200, 0),
             "rifle": (100, 255, 100),
             "rocket": (255, 50, 255),
+            "flamethrower": (255, 100, 0),
         }
 
         glow_color = (150, 150, 255)  # Default
