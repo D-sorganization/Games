@@ -11,6 +11,7 @@ import pygame
 
 from . import constants as C  # noqa: N812
 from .bot import Bot
+from .combat_system import CombatSystem
 from .entity_manager import EntityManager
 from .input_manager import InputManager
 from .map import Map
@@ -86,6 +87,7 @@ class Game:
         self.game_map: Map | None = None
         self.player: Player | None = None
         self.entity_manager = EntityManager()
+        self.combat_system = CombatSystem(self)
         self.raycaster: Raycaster | None = None
         self.portal: dict[str, Any] | None = None
         self.health = 100
@@ -558,10 +560,10 @@ class Game:
                     assert self.player is not None
                     if event.button == 1:
                         if self.player.shoot():
-                            self.fire_weapon()
+                            self.combat_system.fire_weapon()
                     elif event.button == 3:
                         if self.player.fire_secondary():
-                            self.fire_weapon(is_secondary=True)
+                            self.combat_system.fire_weapon(is_secondary=True)
             elif event.type == pygame.MOUSEBUTTONUP:
                 if event.button == 1:
                     self.dragging_speed_slider = False
@@ -679,7 +681,7 @@ class Game:
             elif self.input_manager.is_action_just_pressed(event, "shoot_alt"):
                 assert self.player is not None
                 if self.player.shoot():
-                    self.fire_weapon()
+                    self.combat_system.fire_weapon()
             elif event.key == pygame.K_m:
                 self.show_minimap = not self.show_minimap
             elif event.key == pygame.K_F9:
@@ -770,477 +772,21 @@ class Game:
         except OSError:
             logger.exception("Save failed")
 
-    def fire_weapon(self, is_secondary: bool = False) -> None:
-        """Handle weapon firing (Hitscan or Projectile)"""
-        assert self.player is not None
-        weapon = self.player.current_weapon
-
-        # Sound
-        sound_name = f"shoot_{weapon}"
-        self.sound_manager.play_sound(sound_name)
-
-        # Visuals & Logic
-        if weapon == "plasma" and not is_secondary:
-            p = Projectile(
-                self.player.x,
-                self.player.y,
-                self.player.angle,
-                speed=float(C.WEAPONS["plasma"].get("projectile_speed", 0.5)),
-                damage=self.player.get_current_weapon_damage(),
-                is_player=True,
-                color=C.WEAPONS["plasma"].get("projectile_color", (0, 255, 255)),
-                size=0.225,
-                weapon_type="plasma",
-            )
-            self.entity_manager.add_projectile(p)
-            return
-
-        if weapon == "rocket" and not is_secondary:
-            p = Projectile(
-                self.player.x,
-                self.player.y,
-                self.player.angle,
-                speed=float(C.WEAPONS["rocket"].get("projectile_speed", 0.3)),
-                damage=self.player.get_current_weapon_damage(),
-                is_player=True,
-                color=C.WEAPONS["rocket"].get("projectile_color", (255, 100, 0)),
-                size=0.6,
-                weapon_type="rocket",
-            )
-            self.entity_manager.add_projectile(p)
-            return
-
-        if weapon == "flamethrower" and not is_secondary:
-            damage = self.player.get_current_weapon_damage()
-            # Spawn multiple flame particles
-            for _ in range(2):
-                angle_off = random.uniform(-0.15, 0.15)
-                final_angle = self.player.angle + angle_off
-                speed = float(C.WEAPONS["flamethrower"].get("projectile_speed", 0.35))
-
-                # Add slight speed variation
-                speed *= random.uniform(0.8, 1.2)
-
-                p = Projectile(
-                    self.player.x,
-                    self.player.y,
-                    final_angle,
-                    damage,
-                    speed=speed,
-                    is_player=True,
-                    color=C.WEAPONS["flamethrower"].get(
-                        "projectile_color", (255, 140, 0)
-                    ),
-                    size=0.4,
-                    weapon_type="flamethrower",
-                )
-                self.entity_manager.add_projectile(p)
-            return
-
-        if weapon == "minigun" and not is_secondary:
-            damage = self.player.get_current_weapon_damage()
-            num_bullets = 3
-            for _ in range(num_bullets):
-                angle_off = random.uniform(-0.15, 0.15)
-                final_angle = self.player.angle + angle_off
-
-                p = Projectile(
-                    self.player.x,
-                    self.player.y,
-                    final_angle,
-                    damage,
-                    speed=2.0,
-                    is_player=True,
-                    color=(255, 255, 0),
-                    size=0.1,
-                    weapon_type="minigun",
-                )
-                self.entity_manager.add_projectile(p)
-
-            self.particle_system.add_explosion(
-                C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2, count=8, color=(255, 255, 0)
-            )
-            return
-
-        if weapon == "laser" and not is_secondary:
-            self.check_shot_hit(is_secondary=False, is_laser=True)
-            return
-
-        if weapon == "shotgun" and not is_secondary:
-            pellets = int(C.WEAPONS["shotgun"].get("pellets", 8))
-            spread = float(C.WEAPONS["shotgun"].get("spread", 0.15))
-            for _ in range(pellets):
-                angle_off = random.uniform(-spread, spread)
-                self.check_shot_hit(angle_offset=angle_off)
-        else:
-            self.check_shot_hit(is_secondary=is_secondary)
-
-    def check_shot_hit(
-        self,
-        is_secondary: bool = False,
-        angle_offset: float = 0.0,
-        is_laser: bool = False,
-    ) -> None:
-        """Check if player's shot hit a bot"""
-        assert self.player is not None
-        assert self.raycaster is not None
-        try:
-            weapon_range = self.player.get_current_weapon_range()
-            if is_secondary:
-                weapon_range = 100
-
-            weapon_damage = self.player.get_current_weapon_damage()
-
-            current_spread = C.SPREAD_ZOOM if self.player.zoomed else C.SPREAD_BASE
-            if angle_offset == 0.0:
-                spread_offset = random.uniform(-current_spread, current_spread)
-                aim_angle = self.player.angle + spread_offset
-            else:
-                aim_angle = self.player.angle + angle_offset
-
-            aim_angle %= 2 * math.pi
-
-            wall_dist, _, _, _, _ = self.raycaster.cast_ray(
-                self.player.x, self.player.y, aim_angle
-            )
-
-            if wall_dist > weapon_range:
-                wall_dist = float(weapon_range)
-
-            closest_bot = None
-            closest_dist = float("inf")
-            is_headshot = False
-
-            wall_dist_sq = wall_dist * wall_dist
-
-            for bot in self.bots:
-                if not bot.alive:
-                    continue
-
-                dx = bot.x - self.player.x
-                dy = bot.y - self.player.y
-                dist_sq = dx * dx + dy * dy
-
-                if dist_sq > wall_dist_sq:
-                    continue
-
-                distance = math.sqrt(dist_sq)
-
-                bot_angle = math.atan2(dy, dx)
-                angle = bot_angle if bot_angle >= 0 else bot_angle + 2 * math.pi
-                bot_angle_norm = angle
-
-                angle_diff = abs(bot_angle_norm - aim_angle)
-                if angle_diff > math.pi:
-                    angle_diff = 2 * math.pi - angle_diff
-
-                if angle_diff < 0.15:
-                    if distance < closest_dist:
-                        closest_bot = bot
-                        closest_dist = distance
-                        is_headshot = angle_diff < C.HEADSHOT_THRESHOLD
-
-            if is_secondary:
-                impact_dist = wall_dist
-                if closest_bot and closest_dist < wall_dist:
-                    impact_dist = closest_dist
-
-                ray_angle = self.player.angle
-                impact_x = self.player.x + math.cos(ray_angle) * impact_dist
-                impact_y = self.player.y + math.sin(ray_angle) * impact_dist
-
-                try:
-                    self.explode_laser(impact_x, impact_y)
-                except Exception:
-                    logger.exception("Error in explode_laser")
-
-                self.particle_system.add_laser(
-                    start=(C.SCREEN_WIDTH - 200, C.SCREEN_HEIGHT - 180),
-                    end=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2),
-                    color=(0, 255, 255),
-                    timer=C.LASER_DURATION,
-                    width=C.LASER_WIDTH,
-                )
-                return
-
-            if is_laser:
-                self.particle_system.add_laser(
-                    start=(C.SCREEN_WIDTH - 200, C.SCREEN_HEIGHT - 180),
-                    end=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2),
-                    color=(255, 0, 0),
-                    timer=5,
-                    width=3,
-                )
-
-            if closest_bot:
-                range_factor = max(0.3, 1.0 - (closest_dist / weapon_range))
-
-                dx = closest_bot.x - self.player.x
-                dy = closest_bot.y - self.player.y
-                bot_angle = math.atan2(dy, dx)
-                angle = bot_angle if bot_angle >= 0 else bot_angle + 2 * math.pi
-                bot_angle_norm = angle
-
-                angle_diff = abs(bot_angle_norm - self.player.angle)
-                if angle_diff > math.pi:
-                    angle_diff = 2 * math.pi - angle_diff
-
-                accuracy_factor = max(0.5, 1.0 - (angle_diff / 0.15))
-
-                final_damage = int(weapon_damage * range_factor * accuracy_factor)
-
-                closest_bot.take_damage(final_damage, is_headshot=is_headshot)
-
-                damage_dealt = final_damage
-
-                if self.show_damage:
-                    self.damage_texts.append(
-                        {
-                            "x": C.SCREEN_WIDTH // 2 + random.randint(-20, 20),
-                            "y": C.SCREEN_HEIGHT // 2 - 50,
-                            "text": str(damage_dealt) + ("!" if is_headshot else ""),
-                            "color": C.RED if is_headshot else C.DAMAGE_TEXT_COLOR,
-                            "timer": 60,
-                            "vy": -1.0,
-                        }
-                    )
-
-                self.particle_system.add_explosion(
-                    C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2, count=5
-                )
-
-                for _ in range(10):
-                    self.particle_system.add_particle(
-                        x=C.SCREEN_WIDTH // 2,
-                        y=C.SCREEN_HEIGHT // 2,
-                        dx=random.uniform(-5, 5),
-                        dy=random.uniform(-5, 5),
-                        color=C.BLUE_BLOOD,
-                        timer=C.PARTICLE_LIFETIME,
-                        size=random.randint(2, 5),
-                    )
-
-                if not closest_bot.alive:
-                    self.kills += 1
-                    self.kill_combo_count += 1
-                    self.kill_combo_timer = 180
-                    self.last_death_pos = (closest_bot.x, closest_bot.y)
-                    self.sound_manager.play_sound("scream")
-
-        except Exception:
-            logger.exception("Error in check_shot_hit")
-
     def explode_bomb(self, projectile: Projectile) -> None:
         """Handle bomb explosion logic"""
-        assert self.player is not None
-
-        dist_to_player = math.sqrt(
-            (projectile.x - self.player.x) ** 2 + (projectile.y - self.player.y) ** 2
-        )
-
-        try:
-            self.sound_manager.play_sound("bomb")
-        except BaseException:
-            logger.exception("Bomb Audio Failed")
-
-        if dist_to_player < 20:
-            if dist_to_player < 10:
-                self.particle_system.add_particle(
-                    x=C.SCREEN_WIDTH // 2,
-                    y=C.SCREEN_HEIGHT // 2,
-                    dx=0,
-                    dy=0,
-                    color=C.WHITE,
-                    timer=20,
-                    size=3000,
-                )
-
-            explosion_center = (C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2)
-
-            for _ in range(100):
-                angle = random.uniform(0, 2 * math.pi)
-                speed = random.uniform(5, 20)
-                color = random.choice([C.ORANGE, C.RED, C.YELLOW, (50, 50, 50)])
-                self.particle_system.add_particle(
-                    x=explosion_center[0],
-                    y=explosion_center[1],
-                    dx=math.cos(angle) * speed,
-                    dy=math.sin(angle) * speed,
-                    color=color,
-                    timer=random.randint(40, 80),
-                    size=random.randint(5, 15),
-                )
-
-            for ring in range(3):
-                ring_size = 50 + ring * 30
-                ring_alpha = 200 - ring * 50
-                explosion_surface = pygame.Surface(
-                    (ring_size * 2, ring_size * 2), pygame.SRCALPHA
-                )
-                pygame.draw.circle(
-                    explosion_surface,
-                    (255, 100, 0, ring_alpha),
-                    (ring_size, ring_size),
-                    ring_size,
-                )
-                self.screen.blit(
-                    explosion_surface,
-                    (explosion_center[0] - ring_size, explosion_center[1] - ring_size),
-                )
-
-        for bot in self.bots:
-            if not bot.alive:
-                continue
-            dx = bot.x - projectile.x
-            dy = bot.y - projectile.y
-            dist = math.sqrt(dx * dx + dy * dy)
-
-            if dist < C.BOMB_RADIUS:
-                damage_factor = 1.0 - (dist / C.BOMB_RADIUS)
-                damage = int(1000 * damage_factor)
-
-                if bot.take_damage(damage):
-                    self.sound_manager.play_sound("scream")
-                    self.kills += 1
-                    self.kill_combo_count += 1
-                    self.kill_combo_timer = 180
-                    self.last_death_pos = (bot.x, bot.y)
-
-                if dist < 5.0 and dist_to_player < 20:
-                    self.particle_system.add_explosion(
-                        C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2, count=3
-                    )
-
-        self.damage_texts.append(
-            {
-                "x": C.SCREEN_WIDTH // 2,
-                "y": C.SCREEN_HEIGHT // 2 - 100,
-                "text": "BOOM!",
-                "color": C.ORANGE,
-                "timer": 90,
-                "vy": -0.5,
-            }
-        )
+        self.combat_system.explode_bomb(projectile)
 
     def explode_laser(self, impact_x: float, impact_y: float) -> None:
         """Trigger Massive Laser Explosion at Impact Point"""
-        try:
-            self.sound_manager.play_sound("boom_real")
-        except Exception:
-            logger.exception("Boom sound failed")
-
-        try:
-            hits = 0
-            for bot in self.bots:
-                if not hasattr(bot, "alive"):
-                    continue
-
-                if bot.alive:
-                    dist = math.sqrt((bot.x - impact_x) ** 2 + (bot.y - impact_y) ** 2)
-                    if dist < C.LASER_AOE_RADIUS:
-                        damage = 500
-                        killed = bot.take_damage(damage)
-                        hits += 1
-
-                        if killed:
-                            with suppress(Exception):
-                                self.sound_manager.play_sound("scream")
-                            self.kills += 1
-                            self.kill_combo_count += 1
-                            self.kill_combo_timer = 180
-                            self.last_death_pos = (bot.x, bot.y)
-
-                        for _ in range(10):
-                            self.particle_system.add_particle(
-                                x=C.SCREEN_WIDTH // 2,
-                                y=C.SCREEN_HEIGHT // 2,
-                                dx=random.uniform(-10, 10),
-                                dy=random.uniform(-10, 10),
-                                color=(
-                                    random.randint(200, 255),
-                                    0,
-                                    random.randint(200, 255),
-                                ),
-                                timer=40,
-                                size=random.randint(4, 8),
-                            )
-
-            if hits > 0:
-                self.damage_texts.append(
-                    {
-                        "x": C.SCREEN_WIDTH // 2,
-                        "y": C.SCREEN_HEIGHT // 2 - 80,
-                        "text": "LASER ANNIHILATION!",
-                        "color": (255, 0, 255),
-                        "timer": 60,
-                        "vy": -2,
-                    }
-                )
-        except Exception:
-            logger.exception("Critical Laser Error")
+        self.combat_system.explode_laser(impact_x, impact_y)
 
     def explode_plasma(self, projectile: Projectile) -> None:
         """Trigger plasma AOE explosion"""
-        self._explode_generic(projectile, C.PLASMA_AOE_RADIUS, "plasma")
+        self.combat_system.explode_plasma(projectile)
 
     def explode_rocket(self, projectile: Projectile) -> None:
         """Trigger rocket AOE explosion"""
-        radius = float(C.WEAPONS["rocket"].get("aoe_radius", 6.0))
-        self._explode_generic(projectile, radius, "rocket")
-
-    def _explode_generic(
-        self, projectile: Projectile, radius: float, weapon_type: str
-    ) -> None:
-        """Generic explosion logic"""
-        assert self.player is not None
-        dist_to_player = math.sqrt(
-            (projectile.x - self.player.x) ** 2 + (projectile.y - self.player.y) ** 2
-        )
-        if dist_to_player < 15:
-            self.damage_flash_timer = 15
-
-        if dist_to_player < 20:
-            count = 5 if weapon_type == "rocket" else 3
-            self.particle_system.add_explosion(
-                C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2, count=count
-            )
-
-            color = C.CYAN if weapon_type == "plasma" else C.ORANGE
-            for _ in range(20):
-                self.particle_system.add_particle(
-                    x=C.SCREEN_WIDTH // 2,
-                    y=C.SCREEN_HEIGHT // 2,
-                    dx=random.uniform(-10, 10),
-                    dy=random.uniform(-10, 10),
-                    color=color,
-                    timer=40,
-                    size=random.randint(4, 8),
-                )
-
-        try:
-            self.sound_manager.play_sound(
-                "boom_real" if weapon_type == "rocket" else "shoot_plasma"
-            )
-        except Exception:
-            pass
-
-        for bot in self.bots:
-            if not bot.alive:
-                continue
-            dx = bot.x - projectile.x
-            dy = bot.y - projectile.y
-            dist = math.sqrt(dx * dx + dy * dy)
-
-            if dist < radius:
-                damage_factor = 1.0 - (dist / radius)
-                damage = int(projectile.damage * damage_factor)
-
-                if bot.take_damage(damage):
-                    self.sound_manager.play_sound("scream")
-                    self.kills += 1
-                    self.kill_combo_count += 1
-                    self.kill_combo_timer = 180
-                    self.last_death_pos = (bot.x, bot.y)
+        self.combat_system.explode_rocket(projectile)
 
     def execute_melee_attack(self) -> None:
         """Execute melee attack - wide sweeping damage in front of player"""
@@ -1470,11 +1016,11 @@ class Game:
 
             if self.joystick.get_numbuttons() > 5 and self.joystick.get_button(5):
                 if self.player.shoot():
-                    self.fire_weapon()
+                    self.combat_system.fire_weapon()
 
             if self.joystick.get_numbuttons() > 4 and self.joystick.get_button(4):
                 if self.player.fire_secondary():
-                    self.fire_weapon(is_secondary=True)
+                    self.combat_system.fire_weapon(is_secondary=True)
 
             if self.joystick.get_numhats() > 0:
                 hat = self.joystick.get_hat(0)

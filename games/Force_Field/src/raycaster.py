@@ -50,6 +50,16 @@ class Raycaster:
         # Map wall types to texture names
         self.texture_map = {1: "stone", 2: "brick", 3: "metal", 4: "tech", 5: "secret"}
 
+        # Pre-cache texture strips for performance
+        self.texture_strips: dict[str, list[pygame.Surface]] = {}
+        for name, tex in self.textures.items():
+            w = tex.get_width()
+            h = tex.get_height()
+            strips = []
+            for x in range(w):
+                strips.append(tex.subsurface((x, 0, 1, h)))
+            self.texture_strips[name] = strips
+
         # Pre-generate stars
         self.stars = []
         for _ in range(100):
@@ -410,13 +420,17 @@ class Raycaster:
 
         use_textures = self.use_textures and len(self.textures) > 0
 
-        # Pre-fetch textures
-        # Map integer wall types to texture surfaces
-        texture_surfs = {}
+        # Pre-fetch texture strips
+        # Map integer wall types to texture strip lists
+        wall_strips = {}
         for wt in wall_colors.keys():
             tname = self.texture_map.get(wt, "brick")
-            if tname in self.textures:
-                texture_surfs[wt] = self.textures[tname]
+            if tname in self.texture_strips:
+                wall_strips[wt] = self.texture_strips[tname]
+                # Also need width for texture coordinate calculation
+                # Assuming all textures in a set are same size or we check list length
+                # Using first strip's parent or just list length
+                # We stored 1px strips, list length is width.
 
         # Loop
         for i in range(self.num_rays):
@@ -431,28 +445,19 @@ class Raycaster:
             top = wall_tops[i]
 
             # Texture rendering
-            if use_textures and wt in texture_surfs:
-                tex = texture_surfs[wt]
-                tex_w = tex.get_width()
-                tex_h = tex.get_height()
+            if use_textures and wt in wall_strips:
+                strips = wall_strips[wt]
+                tex_w = len(strips)
 
                 # Calculate texture X
-                # Optimization: wall_x_hits is already 0-1
                 tex_x = int(wall_x_hits[i] * tex_w)
-                # Clamp
-                # Clamp
                 tex_x = int(np.clip(tex_x, 0, tex_w - 1))
 
                 # Only render if height is reasonable
-                # If too small, solid color is better/faster
-                # If too big, we are very close.
-
                 if h < 8000:
                     try:
-                        # Optimization: cache 1px strips? No, simple subsurface
-                        # is fast.
-                        # Using subsurface is effectively a view, very cheap.
-                        tex_strip = tex.subsurface((tex_x, 0, 1, tex_h))
+                        # Use cached strip
+                        tex_strip = strips[tex_x]
 
                         # Scale
                         scaled_strip = pygame.transform.scale(tex_strip, (1, h))
@@ -460,20 +465,13 @@ class Raycaster:
                         # Shading (Darken)
                         shade = shades[i]
                         if shade < 1.0:
-                            # Apply shade
-                            # Faster method: fill a surface with black and
-                            # specific alpha and blit on top.
-                            # Optimization: Just use a black overlay with alpha.
-                            # 255 - (255 * shade) = alpha
                             alpha = int(255 * (1.0 - shade))
                             if alpha > 0:
                                 shade_surf = pygame.Surface((1, h), pygame.SRCALPHA)
                                 shade_surf.fill((0, 0, 0, alpha))
                                 scaled_strip.blit(shade_surf, (0, 0))
 
-                        # Fog mixing is hard with blit.
-                        # We can simulate fog by drawing a semi-transparent fog
-                        # color rect over it.
+                        # Fog
                         fog = fog_factors[i]
                         if fog > 0:
                             fog_alpha = int(255 * fog)
@@ -488,9 +486,7 @@ class Raycaster:
                         pass
                 else:
                     # Solid color fallback for massive closeness
-                    # (Avoids memory error on huge surfaces)
                     col = wall_colors.get(wt, C.GRAY)
-                    # Apply shade
                     shade = shades[i]
                     col = (
                         int(col[0] * shade),
