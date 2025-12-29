@@ -4,7 +4,6 @@ import logging
 import math
 import random
 import traceback
-from contextlib import suppress
 from typing import Any
 
 import pygame

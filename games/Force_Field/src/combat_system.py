@@ -1,17 +1,17 @@
 from __future__ import annotations
 
+import logging
 import math
 import random
-import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from . import constants as C
 from .projectile import Projectile
 
 if TYPE_CHECKING:
+    from .bot import Bot
     from .game import Game
     from .player import Player
-    from .bot import Bot
 
 logger = logging.getLogger(__name__)
 
@@ -234,9 +234,13 @@ class CombatSystem:
             )
 
         if closest_bot:
-            self._apply_damage(closest_bot, closest_dist, weapon_range, weapon_damage, is_headshot)
+            self._apply_damage(
+                closest_bot, closest_dist, weapon_range, weapon_damage, is_headshot
+            )
 
-    def _handle_secondary_hit(self, closest_bot: Bot | None, closest_dist: float, wall_dist: float) -> None:
+    def _handle_secondary_hit(
+        self, closest_bot: Bot | None, closest_dist: float, wall_dist: float
+    ) -> None:
         impact_dist = wall_dist
         if closest_bot and closest_dist < wall_dist:
             impact_dist = closest_dist
@@ -258,7 +262,14 @@ class CombatSystem:
             width=C.LASER_WIDTH,
         )
 
-    def _apply_damage(self, bot: Bot, distance: float, weapon_range: float, base_damage: int, is_headshot: bool) -> None:
+    def _apply_damage(
+        self,
+        bot: Bot,
+        distance: float,
+        weapon_range: float,
+        base_damage: int,
+        is_headshot: bool,
+    ) -> None:
         range_factor = max(0.3, 1.0 - (distance / weapon_range))
 
         # Re-calculate angle diff for accuracy factor
