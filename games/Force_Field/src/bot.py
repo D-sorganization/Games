@@ -81,10 +81,18 @@ class Bot:
         self.disintegrate_timer = 0
         self.removed = False  # When fully disintegrated
 
+        # Pain State
+        self.pain_timer = 0
+
     def update(
         self, game_map: Map, player: Player, other_bots: list[Bot]
     ) -> Projectile | None:
         """Update bot AI"""
+        if self.pain_timer > 0:
+            self.pain_timer -= 1
+            # Don't move or shoot while in pain
+            return None
+
         if self.dead:
             self.death_timer += 1
             if self.death_timer > 60:  # Start disintegrating after 1 second
@@ -345,6 +353,12 @@ class Bot:
             self.health -= damage * 3
         else:
             self.health -= damage
+
+        # Trigger Pain State
+        if self.health > 0:
+            # Chance to flinch based on damage
+            if damage > 20 or random.random() < 0.3:
+                self.pain_timer = 15  # Stun for 15 frames
 
         if self.health <= 0:
             self.health = 0
