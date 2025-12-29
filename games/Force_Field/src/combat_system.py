@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+
 class CombatSystem:
     """Handles weapon firing, hit detection, and damage application."""
 
