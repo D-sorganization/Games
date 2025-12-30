@@ -162,8 +162,7 @@ class EntityManager:
         # However, the original code checked ALL bots.
 
         # If we just want "nearest" globally, we have to check all or do a BFS.
-        # Let's iterate all active bots for correctness, but it's cleaner to have it here.
-        # The original code iterated all bots.
+        # Iterating all active bots for correctness matches original logic.
 
         for bot in self.bots:
             if bot.alive:

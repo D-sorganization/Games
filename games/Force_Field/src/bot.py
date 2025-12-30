@@ -112,7 +112,9 @@ class Bot:
         elif self.enemy_type == "beast":
             return self._update_behavior_beast(game_map, player, distance, other_bots)
         elif self.enemy_type == "minigunner":
-            return self._update_behavior_minigunner(game_map, player, distance, other_bots)
+            return self._update_behavior_minigunner(
+                game_map, player, distance, other_bots
+            )
         elif self.enemy_type == "sniper":
             return self._update_behavior_sniper(game_map, player, distance, other_bots)
 
@@ -146,7 +148,9 @@ class Bot:
             self.mouth_open = not self.mouth_open
             self.mouth_timer = 0
 
-    def _update_behavior_ball(self, game_map: Map, player: Player, dx: float, dy: float, dist: float) -> None:
+    def _update_behavior_ball(
+        self, game_map: Map, player: Player, dx: float, dy: float, dist: float
+    ) -> None:
         # Accelerate towards player
         accel = 0.001 * self.speed
 
@@ -193,7 +197,9 @@ class Bot:
             self.vy *= -1.0
         return None
 
-    def _update_behavior_ninja(self, game_map: Map, player: Player, distance: float, other_bots: list[Bot]) -> Projectile | None:
+    def _update_behavior_ninja(
+        self, game_map: Map, player: Player, distance: float, other_bots: list[Bot]
+    ) -> Projectile | None:
         if distance < 1.2 and self.attack_timer <= 0:
             if not player.god_mode:
                 player.take_damage(self.damage)
@@ -202,7 +208,9 @@ class Bot:
 
         return self._move_and_collide(game_map, other_bots)
 
-    def _update_behavior_beast(self, game_map: Map, player: Player, distance: float, other_bots: list[Bot]) -> Projectile | None:
+    def _update_behavior_beast(
+        self, game_map: Map, player: Player, distance: float, other_bots: list[Bot]
+    ) -> Projectile | None:
         if distance < 15 and self.attack_timer <= 0:
             if self.has_line_of_sight(game_map, player):
                 projectile = Projectile(
