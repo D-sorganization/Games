@@ -13,6 +13,7 @@ from .bot import Bot
 from .bot_renderer import BotRenderer
 from .projectile import Projectile
 from .texture_generator import TextureGenerator
+from .utils import cast_ray_dda
 
 # Sprite Rendering thresholds
 STRIP_VISIBILITY_THRESHOLD = 0.3
@@ -119,72 +120,20 @@ class Raycaster:
         origin_y: float,
         angle: float,
     ) -> tuple[float, int, float, int, int]:
-        """Legacy single ray cast (kept for utility purposes)."""
-        # This implementation is kept for non-rendering logic (e.g. AI line of sight)
-        # Using the pure Python implementation from before as it's sufficient for
-        # single rays.
-        ray_dir_x = math.cos(angle)
-        ray_dir_y = math.sin(angle)
+        """Single ray cast for game logic (using utils DDA)."""
+        dist, wall_type, hit_x, hit_y, side, map_x, map_y = cast_ray_dda(
+            origin_x, origin_y, angle, self.game_map
+        )
 
-        map_x = int(origin_x)
-        map_y = int(origin_y)
+        # Calculate wall_x_hit for texture mapping (0.0 - 1.0)
+        if side == 0:  # Vertical hit
+            wall_x_hit = hit_y
+        else:  # Horizontal hit
+            wall_x_hit = hit_x
 
-        delta_dist_x = abs(1 / ray_dir_x) if ray_dir_x != 0 else 1e30
-        delta_dist_y = abs(1 / ray_dir_y) if ray_dir_y != 0 else 1e30
+        wall_x_hit -= math.floor(wall_x_hit)
 
-        if ray_dir_x < 0:
-            step_x = -1
-            side_dist_x = (origin_x - map_x) * delta_dist_x
-        else:
-            step_x = 1
-            side_dist_x = (map_x + 1.0 - origin_x) * delta_dist_x
-
-        if ray_dir_y < 0:
-            step_y = -1
-            side_dist_y = (origin_y - map_y) * delta_dist_y
-        else:
-            step_y = 1
-            side_dist_y = (map_y + 1.0 - origin_y) * delta_dist_y
-
-        hit = False
-        side = 0
-        wall_type = 0
-        max_steps = 100
-
-        grid = self.grid
-
-        for _ in range(max_steps):
-            if side_dist_x < side_dist_y:
-                side_dist_x += delta_dist_x
-                map_x += step_x
-                side = 0
-            else:
-                side_dist_y += delta_dist_y
-                map_y += step_y
-                side = 1
-
-            if 0 <= map_x < self.map_width and 0 <= map_y < self.map_height:
-                if grid[map_y][map_x] > 0:
-                    hit = True
-                    wall_type = grid[map_y][map_x]
-                    break
-            else:
-                hit = True
-                wall_type = 1
-                break
-
-        if hit:
-            if side == 0:
-                distance = side_dist_x - delta_dist_x
-                wall_x_hit = origin_y + distance * ray_dir_y
-            else:
-                distance = side_dist_y - delta_dist_y
-                wall_x_hit = origin_x + distance * ray_dir_x
-
-            wall_x_hit -= math.floor(wall_x_hit)
-            return distance, wall_type, wall_x_hit, map_x, map_y
-
-        return C.MAX_DEPTH, 0, 0.0, 0, 0
+        return dist, wall_type, wall_x_hit, map_x, map_y
 
     def render_3d(
         self,

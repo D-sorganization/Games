@@ -771,22 +771,6 @@ class Game:
         except OSError:
             logger.exception("Save failed")
 
-    def explode_bomb(self, projectile: Projectile) -> None:
-        """Handle bomb explosion logic"""
-        self.combat_system.explode_bomb(projectile)
-
-    def explode_laser(self, impact_x: float, impact_y: float) -> None:
-        """Trigger Massive Laser Explosion at Impact Point"""
-        self.combat_system.explode_laser(impact_x, impact_y)
-
-    def explode_plasma(self, projectile: Projectile) -> None:
-        """Trigger plasma AOE explosion"""
-        self.combat_system.explode_plasma(projectile)
-
-    def explode_rocket(self, projectile: Projectile) -> None:
-        """Trigger rocket AOE explosion"""
-        self.combat_system.explode_rocket(projectile)
-
     def execute_melee_attack(self) -> None:
         """Execute melee attack - wide sweeping damage in front of player"""
         assert self.player is not None
@@ -1162,17 +1146,8 @@ class Game:
                 if r_i * r_i + r_j * r_j <= reveal_radius * reveal_radius:
                     self.visited_cells.add((cx + r_j, cy + r_i))
 
-        min_dist_sq = float("inf")
-        for bot in self.bots:
-            if bot.alive:
-                dx = bot.x - self.player.x
-                dy = bot.y - self.player.y
-                d_sq = dx * dx + dy * dy
-                if d_sq < min_dist_sq:
-                    min_dist_sq = d_sq
-
-        min_dist = (
-            math.sqrt(min_dist_sq) if min_dist_sq != float("inf") else float("inf")
+        min_dist = self.entity_manager.get_nearest_enemy_distance(
+            self.player.x, self.player.y
         )
 
         if min_dist < 15:

@@ -90,11 +90,11 @@ class EntityManager:
             if was_alive and not projectile.alive:
                 w_type = getattr(projectile, "weapon_type", "normal")
                 if w_type == "plasma":
-                    game.explode_plasma(projectile)
+                    game.combat_system.explode_plasma(projectile)
                 elif w_type == "rocket":
-                    game.explode_rocket(projectile)
+                    game.combat_system.explode_rocket(projectile)
                 elif w_type == "bomb":
-                    game.explode_bomb(projectile)
+                    game.combat_system.explode_bomb(projectile)
 
             if projectile.alive:
                 if not projectile.is_player:
@@ -132,9 +132,9 @@ class EntityManager:
                             projectile.alive = False
                             w_type = getattr(projectile, "weapon_type", "normal")
                             if w_type == "plasma":
-                                game.explode_plasma(projectile)
+                                game.combat_system.explode_plasma(projectile)
                             elif w_type == "rocket":
-                                game.explode_rocket(projectile)
+                                game.combat_system.explode_rocket(projectile)
                             break
 
         self.projectiles = [p for p in self.projectiles if p.alive]
@@ -150,3 +150,28 @@ class EntityManager:
             for b in self.bots
             if b.alive and b.type_data.get("visual_style") != "item"
         ]
+
+    def get_nearest_enemy_distance(self, x: float, y: float) -> float:
+        """Get the distance to the nearest enemy."""
+        min_dist_sq = float("inf")
+
+        # Optimization: Only check nearby cells in spatial grid if possible?
+        # For now, we can iterate all or optimize using spatial grid.
+        # Since sound effect range is somewhat global or large, checking all active bots is robust,
+        # but using spatial grid for neighbors is better if sound range is small.
+        # However, the original code checked ALL bots.
+        # Let's check nearby bots first.
+
+        # If we just want "nearest" globally, we have to check all or do a BFS on grid.
+        # Let's iterate all active bots for correctness, but it's cleaner to have it here.
+        # The original code iterated all bots.
+
+        for bot in self.bots:
+            if bot.alive:
+                dx = bot.x - x
+                dy = bot.y - y
+                d_sq = dx * dx + dy * dy
+                if d_sq < min_dist_sq:
+                    min_dist_sq = d_sq
+
+        return min_dist_sq ** 0.5 if min_dist_sq != float("inf") else float("inf")
