@@ -150,7 +150,7 @@ class Bot:
 
     def _update_behavior_ball(
         self, game_map: Map, player: Player, dx: float, dy: float, dist: float
-    ) -> None:
+    ) -> Projectile | None:
         # Accelerate towards player
         accel = 0.001 * self.speed
 
@@ -287,7 +287,9 @@ class Bot:
 
         return self._move_and_collide(game_map, other_bots)
 
-    def _move_and_collide(self, game_map: Map, other_bots: list[Bot]) -> None:
+    def _move_and_collide(
+        self, game_map: Map, other_bots: list[Bot]
+    ) -> Projectile | None:
         # Move toward player (angle already set)
         move_dx = math.cos(self.angle) * self.speed
         move_dy = math.sin(self.angle) * self.speed
