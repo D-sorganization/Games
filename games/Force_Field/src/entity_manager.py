@@ -172,4 +172,4 @@ class EntityManager:
                 if d_sq < min_dist_sq:
                     min_dist_sq = d_sq
 
-        return min_dist_sq ** 0.5 if min_dist_sq != float("inf") else float("inf")
+        return min_dist_sq**0.5 if min_dist_sq != float("inf") else float("inf")
