@@ -334,7 +334,7 @@ class CombatSystem:
 
         try:
             self.game.sound_manager.play_sound("bomb")
-        except BaseException:
+        except Exception:
             logger.exception("Bomb Audio Failed")
 
         if dist_to_player < 20:

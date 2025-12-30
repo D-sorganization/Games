@@ -771,6 +771,22 @@ class Game:
         except OSError:
             logger.exception("Save failed")
 
+    def explode_bomb(self, projectile: Projectile) -> None:
+        """Handle bomb explosion logic"""
+        self.combat_system.explode_bomb(projectile)
+
+    def explode_laser(self, impact_x: float, impact_y: float) -> None:
+        """Trigger Massive Laser Explosion at Impact Point"""
+        self.combat_system.explode_laser(impact_x, impact_y)
+
+    def explode_plasma(self, projectile: Projectile) -> None:
+        """Trigger plasma AOE explosion"""
+        self.combat_system.explode_plasma(projectile)
+
+    def explode_rocket(self, projectile: Projectile) -> None:
+        """Trigger rocket AOE explosion"""
+        self.combat_system.explode_rocket(projectile)
+
     def execute_melee_attack(self) -> None:
         """Execute melee attack - wide sweeping damage in front of player"""
         assert self.player is not None
