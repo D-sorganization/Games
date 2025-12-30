@@ -11,11 +11,12 @@ def cast_ray_dda(
     angle: float,
     game_map: "Map",
     max_dist: float = 100.0,
-) -> tuple[float, int, float, float]:
+) -> tuple[float, int, float, float, int, int, int]:
     """Cast a ray using DDA algorithm.
 
     Returns:
-        (distance, wall_type, hit_x, hit_y)
+        (distance, wall_type, hit_x, hit_y, side, map_x, map_y)
+        side: 0 for vertical wall (x-side), 1 for horizontal wall (y-side)
     """
     ray_dir_x = math.cos(angle)
     ray_dir_y = math.sin(angle)
@@ -44,6 +45,7 @@ def cast_ray_dda(
 
     hit = False
     wall_type = 0
+    side = 0
 
     # Max depth check to prevent infinite loop (approximate)
     # We can limit by distance or steps. DDA steps approx = distance.
@@ -62,10 +64,12 @@ def cast_ray_dda(
             side_dist_x += delta_dist_x
             map_x += step_x
             dist = side_dist_x - delta_dist_x
+            side = 0
         else:
             side_dist_y += delta_dist_y
             map_y += step_y
             dist = side_dist_y - delta_dist_y
+            side = 1
 
         if dist > max_dist:
             break
@@ -83,10 +87,13 @@ def cast_ray_dda(
             wall_type = grid[map_y][map_x]
             break
 
-    if hit:
-        return dist, wall_type, start_x + ray_dir_x * dist, start_y + ray_dir_y * dist
+    hit_x = start_x + ray_dir_x * dist
+    hit_y = start_y + ray_dir_y * dist
 
-    return max_dist, 0, start_x + ray_dir_x * max_dist, start_y + ray_dir_y * max_dist
+    if hit:
+        return dist, wall_type, hit_x, hit_y, side, map_x, map_y
+
+    return max_dist, 0, hit_x, hit_y, side, map_x, map_y
 
 
 def has_line_of_sight(
@@ -101,7 +108,9 @@ def has_line_of_sight(
 
     angle = math.atan2(dy, dx)
 
-    hit_dist, wall_type, _, _ = cast_ray_dda(x1, y1, angle, game_map, max_dist=dist)
+    hit_dist, wall_type, _, _, _, _, _ = cast_ray_dda(
+        x1, y1, angle, game_map, max_dist=dist
+    )
 
     # Allow small epsilon error
     return hit_dist >= dist - 0.1
