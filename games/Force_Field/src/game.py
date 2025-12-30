@@ -786,6 +786,7 @@ class Game:
     def explode_rocket(self, projectile: Projectile) -> None:
         """Trigger rocket AOE explosion"""
         self.combat_system.explode_rocket(projectile)
+
     def execute_melee_attack(self) -> None:
         """Execute melee attack - wide sweeping damage in front of player"""
         assert self.player is not None

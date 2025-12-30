@@ -91,7 +91,6 @@ class Bot:
         if self._check_status_effects():
             return None
 
-
         self._update_animations()
 
         if self.enemy_type == "health_pack":
