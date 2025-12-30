@@ -220,7 +220,9 @@ class Bot:
                 return projectile
         return self._move_and_collide(game_map, other_bots)
 
-    def _update_behavior_minigunner(self, game_map: Map, player: Player, distance: float, other_bots: list[Bot]) -> Projectile | None:
+    def _update_behavior_minigunner(
+        self, game_map: Map, player: Player, distance: float, other_bots: list[Bot]
+    ) -> Projectile | None:
         if distance < 12 and self.attack_timer <= 0:
             if self.has_line_of_sight(game_map, player):
                 projectile = Projectile(
@@ -238,7 +240,9 @@ class Bot:
                 return projectile
         return self._move_and_collide(game_map, other_bots)
 
-    def _update_behavior_sniper(self, game_map: Map, player: Player, distance: float, other_bots: list[Bot]) -> Projectile | None:
+    def _update_behavior_sniper(
+        self, game_map: Map, player: Player, distance: float, other_bots: list[Bot]
+    ) -> Projectile | None:
         if distance < C.WEAPON_RANGE_SNIPER and self.attack_timer <= 0:
             if self.has_line_of_sight(game_map, player):
                 projectile = Projectile(
@@ -256,7 +260,9 @@ class Bot:
                 return projectile
         return self._move_and_collide(game_map, other_bots)
 
-    def _update_behavior_standard(self, game_map: Map, player: Player, distance: float, other_bots: list[Bot]) -> Projectile | None:
+    def _update_behavior_standard(
+        self, game_map: Map, player: Player, distance: float, other_bots: list[Bot]
+    ) -> Projectile | None:
         if distance < C.BOT_ATTACK_RANGE and self.attack_timer <= 0:
             if self.has_line_of_sight(game_map, player):
                 projectile = Projectile(

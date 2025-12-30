@@ -157,12 +157,11 @@ class EntityManager:
 
         # Optimization: Only check nearby cells in spatial grid if possible?
         # For now, we can iterate all or optimize using spatial grid.
-        # Since sound effect range is somewhat global or large, checking all active bots is robust,
+        # Since sound effect range is global/large, checking all active bots is robust,
         # but using spatial grid for neighbors is better if sound range is small.
         # However, the original code checked ALL bots.
-        # Let's check nearby bots first.
 
-        # If we just want "nearest" globally, we have to check all or do a BFS on grid.
+        # If we just want "nearest" globally, we have to check all or do a BFS.
         # Let's iterate all active bots for correctness, but it's cleaner to have it here.
         # The original code iterated all bots.
 
