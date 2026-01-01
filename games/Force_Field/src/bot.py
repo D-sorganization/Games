@@ -99,7 +99,8 @@ class Bot:
         # Calculate distance to player
         dx = player.x - self.x
         dy = player.y - self.y
-        distance = math.sqrt(dx**2 + dy**2)
+        dist_sq = dx**2 + dy**2
+        distance = math.sqrt(dist_sq)
 
         # Face player
         self.angle = float(math.atan2(dy, dx))
@@ -305,31 +306,39 @@ class Bot:
         collision_radius = 0.5 + (0.5 if self.enemy_type == "beast" else 0)
         col_sq = collision_radius * collision_radius
 
-        for other_bot in other_bots:
-            if other_bot != self and not other_bot.dead:
-                if (
-                    abs(new_x - other_bot.x) > collision_radius
-                    and abs(self.x - other_bot.x) > collision_radius
-                ):
-                    pass
+        # Optimization: Filter potential colliders by rough grid or distance first?
+        # For now, just optimized loop
+        if can_move_x or can_move_y:
+            for other_bot in other_bots:
+                if other_bot is self or other_bot.dead:
+                    continue
 
-                dx_sq = (new_x - other_bot.x) ** 2
-                dy_sq = (self.y - other_bot.y) ** 2
-                if dx_sq + dy_sq < col_sq:
-                    can_move_x = False
-                    if self.enemy_type == "beast":
-                        push_x = other_bot.x + move_dx * 2
-                        if not game_map.is_wall(push_x, other_bot.y):
-                            other_bot.x = push_x
+                # Quick box check
+                if abs(self.x - other_bot.x) > C.MAX_COLLISION_DIST or abs(self.y - other_bot.y) > C.MAX_COLLISION_DIST:
+                    continue
 
-                dx_sq = (self.x - other_bot.x) ** 2
-                dy_sq = (new_y - other_bot.y) ** 2
-                if dx_sq + dy_sq < col_sq:
-                    can_move_y = False
-                    if self.enemy_type == "beast":
-                        push_y = other_bot.y + move_dy * 2
-                        if not game_map.is_wall(other_bot.x, push_y):
-                            other_bot.y = push_y
+                if can_move_x:
+                    dx_sq = (new_x - other_bot.x) ** 2
+                    dy_sq = (self.y - other_bot.y) ** 2
+                    if dx_sq + dy_sq < col_sq:
+                        can_move_x = False
+                        if self.enemy_type == "beast":
+                            push_x = other_bot.x + move_dx * 2
+                            if not game_map.is_wall(push_x, other_bot.y):
+                                other_bot.x = push_x
+
+                if can_move_y:
+                    dx_sq = (self.x - other_bot.x) ** 2
+                    dy_sq = (new_y - other_bot.y) ** 2
+                    if dx_sq + dy_sq < col_sq:
+                        can_move_y = False
+                        if self.enemy_type == "beast":
+                            push_y = other_bot.y + move_dy * 2
+                            if not game_map.is_wall(other_bot.x, push_y):
+                                other_bot.y = push_y
+
+                if not can_move_x and not can_move_y:
+                    break
 
         if can_move_x:
             self.x = new_x
@@ -337,8 +346,8 @@ class Bot:
             self.y = new_y
 
         # Update walk animation
-        moved = self.x != self.last_x or self.y != self.last_y
-        if moved:
+        # Use simple epsilon check
+        if abs(self.x - self.last_x) > 0.001 or abs(self.y - self.last_y) > 0.001:
             self.walk_animation += 0.3
             if self.walk_animation > 2 * math.pi:
                 self.walk_animation -= 2 * math.pi
