@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import functools
 import itertools
 import math
 import random
@@ -62,8 +61,8 @@ class Raycaster:
                 strips.append(tex.subsurface((x, 0, 1, h)))
             self.texture_strips[name] = strips
 
-        # Clear the LRU cache when textures change (or on init)
-        self._get_cached_strip.cache_clear()
+        # Initialize strip cache
+        self._strip_cache: dict[tuple[str, int, int], pygame.Surface] = {}
 
         # Pre-generate stars
         self.stars = []
@@ -118,17 +117,32 @@ class Raycaster:
         self.z_buffer = np.full(self.num_rays, float("inf"), dtype=np.float64)
         self._update_ray_angles()
 
-    @functools.lru_cache(maxsize=10000)
     def _get_cached_strip(
         self, texture_name: str, strip_x: int, height: int
     ) -> pygame.Surface | None:
         """Get or create a scaled texture strip."""
+        # Use instance-level cache to avoid memory leaks from lru_cache on methods
+        cache_key = (texture_name, strip_x, height)
+
+        if cache_key in self._strip_cache:
+            return self._strip_cache[cache_key]
+
         strips = self.texture_strips.get(texture_name)
         if not strips:
             return None
         try:
-            return pygame.transform.scale(strips[strip_x], (1, height))
-        except (ValueError, pygame.error):
+            scaled_strip = pygame.transform.scale(strips[strip_x], (1, height))
+
+            # Limit cache size to prevent memory issues
+            if len(self._strip_cache) > 10000:
+                # Remove oldest entries (simple FIFO)
+                oldest_keys = list(self._strip_cache.keys())[:1000]
+                for key in oldest_keys:
+                    del self._strip_cache[key]
+
+            self._strip_cache[cache_key] = scaled_strip
+            return scaled_strip
+        except (pygame.error, ValueError, IndexError):
             return None
 
     def cast_ray(
@@ -428,11 +442,12 @@ class Raycaster:
                     if scaled_strip:
                         try:
                             # We must copy if we are going to modify it with shading/fog
-                            # Otherwise we modify the cached surface which ruins it for other rays
-                            # But copying is slow.
-                            # Instead, we can blit shading ON TOP of it onto the view_surface?
-                            # No, view_surface has other things.
-                            # We can blit strip to view_surface, then blit shading rect to view_surface.
+                            # Otherwise we modify the cached surface which ruins it for
+                            # other rays. But copying is slow.
+                            # Instead, we can blit shading ON TOP of it onto the
+                            # view_surface? No, view_surface has other things.
+                            # We can blit strip to view_surface, then blit shading rect
+                            # to view_surface.
 
                             self.view_surface.blit(scaled_strip, (i, top))
 
@@ -441,7 +456,8 @@ class Raycaster:
                             if shade < 1.0:
                                 alpha = int(255 * (1.0 - shade))
                                 if alpha > 0:
-                                    # Draw directly on view surface to avoid copying scaled_strip
+                                    # Draw directly on view surface to avoid copying
+                                    # scaled_strip
                                     shade_surf = pygame.Surface((1, h), pygame.SRCALPHA)
                                     shade_surf.fill((0, 0, 0, alpha))
                                     self.view_surface.blit(shade_surf, (i, top))
