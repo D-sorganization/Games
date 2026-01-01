@@ -87,8 +87,8 @@ class Particle:
             if self.size < 1:
                 return
 
-            # Use pygame.draw.circle directly for high alpha, it supports alpha on Surface if it's SRCALPHA
-            # But the main screen usually isn't.
+            # Use pygame.draw.circle directly for high alpha, it supports alpha
+            # on Surface if it's SRCALPHA. But the main screen usually isn't.
             # However, creating surfaces every frame is slow.
             # Optimization: Just draw without alpha if alpha is high, or skip if low?
             # Or use a shared cached surface.
@@ -98,9 +98,10 @@ class Particle:
                     screen, color[:3], (int(self.x), int(self.y)), int(self.size)
                 )
             else:
-                # Fallback to creating surface only when fading out, which is fewer frames
-                # Or even better: use a pre-created surface in ParticleSystem or global cache
-                # For this task, avoiding Surface creation in hot path (opaque particles) is the main win.
+                # Fallback to creating surface only when fading out, which is
+                # fewer frames. Or even better: use a pre-created surface in
+                # ParticleSystem or global cache. For this task, avoiding Surface
+                # creation in hot path (opaque particles) is the main win.
                 surf = pygame.Surface(
                     (int(self.size * 2), int(self.size * 2)), pygame.SRCALPHA
                 )
