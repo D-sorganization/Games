@@ -186,6 +186,7 @@ WEAPONS: dict[str, WeaponData] = {
 HEADSHOT_THRESHOLD = 0.05
 SPAWN_SAFETY_MARGIN = 3
 PLASMA_AOE_RADIUS = 3.0  # Reduced AOE (was 6.0)
+MAX_COLLISION_DIST = 2.0  # Max distance to check for collisions
 
 # UI settings
 HINT_BG_PADDING_H = 10

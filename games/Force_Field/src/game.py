@@ -1391,7 +1391,7 @@ class Game:
                 duration = slides_durations[self.intro_step]
 
                 if self.intro_step == 0 and elapsed < 50:
-                    if not hasattr(self, "_laugh_played"):
+                    if not getattr(self, "_laugh_played", False):
                         self.sound_manager.play_sound("laugh")
                         self._laugh_played = True
 
@@ -1406,7 +1406,7 @@ class Game:
 
         if self.intro_phase < 2:
             if self.intro_phase == 1 and elapsed < 50:
-                if not hasattr(self, "_water_played"):
+                if not getattr(self, "_water_played", False):
                     self.sound_manager.play_sound("water")
                     self._water_played = True
 

@@ -61,6 +61,9 @@ class Raycaster:
                 strips.append(tex.subsurface((x, 0, 1, h)))
             self.texture_strips[name] = strips
 
+        # Initialize strip cache
+        self._strip_cache: dict[tuple[str, int, int], pygame.Surface] = {}
+
         # Pre-generate stars
         self.stars = []
         for _ in range(100):
@@ -113,6 +116,34 @@ class Raycaster:
         )
         self.z_buffer = np.full(self.num_rays, float("inf"), dtype=np.float64)
         self._update_ray_angles()
+
+    def _get_cached_strip(
+        self, texture_name: str, strip_x: int, height: int
+    ) -> pygame.Surface | None:
+        """Get or create a scaled texture strip."""
+        # Use instance-level cache to avoid memory leaks from lru_cache on methods
+        cache_key = (texture_name, strip_x, height)
+
+        if cache_key in self._strip_cache:
+            return self._strip_cache[cache_key]
+
+        strips = self.texture_strips.get(texture_name)
+        if not strips:
+            return None
+        try:
+            scaled_strip = pygame.transform.scale(strips[strip_x], (1, height))
+
+            # Limit cache size to prevent memory issues
+            if len(self._strip_cache) > 10000:
+                # Remove oldest entries (simple FIFO)
+                oldest_keys = list(self._strip_cache.keys())[:1000]
+                for key in oldest_keys:
+                    del self._strip_cache[key]
+
+            self._strip_cache[cache_key] = scaled_strip
+            return scaled_strip
+        except (pygame.error, ValueError, IndexError):
+            return None
 
     def cast_ray(
         self,
@@ -404,35 +435,48 @@ class Raycaster:
 
                 # Only render if height is reasonable
                 if h < 8000:
-                    try:
-                        # Use cached strip
-                        tex_strip = strips[tex_x]
+                    tname = self.texture_map.get(wt, "brick")
+                    # Ensure height is int for cache hit
+                    scaled_strip = self._get_cached_strip(tname, tex_x, int(h))
 
-                        # Scale
-                        scaled_strip = pygame.transform.scale(tex_strip, (1, h))
+                    if scaled_strip:
+                        try:
+                            # We must copy if we are going to modify it with shading/fog
+                            # Otherwise we modify the cached surface which ruins it for
+                            # other rays. But copying is slow.
+                            # Instead, we can blit shading ON TOP of it onto the
+                            # view_surface? No, view_surface has other things.
+                            # We can blit strip to view_surface, then blit shading rect
+                            # to view_surface.
 
-                        # Shading (Darken)
-                        shade = shades[i]
-                        if shade < 1.0:
-                            alpha = int(255 * (1.0 - shade))
-                            if alpha > 0:
-                                shade_surf = pygame.Surface((1, h), pygame.SRCALPHA)
-                                shade_surf.fill((0, 0, 0, alpha))
-                                scaled_strip.blit(shade_surf, (0, 0))
+                            self.view_surface.blit(scaled_strip, (i, top))
 
-                        # Fog
-                        fog = fog_factors[i]
-                        if fog > 0:
-                            fog_alpha = int(255 * fog)
-                            if fog_alpha > 0:
-                                fog_surf = pygame.Surface((1, h), pygame.SRCALPHA)
-                                fog_surf.fill((*C.FOG_COLOR, fog_alpha))
-                                scaled_strip.blit(fog_surf, (0, 0))
+                            # Shading (Darken)
+                            shade = shades[i]
+                            if shade < 1.0:
+                                alpha = int(255 * (1.0 - shade))
+                                if alpha > 0:
+                                    # Draw directly on view surface to avoid copying
+                                    # scaled_strip
+                                    shade_surf = pygame.Surface((1, h), pygame.SRCALPHA)
+                                    shade_surf.fill((0, 0, 0, alpha))
+                                    self.view_surface.blit(shade_surf, (i, top))
 
-                        self.view_surface.blit(scaled_strip, (i, top))
+                            # Fog
+                            fog = fog_factors[i]
+                            if fog > 0:
+                                fog_alpha = int(255 * fog)
+                                if fog_alpha > 0:
+                                    fog_surf = pygame.Surface((1, h), pygame.SRCALPHA)
+                                    fog_surf.fill((*C.FOG_COLOR, fog_alpha))
+                                    self.view_surface.blit(fog_surf, (i, top))
 
-                    except (pygame.error, ValueError):
-                        pass
+                        except (pygame.error, ValueError):
+                            pass
+                    else:
+                        # Fallback if cache failed
+                        col = wall_colors.get(wt, C.GRAY)
+                        pygame.draw.rect(self.view_surface, col, (i, top, 1, h))
                 else:
                     # Solid color fallback for massive closeness
                     col = wall_colors.get(wt, C.GRAY)
