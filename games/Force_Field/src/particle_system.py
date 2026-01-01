@@ -94,12 +94,16 @@ class Particle:
             # Or use a shared cached surface.
 
             if color[3] > 200:
-                pygame.draw.circle(screen, color[:3], (int(self.x), int(self.y)), int(self.size))
+                pygame.draw.circle(
+                    screen, color[:3], (int(self.x), int(self.y)), int(self.size)
+                )
             else:
                 # Fallback to creating surface only when fading out, which is fewer frames
                 # Or even better: use a pre-created surface in ParticleSystem or global cache
                 # For this task, avoiding Surface creation in hot path (opaque particles) is the main win.
-                surf = pygame.Surface((int(self.size * 2), int(self.size * 2)), pygame.SRCALPHA)
+                surf = pygame.Surface(
+                    (int(self.size * 2), int(self.size * 2)), pygame.SRCALPHA
+                )
                 pygame.draw.circle(surf, color, (self.size, self.size), self.size)
                 screen.blit(surf, (self.x - self.size, self.y - self.size))
 
@@ -110,7 +114,9 @@ class Particle:
                 return
 
             if color[3] > 200:
-                pygame.draw.line(screen, color[:3], self.start_pos, self.end_pos, self.width)
+                pygame.draw.line(
+                    screen, color[:3], self.start_pos, self.end_pos, self.width
+                )
             else:
                 # Draw to temp surface for alpha
                 # Calculate bounding box for the line
@@ -122,11 +128,17 @@ class Particle:
                 h = int(max_y - min_y + self.width + 2)
 
                 surf = pygame.Surface((w, h), pygame.SRCALPHA)
-                local_start = (self.start_pos[0] - min_x + self.width//2, self.start_pos[1] - min_y + self.width//2)
-                local_end = (self.end_pos[0] - min_x + self.width//2, self.end_pos[1] - min_y + self.width//2)
+                local_start = (
+                    self.start_pos[0] - min_x + self.width // 2,
+                    self.start_pos[1] - min_y + self.width // 2,
+                )
+                local_end = (
+                    self.end_pos[0] - min_x + self.width // 2,
+                    self.end_pos[1] - min_y + self.width // 2,
+                )
 
                 pygame.draw.line(surf, color, local_start, local_end, self.width)
-                screen.blit(surf, (min_x - self.width//2, min_y - self.width//2))
+                screen.blit(surf, (min_x - self.width // 2, min_y - self.width // 2))
 
 
 class ParticleSystem:

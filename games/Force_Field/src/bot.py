@@ -314,7 +314,10 @@ class Bot:
                     continue
 
                 # Quick box check
-                if abs(self.x - other_bot.x) > C.MAX_COLLISION_DIST or abs(self.y - other_bot.y) > C.MAX_COLLISION_DIST:
+                if (
+                    abs(self.x - other_bot.x) > C.MAX_COLLISION_DIST
+                    or abs(self.y - other_bot.y) > C.MAX_COLLISION_DIST
+                ):
                     continue
 
                 if can_move_x:

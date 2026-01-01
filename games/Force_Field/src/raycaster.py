@@ -119,7 +119,9 @@ class Raycaster:
         self._update_ray_angles()
 
     @functools.lru_cache(maxsize=10000)
-    def _get_cached_strip(self, texture_name: str, strip_x: int, height: int) -> pygame.Surface | None:
+    def _get_cached_strip(
+        self, texture_name: str, strip_x: int, height: int
+    ) -> pygame.Surface | None:
         """Get or create a scaled texture strip."""
         strips = self.texture_strips.get(texture_name)
         if not strips:
