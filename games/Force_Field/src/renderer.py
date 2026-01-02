@@ -28,6 +28,9 @@ class GameRenderer:
         size = (C.SCREEN_WIDTH, C.SCREEN_HEIGHT)
         self.effects_surface = pygame.Surface(size, pygame.SRCALPHA)
 
+        # Pre-calculated colors or surfaces can be added here if needed
+        self._portal_glow_surface_cache: dict[int, pygame.Surface] = {}
+
     def render_game(self, game: Game) -> None:
         """Render gameplay"""
         assert game.raycaster is not None
@@ -134,108 +137,101 @@ class GameRenderer:
             portal: Portal dictionary with position and state, or None if inactive.
             player: The player object for relative positioning.
         """
-        if portal:
-            sx = portal["x"] - player.x
-            sy = portal["y"] - player.y
+        if not portal:
+            return
 
-            cs = math.cos(player.angle)
-            sn = math.sin(player.angle)
-            a = sy * cs - sx * sn
-            b = sx * cs + sy * sn
+        sx = portal["x"] - player.x
+        sy = portal["y"] - player.y
 
-            if b > 0.1:
-                screen_x = int((0.5 * C.SCREEN_WIDTH) * (1 + a / b * 2.0))
-                screen_y = C.SCREEN_HEIGHT // 2
-                base_size = int(800 / b)
+        cs = math.cos(player.angle)
+        sn = math.sin(player.angle)
+        a = sy * cs - sx * sn
+        b = sx * cs + sy * sn
 
-                if -base_size < screen_x < C.SCREEN_WIDTH + base_size:
-                    center = (screen_x, screen_y)
-                    time_ms = pygame.time.get_ticks()
+        if b <= 0.1:
+            return
 
-                    # Pulsing animation
-                    pulse1 = math.sin(time_ms * 0.008) * 0.3 + 1.0  # Slow pulse
-                    pulse2 = math.sin(time_ms * 0.015) * 0.2 + 1.0  # Fast pulse
-                    rotation = time_ms * 0.002  # Rotation effect
+        screen_x = int((0.5 * C.SCREEN_WIDTH) * (1 + a / b * 2.0))
+        screen_y = C.SCREEN_HEIGHT // 2
+        base_size = int(800 / b)
 
-                    # Multiple plasma rings with different colors and sizes
-                    rings: list[dict[str, Any]] = [
-                        {
-                            "size": base_size * 0.8 * pulse1,
-                            "color": (0, 255, 255),
-                            "width": 8,
-                        },
-                        {
-                            "size": base_size * 0.6 * pulse2,
-                            "color": (100, 255, 255),
-                            "width": 6,
-                        },
-                        {
-                            "size": base_size * 0.4 * pulse1,
-                            "color": (200, 255, 255),
-                            "width": 4,
-                        },
-                        {
-                            "size": base_size * 0.2 * pulse2,
-                            "color": (255, 255, 255),
-                            "width": 3,
-                        },
-                    ]
+        if not (-base_size < screen_x < C.SCREEN_WIDTH + base_size):
+            return
 
-                    # Draw outer glow effect
-                    glow_surface = pygame.Surface(
-                        (base_size * 2, base_size * 2), pygame.SRCALPHA
-                    )
-                    glow_color = (0, 200, 255, 30)
-                    pygame.draw.circle(
-                        glow_surface,
-                        glow_color,
-                        (base_size, base_size),
-                        int(base_size * 0.9),
-                    )
-                    self.screen.blit(
-                        glow_surface, (screen_x - base_size, screen_y - base_size)
-                    )
+        center = (screen_x, screen_y)
+        time_ms = pygame.time.get_ticks()
 
-                    # Draw plasma rings
-                    for ring in rings:
-                        size = int(ring["size"])
-                        if size > 0:
-                            # Main ring
-                            pygame.draw.circle(
-                                self.screen, ring["color"], center, size, ring["width"]
-                            )
+        # Pulsing animation
+        pulse1 = math.sin(time_ms * 0.008) * 0.3 + 1.0  # Slow pulse
+        pulse2 = math.sin(time_ms * 0.015) * 0.2 + 1.0  # Fast pulse
+        rotation = time_ms * 0.002  # Rotation effect
 
-                            # Inner glow
-                            inner_color = tuple(min(255, c + 50) for c in ring["color"])
-                            pygame.draw.circle(
-                                self.screen,
-                                inner_color,
-                                center,
-                                size - ring["width"] // 2,
-                                2,
-                            )
+        # Draw outer glow effect
+        glow_size = int(base_size * 0.9)
+        if glow_size > 0:
+            glow_key = glow_size // 10 * 10  # Cache key rounding
+            if glow_key not in self._portal_glow_surface_cache:
+                s_size = glow_key * 2 + 4
+                surf = pygame.Surface((s_size, s_size), pygame.SRCALPHA)
+                pygame.draw.circle(
+                    surf,
+                    (0, 200, 255, 30),
+                    (s_size // 2, s_size // 2),
+                    glow_key,
+                )
+                self._portal_glow_surface_cache[glow_key] = surf
 
-                    # Rotating energy arcs
-                    for i in range(4):
-                        arc_angle = rotation + (i * math.pi / 2)
-                        arc_radius = base_size * 0.7 * pulse1
-                        arc_start = (
-                            screen_x + math.cos(arc_angle) * arc_radius * 0.8,
-                            screen_y + math.sin(arc_angle) * arc_radius * 0.8,
-                        )
-                        arc_end = (
-                            screen_x + math.cos(arc_angle) * arc_radius,
-                            screen_y + math.sin(arc_angle) * arc_radius,
-                        )
-                        pygame.draw.line(
-                            self.screen, (255, 255, 255), arc_start, arc_end, 3
-                        )
+            cached_glow = self._portal_glow_surface_cache.get(glow_key)
+            if cached_glow:
+                glow_rect = cached_glow.get_rect(center=center)
+                self.screen.blit(cached_glow, glow_rect)
 
-                    # Central energy core
-                    core_pulse = math.sin(time_ms * 0.02) * 0.5 + 1.0
-                    core_size = int(base_size * 0.1 * core_pulse)
-                    core_colors = [(255, 255, 255), (200, 255, 255), (100, 255, 255)]
-                    for i, color in enumerate(core_colors):
-                        pygame.draw.circle(
-                            self.screen, color, center, core_size - i * 2, 0
-                        )
+        # Draw plasma rings - simplified for loop
+        ring_configs = [
+            (0.8 * pulse1, (0, 255, 255), 8),
+            (0.6 * pulse2, (100, 255, 255), 6),
+            (0.4 * pulse1, (200, 255, 255), 4),
+            (0.2 * pulse2, (255, 255, 255), 3),
+        ]
+
+        for scale, color, width in ring_configs:
+            size = int(base_size * scale)
+            if size > 0:
+                pygame.draw.circle(self.screen, color, center, size, width)
+                # Inner glow (simple brighter line)
+                inner_color = tuple(min(255, c + 50) for c in color)
+                pygame.draw.circle(
+                    self.screen,
+                    inner_color,
+                    center,
+                    max(1, size - width // 2),
+                    2,
+                )
+
+        # Rotating energy arcs
+        arc_radius = base_size * 0.7 * pulse1
+        for i in range(4):
+            arc_angle = rotation + (i * math.pi / 2)
+            # Pre-calculate cos/sin
+            arc_cos = math.cos(arc_angle)
+            arc_sin = math.sin(arc_angle)
+
+            arc_start = (
+                screen_x + arc_cos * arc_radius * 0.8,
+                screen_y + arc_sin * arc_radius * 0.8,
+            )
+            arc_end = (
+                screen_x + arc_cos * arc_radius,
+                screen_y + arc_sin * arc_radius,
+            )
+            pygame.draw.line(self.screen, (255, 255, 255), arc_start, arc_end, 3)
+
+        # Central energy core
+        core_pulse = math.sin(time_ms * 0.02) * 0.5 + 1.0
+        core_size = int(base_size * 0.1 * core_pulse)
+        if core_size > 0:
+            core_colors = [(255, 255, 255), (200, 255, 255), (100, 255, 255)]
+            for i, color in enumerate(core_colors):
+                s = core_size - i * 2
+                if s > 0:
+                    pygame.draw.circle(self.screen, color, center, s, 0)
