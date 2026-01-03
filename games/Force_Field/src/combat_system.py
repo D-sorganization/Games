@@ -308,10 +308,10 @@ class CombatSystem:
         # Improved Blood Feedback
         blood_color = (200, 0, 0)
         # For non-standard enemies (like robots/aliens), maybe different blood?
-        if bot.enemy_type in ["ball", "minigunner"]: # Maybe robots?
-             blood_color = (20, 20, 20) # Oil?
+        if bot.enemy_type in ["ball", "minigunner"]:  # Maybe robots?
+            blood_color = (20, 20, 20)  # Oil?
         elif bot.enemy_type == "demon":
-             blood_color = (0, 200, 0) # Green slime
+            blood_color = (0, 200, 0)  # Green slime
 
         for _ in range(15):
             speed = random.uniform(2, 8)
@@ -324,7 +324,7 @@ class CombatSystem:
                 color=blood_color,
                 timer=random.randint(20, 40),
                 size=random.randint(3, 6),
-                gravity=0.2, # Gravity for blood
+                gravity=0.2,  # Gravity for blood
             )
 
         if not bot.alive:

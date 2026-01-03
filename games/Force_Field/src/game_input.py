@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 import logging
-import math
-import random
 from typing import TYPE_CHECKING
 
 import pygame
@@ -57,7 +55,9 @@ class GameInputHandler:
                     self.game.player.rotate(
                         event.rel[0] * C.PLAYER_ROT_SPEED * C.SENSITIVITY_X
                     )
-                    self.game.player.pitch_view(-event.rel[1] * C.PLAYER_ROT_SPEED * 200)
+                    self.game.player.pitch_view(
+                        -event.rel[1] * C.PLAYER_ROT_SPEED * 200
+                    )
 
     def _handle_cheat_input(self, event: pygame.event.Event) -> None:
         """Handle input when cheat mode is active."""

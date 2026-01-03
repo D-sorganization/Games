@@ -139,7 +139,9 @@ class GameRenderer:
 
         pygame.display.flip()
 
-    def _render_particles(self, particles: list[Any], offset: tuple[int, int] = (0, 0)) -> None:
+    def _render_particles(
+        self, particles: list[Any], offset: tuple[int, int] = (0, 0)
+    ) -> None:
         """Render particle effects including lasers and explosion particles.
 
         Args:

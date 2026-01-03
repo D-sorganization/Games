@@ -452,7 +452,9 @@ class Raycaster:
                                 if alpha > 0:
                                     # Use optimized fill + blit with shared surface
                                     # Only fill the necessary height
-                                    self.shade_surface.fill((0, 0, 0, alpha), (0, 0, 1, h))
+                                    self.shade_surface.fill(
+                                        (0, 0, 0, alpha), (0, 0, 1, h)
+                                    )
                                     self.view_surface.blit(
                                         self.shade_surface, (i, top), (0, 0, 1, h)
                                     )
