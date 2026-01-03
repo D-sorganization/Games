@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import math
+import random
 from typing import TYPE_CHECKING, Any
 
 import pygame
@@ -41,9 +42,38 @@ class GameRenderer:
         if game.player.is_moving:
             bob_offset = math.sin(pygame.time.get_ticks() * 0.015) * 15.0
 
+        # Screen Shake
+        shake_x = 0
+        shake_y = 0
+        if game.screen_shake > 0:
+            shake_x = int(random.uniform(-game.screen_shake, game.screen_shake))
+            shake_y = int(random.uniform(-game.screen_shake, game.screen_shake))
+
         # 1. 3D World (Raycaster)
+        # Note: We can't easily shake the raycaster output without rendering
+        # or blitting with offset which might leave gaps.
+        # Simple solution: Render normally, then blit everything with offset at the end?
+        # No, better to pass offset to raycaster if possible?
+        # Actually, if we just blit the view_surface with offset in Raycaster it works.
+        # But Raycaster.render_3d does the blit.
+        # Let's offset the HUD and Weapon for now, or everything if we wrap it.
+
+        # Raycaster handles its own blitting to screen.
+        # We can simulate camera shake by modifying player pitch/angle temporarily,
+        # but that affects gameplay aiming.
+        # Instead, let's just let the raycaster render to screen (0,0)
+        # 2D overlays (weapon, HUD).
+        # Or better: Create a master surface? No, too slow.
+
+        # Let's just modify the raycaster to accept a view offset tuple.
+        # Raycaster already has view_offset_y.
+        # We can add view_offset_x? Raycaster works by rays.
+
+        # For this implementation, I will just shake the 2D elements.
+        # It gives enough feedback.
+
         game.raycaster.render_floor_ceiling(
-            self.screen, game.player, game.level, view_offset_y=bob_offset
+            self.screen, game.player, game.level, view_offset_y=bob_offset + shake_y
         )
         game.raycaster.render_3d(
             self.screen,
@@ -51,12 +81,12 @@ class GameRenderer:
             game.bots,
             game.projectiles,
             game.level,
-            view_offset_y=bob_offset,
+            view_offset_y=bob_offset + shake_y,
         )
 
         # 2. Effects
         self.effects_surface.fill((0, 0, 0, 0))
-        self._render_particles(game.particle_system.particles)
+        self._render_particles(game.particle_system.particles, (shake_x, shake_y))
 
         # Damage Flash
         if game.player.damage_flash_timer > 0:
@@ -67,13 +97,28 @@ class GameRenderer:
             flash_surf.fill((255, 0, 0, alpha))
             self.effects_surface.blit(flash_surf, (0, 0))
 
-        self.screen.blit(self.effects_surface, (0, 0))
+        self.screen.blit(self.effects_surface, (shake_x, shake_y))
 
         # 3. Portal
+        # Portal is 2D overlay on 3D position.
+        # We should probably pass the shake to it too.
+        # But _render_portal calculates screen position from player pos.
+        # If we didn't shake player pos, portal won't shake.
+        # Let's skip deep portal shake integration for now.
         self._render_portal(game.portal, game.player)
 
         # 4. Weapon Model
         weapon_pos = self.weapon_renderer.render_weapon(game.player)
+        # Apply shake to weapon position return (it draws itself though).
+        # WeaponRenderer.render_weapon draws directly to screen.
+        # I should modify WeaponRenderer or just accept it's mostly static.
+        # Actually WeaponRenderer returns (cx, cy) but also draws.
+        # It's hard to inject shake there without modifying it.
+        # Wait, I can pass a surface wrapper? No.
+
+        # Actually, WeaponRenderer uses cx, cy calculated inside.
+        # I'll leave weapon as is for now, head bob is already there.
+
         if game.player.shooting:
             self.weapon_renderer.render_muzzle_flash(
                 game.player.current_weapon, weapon_pos
@@ -88,28 +133,34 @@ class GameRenderer:
                 game.visited_cells,
                 game.portal,
             )
+
+        # HUD Shake? usually HUD is static.
         game.ui_renderer.render_hud(game)
 
         pygame.display.flip()
 
-    def _render_particles(self, particles: list[Any]) -> None:
+    def _render_particles(
+        self, particles: list[Any], offset: tuple[int, int] = (0, 0)
+    ) -> None:
         """Render particle effects including lasers and explosion particles.
 
         Args:
             particles: List of Particle objects.
+            offset: (x, y) offset for rendering (e.g. screen shake).
         """
+        ox, oy = offset
         for p in particles:
             # Handle Particle Object
             if p.ptype == "laser":
                 alpha = int(255 * (p.timer / C.LASER_DURATION))
-                start = p.start_pos
-                end = p.end_pos
+                start = (p.start_pos[0] + ox, p.start_pos[1] + oy)
+                end = (p.end_pos[0] + ox, p.end_pos[1] + oy)
                 color = (*p.color, alpha)
                 pygame.draw.line(self.effects_surface, color, start, end, p.width)
                 # Spread
                 for i in range(5):
-                    offset = (i - 2) * 20
-                    target_end = (end[0] + offset, end[1])
+                    offset_val = (i - 2) * 20
+                    target_end = (end[0] + offset_val, end[1])
                     pygame.draw.line(
                         self.effects_surface,
                         (*p.color, max(0, alpha - 50)),
@@ -118,15 +169,17 @@ class GameRenderer:
                         max(1, p.width // 2),
                     )
             elif p.ptype == "normal":
-                ratio = p.timer / C.PARTICLE_LIFETIME
+                ratio = p.timer / p.max_timer
                 alpha = int(255 * ratio)
                 alpha = max(0, min(255, alpha))
                 color = p.color
                 rgba = (*color, alpha) if len(color) == 3 else (*color[:3], alpha)
+
+                # Optimized drawing on shared surface
                 pygame.draw.circle(
                     self.effects_surface,
                     rgba,
-                    (int(p.x), int(p.y)),
+                    (int(p.x + ox), int(p.y + oy)),
                     int(p.size),
                 )
 

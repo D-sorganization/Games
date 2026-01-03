@@ -305,15 +305,26 @@ class CombatSystem:
             C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2, count=5
         )
 
-        for _ in range(10):
+        # Improved Blood Feedback
+        blood_color = (200, 0, 0)
+        # For non-standard enemies (like robots/aliens), maybe different blood?
+        if bot.enemy_type in ["ball", "minigunner"]:  # Maybe robots?
+            blood_color = (20, 20, 20)  # Oil?
+        elif bot.enemy_type == "demon":
+            blood_color = (0, 200, 0)  # Green slime
+
+        for _ in range(15):
+            speed = random.uniform(2, 8)
+            angle = random.uniform(0, 2 * math.pi)
             self.game.particle_system.add_particle(
                 x=C.SCREEN_WIDTH // 2,
                 y=C.SCREEN_HEIGHT // 2,
-                dx=random.uniform(-5, 5),
-                dy=random.uniform(-5, 5),
-                color=C.BLUE_BLOOD,
-                timer=C.PARTICLE_LIFETIME,
-                size=random.randint(2, 5),
+                dx=math.cos(angle) * speed,
+                dy=math.sin(angle) * speed,
+                color=blood_color,
+                timer=random.randint(20, 40),
+                size=random.randint(3, 6),
+                gravity=0.2,  # Gravity for blood
             )
 
         if not bot.alive:
@@ -336,6 +347,11 @@ class CombatSystem:
             self.game.sound_manager.play_sound("bomb")
         except Exception:
             logger.exception("Bomb Audio Failed")
+
+        # Screen shake on bomb
+        if dist_to_player < 30:
+            shake = max(0, 30 - dist_to_player)
+            self.game.screen_shake = shake
 
         if dist_to_player < 20:
             if dist_to_player < 10:
@@ -402,6 +418,8 @@ class CombatSystem:
         except Exception:
             logger.exception("Boom sound failed")
 
+        self.game.screen_shake = 10.0
+
         hits = 0
         for bot in self.game.bots:
             if not hasattr(bot, "alive"):
@@ -453,6 +471,7 @@ class CombatSystem:
         )
         if dist_to_player < 15:
             self.game.damage_flash_timer = 15
+            self.game.screen_shake = 15.0 - dist_to_player
 
         if dist_to_player < 20:
             count = 5 if weapon_type == "rocket" else 3
