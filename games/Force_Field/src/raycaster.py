@@ -92,6 +92,9 @@ class Raycaster:
         size = (self.num_rays, C.SCREEN_HEIGHT)
         self.view_surface = pygame.Surface(size, pygame.SRCALPHA)
 
+        # Optimization: Single reusable surface for vertical strips shading
+        self.shade_surface = pygame.Surface((1, C.SCREEN_HEIGHT), pygame.SRCALPHA)
+
         # Z-Buffer for occlusion (Euclidean distance)
         self.z_buffer: np.ndarray[Any, Any] = np.full(
             self.num_rays, float("inf"), dtype=np.float64
@@ -407,10 +410,6 @@ class Raycaster:
             tname = self.texture_map.get(wt, "brick")
             if tname in self.texture_strips:
                 wall_strips[wt] = self.texture_strips[tname]
-                # Also need width for texture coordinate calculation
-                # Assuming all textures in a set are same size or we check list length
-                # Using first strip's parent or just list length
-                # We stored 1px strips, list length is width.
 
         # Loop
         for i in range(self.num_rays):
@@ -441,35 +440,34 @@ class Raycaster:
 
                     if scaled_strip:
                         try:
-                            # We must copy if we are going to modify it with shading/fog
-                            # Otherwise we modify the cached surface which ruins it for
-                            # other rays. But copying is slow.
-                            # Instead, we can blit shading ON TOP of it onto the
-                            # view_surface? No, view_surface has other things.
-                            # We can blit strip to view_surface, then blit shading rect
-                            # to view_surface.
-
+                            # Blit texture
                             self.view_surface.blit(scaled_strip, (i, top))
 
                             # Shading (Darken)
+                            # To guarantee blending on surfaces where draw.rect might fail to blend,
+                            # we use a reusable pre-allocated surface with blit.
                             shade = shades[i]
                             if shade < 1.0:
                                 alpha = int(255 * (1.0 - shade))
                                 if alpha > 0:
-                                    # Draw directly on view surface to avoid copying
-                                    # scaled_strip
-                                    shade_surf = pygame.Surface((1, h), pygame.SRCALPHA)
-                                    shade_surf.fill((0, 0, 0, alpha))
-                                    self.view_surface.blit(shade_surf, (i, top))
+                                    # Use optimized fill + blit with shared surface
+                                    # Only fill the necessary height
+                                    self.shade_surface.fill((0, 0, 0, alpha), (0, 0, 1, h))
+                                    self.view_surface.blit(
+                                        self.shade_surface, (i, top), (0, 0, 1, h)
+                                    )
 
                             # Fog
                             fog = fog_factors[i]
                             if fog > 0:
                                 fog_alpha = int(255 * fog)
                                 if fog_alpha > 0:
-                                    fog_surf = pygame.Surface((1, h), pygame.SRCALPHA)
-                                    fog_surf.fill((*C.FOG_COLOR, fog_alpha))
-                                    self.view_surface.blit(fog_surf, (i, top))
+                                    self.shade_surface.fill(
+                                        (*C.FOG_COLOR, fog_alpha), (0, 0, 1, h)
+                                    )
+                                    self.view_surface.blit(
+                                        self.shade_surface, (i, top), (0, 0, 1, h)
+                                    )
 
                         except (pygame.error, ValueError):
                             pass

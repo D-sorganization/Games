@@ -3,8 +3,6 @@ from __future__ import annotations
 import math
 import random
 
-import pygame
-
 from . import constants as C  # noqa: N812
 
 
@@ -76,70 +74,6 @@ class Particle:
             return (r, g, b, alpha)
 
         return (*self.color, alpha)
-
-    def render(self, screen: pygame.Surface) -> None:
-        """Render the particle."""
-        if self.ptype == "normal":
-            color = self.get_current_color()
-            if color[3] < 5:
-                return
-
-            if self.size < 1:
-                return
-
-            # Use pygame.draw.circle directly for high alpha, it supports alpha
-            # on Surface if it's SRCALPHA. But the main screen usually isn't.
-            # However, creating surfaces every frame is slow.
-            # Optimization: Just draw without alpha if alpha is high, or skip if low?
-            # Or use a shared cached surface.
-
-            if color[3] > 200:
-                pygame.draw.circle(
-                    screen, color[:3], (int(self.x), int(self.y)), int(self.size)
-                )
-            else:
-                # Fallback to creating surface only when fading out, which is
-                # fewer frames. Or even better: use a pre-created surface in
-                # ParticleSystem or global cache. For this task, avoiding Surface
-                # creation in hot path (opaque particles) is the main win.
-                surf = pygame.Surface(
-                    (int(self.size * 2), int(self.size * 2)), pygame.SRCALPHA
-                )
-                pygame.draw.circle(surf, color, (self.size, self.size), self.size)
-                screen.blit(surf, (self.x - self.size, self.y - self.size))
-
-        elif self.ptype == "laser" and self.start_pos and self.end_pos:
-            # Laser with alpha fading
-            color = self.get_current_color()
-            if color[3] < 5:
-                return
-
-            if color[3] > 200:
-                pygame.draw.line(
-                    screen, color[:3], self.start_pos, self.end_pos, self.width
-                )
-            else:
-                # Draw to temp surface for alpha
-                # Calculate bounding box for the line
-                min_x = min(self.start_pos[0], self.end_pos[0])
-                min_y = min(self.start_pos[1], self.end_pos[1])
-                max_x = max(self.start_pos[0], self.end_pos[0])
-                max_y = max(self.start_pos[1], self.end_pos[1])
-                w = int(max_x - min_x + self.width + 2)
-                h = int(max_y - min_y + self.width + 2)
-
-                surf = pygame.Surface((w, h), pygame.SRCALPHA)
-                local_start = (
-                    self.start_pos[0] - min_x + self.width // 2,
-                    self.start_pos[1] - min_y + self.width // 2,
-                )
-                local_end = (
-                    self.end_pos[0] - min_x + self.width // 2,
-                    self.end_pos[1] - min_y + self.width // 2,
-                )
-
-                pygame.draw.line(surf, color, local_start, local_end, self.width)
-                screen.blit(surf, (min_x - self.width // 2, min_y - self.width // 2))
 
 
 class ParticleSystem:
@@ -293,8 +227,3 @@ class ParticleSystem:
     def update(self) -> None:
         """Update all particles."""
         self.particles = [p for p in self.particles if p.update()]
-
-    def render(self, screen: pygame.Surface) -> None:
-        """Render all particles."""
-        for p in self.particles:
-            p.render(screen)
