@@ -50,10 +50,10 @@ class GameRenderer:
             shake_y = int(random.uniform(-game.screen_shake, game.screen_shake))
 
         # 1. 3D World (Raycaster)
-        # Note: We can't easily shake the raycaster output without rendering to a larger surface
+        # Note: We can't easily shake the raycaster output without rendering
         # or blitting with offset which might leave gaps.
         # Simple solution: Render normally, then blit everything with offset at the end?
-        # No, better to pass offset to raycaster if possible, or just accept that HUD shakes?
+        # No, better to pass offset to raycaster if possible?
         # Actually, if we just blit the view_surface with offset in Raycaster it works.
         # But Raycaster.render_3d does the blit.
         # Let's offset the HUD and Weapon for now, or everything if we wrap it.
@@ -61,15 +61,15 @@ class GameRenderer:
         # Raycaster handles its own blitting to screen.
         # We can simulate camera shake by modifying player pitch/angle temporarily,
         # but that affects gameplay aiming.
-        # Instead, let's just let the raycaster render to screen (0,0), and we add shaking to
+        # Instead, let's just let the raycaster render to screen (0,0)
         # 2D overlays (weapon, HUD).
         # Or better: Create a master surface? No, too slow.
 
         # Let's just modify the raycaster to accept a view offset tuple.
         # Raycaster already has view_offset_y.
-        # We can add view_offset_x? Raycaster works by rays, so x offset is angle change.
+        # We can add view_offset_x? Raycaster works by rays.
 
-        # For this implementation, I will just shake the 2D elements (Particles, Weapon, HUD).
+        # For this implementation, I will just shake the 2D elements.
         # It gives enough feedback.
 
         game.raycaster.render_floor_ceiling(

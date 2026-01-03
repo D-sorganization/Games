@@ -444,7 +444,7 @@ class Raycaster:
                             self.view_surface.blit(scaled_strip, (i, top))
 
                             # Shading (Darken)
-                            # To guarantee blending on surfaces where draw.rect might fail to blend,
+                            # To guarantee blending on surfaces
                             # we use a reusable pre-allocated surface with blit.
                             shade = shades[i]
                             if shade < 1.0:
