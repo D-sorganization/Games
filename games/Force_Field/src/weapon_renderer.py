@@ -77,6 +77,9 @@ class WeaponRenderer:
         elif weapon == "plasma":
             self._render_plasma(cx, cy, player, w_state)
 
+        elif weapon == "pulse":
+            self._render_pulse(cx, cy, player, w_state)
+
         elif weapon == "rocket":
             self._render_rocket_launcher(
                 cx, cy, player, gun_metal, gun_highlight, gun_dark
@@ -98,6 +101,9 @@ class WeaponRenderer:
             pygame.draw.circle(self.screen, C.CYAN, (flash_x, flash_y), 30)
             pygame.draw.circle(self.screen, C.BLUE, (flash_x, flash_y), 20)
             pygame.draw.circle(self.screen, C.WHITE, (flash_x, flash_y), 10)
+        elif weapon_name == "pulse":
+            pygame.draw.circle(self.screen, (100, 100, 255), (flash_x, flash_y), 25)
+            pygame.draw.circle(self.screen, (200, 200, 255), (flash_x, flash_y), 15)
         elif weapon_name == "shotgun":
             pygame.draw.circle(self.screen, (255, 100, 0), (flash_x, flash_y), 50)
             pygame.draw.circle(self.screen, C.ORANGE, (flash_x, flash_y), 35)
@@ -301,6 +307,38 @@ class WeaponRenderer:
                 lx2 = random.randint(cx - 40, cx + 40)
                 ly2 = random.randint(cy - 250, cy - 150)
                 pygame.draw.line(self.screen, C.WHITE, (lx1, ly1), (lx2, ly2), 2)
+
+    def _render_pulse(
+        self, cx: int, cy: int, player: Player, w_state: dict[str, Any]
+    ) -> None:
+        # Futuristic Pulse Rifle Design
+        # Base
+        pygame.draw.rect(self.screen, (30, 30, 50), (cx - 40, cy - 150, 80, 150))
+
+        # Barrel Section
+        pygame.draw.polygon(
+            self.screen,
+            (50, 50, 80),
+            [
+                (cx - 20, cy - 150),
+                (cx + 20, cy - 150),
+                (cx + 15, cy - 280),
+                (cx - 15, cy - 280),
+            ],
+        )
+
+        # Energy Core (Pulsing Blue)
+        pulse = int(50 * math.sin(pygame.time.get_ticks() * 0.02))
+        core_color = (100 + pulse, 100 + pulse, 255)
+
+        pygame.draw.rect(self.screen, core_color, (cx - 5, cy - 200, 10, 100))
+
+        # Side Rails
+        pygame.draw.rect(self.screen, (20, 20, 40), (cx - 30, cy - 260, 10, 100))
+        pygame.draw.rect(self.screen, (20, 20, 40), (cx + 20, cy - 260, 10, 100))
+
+        if player.shooting:
+            pygame.draw.circle(self.screen, (200, 200, 255), (cx, cy - 280), 20)
 
     def _render_rocket_launcher(
         self,

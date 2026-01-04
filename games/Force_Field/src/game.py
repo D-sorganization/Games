@@ -3,7 +3,6 @@ from __future__ import annotations
 import logging
 import math
 import random
-import traceback
 from typing import Any
 
 import pygame
@@ -334,6 +333,7 @@ class Game:
             "laser",
             "rocket",
             "flamethrower",
+            "pulse",
         ]
         starter = random.choice(possible_starters)
         self.unlocked_weapons = {"pistol", starter}
@@ -454,6 +454,7 @@ class Game:
                         "bomb_item",
                         "pickup_rocket",
                         "pickup_flamethrower",
+                        "pickup_pulse",
                     ]
                     # Also exclude pickups
                     while enemy_type in exclusions or enemy_type.startswith("pickup"):
@@ -505,6 +506,7 @@ class Game:
             "pickup_plasma",
             "pickup_minigun",
             "pickup_flamethrower",
+            "pickup_pulse",
         ]
         for w_pickup in possible_weapons:
             if random.random() < 0.4:  # 40% chance per level
@@ -565,6 +567,10 @@ class Game:
     def explode_plasma(self, projectile: Projectile) -> None:
         """Trigger plasma AOE explosion"""
         self.combat_system.explode_plasma(projectile)
+
+    def explode_pulse(self, projectile: Projectile) -> None:
+        """Trigger pulse AOE explosion (smaller than plasma)"""
+        self.combat_system.explode_pulse(projectile)
 
     def explode_rocket(self, projectile: Projectile) -> None:
         """Trigger rocket AOE explosion"""
@@ -1254,7 +1260,5 @@ class Game:
 
                 self.clock.tick(C.FPS)
         except Exception as e:
-            with open("crash_log.txt", "w") as f:
-                f.write(traceback.format_exc())
             logger.critical("CRASH: %s", e)
             raise

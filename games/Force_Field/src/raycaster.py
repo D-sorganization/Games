@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import itertools
 import math
-import random
 from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
@@ -66,6 +65,8 @@ class Raycaster:
 
         # Pre-generate stars
         self.stars = []
+        import random
+
         for _ in range(100):
             self.stars.append(
                 (
@@ -96,7 +97,7 @@ class Raycaster:
         self.shade_surface = pygame.Surface((1, C.SCREEN_HEIGHT), pygame.SRCALPHA)
 
         # Z-Buffer for occlusion (Euclidean distance)
-        self.z_buffer: np.ndarray[Any, Any] = np.full(
+        self.z_buffer: np.ndarray[Any, np.dtype[Any]] = np.full(
             self.num_rays, float("inf"), dtype=np.float64
         )
 
@@ -106,7 +107,6 @@ class Raycaster:
     def _update_ray_angles(self) -> None:
         """Pre-calculate relative ray angles."""
         self.deltas = np.linspace(-C.HALF_FOV, C.HALF_FOV, self.num_rays)
-        # We'll calculate exact rays per frame by adding player angle
 
     def set_render_scale(self, scale: int) -> None:
         """Update render scale and related buffers."""
@@ -124,7 +124,6 @@ class Raycaster:
         self, texture_name: str, strip_x: int, height: int
     ) -> pygame.Surface | None:
         """Get or create a scaled texture strip."""
-        # Use instance-level cache to avoid memory leaks from lru_cache on methods
         cache_key = (texture_name, strip_x, height)
 
         if cache_key in self._strip_cache:
@@ -179,8 +178,44 @@ class Raycaster:
         view_offset_y: float = 0.0,
     ) -> None:
         """Render 3D view using vectorized raycasting."""
-        # Check if map changed
-        # Optimization: Check object identity first to avoid expensive deep comparison
+        self._update_map_cache_if_needed()
+
+        # Clear view surface
+        self.view_surface.fill((0, 0, 0, 0))
+
+        # Vectorized Raycasting
+        (
+            perp_wall_dist,
+            wall_types,
+            wall_x_hit,
+            side,
+            ray_angles,
+        ) = self._calculate_rays(player)
+
+        # Update Z Buffer
+        self.z_buffer = perp_wall_dist
+
+        # Render Walls
+        self._render_walls_vectorized(
+            perp_wall_dist,
+            wall_types,
+            wall_x_hit,
+            side,
+            player,
+            ray_angles,
+            level,
+            view_offset_y,
+        )
+
+        # Render Sprites
+        current_fov = C.FOV * (C.ZOOM_FOV_MULT if player.zoomed else 1.0)
+        self._render_sprites(player, bots, projectiles, current_fov / 2, view_offset_y)
+
+        # Blit to Screen
+        self._blit_view_to_screen(screen)
+
+    def _update_map_cache_if_needed(self) -> None:
+        """Check if map changed and update cached grid."""
         if self.game_map.grid is not self.grid:
             self.grid = self.game_map.grid
             self.np_grid = np.array(self.game_map.grid, dtype=np.int8)
@@ -188,26 +223,26 @@ class Raycaster:
             self.grid = self.game_map.grid
             self.np_grid = np.array(self.game_map.grid, dtype=np.int8)
 
-        # Clear view surface
-        self.view_surface.fill((0, 0, 0, 0))
-
-        # Vectorized Raycasting
-        # 1. Setup Rays
+    def _calculate_rays(self, player: Player) -> tuple[
+        np.ndarray[Any, np.dtype[Any]],
+        np.ndarray[Any, np.dtype[Any]],
+        np.ndarray[Any, np.dtype[Any]],
+        np.ndarray[Any, np.dtype[Any]],
+        np.ndarray[Any, np.dtype[Any]],
+    ]:
+        """Perform vectorized raycasting math."""
         current_fov = C.FOV * (C.ZOOM_FOV_MULT if player.zoomed else 1.0)
         ray_angles = player.angle + np.linspace(
             -current_fov / 2, current_fov / 2, self.num_rays
         )
 
-        # 2. Directions
         ray_dir_x = np.cos(ray_angles)
         ray_dir_y = np.sin(ray_angles)
 
         # Avoid division by zero
-        # Add epsilon to 0 values
         ray_dir_x[ray_dir_x == 0] = 1e-30
         ray_dir_y[ray_dir_y == 0] = 1e-30
 
-        # 3. Initialize DDA
         map_x = np.full(self.num_rays, int(player.x), dtype=np.int32)
         map_y = np.full(self.num_rays, int(player.y), dtype=np.int32)
 
@@ -228,65 +263,47 @@ class Raycaster:
             (map_y + 1.0 - player.y) * delta_dist_y,
         )
 
-        # 4. DDA Loop
         hits = np.zeros(self.num_rays, dtype=bool)
-        side = np.zeros(self.num_rays, dtype=np.int32)  # 0 for NS, 1 for EW
+        side = np.zeros(self.num_rays, dtype=np.int32)
         wall_types = np.zeros(self.num_rays, dtype=np.int32)
 
         max_steps = int(C.MAX_DEPTH * 1.5)
-
-        # Loop until all rays hit or max steps
         active = np.ones(self.num_rays, dtype=bool)
 
         map_width = self.map_width
         map_height = self.map_height
         np_grid = self.np_grid
 
+        # Vectorized DDA Loop
         for _ in range(max_steps):
-            # Find next step
-            # We perform step for ALL active rays
-            # mask_x: True where side_dist_x < side_dist_y
             mask_x = (side_dist_x < side_dist_y) & active
             mask_y = (~mask_x) & active
 
-            # Step X
             side_dist_x[mask_x] += delta_dist_x[mask_x]
             map_x[mask_x] += step_x[mask_x]
             side[mask_x] = 0
 
-            # Step Y
             side_dist_y[mask_y] += delta_dist_y[mask_y]
             map_y[mask_y] += step_y[mask_y]
             side[mask_y] = 1
 
-            # Check bounds and walls
-            # Update active set
-
-            # Bounds check
             in_bounds = (
                 (map_x >= 0) & (map_x < map_width) & (map_y >= 0) & (map_y < map_height)
             )
 
-            # Out of bounds are hits (wall type 1)
             out_of_bounds = (~in_bounds) & active
             if np.any(out_of_bounds):
                 hits[out_of_bounds] = True
                 wall_types[out_of_bounds] = 1
                 active[out_of_bounds] = False
 
-            # Check walls for in-bounds
             check_mask = in_bounds & active
             if np.any(check_mask):
-                # Efficient grid lookup
-                # Let's extract indices
                 current_map_y = map_y[check_mask]
                 current_map_x = map_x[check_mask]
-
                 grid_vals = np_grid[current_map_y, current_map_x]
-
                 wall_hit_mask = grid_vals > 0
 
-                # Update hits
                 active_indices = np.nonzero(check_mask)[0]
                 hit_local_indices = np.nonzero(wall_hit_mask)[0]
                 hit_global_indices = active_indices[hit_local_indices]
@@ -299,17 +316,12 @@ class Raycaster:
             if not np.any(active):
                 break
 
-        # 5. Calculate Distances and Wall X
-        # perp_wall_dist
+        # Calculate Distances
         perp_wall_dist = np.zeros(self.num_rays, dtype=np.float64)
-
-        # Side 0: (side_dist_x - delta_dist_x)
         mask_side_0 = side == 0
         perp_wall_dist[mask_side_0] = (
             side_dist_x[mask_side_0] - delta_dist_x[mask_side_0]
         )
-
-        # Side 1: (side_dist_y - delta_dist_y)
         mask_side_1 = side == 1
         perp_wall_dist[mask_side_1] = (
             side_dist_y[mask_side_1] - delta_dist_y[mask_side_1]
@@ -317,39 +329,18 @@ class Raycaster:
 
         # Wall X Hit
         wall_x_hit = np.zeros(self.num_rays, dtype=np.float64)
-
-        # Side 0: y + dist * ray_dir_y
         wall_x_hit[mask_side_0] = (
             player.y + perp_wall_dist[mask_side_0] * ray_dir_y[mask_side_0]
         )
-
-        # Side 1: x + dist * ray_dir_x
         wall_x_hit[mask_side_1] = (
             player.x + perp_wall_dist[mask_side_1] * ray_dir_x[mask_side_1]
         )
-
-        # Normalize
         wall_x_hit -= np.floor(wall_x_hit)
 
-        # Update Z Buffer
-        self.z_buffer = perp_wall_dist
+        return perp_wall_dist, wall_types, wall_x_hit, side, ray_angles
 
-        # 6. Render Walls
-        self._render_walls_vectorized(
-            perp_wall_dist,
-            wall_types,
-            wall_x_hit,
-            side,
-            player,
-            ray_angles,
-            level,
-            view_offset_y,
-        )
-
-        # 7. Render Sprites
-        self._render_sprites(player, bots, projectiles, current_fov / 2, view_offset_y)
-
-        # 8. Blit to Screen
+    def _blit_view_to_screen(self, screen: pygame.Surface) -> None:
+        """Blit the rendered view to the main screen."""
         if self.render_scale == 1:
             screen.blit(self.view_surface, (0, 0))
         else:
@@ -845,6 +836,8 @@ class Raycaster:
                         2,
                     )
                 elif proj.weapon_type == "flamethrower":
+                    import random
+
                     # Dynamic flame effect
                     flame_color = (
                         255,
@@ -864,6 +857,21 @@ class Raycaster:
                         (rect.centerx, rect.centery),
                         rect.width // 3,
                     )
+                elif proj.weapon_type == "pulse":
+                    # Pulse Rifle projectile: Blue/White energy ball
+                    pygame.draw.circle(
+                        self.view_surface,
+                        (200, 200, 255),
+                        rect.center,
+                        rect.width // 2,
+                    )
+                    pygame.draw.circle(
+                        self.view_surface,
+                        (100, 100, 255),
+                        rect.center,
+                        rect.width // 3,
+                    )
+
         except (ValueError, pygame.error):
             pass
 
