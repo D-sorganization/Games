@@ -141,7 +141,6 @@ class ParticleSystem:
         for _ in range(2):
             self.add_particle(
                 x + random.uniform(-2, 2),
-                y + random.uniform(-2, 2),
                 dx * 0.5 + random.uniform(-1, 1),
                 dy * 0.5 + random.uniform(-1, 1),
                 color=(100, 255, 255),
