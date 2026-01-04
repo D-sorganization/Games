@@ -97,7 +97,8 @@ class Raycaster:
         self.shade_surface = pygame.Surface((1, C.SCREEN_HEIGHT), pygame.SRCALPHA)
 
         # Z-Buffer for occlusion (Euclidean distance)
-        self.z_buffer: np.ndarray = np.full(
+        from typing import Any
+        self.z_buffer: np.ndarray[Any, np.dtype[Any]] = np.full(
             self.num_rays, float("inf"), dtype=np.float64
         )
 
@@ -225,7 +226,13 @@ class Raycaster:
 
     def _calculate_rays(
         self, player: Player
-    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    ) -> tuple[
+        np.ndarray[Any, np.dtype[Any]],
+        np.ndarray[Any, np.dtype[Any]],
+        np.ndarray[Any, np.dtype[Any]],
+        np.ndarray[Any, np.dtype[Any]],
+        np.ndarray[Any, np.dtype[Any]],
+    ]:
         """Perform vectorized raycasting math."""
         current_fov = C.FOV * (C.ZOOM_FOV_MULT if player.zoomed else 1.0)
         ray_angles = player.angle + np.linspace(
