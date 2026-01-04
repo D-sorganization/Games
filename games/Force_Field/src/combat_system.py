@@ -56,6 +56,10 @@ class CombatSystem:
             self._fire_plasma()
             return
 
+        if weapon == "pulse" and not is_secondary:
+            self._fire_pulse()
+            return
+
         if weapon == "rocket" and not is_secondary:
             self._fire_rocket()
             return
@@ -92,6 +96,20 @@ class CombatSystem:
             color=C.WEAPONS["plasma"].get("projectile_color", (0, 255, 255)),
             size=0.225,
             weapon_type="plasma",
+        )
+        self.game.entity_manager.add_projectile(p)
+
+    def _fire_pulse(self) -> None:
+        p = Projectile(
+            self.player.x,
+            self.player.y,
+            self.player.angle,
+            speed=float(C.WEAPONS["pulse"].get("projectile_speed", 0.6)),
+            damage=self.player.get_current_weapon_damage(),
+            is_player=True,
+            color=C.WEAPONS["pulse"].get("projectile_color", (100, 100, 255)),
+            size=0.3,
+            weapon_type="pulse",
         )
         self.game.entity_manager.add_projectile(p)
 
@@ -480,6 +498,9 @@ class CombatSystem:
             )
 
             color = C.CYAN if weapon_type == "plasma" else C.ORANGE
+            if weapon_type == "pulse":
+                color = (100, 100, 255)
+
             for _ in range(20):
                 self.game.particle_system.add_particle(
                     x=C.SCREEN_WIDTH // 2,
@@ -514,6 +535,9 @@ class CombatSystem:
 
     def explode_plasma(self, projectile: Projectile) -> None:
         self._explode_generic(projectile, C.PLASMA_AOE_RADIUS, "plasma")
+
+    def explode_pulse(self, projectile: Projectile) -> None:
+        self._explode_generic(projectile, C.PULSE_AOE_RADIUS, "pulse")
 
     def explode_rocket(self, projectile: Projectile) -> None:
         radius = float(C.WEAPONS["rocket"].get("aoe_radius", 6.0))

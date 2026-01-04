@@ -59,6 +59,7 @@ WEAPON_RANGE_PISTOL = 15
 WEAPON_RANGE_RIFLE = 25
 WEAPON_RANGE_SHOTGUN = 12  # Increased range (was 8)
 WEAPON_RANGE_PLASMA = 30
+WEAPON_RANGE_PULSE = 35
 WEAPON_RANGE_STORMTROOPER = 30
 WEAPON_RANGE_MINIGUN = 20
 WEAPON_RANGE_SNIPER = 40
@@ -128,6 +129,19 @@ WEAPONS: dict[str, WeaponData] = {
         "projectile_color": (0, 191, 255),
         "key": "5",
     },
+    "pulse": {
+        "name": "Pulse Rifle",
+        "damage": 45,
+        "range": WEAPON_RANGE_PULSE,
+        "ammo": 120,
+        "cooldown": 6,
+        "automatic": True,
+        "clip_size": 40,
+        "reload_time": 100,
+        "projectile_speed": 0.6,
+        "projectile_color": (100, 100, 255),
+        "key": "0", # Auto-assigned usually
+    },
     "laser": {
         "name": "Laser",
         "damage": 50,  # Continuous damage capability
@@ -186,6 +200,7 @@ WEAPONS: dict[str, WeaponData] = {
 HEADSHOT_THRESHOLD = 0.05
 SPAWN_SAFETY_MARGIN = 3
 PLASMA_AOE_RADIUS = 3.0  # Reduced AOE (was 6.0)
+PULSE_AOE_RADIUS = 1.5
 MAX_COLLISION_DIST = 2.0  # Max distance to check for collisions
 
 # UI settings
@@ -411,6 +426,14 @@ ENEMY_TYPES: dict[str, EnemyData] = {
     },
     "pickup_plasma": {
         "color": (0, 255, 255),
+        "health_mult": 1.0,
+        "speed_mult": 0.0,
+        "damage_mult": 0.0,
+        "scale": 0.5,
+        "visual_style": "item",
+    },
+    "pickup_pulse": {
+        "color": (100, 100, 255),
         "health_mult": 1.0,
         "speed_mult": 0.0,
         "damage_mult": 0.0,
