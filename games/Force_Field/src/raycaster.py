@@ -97,7 +97,7 @@ class Raycaster:
         self.shade_surface = pygame.Surface((1, C.SCREEN_HEIGHT), pygame.SRCALPHA)
 
         # Z-Buffer for occlusion (Euclidean distance)
-        self.z_buffer: np.ndarray[Any, Any] = np.full(
+        self.z_buffer: np.ndarray = np.full(
             self.num_rays, float("inf"), dtype=np.float64
         )
 
