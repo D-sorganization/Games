@@ -646,28 +646,28 @@ class UIRenderer:
 
         # Victory Firework Overlay!
         if game.particle_system:
-             # Add fireworks occasionally
-             if random.random() < 0.1:
+            # Add fireworks occasionally
+            if random.random() < 0.1:
                 game.particle_system.add_victory_fireworks()
 
-             # Render particles on top of black background but behind text
-             # Use shared particle surface to avoid new surface creation
-             self.particle_surface.fill((0, 0, 0, 0))
+            # Render particles on top of black background but behind text
+            # Use shared particle surface to avoid new surface creation
+            self.particle_surface.fill((0, 0, 0, 0))
 
-             for p in game.particle_system.particles:
-                 life_ratio = p.timer / p.max_timer
-                 alpha = int(255 * life_ratio)
-                 if len(p.color) == 3:
-                     color = (*p.color, alpha)
-                 else:
-                     color = p.color  # type: ignore
+            for p in game.particle_system.particles:
+                life_ratio = p.timer / p.max_timer
+                alpha = int(255 * life_ratio)
+                if len(p.color) == 3:
+                    color = (*p.color, alpha)
+                else:
+                    color = p.color  # type: ignore
 
-                 pygame.draw.circle(
-                     self.particle_surface, color, (int(p.x), int(p.y)), int(p.size)
-                 )
+                pygame.draw.circle(
+                    self.particle_surface, color, (int(p.x), int(p.y)), int(p.size)
+                )
 
-             self.screen.blit(self.particle_surface, (0, 0))
-             game.particle_system.update()
+            self.screen.blit(self.particle_surface, (0, 0))
+            game.particle_system.update()
 
         title = self.title_font.render("SECTOR CLEARED", True, C.GREEN)
         title_rect = title.get_rect(center=(C.SCREEN_WIDTH // 2, 150))

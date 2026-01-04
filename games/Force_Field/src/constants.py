@@ -140,7 +140,7 @@ WEAPONS: dict[str, WeaponData] = {
         "reload_time": 100,
         "projectile_speed": 0.6,
         "projectile_color": (100, 100, 255),
-        "key": "0", # Auto-assigned usually
+        "key": "0",  # Auto-assigned usually
     },
     "laser": {
         "name": "Laser",

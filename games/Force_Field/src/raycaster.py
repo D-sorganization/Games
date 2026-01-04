@@ -66,6 +66,7 @@ class Raycaster:
         # Pre-generate stars
         self.stars = []
         import random
+
         for _ in range(100):
             self.stars.append(
                 (
@@ -832,6 +833,7 @@ class Raycaster:
                     )
                 elif proj.weapon_type == "flamethrower":
                     import random
+
                     # Dynamic flame effect
                     flame_color = (
                         255,
@@ -853,13 +855,13 @@ class Raycaster:
                     )
                 elif proj.weapon_type == "pulse":
                     # Pulse Rifle projectile: Blue/White energy ball
-                     pygame.draw.circle(
+                    pygame.draw.circle(
                         self.view_surface,
                         (200, 200, 255),
                         rect.center,
                         rect.width // 2,
                     )
-                     pygame.draw.circle(
+                    pygame.draw.circle(
                         self.view_surface,
                         (100, 100, 255),
                         rect.center,

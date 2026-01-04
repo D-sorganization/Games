@@ -338,7 +338,7 @@ class WeaponRenderer:
         pygame.draw.rect(self.screen, (20, 20, 40), (cx + 20, cy - 260, 10, 100))
 
         if player.shooting:
-             pygame.draw.circle(self.screen, (200, 200, 255), (cx, cy - 280), 20)
+            pygame.draw.circle(self.screen, (200, 200, 255), (cx, cy - 280), 20)
 
     def _render_rocket_launcher(
         self,

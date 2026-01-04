@@ -232,12 +232,12 @@ class ParticleSystem:
         cx = C.SCREEN_WIDTH // 2
         cy = C.SCREEN_HEIGHT // 2
         for _ in range(50):
-             color = (
+            color = (
                 random.randint(100, 255),
                 random.randint(100, 255),
                 random.randint(100, 255),
             )
-             self.add_particle(
+            self.add_particle(
                 x=cx + random.randint(-200, 200),
                 y=cy + random.randint(-100, 100),
                 dx=random.uniform(-5, 5),
@@ -245,7 +245,7 @@ class ParticleSystem:
                 color=color,
                 timer=60,
                 size=random.randint(4, 10),
-                gravity=0.05
+                gravity=0.05,
             )
 
     def update(self) -> None:
