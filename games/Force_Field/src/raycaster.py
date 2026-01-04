@@ -223,9 +223,7 @@ class Raycaster:
             self.grid = self.game_map.grid
             self.np_grid = np.array(self.game_map.grid, dtype=np.int8)
 
-    def _calculate_rays(
-        self, player: Player
-    ) -> tuple[
+    def _calculate_rays(self, player: Player) -> tuple[
         np.ndarray[Any, np.dtype[Any]],
         np.ndarray[Any, np.dtype[Any]],
         np.ndarray[Any, np.dtype[Any]],
