@@ -660,9 +660,11 @@ class UIRenderer:
                  if len(p.color) == 3:
                      color = (*p.color, alpha)
                  else:
-                     color = p.color # type: ignore
+                     color = p.color  # type: ignore
 
-                 pygame.draw.circle(self.particle_surface, color, (int(p.x), int(p.y)), int(p.size))
+                 pygame.draw.circle(
+                     self.particle_surface, color, (int(p.x), int(p.y)), int(p.size)
+                 )
 
              self.screen.blit(self.particle_surface, (0, 0))
              game.particle_system.update()

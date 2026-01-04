@@ -183,7 +183,13 @@ class Raycaster:
         self.view_surface.fill((0, 0, 0, 0))
 
         # Vectorized Raycasting
-        perp_wall_dist, wall_types, wall_x_hit, side, ray_angles = self._calculate_rays(player)
+        (
+            perp_wall_dist,
+            wall_types,
+            wall_x_hit,
+            side,
+            ray_angles,
+        ) = self._calculate_rays(player)
 
         # Update Z Buffer
         self.z_buffer = perp_wall_dist
@@ -216,7 +222,9 @@ class Raycaster:
             self.grid = self.game_map.grid
             self.np_grid = np.array(self.game_map.grid, dtype=np.int8)
 
-    def _calculate_rays(self, player: Player) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    def _calculate_rays(
+        self, player: Player
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """Perform vectorized raycasting math."""
         current_fov = C.FOV * (C.ZOOM_FOV_MULT if player.zoomed else 1.0)
         ray_angles = player.angle + np.linspace(

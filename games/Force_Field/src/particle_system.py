@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import math
 import random
-from typing import Any
 
 from . import constants as C  # noqa: N812
 
