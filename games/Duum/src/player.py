@@ -39,9 +39,7 @@ class Player:
         # Keep tracking total ammo (reserves) if we want,
         # but user request implies specific mechanics per gun
         # For now, we assume "ammo" in constants refers to reserves.
-        self.ammo: dict[str, int] = {
-            w: int(C.WEAPONS[w]["ammo"]) for w in C.WEAPONS
-        }
+        self.ammo: dict[str, int] = {w: int(C.WEAPONS[w]["ammo"]) for w in C.WEAPONS}
 
         self.current_weapon = "rifle"
         self.shooting = False

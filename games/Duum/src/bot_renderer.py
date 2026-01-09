@@ -75,10 +75,13 @@ class BotRenderer:
 
             # Interpolate Color to Goo
             goo_color = (50, 150, 50)
-            base_color = cast("tuple[int, int, int]", tuple(
-                int(c * (1 - melt_pct) + g * melt_pct)
-                for c, g in zip(base_color, goo_color, strict=True)
-            ))
+            base_color = cast(
+                "tuple[int, int, int]",
+                tuple(
+                    int(c * (1 - melt_pct) + g * melt_pct)
+                    for c, g in zip(base_color, goo_color, strict=True)
+                ),
+            )
 
             # Squish
             scale_y = 1.0 - (melt_pct * 0.85)
@@ -216,7 +219,7 @@ class BotRenderer:
         rect_w = size * 0.6
         rect_h = size * 0.2
         py = y + size * 0.75
-        color = cast("tuple[int, int, int]", bot.type_data["color"])
+        color = bot.type_data["color"]
         pygame.draw.rect(screen, color, (cx - rect_w / 2, py, rect_w, rect_h))
         # Label/Detail
         pygame.draw.line(

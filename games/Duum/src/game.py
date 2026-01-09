@@ -5,7 +5,7 @@ import math
 import random
 import traceback
 from contextlib import suppress
-from typing import Any, cast
+from typing import Any
 
 import pygame
 
@@ -678,10 +678,7 @@ class Game:
                 speed=float(C.WEAPONS["plasma"].get("projectile_speed", 0.5)),
                 damage=self.player.get_current_weapon_damage(),
                 is_player=True,
-                color=cast(
-                    "tuple[int, int, int]",
-                    C.WEAPONS["plasma"].get("projectile_color", (0, 255, 255)),
-                ),
+                color=C.WEAPONS["plasma"].get("projectile_color", (0, 255, 255)),
                 size=0.225,
                 weapon_type="plasma",
             )
@@ -697,10 +694,7 @@ class Game:
                 speed=float(C.WEAPONS["rocket"].get("projectile_speed", 0.3)),
                 damage=self.player.get_current_weapon_damage(),
                 is_player=True,
-                color=cast(
-                    "tuple[int, int, int]",
-                    C.WEAPONS["rocket"].get("projectile_color", (255, 100, 0)),
-                ),
+                color=C.WEAPONS["rocket"].get("projectile_color", (255, 100, 0)),
                 size=0.3,
                 weapon_type="rocket",
             )
@@ -1093,7 +1087,7 @@ class Game:
     def explode_rocket(self, projectile: Projectile) -> None:
         """Trigger rocket AOE explosion"""
         # Rocket has larger AOE
-        radius = float(cast("float", C.WEAPONS["rocket"].get("aoe_radius", 6.0)))
+        radius = C.WEAPONS["rocket"].get("aoe_radius", 6.0)
         self._explode_generic(projectile, radius, "rocket")
 
     def _explode_generic(
@@ -1359,9 +1353,7 @@ class Game:
                             color = C.CYAN
                         else:
                             if w_name in self.player.ammo:
-                                clip_size = int(
-                                    cast("int", C.WEAPONS[w_name]["clip_size"])
-                                )
+                                clip_size = C.WEAPONS[w_name]["clip_size"]
                                 self.player.ammo[w_name] += clip_size * 2
                                 pickup_msg = f"{w_name.upper()} AMMO"
                                 color = C.YELLOW
