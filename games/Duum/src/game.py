@@ -675,9 +675,7 @@ class Game:
                 self.player.x,
                 self.player.y,
                 self.player.angle,
-                speed=float(
-                    cast("float", C.WEAPONS["plasma"].get("projectile_speed", 0.5))
-                ),
+                speed=float(C.WEAPONS["plasma"].get("projectile_speed", 0.5)),
                 damage=self.player.get_current_weapon_damage(),
                 is_player=True,
                 color=cast(
@@ -696,9 +694,7 @@ class Game:
                 self.player.x,
                 self.player.y,
                 self.player.angle,
-                speed=float(
-                    cast("float", C.WEAPONS["rocket"].get("projectile_speed", 0.3))
-                ),
+                speed=float(C.WEAPONS["rocket"].get("projectile_speed", 0.3)),
                 damage=self.player.get_current_weapon_damage(),
                 is_player=True,
                 color=cast(
@@ -746,8 +742,8 @@ class Game:
 
         if weapon == "shotgun" and not is_secondary:
             # Spread Fire
-            pellets = int(cast("int", C.WEAPONS["shotgun"].get("pellets", 8)))
-            spread = float(cast("float", C.WEAPONS["shotgun"].get("spread", 0.15)))
+            pellets = int(C.WEAPONS["shotgun"].get("pellets", 8))
+            spread = float(C.WEAPONS["shotgun"].get("spread", 0.15))
             for _ in range(pellets):
                 angle_off = random.uniform(-spread, spread)
                 self.check_shot_hit(angle_offset=angle_off)
@@ -783,7 +779,7 @@ class Game:
 
             # 1. Cast ray to find wall distance
             # Use Raycaster to avoid code duplication
-            wall_dist, _, _, _, _, _, _ = self.raycaster.cast_ray(
+            wall_dist, _, _, _, _ = self.raycaster.cast_ray(
                 self.player.x, self.player.y, aim_angle
             )
 

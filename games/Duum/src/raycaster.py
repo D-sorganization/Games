@@ -19,6 +19,7 @@ STRIP_VISIBILITY_THRESHOLD = 0.3
 LARGE_SPRITE_THRESHOLD = 200
 
 if TYPE_CHECKING:
+    from .custom_types import EnemyData
     from .map import Map
     from .player import Player
 
@@ -498,7 +499,7 @@ class Raycaster:
         safe_dist = max(0.01, dist)
         base_sprite_size = C.SCREEN_HEIGHT / safe_dist
 
-        type_data: dict[str, Any] = bot.type_data
+        type_data: EnemyData = bot.type_data
         sprite_size = base_sprite_size * float(type_data.get("scale", 1.0))
 
         center_ray = self.num_rays / 2
