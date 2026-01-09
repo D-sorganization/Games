@@ -356,7 +356,8 @@ class Raycaster:
         else:
             theme_idx = (level - 1) % len(C.LEVEL_THEMES)
             theme = C.LEVEL_THEMES[theme_idx]
-            wall_colors = theme["walls"]
+            # Explicit cast for Mypy
+            wall_colors = cast("dict[int, tuple[int, int, int]]", theme["walls"])
             self._cached_level = level
             self._cached_wall_colors = wall_colors
 
@@ -386,7 +387,7 @@ class Raycaster:
             if distances[i] >= C.MAX_DEPTH:
                 continue
 
-            wt = wall_types[i]
+            wt = int(wall_types[i])
             if wt == 0:
                 continue
 
