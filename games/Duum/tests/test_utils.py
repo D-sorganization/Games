@@ -31,7 +31,8 @@ class TestUtils(unittest.TestCase):
     def test_cast_ray_dda_bounds_checking(self) -> None:
         """Test that cast_ray_dda properly handles out-of-bounds coordinates."""
         # Test ray going out of bounds from near boundary
-        # Note: cast_ray_dda now returns 7 values: (dist, wall_type, hit_x, hit_y, side, map_x, map_y)
+        # Note: cast_ray_dda now returns 7 values:
+        # (dist, wall_type, hit_x, hit_y, side, map_x, map_y)
         distance, wall_type, hit_x, hit_y, side, map_x, map_y = cast_ray_dda(
             18.5, 10.0, 0.0, self.map, max_dist=50.0  # Ray going east
         )
