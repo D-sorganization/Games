@@ -42,15 +42,25 @@ class GameRenderer:
         game.raycaster.render_floor_ceiling(
             self.screen, game.player, game.level, view_offset_y=bob_offset
         )
+        # Note: Projectiles are now passed to render_3d to ensure proper Z-sorting
         game.raycaster.render_3d(
-            self.screen, game.player, game.bots, game.level, view_offset_y=bob_offset
+            self.screen,
+            game.player,
+            game.bots,
+            game.level,
+            view_offset_y=bob_offset,
+            projectiles=game.projectiles,
         )
-        game.raycaster.render_projectiles(
-            self.screen, game.player, game.projectiles, view_offset_y=bob_offset
-        )
+        # 'render_projectiles' merged into render_3d in the optimized Raycaster
 
         # 2. Effects
         self.effects_surface.fill((0, 0, 0, 0))
+
+        # Damage Flash Effect
+        if game.damage_flash_timer > 0:
+            alpha = int(100 * (game.damage_flash_timer / 15.0))
+            self.effects_surface.fill((255, 0, 0, alpha))
+
         self._render_particles(game.particle_system.particles)
         self.screen.blit(self.effects_surface, (0, 0))
 
