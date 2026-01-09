@@ -5,7 +5,7 @@ import math
 import random
 import traceback
 from contextlib import suppress
-from typing import Any, cast
+from typing import Any
 
 import pygame
 
@@ -675,15 +675,10 @@ class Game:
                 self.player.x,
                 self.player.y,
                 self.player.angle,
-                speed=float(
-                    cast("float", C.WEAPONS["plasma"].get("projectile_speed", 0.5))
-                ),
+                speed=float(C.WEAPONS["plasma"].get("projectile_speed", 0.5)),
                 damage=self.player.get_current_weapon_damage(),
                 is_player=True,
-                color=cast(
-                    "tuple[int, int, int]",
-                    C.WEAPONS["plasma"].get("projectile_color", (0, 255, 255)),
-                ),
+                color=C.WEAPONS["plasma"].get("projectile_color", (0, 255, 255)),
                 size=0.225,
                 weapon_type="plasma",
             )
@@ -696,15 +691,10 @@ class Game:
                 self.player.x,
                 self.player.y,
                 self.player.angle,
-                speed=float(
-                    cast("float", C.WEAPONS["rocket"].get("projectile_speed", 0.3))
-                ),
+                speed=float(C.WEAPONS["rocket"].get("projectile_speed", 0.3)),
                 damage=self.player.get_current_weapon_damage(),
                 is_player=True,
-                color=cast(
-                    "tuple[int, int, int]",
-                    C.WEAPONS["rocket"].get("projectile_color", (255, 100, 0)),
-                ),
+                color=C.WEAPONS["rocket"].get("projectile_color", (255, 100, 0)),
                 size=0.3,
                 weapon_type="rocket",
             )
@@ -746,8 +736,8 @@ class Game:
 
         if weapon == "shotgun" and not is_secondary:
             # Spread Fire
-            pellets = int(cast("int", C.WEAPONS["shotgun"].get("pellets", 8)))
-            spread = float(cast("float", C.WEAPONS["shotgun"].get("spread", 0.15)))
+            pellets = int(C.WEAPONS["shotgun"].get("pellets", 8))
+            spread = float(C.WEAPONS["shotgun"].get("spread", 0.15))
             for _ in range(pellets):
                 angle_off = random.uniform(-spread, spread)
                 self.check_shot_hit(angle_offset=angle_off)
@@ -783,7 +773,7 @@ class Game:
 
             # 1. Cast ray to find wall distance
             # Use Raycaster to avoid code duplication
-            wall_dist, _ = self.raycaster.cast_ray(
+            wall_dist, _, _, _, _ = self.raycaster.cast_ray(
                 self.player.x, self.player.y, aim_angle
             )
 
@@ -1097,7 +1087,7 @@ class Game:
     def explode_rocket(self, projectile: Projectile) -> None:
         """Trigger rocket AOE explosion"""
         # Rocket has larger AOE
-        radius = float(cast("float", C.WEAPONS["rocket"].get("aoe_radius", 6.0)))
+        radius = C.WEAPONS["rocket"].get("aoe_radius", 6.0)
         self._explode_generic(projectile, radius, "rocket")
 
     def _explode_generic(
@@ -1363,9 +1353,7 @@ class Game:
                             color = C.CYAN
                         else:
                             if w_name in self.player.ammo:
-                                clip_size = int(
-                                    cast("int", C.WEAPONS[w_name]["clip_size"])
-                                )
+                                clip_size = C.WEAPONS[w_name]["clip_size"]
                                 self.player.ammo[w_name] += clip_size * 2
                                 pickup_msg = f"{w_name.upper()} AMMO"
                                 color = C.YELLOW
