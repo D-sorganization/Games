@@ -1,8 +1,6 @@
 import math
-from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from .custom_types import EnemyData, LevelTheme, WeaponData
+from .custom_types import EnemyData, LevelTheme, WeaponData
 
 # Constants
 SCREEN_WIDTH = 1200
