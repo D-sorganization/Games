@@ -454,9 +454,7 @@ class Raycaster:
                                 if alpha > 0:
                                     # Use optimized fill + blit with shared surface
                                     # Only fill the necessary height
-                                    shade_surface.fill(
-                                        (0, 0, 0, alpha), (0, 0, 1, h)
-                                    )
+                                    shade_surface.fill((0, 0, 0, alpha), (0, 0, 1, h))
                                     view_surface.blit(
                                         shade_surface, (i, top), (0, 0, 1, h)
                                     )
@@ -724,13 +722,14 @@ class Raycaster:
 
                     # Cache management
                     if len(self._scaled_sprite_cache) > 200:
-                        # Evict oldest (simple dict iteration is usually insertion order)
+                        # Evict oldest (simple dict iteration is insertion order)
                         # We remove a chunk to avoid frequent maintenance
-                        keys_to_remove = list(
-                            itertools.islice(self._scaled_sprite_cache, 20)
-                        )
-                        for k in keys_to_remove:
-                            del self._scaled_sprite_cache[k]
+                        # Converting to list is cheap for 200 items
+                        scaled_keys_to_remove = list(
+                            self._scaled_sprite_cache.keys()
+                        )[:20]
+                        for scaled_k in scaled_keys_to_remove:
+                            del self._scaled_sprite_cache[scaled_k]
 
                     self._scaled_sprite_cache[scaled_cache_key] = scaled_sprite
                 except (ValueError, pygame.error):
@@ -982,7 +981,9 @@ class Raycaster:
         # Sky
         if horizon > 0:
             sky_strip = bg.subsurface((0, 0, 1, C.SCREEN_HEIGHT))
-            scaled_sky = pygame.transform.scale(sky_strip, (C.SCREEN_WIDTH, C.SCREEN_HEIGHT))
+            scaled_sky = pygame.transform.scale(
+                sky_strip, (C.SCREEN_WIDTH, C.SCREEN_HEIGHT)
+            )
             screen.blit(scaled_sky, (0, horizon - C.SCREEN_HEIGHT))
 
         # Floor
