@@ -43,6 +43,10 @@ class Raycaster:
         self._cached_level: int = -1
         self._cached_wall_colors: dict[int, tuple[int, int, int]] = {}
 
+        # Pre-rendered background surface (Sky/Floor)
+        self._background_surface: pygame.Surface | None = None
+        self._cached_background_theme_idx: int = -1
+
         # Texture mapping (Duum doesn't have TextureGenerator yet)
         # For now, we stick to color-based rendering but keep the structure compatible
         self.use_textures = False
@@ -65,6 +69,8 @@ class Raycaster:
 
         # Sprite cache
         self.sprite_cache: dict[str, pygame.Surface] = {}
+        # Scaled Sprite cache (key: (base_cache_key, width, height))
+        self._scaled_sprite_cache: dict[tuple[str, int, int], pygame.Surface] = {}
 
         # Minimap cache
         self.minimap_surface: pygame.Surface | None = None
@@ -382,6 +388,8 @@ class Raycaster:
             1.0,
         )
 
+        view_surface = self.view_surface
+
         # Loop (No textures in Duum for now, solid colors)
         for i in range(self.num_rays):
             if distances[i] >= C.MAX_DEPTH:
@@ -410,7 +418,7 @@ class Raycaster:
 
             final_col = (int(fr), int(fg), int(fb))
 
-            pygame.draw.rect(self.view_surface, final_col, (i, top, 1, h))
+            pygame.draw.rect(view_surface, final_col, (i, top, 1, h))
 
     def _render_sprites(
         self,
@@ -607,15 +615,38 @@ class Raycaster:
 
         if scale_whole:
             # Scale to visual size (includes padding)
-            final_w = int(target_width * visual_scale)
-            final_h = int(target_height * visual_scale)
+            # Bucketing logic to reduce unique scale calls:
+            # Snap to nearest 8 pixels for width
+            bucket_step = 8
+            raw_final_w = int(target_width * visual_scale)
+            final_w = max(bucket_step, (raw_final_w // bucket_step) * bucket_step)
 
-            try:
-                scaled_sprite = pygame.transform.scale(
-                    sprite_surface, (final_w, final_h)
-                )
-            except (ValueError, pygame.error):
-                return
+            # Maintain aspect ratio for height
+            aspect_ratio = sprite_surface.get_height() / sprite_surface.get_width()
+            final_h = int(final_w * aspect_ratio)
+
+            scaled_cache_key = (cache_key, final_w, final_h)
+            if scaled_cache_key in self._scaled_sprite_cache:
+                scaled_sprite = self._scaled_sprite_cache[scaled_cache_key]
+            else:
+                try:
+                    scaled_sprite = pygame.transform.scale(
+                        sprite_surface, (final_w, final_h)
+                    )
+
+                    # Cache management
+                    if len(self._scaled_sprite_cache) > 200:
+                        # Evict oldest (simple dict iteration is usually insertion order)
+                        # We remove a chunk to avoid frequent maintenance
+                        keys_to_remove = list(
+                            itertools.islice(self._scaled_sprite_cache, 20)
+                        )
+                        for k in keys_to_remove:
+                            del self._scaled_sprite_cache[k]
+
+                    self._scaled_sprite_cache[scaled_cache_key] = scaled_sprite
+                except (ValueError, pygame.error):
+                    return
 
             for run_start, run_end in visible_runs:
                 # Calculate x offset in the scaled sprite
@@ -790,6 +821,52 @@ class Raycaster:
         except (ValueError, pygame.error):
             pass
 
+    def _generate_background_surface(self, level: int) -> None:
+        """Pre-generate a high quality background surface for the level theme."""
+        theme_idx = (level - 1) % len(C.LEVEL_THEMES)
+        theme = C.LEVEL_THEMES[theme_idx]
+
+        h = C.SCREEN_HEIGHT
+        self._background_surface = pygame.Surface((1, h * 2))
+
+        ceiling_color = theme["ceiling"]
+        floor_color = theme["floor"]
+
+        # Sky Gradient (Top half)
+        # Top of surface is Zenith (darker?), Middle is Horizon (lighter/ceiling_color)
+        top_sky = (
+            max(0, ceiling_color[0] - 30),
+            max(0, ceiling_color[1] - 30),
+            max(0, ceiling_color[2] - 30),
+        )
+        bottom_sky = ceiling_color
+
+        # Floor Gradient (Bottom half)
+        near_floor = floor_color
+        far_floor = (
+            max(0, floor_color[0] - 40),
+            max(0, floor_color[1] - 40),
+            max(0, floor_color[2] - 40),
+        )
+
+        # Draw gradients
+        for y in range(h):
+            ratio = y / h
+            r = top_sky[0] + (bottom_sky[0] - top_sky[0]) * ratio
+            g = top_sky[1] + (bottom_sky[1] - top_sky[1]) * ratio
+            b = top_sky[2] + (bottom_sky[2] - top_sky[2]) * ratio
+            self._background_surface.set_at((0, y), (int(r), int(g), int(b)))
+
+        for y in range(h):
+            ratio = y / h
+            r = far_floor[0] + (near_floor[0] - far_floor[0]) * ratio
+            g = far_floor[1] + (near_floor[1] - far_floor[1]) * ratio
+            b = far_floor[2] + (near_floor[2] - far_floor[2]) * ratio
+
+            self._background_surface.set_at((0, h + y), (int(r), int(g), int(b)))
+
+        self._cached_background_theme_idx = theme_idx
+
     def render_floor_ceiling(
         self,
         screen: pygame.Surface,
@@ -802,32 +879,31 @@ class Raycaster:
         theme = C.LEVEL_THEMES[theme_idx]
         player_angle = player.angle
 
+        if (
+            self._cached_background_theme_idx != theme_idx
+            or self._background_surface is None
+        ):
+            self._generate_background_surface(level)
+
         horizon = C.SCREEN_HEIGHT // 2 + int(player.pitch + view_offset_y)
 
-        ceiling_color = theme["ceiling"]
+        bg = self._background_surface
+        assert bg is not None
 
-        # Gradient Sky
-        top_color = (
-            max(0, ceiling_color[0] - 30),
-            max(0, ceiling_color[1] - 30),
-            max(0, ceiling_color[2] - 30),
-        )
-        bottom_color = ceiling_color
+        # Fill screen with appropriate sections
+        # Sky
+        if horizon > 0:
+            sky_strip = bg.subsurface((0, 0, 1, C.SCREEN_HEIGHT))
+            scaled_sky = pygame.transform.scale(sky_strip, (C.SCREEN_WIDTH, C.SCREEN_HEIGHT))
+            screen.blit(scaled_sky, (0, horizon - C.SCREEN_HEIGHT))
 
-        # Optimized gradient drawing: bigger bands or pre-rendered
-        # Drawing 10px bands is fine.
-        for y in range(0, horizon, 10):
-            ratio = y / max(1, horizon)
-            r = top_color[0] + (bottom_color[0] - top_color[0]) * ratio
-            g = top_color[1] + (bottom_color[1] - top_color[1]) * ratio
-            b = top_color[2] + (bottom_color[2] - top_color[2]) * ratio
-            height = int(min(10, horizon - y))
-            pygame.draw.rect(
-                screen,
-                (int(r), int(g), int(b)),
-                (0, y, C.SCREEN_WIDTH, height),
-            )
+        # Floor
+        if horizon < C.SCREEN_HEIGHT:
+            floor_strip = bg.subsurface((0, C.SCREEN_HEIGHT, 1, C.SCREEN_HEIGHT))
+            scaled_floor = pygame.transform.scale(floor_strip, (C.SCREEN_WIDTH, C.SCREEN_HEIGHT))
+            screen.blit(scaled_floor, (0, horizon))
 
+        # Stars
         star_offset = int(player_angle * 200) % C.SCREEN_WIDTH
 
         for sx, sy, size, color in self.stars:
@@ -837,6 +913,7 @@ class Raycaster:
             if 0 <= y < horizon:
                 pygame.draw.circle(screen, color, (x, int(y)), int(size))
 
+        # Moon
         moon_x = (C.SCREEN_WIDTH - 200 - int(player_angle * 100)) % (
             C.SCREEN_WIDTH * 2
         ) - C.SCREEN_WIDTH // 2
@@ -846,31 +923,7 @@ class Raycaster:
             if 0 <= moon_y < horizon + 40:
                 pygame.draw.circle(screen, (220, 220, 200), (int(moon_x), moon_y), 40)
                 shadow_pos = (int(moon_x) - 10, moon_y)
-                pygame.draw.circle(screen, ceiling_color, shadow_pos, 40)
-
-        floor_color = theme["floor"]
-        near_color = floor_color
-        far_color = (
-            max(0, floor_color[0] - 40),
-            max(0, floor_color[1] - 40),
-            max(0, floor_color[2] - 40),
-        )
-
-        floor_height = C.SCREEN_HEIGHT - horizon
-        for y in range(0, floor_height, 10):
-            ratio = y / max(1, floor_height)
-            r = far_color[0] + (near_color[0] - far_color[0]) * ratio
-            g = far_color[1] + (near_color[1] - far_color[1]) * ratio
-            b = far_color[2] + (near_color[2] - far_color[2]) * ratio
-
-            draw_y = horizon + y
-            height = min(10, C.SCREEN_HEIGHT - draw_y)
-            if height > 0:
-                pygame.draw.rect(
-                    screen,
-                    (int(r), int(g), int(b)),
-                    (0, draw_y, C.SCREEN_WIDTH, height),
-                )
+                pygame.draw.circle(screen, theme["ceiling"], shadow_pos, 40)
 
     def _generate_minimap_cache(self) -> None:
         """Generate static minimap surface."""
