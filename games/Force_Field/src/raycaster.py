@@ -725,9 +725,9 @@ class Raycaster:
                         # Evict oldest (simple dict iteration is insertion order)
                         # We remove a chunk to avoid frequent maintenance
                         # Converting to list is cheap for 200 items
-                        scaled_keys_to_remove = list(
-                            self._scaled_sprite_cache.keys()
-                        )[:20]
+                        scaled_keys_to_remove = list(self._scaled_sprite_cache.keys())[
+                            :20
+                        ]
                         for scaled_k in scaled_keys_to_remove:
                             del self._scaled_sprite_cache[scaled_k]
 
