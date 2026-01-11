@@ -84,6 +84,10 @@ class Bot:
         # Pain State
         self.pain_timer = 0
 
+        # Frozen State
+        self.frozen = False
+        self.frozen_timer = 0
+
     def update(
         self, game_map: Map, player: Player, other_bots: list[Bot]
     ) -> Projectile | None:
@@ -118,11 +122,21 @@ class Bot:
             )
         elif self.enemy_type == "sniper":
             return self._update_behavior_sniper(game_map, player, distance, other_bots)
+        elif self.enemy_type == "ice_zombie":
+             # Ice Zombies are slower but maybe have an aura or ranged attack?
+             # For now, just standard behavior but they look cool.
+             return self._update_behavior_standard(game_map, player, distance, other_bots)
 
         return self._update_behavior_standard(game_map, player, distance, other_bots)
 
     def _check_status_effects(self) -> bool:
-        """Check pain and death states. Returns True if bot should skip update."""
+        """Check pain, frozen, and death states. Returns True if bot should skip update."""
+        if self.frozen:
+            self.frozen_timer -= 1
+            if self.frozen_timer <= 0:
+                self.frozen = False
+            return True
+
         if self.pain_timer > 0:
             self.pain_timer -= 1
             return True
@@ -365,6 +379,12 @@ class Bot:
     def has_line_of_sight(self, game_map: Map, player: Player) -> bool:
         """Check if bot has line of sight to player"""
         return has_line_of_sight(self.x, self.y, player.x, player.y, game_map)
+
+    def freeze(self, duration: int) -> None:
+        """Freeze the bot for a duration."""
+        if not self.dead:
+            self.frozen = True
+            self.frozen_timer = duration
 
     def take_damage(self, damage: int, is_headshot: bool = False) -> bool:
         """Take damage

@@ -63,6 +63,7 @@ WEAPON_RANGE_PULSE = 35
 WEAPON_RANGE_STORMTROOPER = 30
 WEAPON_RANGE_MINIGUN = 20
 WEAPON_RANGE_SNIPER = 40
+WEAPON_RANGE_FREEZER = 15
 
 # Weapon settings
 WEAPONS: dict[str, WeaponData] = {
@@ -194,6 +195,19 @@ WEAPONS: dict[str, WeaponData] = {
         "projectile_speed": 0.35,
         "projectile_color": (255, 140, 0),
     },
+    "freezer": {
+        "name": "Freezer",
+        "damage": 15,
+        "range": WEAPON_RANGE_FREEZER,
+        "ammo": 150,
+        "cooldown": 5,
+        "automatic": True,
+        "clip_size": 50,
+        "reload_time": 120,
+        "key": "-",
+        "projectile_speed": 0.4,
+        "projectile_color": (200, 255, 255),
+    },
 }
 
 # Combat settings
@@ -293,6 +307,7 @@ DINOSAUR_COLOR = (63, 163, 77)
 RAIDER_COLOR = (122, 92, 255)
 NINJA_COLOR = (0, 0, 100)
 SNIPER_COLOR = (70, 70, 70)
+ICE_ZOMBIE_COLOR = (150, 200, 255)
 
 ENEMY_TYPES: dict[str, EnemyData] = {
     "zombie": {
@@ -300,6 +315,14 @@ ENEMY_TYPES: dict[str, EnemyData] = {
         "health_mult": 1.0,
         "speed_mult": 0.8,
         "damage_mult": 1.0,
+        "scale": 1.0,
+        "visual_style": "monster",
+    },
+    "ice_zombie": {
+        "color": ICE_ZOMBIE_COLOR,
+        "health_mult": 1.2,
+        "speed_mult": 0.7,
+        "damage_mult": 1.1,
         "scale": 1.0,
         "visual_style": "monster",
     },
@@ -450,6 +473,14 @@ ENEMY_TYPES: dict[str, EnemyData] = {
     },
     "pickup_flamethrower": {
         "color": (255, 140, 0),
+        "health_mult": 1.0,
+        "speed_mult": 0.0,
+        "damage_mult": 0.0,
+        "scale": 0.5,
+        "visual_style": "item",
+    },
+    "pickup_freezer": {
+        "color": (200, 255, 255),
         "health_mult": 1.0,
         "speed_mult": 0.0,
         "damage_mult": 0.0,
