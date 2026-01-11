@@ -334,6 +334,7 @@ class Game:
             "rocket",
             "flamethrower",
             "pulse",
+            "freezer",
         ]
         starter = random.choice(possible_starters)
         self.unlocked_weapons = {"pistol", starter}
@@ -455,6 +456,7 @@ class Game:
                         "pickup_rocket",
                         "pickup_flamethrower",
                         "pickup_pulse",
+                        "pickup_freezer",
                     ]
                     # Also exclude pickups
                     while enemy_type in exclusions or enemy_type.startswith("pickup"):
@@ -507,6 +509,7 @@ class Game:
             "pickup_minigun",
             "pickup_flamethrower",
             "pickup_pulse",
+            "pickup_freezer",
         ]
         for w_pickup in possible_weapons:
             if random.random() < 0.4:  # 40% chance per level
@@ -575,6 +578,10 @@ class Game:
     def explode_rocket(self, projectile: Projectile) -> None:
         """Trigger rocket AOE explosion"""
         self.combat_system.explode_rocket(projectile)
+
+    def explode_freezer(self, projectile: Projectile) -> None:
+        """Trigger freezer AOE explosion"""
+        self.combat_system.explode_freezer(projectile)
 
     def execute_melee_attack(self) -> None:
         """Execute melee attack - wide sweeping damage in front of player"""

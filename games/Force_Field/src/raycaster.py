@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import itertools
 import math
+import random
 from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
@@ -69,7 +70,6 @@ class Raycaster:
 
         # Pre-generate stars
         self.stars = []
-        import random
 
         for _ in range(100):
             self.stars.append(
@@ -143,9 +143,10 @@ class Raycaster:
 
             # Limit cache size to prevent memory issues
             if len(self._strip_cache) > 10000:
-                # Remove oldest entries (simple FIFO)
-                oldest_keys = list(self._strip_cache.keys())[:1000]
-                for key in oldest_keys:
+                # Remove oldest entries (simple FIFO) using islice for O(k) efficiency
+                # dicts preserve insertion order in Python 3.7+
+                keys_to_remove = list(itertools.islice(self._strip_cache, 1000))
+                for key in keys_to_remove:
                     del self._strip_cache[key]
 
             self._strip_cache[cache_key] = scaled_strip
@@ -625,6 +626,9 @@ class Raycaster:
             f"{bot.dead}_{int(bot.death_timer // 5)}_{cached_size}_{shade_level}"
         )
 
+        if bot.frozen:
+            cache_key += "_frozen"
+
         if cache_key in self.sprite_cache:
             sprite_surface = self.sprite_cache[cache_key]
         else:
@@ -644,6 +648,10 @@ class Raycaster:
 
             if shade_color != (255, 255, 255):
                 sprite_surface.fill(shade_color, special_flags=pygame.BLEND_MULT)
+
+            if bot.frozen:
+                # Apply blue tint for frozen effect
+                sprite_surface.fill((150, 200, 255), special_flags=pygame.BLEND_MULT)
 
             if len(self.sprite_cache) > 400:
                 # Evict oldest efficiently
@@ -724,10 +732,9 @@ class Raycaster:
                     if len(self._scaled_sprite_cache) > 200:
                         # Evict oldest (simple dict iteration is insertion order)
                         # We remove a chunk to avoid frequent maintenance
-                        # Converting to list is cheap for 200 items
-                        scaled_keys_to_remove = list(self._scaled_sprite_cache.keys())[
-                            :20
-                        ]
+                        scaled_keys_to_remove = list(
+                            itertools.islice(self._scaled_sprite_cache, 20)
+                        )
                         for scaled_k in scaled_keys_to_remove:
                             del self._scaled_sprite_cache[scaled_k]
 
@@ -869,8 +876,6 @@ class Raycaster:
                         2,
                     )
                 elif proj.weapon_type == "flamethrower":
-                    import random
-
                     # Dynamic flame effect
                     flame_color = (
                         255,
@@ -901,6 +906,20 @@ class Raycaster:
                     pygame.draw.circle(
                         self.view_surface,
                         (100, 100, 255),
+                        rect.center,
+                        rect.width // 3,
+                    )
+                elif proj.weapon_type == "freezer":
+                    # Freezer projectile: Cyan energy ball
+                    pygame.draw.circle(
+                        self.view_surface,
+                        (200, 255, 255),
+                        rect.center,
+                        rect.width // 2,
+                    )
+                    pygame.draw.circle(
+                        self.view_surface,
+                        (150, 200, 255),
                         rect.center,
                         rect.width // 3,
                     )
