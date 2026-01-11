@@ -38,9 +38,8 @@ class GameRenderer:
         assert game.player is not None
 
         # Calculate Head Bob
-        bob_offset = 0.0
-        if game.player.is_moving:
-            bob_offset = math.sin(pygame.time.get_ticks() * 0.015) * 15.0
+        # Use player's bob_phase for consistent movement
+        bob_offset = math.sin(game.player.bob_phase) * 10.0
 
         # Screen Shake
         shake_x = 0

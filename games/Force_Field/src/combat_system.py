@@ -68,6 +68,10 @@ class CombatSystem:
             self._fire_flamethrower()
             return
 
+        if weapon == "freezer" and not is_secondary:
+            self._fire_freezer()
+            return
+
         if weapon == "minigun" and not is_secondary:
             self._fire_minigun()
             return
@@ -150,6 +154,25 @@ class CombatSystem:
                 weapon_type="flamethrower",
             )
             self.game.entity_manager.add_projectile(p)
+
+    def _fire_freezer(self) -> None:
+        damage = self.player.get_current_weapon_damage()
+        angle_off = random.uniform(-0.05, 0.05)
+        final_angle = self.player.angle + angle_off
+        speed = float(C.WEAPONS["freezer"].get("projectile_speed", 0.4))
+
+        p = Projectile(
+            self.player.x,
+            self.player.y,
+            final_angle,
+            damage,
+            speed=speed,
+            is_player=True,
+            color=C.WEAPONS["freezer"].get("projectile_color", (200, 255, 255)),
+            size=0.25,
+            weapon_type="freezer",
+        )
+        self.game.entity_manager.add_projectile(p)
 
     def _fire_minigun(self) -> None:
         damage = self.player.get_current_weapon_damage()
@@ -500,6 +523,8 @@ class CombatSystem:
             color = C.CYAN if weapon_type == "plasma" else C.ORANGE
             if weapon_type == "pulse":
                 color = (100, 100, 255)
+            elif weapon_type == "freezer":
+                color = (200, 255, 255)
 
             for _ in range(20):
                 self.game.particle_system.add_particle(
@@ -532,6 +557,8 @@ class CombatSystem:
 
                 if bot.take_damage(damage):
                     self._handle_kill(bot)
+                elif weapon_type == "freezer":
+                    bot.freeze(180)  # Freeze for 3 seconds
 
     def explode_plasma(self, projectile: Projectile) -> None:
         self._explode_generic(projectile, C.PLASMA_AOE_RADIUS, "plasma")
@@ -542,3 +569,6 @@ class CombatSystem:
     def explode_rocket(self, projectile: Projectile) -> None:
         radius = float(C.WEAPONS["rocket"].get("aoe_radius", 6.0))
         self._explode_generic(projectile, radius, "rocket")
+
+    def explode_freezer(self, projectile: Projectile) -> None:
+        self._explode_generic(projectile, 4.0, "freezer")  # Custom radius for freezer

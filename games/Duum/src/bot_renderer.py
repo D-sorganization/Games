@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import math
 import random
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, cast
 
 import pygame
 
@@ -10,6 +10,7 @@ from . import constants as C  # noqa: N812
 
 if TYPE_CHECKING:
     from .bot import Bot
+    from .custom_types import EnemyData
 
 
 class BotRenderer:
@@ -33,7 +34,7 @@ class BotRenderer:
             sprite_size: Size of the sprite (width/height).
         """
         center_x = sprite_x + sprite_size / 2
-        type_data: dict[str, Any] = bot.type_data
+        type_data: EnemyData = bot.type_data
         base_color = type_data["color"]
         visual_style = type_data.get("visual_style", "monster")
 
@@ -74,9 +75,12 @@ class BotRenderer:
 
             # Interpolate Color to Goo
             goo_color = (50, 150, 50)
-            base_color = tuple(
-                int(c * (1 - melt_pct) + g * melt_pct)
-                for c, g in zip(base_color, goo_color, strict=True)
+            base_color = cast(
+                "tuple[int, int, int]",
+                tuple(
+                    int(c * (1 - melt_pct) + g * melt_pct)
+                    for c, g in zip(base_color, goo_color, strict=True)
+                ),
             )
 
             # Squish
@@ -215,7 +219,7 @@ class BotRenderer:
         rect_w = size * 0.6
         rect_h = size * 0.2
         py = y + size * 0.75
-        color = cast("tuple[int, int, int]", bot.type_data["color"])
+        color = bot.type_data["color"]
         pygame.draw.rect(screen, color, (cx - rect_w / 2, py, rect_w, rect_h))
         # Label/Detail
         pygame.draw.line(

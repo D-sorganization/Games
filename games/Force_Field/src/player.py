@@ -23,6 +23,7 @@ class Player:
         self.health = 100
         self.max_health = 100
         self.is_moving = False  # Track movement for bobbing
+        self.bob_phase = 0.0  # Phase for head bobbing calculation
 
         # Dash Constants
         self.DASH_SPEED_MULT = 2.5
@@ -262,8 +263,14 @@ class Player:
         self.sway_amount = self.sway_amount * 0.8 + self.frame_turn * 0.2
         self.frame_turn = 0.0  # Reset for next frame accumulation
 
-        # Idle Sway (Breathing)
-        if not self.is_moving:
+        # Head Bob & Sway
+        if self.is_moving:
+            # Increment bob phase when moving
+            bob_speed = 0.15 if self.dash_active else 0.1
+            self.bob_phase += bob_speed
+        else:
+            # Return to neutral or idle sway
+            # Idle Sway (Breathing)
             self.sway_timer += 1
             # Small figure-8 sway
             sway_pitch = math.sin(self.sway_timer * 0.03) * 2.0
@@ -272,8 +279,12 @@ class Player:
             self.pitch += sway_pitch * 0.05
             self.angle += sway_angle
 
-            # Constrain pitch
-            self.pitch = max(-C.PITCH_LIMIT, min(C.PITCH_LIMIT, self.pitch))
+            # Damping bob phase to nearest pi (neutral)
+            target_phase = round(self.bob_phase / math.pi) * math.pi
+            self.bob_phase = self.bob_phase * 0.9 + target_phase * 0.1
+
+        # Constrain pitch
+        self.pitch = max(-C.PITCH_LIMIT, min(C.PITCH_LIMIT, self.pitch))
 
         # Dash logic
         if self.dash_active:
