@@ -558,7 +558,7 @@ class CombatSystem:
                 if bot.take_damage(damage):
                     self._handle_kill(bot)
                 elif weapon_type == "freezer":
-                    bot.freeze(180) # Freeze for 3 seconds
+                    bot.freeze(180)  # Freeze for 3 seconds
 
     def explode_plasma(self, projectile: Projectile) -> None:
         self._explode_generic(projectile, C.PLASMA_AOE_RADIUS, "plasma")
@@ -571,4 +571,4 @@ class CombatSystem:
         self._explode_generic(projectile, radius, "rocket")
 
     def explode_freezer(self, projectile: Projectile) -> None:
-        self._explode_generic(projectile, 4.0, "freezer") # Custom radius for freezer
+        self._explode_generic(projectile, 4.0, "freezer")  # Custom radius for freezer
