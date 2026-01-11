@@ -123,14 +123,20 @@ class Bot:
         elif self.enemy_type == "sniper":
             return self._update_behavior_sniper(game_map, player, distance, other_bots)
         elif self.enemy_type == "ice_zombie":
-             # Ice Zombies are slower but maybe have an aura or ranged attack?
-             # For now, just standard behavior but they look cool.
-             return self._update_behavior_standard(game_map, player, distance, other_bots)
+            # Ice Zombies are slower but maybe have an aura or ranged attack?
+            # For now, just standard behavior but they look cool.
+            return self._update_behavior_standard(
+                game_map, player, distance, other_bots
+            )
 
         return self._update_behavior_standard(game_map, player, distance, other_bots)
 
     def _check_status_effects(self) -> bool:
-        """Check pain, frozen, and death states. Returns True if bot should skip update."""
+        """Check pain, frozen, and death states.
+
+        Returns:
+            bool: True if bot should skip update.
+        """
         if self.frozen:
             self.frozen_timer -= 1
             if self.frozen_timer <= 0:
