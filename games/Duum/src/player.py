@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import math
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
 from . import constants as C  # noqa: N812
 
@@ -39,9 +39,7 @@ class Player:
         # Keep tracking total ammo (reserves) if we want,
         # but user request implies specific mechanics per gun
         # For now, we assume "ammo" in constants refers to reserves.
-        self.ammo: dict[str, int] = {
-            w: int(cast("int", C.WEAPONS[w]["ammo"])) for w in C.WEAPONS
-        }
+        self.ammo: dict[str, int] = {w: int(C.WEAPONS[w]["ammo"]) for w in C.WEAPONS}
 
         self.current_weapon = "rifle"
         self.shooting = False
@@ -141,7 +139,7 @@ class Player:
 
         # Minigun Spin-up logic
         if self.current_weapon == "minigun":
-            spin_up = int(cast("int", weapon_data.get("spin_up_time", 30)))
+            spin_up = int(weapon_data.get("spin_up_time", 30))
             if w_state["spin_timer"] < spin_up:
                 w_state["spin_timer"] += 2  # Charge up
                 return False  # Not firing yet
@@ -149,7 +147,7 @@ class Player:
             w_state["spin_timer"] = 0
 
         self.shooting = True
-        self.shoot_timer = int(cast("int", weapon_data["cooldown"]))
+        self.shoot_timer = int(weapon_data["cooldown"])
 
         # Consumables
         if self.current_weapon == "plasma":
@@ -195,11 +193,11 @@ class Player:
 
     def get_current_weapon_damage(self) -> int:
         """Get damage of current weapon"""
-        return int(cast("int", C.WEAPONS[self.current_weapon]["damage"]))
+        return int(C.WEAPONS[self.current_weapon]["damage"])
 
     def get_current_weapon_range(self) -> int:
         """Get range of current weapon"""
-        return int(cast("int", C.WEAPONS[self.current_weapon]["range"]))
+        return int(C.WEAPONS[self.current_weapon]["range"])
 
     def take_damage(self, damage: int) -> None:
         """Take damage"""
@@ -290,8 +288,8 @@ class Player:
                     w_state["overheat_timer"] -= 1
 
                     # Linearly cool down during overheat penalty for visual feedback
-                    penalty_time = int(cast("int", w_data.get("overheat_penalty", 180)))
-                    max_heat = float(cast("float", w_data["max_heat"]))
+                    penalty_time = int(w_data.get("overheat_penalty", 180))
+                    max_heat = float(w_data["max_heat"])
 
                     if penalty_time > 0:
                         cool_amount = max_heat / penalty_time

@@ -62,6 +62,10 @@ class Projectile:
             if self.weapon_type == "bomb":
                 self.alive = False
                 return
+            elif self.weapon_type == "freezer":
+                # Freezer projectile explodes on ground too maybe?
+                self.alive = False
+                return
 
         # Check wall collision
         if game_map.is_wall(new_x, new_y):

@@ -1,5 +1,7 @@
 import math
 
+from .custom_types import EnemyData, LevelTheme, WeaponData
+
 # Constants
 SCREEN_WIDTH = 1200
 SCREEN_HEIGHT = 800
@@ -38,7 +40,7 @@ DEFAULT_DIFFICULTY = "NORMAL"
 DEFAULT_START_LEVEL = 1
 
 # Difficulty Settings
-DIFFICULTIES = {
+DIFFICULTIES: dict[str, dict[str, float]] = {
     "EASY": {"damage_mult": 0.5, "health_mult": 0.7, "score_mult": 0.5},
     "NORMAL": {"damage_mult": 1.0, "health_mult": 1.0, "score_mult": 1.0},
     "HARD": {"damage_mult": 1.5, "health_mult": 1.5, "score_mult": 2.0},
@@ -54,7 +56,7 @@ WEAPON_RANGE_STORMTROOPER = 30
 WEAPON_RANGE_MINIGUN = 20
 
 # Weapon settings
-WEAPONS = {
+WEAPONS: dict[str, WeaponData] = {
     "pistol": {
         "name": "Pistol",
         "damage": 25,
@@ -239,7 +241,7 @@ DINOSAUR_COLOR = (63, 163, 77)
 RAIDER_COLOR = (122, 92, 255)
 NINJA_COLOR = (0, 0, 100)
 
-ENEMY_TYPES = {
+ENEMY_TYPES: dict[str, EnemyData] = {
     "zombie": {
         "color": (80, 100, 80),  # Rotting Green
         "health_mult": 1.0,
@@ -412,7 +414,7 @@ WALL_COLORS = {
 }
 
 # Level Themes (Wall Color Palette per level modulo)
-LEVEL_THEMES = [
+LEVEL_THEMES: list[LevelTheme] = [
     # 0: Hell Keep (Red/Brick)
     {
         "floor": (40, 0, 0),
