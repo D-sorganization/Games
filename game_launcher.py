@@ -111,6 +111,15 @@ def main() -> None:
         else:
             surf.blit(t, pos)
 
+    def get_game_rect(i: int) -> pygame.Rect:
+        row = i // GRID_COLS
+        col = i % GRID_COLS
+        start_x = (WIDTH - (GRID_COLS * ITEM_WIDTH)) // 2
+        start_y = 150
+        x = start_x + col * ITEM_WIDTH
+        y = start_y + row * ITEM_HEIGHT
+        return pygame.Rect(x, y, ITEM_WIDTH, ITEM_HEIGHT)
+
     def launch_game(game: dict[str, Any]) -> None:
         print(f"Launching {game['name']}...")
         if game["type"] == "python":
@@ -134,6 +143,7 @@ def main() -> None:
     running = True
     clock = pygame.time.Clock()
     last_launch_time = 0.0
+    selected_index = -1  # -1 means no keyboard selection (mouse mode)
 
     while running:
         mx, my = pygame.mouse.get_pos()
@@ -141,24 +151,53 @@ def main() -> None:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+
+            elif event.type == pygame.MOUSEMOTION:
+                # If mouse moves, switch back to mouse mode
+                if selected_index != -1:
+                    selected_index = -1
+
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:
-                    # Check clicks
-                    start_x = (WIDTH - (GRID_COLS * ITEM_WIDTH)) // 2
-                    start_y = 150
-
                     for i, game in enumerate(GAMES):
-                        row = i // GRID_COLS
-                        col = i % GRID_COLS
-                        x = start_x + col * ITEM_WIDTH
-                        y = start_y + row * ITEM_HEIGHT
-
-                        rect = pygame.Rect(x, y, ITEM_WIDTH, ITEM_HEIGHT)
+                        rect = get_game_rect(i)
                         if rect.collidepoint(mx, my):
                             now = time.time()
                             if now - last_launch_time > 1.0:
                                 last_launch_time = now
                                 launch_game(game)
+
+            elif event.type == pygame.KEYDOWN:
+                # Handle keyboard navigation
+                if selected_index == -1:
+                    # If coming from mouse mode, try to select what's hovered
+                    for i in range(len(GAMES)):
+                        if get_game_rect(i).collidepoint(mx, my):
+                            selected_index = i
+                            break
+                    # Default to first item if nothing hovered
+                    if selected_index == -1:
+                        selected_index = 0
+
+                # Navigate
+                if event.key == pygame.K_RIGHT:
+                    selected_index = (selected_index + 1) % len(GAMES)
+                elif event.key == pygame.K_LEFT:
+                    selected_index = (selected_index - 1) % len(GAMES)
+                elif event.key == pygame.K_DOWN:
+                    new_idx = selected_index + GRID_COLS
+                    if new_idx < len(GAMES):
+                        selected_index = new_idx
+                elif event.key == pygame.K_UP:
+                    new_idx = selected_index - GRID_COLS
+                    if new_idx >= 0:
+                        selected_index = new_idx
+                elif event.key == pygame.K_RETURN or event.key == pygame.K_KP_ENTER:
+                    if 0 <= selected_index < len(GAMES):
+                        now = time.time()
+                        if now - last_launch_time > 1.0:
+                            last_launch_time = now
+                            launch_game(GAMES[selected_index])
 
         # Draw
         screen.fill(BG_COLOR)
@@ -173,27 +212,34 @@ def main() -> None:
             center=True,
         )
 
-        # Grid
-        start_x = (WIDTH - (GRID_COLS * ITEM_WIDTH)) // 2
-        start_y = 150
-
         for i, game in enumerate(GAMES):
-            row = i // GRID_COLS
-            col = i % GRID_COLS
-            x = start_x + col * ITEM_WIDTH
-            y = start_y + row * ITEM_HEIGHT
+            rect = get_game_rect(i)
 
-            # Hover effect
-            rect = pygame.Rect(x + 10, y + 10, ITEM_WIDTH - 20, ITEM_HEIGHT - 20)
-            is_hovered = rect.collidepoint(mx, my)
+            # Determine hover state
+            is_hovered = False
+            if selected_index != -1:
+                # Keyboard mode
+                if i == selected_index:
+                    is_hovered = True
+            else:
+                # Mouse mode
+                if rect.collidepoint(mx, my):
+                    is_hovered = True
 
             bg = HIGHLIGHT_COLOR if is_hovered else (30, 30, 35)
-            pygame.draw.rect(screen, bg, rect, border_radius=15)
+
+            # Visual card with padding (restore original design)
+            visual_rect = rect.inflate(-20, -20)
+            pygame.draw.rect(screen, bg, visual_rect, border_radius=15)
 
             # Icon
+            x, y = rect.x, rect.y
             if "img" in game:
                 game_img = game["img"]
                 if isinstance(game_img, pygame.Surface):
+                    # Adjust relative to the cell, centered visually
+                    # Original logic was x + (ITEM_WIDTH - ICON_SIZE[0]) // 2
+                    # This still works because x is the cell start
                     icon_x = x + (ITEM_WIDTH - ICON_SIZE[0]) // 2
                     icon_y = y + 20
                     screen.blit(game_img, (icon_x, icon_y))
