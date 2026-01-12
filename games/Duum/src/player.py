@@ -58,6 +58,10 @@ class Player:
         self.frame_turn = 0.0
         self.sway_amount = 0.0
 
+        # Head Bobbing (Distance based)
+        self.bob_phase = 0.0
+        self.walk_distance = 0.0
+
         # Stamina
         self.stamina = 100.0
         self.max_stamina = 100.0
@@ -82,7 +86,17 @@ class Player:
 
         from .utils import try_move_entity
 
+        old_x, old_y = self.x, self.y
         try_move_entity(self, dx, dy, game_map, bots, radius=0.5)
+
+        dist_moved = math.sqrt((self.x - old_x)**2 + (self.y - old_y)**2)
+        if dist_moved > 0.001:
+            self.is_moving = True
+            # Update walk distance for bobbing
+            # Scale bob speed with movement speed
+            self.walk_distance += dist_moved * 0.8
+        else:
+            self.is_moving = False
 
     def strafe(
         self,
@@ -104,7 +118,16 @@ class Player:
 
         from .utils import try_move_entity
 
+        old_x, old_y = self.x, self.y
         try_move_entity(self, dx, dy, game_map, bots, radius=0.5)
+
+        dist_moved = math.sqrt((self.x - old_x)**2 + (self.y - old_y)**2)
+        if dist_moved > 0.001:
+            self.is_moving = True
+            self.walk_distance += dist_moved * 0.8
+        else:
+            # Don't reset is_moving here if move() was called this frame
+            pass
 
     def rotate(self, delta: float) -> None:
         """Rotate player view"""
@@ -223,6 +246,14 @@ class Player:
         # Smoothly interpolate sway for better feel
         self.sway_amount = self.sway_amount * 0.8 + self.frame_turn * 0.2
         self.frame_turn = 0.0  # Reset for next frame accumulation
+
+        # Update Bobbing Phase
+        if self.is_moving:
+            # Phase is just walk_distance wrapped
+            self.bob_phase = self.walk_distance
+        else:
+            # Return to neutral phase slowly
+            self.bob_phase = self.bob_phase * 0.9
 
         # Global shoot timer
         if self.shoot_timer > 0:

@@ -48,6 +48,10 @@ class Game:
         self.intro_start_time = 0
         self.last_death_pos: tuple[float, float] | None = None
 
+        # Audio Flags for Intro
+        self._laugh_played = False
+        self._water_played = False
+
         # Gameplay state
         self.level = 1
         self.kills = 0
@@ -504,8 +508,7 @@ class Game:
             "music_piano",
             "music_action",
         ]
-        if hasattr(self, "sound_manager"):
-            self.sound_manager.start_music(random.choice(music_tracks))
+        self.sound_manager.start_music(random.choice(music_tracks))
 
     def handle_game_events(self) -> None:
         """Handle events during gameplay"""
@@ -1033,9 +1036,7 @@ class Game:
         try:
             hits = 0
             for bot in self.bots:
-                if not hasattr(bot, "alive"):
-                    continue
-
+                # Optimized alive check
                 if bot.alive:
                     dist = math.sqrt((bot.x - impact_x) ** 2 + (bot.y - impact_y) ** 2)
                     if dist < C.LASER_AOE_RADIUS:
@@ -1433,159 +1434,6 @@ class Game:
                     )
                 self.kill_combo_count = 0
 
-    def handle_intro_events(self) -> None:
-        """Handle intro screen events"""
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                if self.ui_renderer.intro_video:
-                    self.ui_renderer.intro_video.release()
-                    self.ui_renderer.intro_video = None
-                self.running = False
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_SPACE or event.key == pygame.K_ESCAPE:
-                    if self.ui_renderer.intro_video:
-                        self.ui_renderer.intro_video.release()
-                        self.ui_renderer.intro_video = None
-                    self.state = "menu"
-            elif event.type == pygame.MOUSEBUTTONDOWN:
-                if self.ui_renderer.intro_video:
-                    self.ui_renderer.intro_video.release()
-                    self.ui_renderer.intro_video = None
-                self.state = "menu"
-
-    def handle_menu_events(self) -> None:
-        """Handle main menu events"""
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                self.running = False
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_RETURN or event.key == pygame.K_SPACE:
-                    self.state = "map_select"
-                elif event.key == pygame.K_ESCAPE:
-                    self.running = False
-            elif event.type == pygame.MOUSEBUTTONDOWN:
-                self.state = "map_select"
-
-    def handle_map_select_events(self) -> None:
-        """Handle map selection events"""
-        self.ui_renderer.start_button.update(pygame.mouse.get_pos())
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                self.running = False
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
-                    self.state = "menu"
-                elif event.key == pygame.K_RETURN:
-                    self.start_game()
-                    self.state = "playing"
-                    pygame.mouse.set_visible(False)
-                    pygame.event.set_grab(True)
-            elif event.type == pygame.MOUSEBUTTONDOWN:
-                if self.ui_renderer.start_button.is_clicked(event.pos):
-                    self.start_game()
-                    self.state = "playing"
-                    pygame.mouse.set_visible(False)
-                    pygame.event.set_grab(True)
-
-                my = event.pos[1]
-                if 200 <= my < 200 + 4 * 80:
-                    row = (my - 200) // 80
-                    if row == 0:
-                        sizes = C.MAP_SIZES
-                        try:
-                            idx = sizes.index(self.selected_map_size)
-                            self.selected_map_size = sizes[(idx + 1) % len(sizes)]
-                        except ValueError:
-                            self.selected_map_size = 40
-                    elif row == 1:
-                        diffs = list(C.DIFFICULTIES.keys())
-                        try:
-                            idx = diffs.index(self.selected_difficulty)
-                            self.selected_difficulty = diffs[(idx + 1) % len(diffs)]
-                        except ValueError:
-                            self.selected_difficulty = "NORMAL"
-                    elif row == 2:
-                        self.selected_start_level = (self.selected_start_level % 5) + 1
-                    elif row == 3:
-                        self.selected_lives = (self.selected_lives % 5) + 1
-
-    def handle_level_complete_events(self) -> None:
-        """Handle input events during the level complete screen."""
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                self.running = False
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_SPACE:
-                    self.level += 1
-                    self.start_level()
-                    self.state = "playing"
-                elif event.key == pygame.K_ESCAPE:
-                    self.state = "menu"
-
-    def handle_game_over_events(self) -> None:
-        """Handle input events during the game over screen."""
-        # Sequence Sound Logic
-        self.game_over_timer += 1
-        if self.game_over_timer == 120:
-            self.sound_manager.play_sound("game_over2")
-
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                self.running = False
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_SPACE:
-                    self.start_game()
-                    self.state = "playing"
-                elif event.key == pygame.K_ESCAPE:
-                    self.state = "menu"
-
-    def handle_key_config_events(self) -> None:
-        """Handle input events in Key Config menu."""
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                self.running = False
-
-            elif event.type == pygame.KEYDOWN:
-                if self.binding_action:
-                    # Bind the key
-                    if event.key != pygame.K_ESCAPE:
-                        self.input_manager.bind_key(self.binding_action, event.key)
-                    self.binding_action = None
-                elif event.key == pygame.K_ESCAPE:
-                    self.state = "playing" if self.paused else "menu"
-
-            elif event.type == pygame.MOUSEBUTTONDOWN and not self.binding_action:
-                mx, my = event.pos
-
-                # Check clicks on bindings
-                bindings = self.input_manager.bindings
-                actions = sorted(bindings.keys())
-                start_y = 120
-                col_1_x = C.SCREEN_WIDTH // 4
-                col_2_x = C.SCREEN_WIDTH * 3 // 4
-                limit = 12
-
-                for i, action in enumerate(actions):
-                    col = 0 if i < limit else 1
-                    idx = i if i < limit else i - limit
-                    x = col_1_x if col == 0 else col_2_x
-                    y = start_y + idx * 40
-
-                    # Approximate hit box (Name + Key)
-                    # Name ends at x-150, Key starts at x+20.
-                    # Let's say click area is x-150 to x+150, height 30.
-                    rect = pygame.Rect(x - 150, y, 300, 30)
-                    if rect.collidepoint(mx, my):
-                        self.binding_action = action
-                        return
-
-                # Back Button
-                center_x = C.SCREEN_WIDTH // 2 - 50
-                top_y = C.SCREEN_HEIGHT - 80
-                back_rect = pygame.Rect(center_x, top_y, 100, 40)
-                if back_rect.collidepoint(mx, my):
-                    self.state = "playing" if self.paused else "menu"
-
     def _update_intro_logic(self, elapsed: int) -> None:
         """Update intro sequence logic and transitions.
 
@@ -1603,22 +1451,21 @@ class Game:
                 duration = slides_durations[self.intro_step]
 
                 if self.intro_step == 0 and elapsed < 50:
-                    if not hasattr(self, "_laugh_played"):
+                    if not self._laugh_played:
                         self.sound_manager.play_sound("laugh")
                         self._laugh_played = True
 
                 if elapsed > duration:
                     self.intro_step += 1
                     self.intro_start_time = 0
-                    if hasattr(self, "_laugh_played"):
-                        del self._laugh_played
+                    self._laugh_played = False
             else:
                 self.state = "menu"
                 return
 
         if self.intro_phase < 2:
             if self.intro_phase == 1 and elapsed < 50:
-                if not hasattr(self, "_water_played"):
+                if not self._water_played:
                     self.sound_manager.play_sound("water")
                     self._water_played = True
 

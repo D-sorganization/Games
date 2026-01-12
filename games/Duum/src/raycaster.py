@@ -42,6 +42,7 @@ class Raycaster:
         # Cache for theme
         self._cached_level: int = -1
         self._cached_wall_colors: dict[int, tuple[int, int, int]] = {}
+        self._cached_color_lut: np.ndarray | None = None
 
         # Pre-rendered background surface (Sky/Floor)
         self._background_surface: pygame.Surface | None = None
@@ -356,16 +357,35 @@ class Raycaster:
         level: int,
         view_offset_y: float,
     ) -> None:
-        """Render walls using computed arrays."""
+        """Render walls using vectorized operations and surfarray."""
         # Theme Setup
         if hasattr(self, "_cached_level") and self._cached_level == level:
             wall_colors = self._cached_wall_colors
+            lut = self._cached_color_lut
         else:
             theme_idx = (level - 1) % len(C.LEVEL_THEMES)
             theme = C.LEVEL_THEMES[theme_idx]
             wall_colors = theme["walls"]
             self._cached_level = level
             self._cached_wall_colors = wall_colors
+
+            # Create Lookup Table (LUT) for colors
+            # Find max wall type for LUT size
+            max_type = max(wall_colors.keys()) if wall_colors else 1
+            # Ensure LUT is large enough for potential random map values if any
+            lut_size = max(max_type + 1, 10)
+            lut = np.zeros((lut_size, 3), dtype=np.float32)
+
+            # Fill LUT
+            for t, c in wall_colors.items():
+                if t < lut_size:
+                    lut[t] = c
+
+            self._cached_color_lut = lut
+
+        if lut is None:
+            # Fallback (should normally be set above)
+            lut = np.zeros((10, 3), dtype=np.float32)
 
         # Fisheye correction
         corrected_dists = distances * np.cos(player.angle - ray_angles)
@@ -376,49 +396,85 @@ class Raycaster:
         wall_tops = (
             (C.SCREEN_HEIGHT - wall_heights) // 2 + player.pitch + view_offset_y
         ).astype(np.int32)
-        wall_heights_int = wall_heights.astype(np.int32)
+        wall_bottoms = wall_tops + wall_heights.astype(np.int32)
+
+        # Clip wall types to LUT size to prevent index error
+        lut_len = len(lut)
+        clipped_wall_types = np.clip(wall_types, 0, lut_len - 1)
+
+        # Base Colors from LUT
+        # Shape: (num_rays, 3)
+        base_colors = lut[clipped_wall_types]
 
         # Shading
-        shades = np.maximum(0.2, 1.0 - distances / 50.0)
+        shades = np.maximum(0.2, 1.0 - distances / 50.0)[:, np.newaxis]
 
         # Fog
         fog_factors = np.clip(
             (distances - C.MAX_DEPTH * C.FOG_START) / (C.MAX_DEPTH * (1 - C.FOG_START)),
             0.0,
             1.0,
-        )
+        )[:, np.newaxis]
 
-        view_surface = self.view_surface
+        fog_color_arr = np.array(C.FOG_COLOR, dtype=np.float32)
 
-        # Loop (No textures in Duum for now, solid colors)
-        for i in range(self.num_rays):
-            if distances[i] >= C.MAX_DEPTH:
-                continue
+        # Calculate Final Colors per Ray (Vectorized mixing)
+        # Apply shade
+        shaded_colors = base_colors * shades
 
-            wt = int(wall_types[i])
-            if wt == 0:
-                continue
+        # Apply fog
+        final_colors_float = shaded_colors * (1.0 - fog_factors) + fog_color_arr * fog_factors
 
-            h = wall_heights_int[i]
-            top = wall_tops[i]
+        # Clip and Cast
+        final_colors = np.clip(final_colors_float, 0, 255).astype(np.uint8)
 
-            # Solid Color Rendering
-            col = wall_colors.get(wt, C.GRAY)
-            shade = shades[i]
-            fog = fog_factors[i]
+        # --- Pixel Filling using Surfarray ---
 
-            # Mix color
-            r = col[0] * shade
-            g = col[1] * shade
-            b = col[2] * shade
+        # Lock and get array reference
+        # view_surface is (num_rays, HEIGHT)
+        # pixels3d is (num_rays, HEIGHT, 3)
+        pixels = pygame.surfarray.pixels3d(self.view_surface)
+        pixels_alpha = pygame.surfarray.pixels_alpha(self.view_surface)
 
-            fr = r * (1 - fog) + C.FOG_COLOR[0] * fog
-            fg = g * (1 - fog) + C.FOG_COLOR[1] * fog
-            fb = b * (1 - fog) + C.FOG_COLOR[2] * fog
+        height = self.view_surface.get_height()
 
-            final_col = (int(fr), int(fg), int(fb))
+        # We need a Y coordinate grid: (1, HEIGHT)
+        y_coords = np.arange(height)[np.newaxis, :]
 
-            pygame.draw.rect(view_surface, final_col, (i, top, 1, h))
+        # Render Mask: Only draw rays that hit something and are within range
+        render_mask = (distances < C.MAX_DEPTH) & (wall_types > 0)
+
+        # We can process valid rays only, or mask later.
+        # Since num_rays is ~width (e.g. 600-1200), full broadcasting is ~1M elements.
+        # This is fast in NumPy.
+
+        # Broadcast tops and bottoms to (num_rays, 1)
+        tops_b = wall_tops[:, np.newaxis]
+        bottoms_b = wall_bottoms[:, np.newaxis]
+
+        # Create geometric mask: (num_rays, HEIGHT)
+        # y >= top AND y < bottom
+        geo_mask = (y_coords >= tops_b) & (y_coords < bottoms_b)
+
+        # Combine with render_mask (broadcasted)
+        # render_mask is (num_rays,) -> (num_rays, 1)
+        final_mask = geo_mask & render_mask[:, np.newaxis]
+
+        if np.any(final_mask):
+            # Apply colors
+            # final_colors is (num_rays, 3) -> broadcast to (num_rays, 1, 3) -> broadcast to mask
+            # Using broadcast_to to avoid allocating large array if possible,
+            # but for assignment we need matching shape on RHS or broadcastable.
+
+            expanded_colors = np.broadcast_to(final_colors[:, np.newaxis, :], (self.num_rays, height, 3))
+            pixels[final_mask] = expanded_colors[final_mask]
+
+            # Set Alpha to Opaque (255)
+            pixels_alpha[final_mask] = 255
+
+        # Unlock surface
+        del pixels
+        del pixels_alpha
 
     def _render_sprites(
         self,
