@@ -1540,7 +1540,7 @@ class Game:
         try:
             while self.running:
                 if self.state == "intro":
-                    self.handle_intro_events()
+                    self.handle_intro_events()  # type: ignore[attr-defined]
                     if self.intro_start_time == 0:
                         self.intro_start_time = pygame.time.get_ticks()
                     elapsed = pygame.time.get_ticks() - self.intro_start_time
@@ -1551,19 +1551,19 @@ class Game:
                     self._update_intro_logic(elapsed)
 
                 elif self.state == "menu":
-                    self.handle_menu_events()
+                    self.handle_menu_events()  # type: ignore[attr-defined]
                     self.ui_renderer.render_menu()
 
                 elif self.state == "key_config":
-                    self.handle_key_config_events()
+                    self.handle_key_config_events()  # type: ignore[attr-defined]
                     self.ui_renderer.render_key_config(self)
 
                 elif self.state == "map_select":
-                    self.handle_map_select_events()
+                    self.handle_map_select_events()  # type: ignore[attr-defined]
                     self.ui_renderer.render_map_select(self)
 
                 elif self.state == "playing":
-                    self.handle_game_events()
+                    self.handle_game_events()  # type: ignore[attr-defined]
                     if self.paused:
                         # Pause Menu Audio
                         # Heartbeat: 70 BPM -> ~0.85s delay -> ~51 frames (at 60FPS)
@@ -1588,11 +1588,11 @@ class Game:
                         self.damage_flash_timer -= 1
 
                 elif self.state == "level_complete":
-                    self.handle_level_complete_events()
+                    self.handle_level_complete_events()  # type: ignore[attr-defined]
                     self.ui_renderer.render_level_complete(self)
 
                 elif self.state == "game_over":
-                    self.handle_game_over_events()
+                    self.handle_game_over_events()  # type: ignore[attr-defined]
                     self.ui_renderer.render_game_over(self)
 
                 self.clock.tick(C.FPS)
