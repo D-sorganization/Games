@@ -78,6 +78,20 @@ jobs:
           name: matlab-quality-report
           path: matlab_quality_report.txt
 
+  # Assessment E: Security scanning for dependency vulnerabilities
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - name: Install pip-audit
+        run: pip install pip-audit
+      - name: Audit Python Dependencies
+        run: |
+          echo "Scanning for known vulnerabilities..."
+          pip-audit -r requirements.txt --progress-spinner=off || true
+
   tests:
     needs: quality-gate
     runs-on: ubuntu-latest
