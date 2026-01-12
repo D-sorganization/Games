@@ -423,7 +423,8 @@ class Raycaster:
         shaded_colors = base_colors * shades
 
         # Apply fog
-        final_colors_float = shaded_colors * (1.0 - fog_factors) + fog_color_arr * fog_factors
+        final_colors_float = (shaded_colors * (1.0 - fog_factors) +
+                             fog_color_arr * fog_factors)
 
         # Clip and Cast
         final_colors = np.clip(final_colors_float, 0, 255).astype(np.uint8)
@@ -462,11 +463,15 @@ class Raycaster:
 
         if np.any(final_mask):
             # Apply colors
-            # final_colors is (num_rays, 3) -> broadcast to (num_rays, 1, 3) -> broadcast to mask
+            # final_colors is (num_rays, 3) -> broadcast to (num_rays, 1, 3)
+            # -> broadcast to mask
             # Using broadcast_to to avoid allocating large array if possible,
             # but for assignment we need matching shape on RHS or broadcastable.
 
-            expanded_colors = np.broadcast_to(final_colors[:, np.newaxis, :], (self.num_rays, height, 3))
+            expanded_colors = np.broadcast_to(
+                final_colors[:, np.newaxis, :],
+                (self.num_rays, height, 3)
+            )
             pixels[final_mask] = expanded_colors[final_mask]
 
             # Set Alpha to Opaque (255)
