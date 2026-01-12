@@ -99,8 +99,22 @@ class Raycaster:
         size = (self.num_rays, C.SCREEN_HEIGHT)
         self.view_surface = pygame.Surface(size, pygame.SRCALPHA)
 
-        # Optimization: Single reusable surface for vertical strips shading
-        self.shade_surface = pygame.Surface((1, C.SCREEN_HEIGHT), pygame.SRCALPHA)
+        # Optimization: Pre-generate shading and fog surfaces for all alpha levels
+        # Used to avoid expensive fill() calls in the render loop.
+        # Height is doubled to cover close-up walls correctly (max wall height).
+        max_h = C.SCREEN_HEIGHT * 2
+        self._shading_surfaces = []
+        for alpha in range(256):
+            s = pygame.Surface((1, max_h), pygame.SRCALPHA)
+            s.fill((0, 0, 0, alpha))
+            self._shading_surfaces.append(s)
+
+        self._fog_surfaces = []
+        fog_r, fog_g, fog_b = C.FOG_COLOR
+        for alpha in range(256):
+            s = pygame.Surface((1, max_h), pygame.SRCALPHA)
+            s.fill((fog_r, fog_g, fog_b, alpha))
+            self._fog_surfaces.append(s)
 
         # Z-Buffer for occlusion (Euclidean distance)
         self.z_buffer: np.ndarray[Any, np.dtype[Any]] = np.full(
@@ -413,7 +427,7 @@ class Raycaster:
         # No, because alpha changes per ray.
 
         view_surface = self.view_surface
-        shade_surface = self.shade_surface
+        # shade_surface removed in favor of pre-calculated surfaces
 
         # Loop
         for i in range(self.num_rays):
@@ -452,24 +466,21 @@ class Raycaster:
                             shade = shades[i]
                             if shade < 1.0:
                                 alpha = int(255 * (1.0 - shade))
-                                if alpha > 0:
-                                    # Use optimized fill + blit with shared surface
-                                    # Only fill the necessary height
-                                    shade_surface.fill((0, 0, 0, alpha), (0, 0, 1, h))
+                                if alpha > 0 and alpha < 256:
+                                    # Use pre-calculated surface to avoid fill()
+                                    shade_s = self._shading_surfaces[alpha]
                                     view_surface.blit(
-                                        shade_surface, (i, top), (0, 0, 1, h)
+                                        shade_s, (i, top), (0, 0, 1, h)
                                     )
 
                             # Fog
                             fog = fog_factors[i]
                             if fog > 0:
                                 fog_alpha = int(255 * fog)
-                                if fog_alpha > 0:
-                                    shade_surface.fill(
-                                        (*C.FOG_COLOR, fog_alpha), (0, 0, 1, h)
-                                    )
+                                if fog_alpha > 0 and fog_alpha < 256:
+                                    fog_s = self._fog_surfaces[fog_alpha]
                                     view_surface.blit(
-                                        shade_surface, (i, top), (0, 0, 1, h)
+                                        fog_s, (i, top), (0, 0, 1, h)
                                     )
 
                         except (pygame.error, ValueError):
