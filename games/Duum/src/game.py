@@ -510,6 +510,64 @@ class Game:
         ]
         self.sound_manager.start_music(random.choice(music_tracks))
 
+    def handle_intro_events(self) -> None:
+        """Handle events during intro sequence"""
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.running = False
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE or event.key == pygame.K_SPACE:
+                    self.state = "menu"
+
+    def handle_menu_events(self) -> None:
+        """Handle events in main menu"""
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.running = False
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    self.running = False
+
+    def handle_key_config_events(self) -> None:
+        """Handle events in key configuration screen"""
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.running = False
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    self.state = "menu"
+
+    def handle_map_select_events(self) -> None:
+        """Handle events in map selection screen"""
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.running = False
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    self.state = "menu"
+
+    def handle_level_complete_events(self) -> None:
+        """Handle events in level complete screen"""
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.running = False
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE or event.key == pygame.K_RETURN:
+                    self.state = "menu"
+                elif event.key == pygame.K_ESCAPE:
+                    self.state = "menu"
+
+    def handle_game_over_events(self) -> None:
+        """Handle events in game over screen"""
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.running = False
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE or event.key == pygame.K_RETURN:
+                    self.state = "menu"
+                elif event.key == pygame.K_ESCAPE:
+                    self.state = "menu"
+
     def handle_game_events(self) -> None:
         """Handle events during gameplay"""
         for event in pygame.event.get():
