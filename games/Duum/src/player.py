@@ -89,7 +89,7 @@ class Player:
         old_x, old_y = self.x, self.y
         try_move_entity(self, dx, dy, game_map, bots, radius=0.5)
 
-        dist_moved = math.sqrt((self.x - old_x)**2 + (self.y - old_y)**2)
+        dist_moved = math.sqrt((self.x - old_x) ** 2 + (self.y - old_y) ** 2)
         if dist_moved > 0.001:
             self.is_moving = True
             # Update walk distance for bobbing
@@ -121,7 +121,7 @@ class Player:
         old_x, old_y = self.x, self.y
         try_move_entity(self, dx, dy, game_map, bots, radius=0.5)
 
-        dist_moved = math.sqrt((self.x - old_x)**2 + (self.y - old_y)**2)
+        dist_moved = math.sqrt((self.x - old_x) ** 2 + (self.y - old_y) ** 2)
         if dist_moved > 0.001:
             self.is_moving = True
             self.walk_distance += dist_moved * 0.8

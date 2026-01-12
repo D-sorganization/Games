@@ -42,7 +42,7 @@ class Raycaster:
         # Cache for theme
         self._cached_level: int = -1
         self._cached_wall_colors: dict[int, tuple[int, int, int]] = {}
-        self._cached_color_lut: np.ndarray | None = None
+        self._cached_color_lut: np.ndarray[Any, Any] | None = None
 
         # Pre-rendered background surface (Sky/Floor)
         self._background_surface: pygame.Surface | None = None
@@ -423,8 +423,9 @@ class Raycaster:
         shaded_colors = base_colors * shades
 
         # Apply fog
-        final_colors_float = (shaded_colors * (1.0 - fog_factors) +
-                             fog_color_arr * fog_factors)
+        final_colors_float = (
+            shaded_colors * (1.0 - fog_factors) + fog_color_arr * fog_factors
+        )
 
         # Clip and Cast
         final_colors = np.clip(final_colors_float, 0, 255).astype(np.uint8)
@@ -469,8 +470,7 @@ class Raycaster:
             # but for assignment we need matching shape on RHS or broadcastable.
 
             expanded_colors = np.broadcast_to(
-                final_colors[:, np.newaxis, :],
-                (self.num_rays, height, 3)
+                final_colors[:, np.newaxis, :], (self.num_rays, height, 3)
             )
             pixels[final_mask] = expanded_colors[final_mask]
 
