@@ -29,13 +29,17 @@ class WeaponRenderer:
         sway_x = int(player.sway_amount * -300.0)
         cx += sway_x
 
-        # Bobbing
+        # Bobbing (Distance based now)
         bob_y = 0
         if player.is_moving:
-            bob_y = int(math.sin(pygame.time.get_ticks() * 0.012) * 15)
+            # Bobbing frequency based on distance
+            bob_y = int(math.sin(player.bob_phase * 0.8) * 15)
             # Add some horizontal bob too
-            bob_x = int(math.cos(pygame.time.get_ticks() * 0.006) * 10)
+            bob_x = int(math.cos(player.bob_phase * 0.4) * 10)
             cx += bob_x
+        else:
+            # Subtle breathing bob when idle
+            bob_y = int(math.sin(pygame.time.get_ticks() * 0.003) * 5)
 
         w_state = player.weapon_state[weapon]
         if w_state["reloading"]:
