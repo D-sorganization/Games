@@ -20,3 +20,7 @@
 3. Key press sets `selected_index` (snapping to mouse position if transitioning).
 4. Render loop prioritizes `selected_index` if valid, otherwise falls back to mouse collision.
 **Visuals:** Always ensure hitboxes (logic) and visuals are distinct if design requires padding/margins. Use `rect.inflate()` for drawing smaller cards inside larger click targets.
+
+## 2025-02-14 - Game Launcher Keyboard Navigation
+**Learning:** In Pygame, coupling hover states strictly to `collidepoint(mouse_pos)` makes keyboard navigation impossible. Decoupling selection state into a `selected_index` variable (defaulting to -1 for mouse mode) allows seamless hybrid input.
+**Action:** When implementing menus in Pygame, always use a `selected_index` state variable and update it via both mouse motion (to -1 or new index) and keyboard events, rather than relying solely on frame-by-frame mouse polling.
