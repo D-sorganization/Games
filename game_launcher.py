@@ -117,7 +117,7 @@ def main() -> None:
             try:
                 # Use sys.executable to ensure we use the same python interpreter
                 subprocess.Popen(
-                    [sys.executable, str(game['path'])], cwd=str(game['cwd'])
+                    [sys.executable, str(game["path"])], cwd=str(game["cwd"])
                 )
             except Exception as e:
                 print(f"Error launching {game['name']}: {e}")
@@ -206,7 +206,7 @@ def main() -> None:
 
         for i, game in enumerate(GAMES):
             rect = game_rects[i]
-            is_selected = (i == selected_index)
+            # is_selected is handled by is_highlighted logic below
 
             is_highlighted = False
             if using_keyboard:

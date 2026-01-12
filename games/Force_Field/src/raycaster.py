@@ -113,7 +113,7 @@ class Raycaster:
         self._update_ray_angles()
 
     def _generate_shading_caches(self) -> None:
-        """Pre-generate 1-pixel wide surfaces for all alpha levels of shading and fog."""
+        """Pre-generate 1-pixel wide surfaces for shading and fog alpha levels."""
         # Height must cover max possible wall height
         cache_height = C.SCREEN_HEIGHT * 2
         self.shading_surfaces = []
@@ -478,7 +478,7 @@ class Raycaster:
                                 alpha = int(255 * (1.0 - shade))
                                 if alpha > 0:
                                     # Use cached shading surface
-                                    # Blit handles clipping if h > cache_height (unlikely) or top < 0
+                                    # Blit handles clipping if h > cache_height/top < 0
                                     try:
                                         view_surface.blit(
                                             shading_surfaces[alpha],
