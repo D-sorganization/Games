@@ -134,6 +134,21 @@ def main() -> None:
     running = True
     clock = pygame.time.Clock()
     last_launch_time = 0.0
+    selected_index = -1
+    using_keyboard = False
+
+    # Pre-calculate rects for consistent hit testing
+    game_rects = []
+    start_x = (WIDTH - (GRID_COLS * ITEM_WIDTH)) // 2
+    start_y = 150
+    for i in range(len(GAMES)):
+        row = i // GRID_COLS
+        col = i % GRID_COLS
+        x = start_x + col * ITEM_WIDTH
+        y = start_y + row * ITEM_HEIGHT
+        game_rects.append(
+            pygame.Rect(x + 10, y + 10, ITEM_WIDTH - 20, ITEM_HEIGHT - 20)
+        )
 
     while running:
         mx, my = pygame.mouse.get_pos()
@@ -141,24 +156,40 @@ def main() -> None:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+            elif event.type == pygame.MOUSEMOTION:
+                if event.rel != (0, 0):
+                    using_keyboard = False
+            elif event.type == pygame.KEYDOWN:
+                using_keyboard = True
+                if selected_index == -1:
+                    selected_index = 0
+                else:
+                    if event.key == pygame.K_RIGHT:
+                        selected_index = (selected_index + 1) % len(GAMES)
+                    elif event.key == pygame.K_LEFT:
+                        selected_index = (selected_index - 1) % len(GAMES)
+                    elif event.key == pygame.K_DOWN:
+                        new_idx = selected_index + GRID_COLS
+                        if new_idx < len(GAMES):
+                            selected_index = new_idx
+                    elif event.key == pygame.K_UP:
+                        new_idx = selected_index - GRID_COLS
+                        if new_idx >= 0:
+                            selected_index = new_idx
+                    elif event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
+                        now = time.time()
+                        if now - last_launch_time > 1.0:
+                            last_launch_time = now
+                            launch_game(GAMES[selected_index])
+
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:
-                    # Check clicks
-                    start_x = (WIDTH - (GRID_COLS * ITEM_WIDTH)) // 2
-                    start_y = 150
-
-                    for i, game in enumerate(GAMES):
-                        row = i // GRID_COLS
-                        col = i % GRID_COLS
-                        x = start_x + col * ITEM_WIDTH
-                        y = start_y + row * ITEM_HEIGHT
-
-                        rect = pygame.Rect(x, y, ITEM_WIDTH, ITEM_HEIGHT)
+                    for i, rect in enumerate(game_rects):
                         if rect.collidepoint(mx, my):
                             now = time.time()
                             if now - last_launch_time > 1.0:
                                 last_launch_time = now
-                                launch_game(game)
+                                launch_game(GAMES[i])
 
         # Draw
         screen.fill(BG_COLOR)
@@ -173,22 +204,25 @@ def main() -> None:
             center=True,
         )
 
-        # Grid
-        start_x = (WIDTH - (GRID_COLS * ITEM_WIDTH)) // 2
-        start_y = 150
-
         for i, game in enumerate(GAMES):
-            row = i // GRID_COLS
-            col = i % GRID_COLS
-            x = start_x + col * ITEM_WIDTH
-            y = start_y + row * ITEM_HEIGHT
+            rect = game_rects[i]
+            # is_selected is handled by is_highlighted logic below
 
-            # Hover effect
-            rect = pygame.Rect(x + 10, y + 10, ITEM_WIDTH - 20, ITEM_HEIGHT - 20)
-            is_hovered = rect.collidepoint(mx, my)
+            is_highlighted = False
+            if using_keyboard:
+                if i == selected_index:
+                    is_highlighted = True
+            else:
+                if rect.collidepoint(mx, my):
+                    is_highlighted = True
+                    selected_index = i
 
-            bg = HIGHLIGHT_COLOR if is_hovered else (30, 30, 35)
+            bg = HIGHLIGHT_COLOR if is_highlighted else (30, 30, 35)
             pygame.draw.rect(screen, bg, rect, border_radius=15)
+
+            # Position variables needed for icon/text
+            x = rect.x - 10
+            y = rect.y - 10
 
             # Icon
             if "img" in game:
@@ -199,7 +233,7 @@ def main() -> None:
                     screen.blit(game_img, (icon_x, icon_y))
 
             # Name
-            colors = ACCENT_COLOR if is_hovered else TEXT_COLOR
+            colors = ACCENT_COLOR if is_highlighted else TEXT_COLOR
             draw_text(
                 screen,
                 str(game["name"]),
