@@ -99,8 +99,10 @@ class Raycaster:
         size = (self.num_rays, C.SCREEN_HEIGHT)
         self.view_surface = pygame.Surface(size, pygame.SRCALPHA)
 
-        # Optimization: Single reusable surface for vertical strips shading
-        self.shade_surface = pygame.Surface((1, C.SCREEN_HEIGHT), pygame.SRCALPHA)
+        # Optimization: Caches for shading/fog overlays
+        self.shading_surfaces: list[pygame.Surface] = []
+        self.fog_surfaces: list[pygame.Surface] = []
+        self._generate_shading_caches()
 
         # Z-Buffer for occlusion (Euclidean distance)
         self.z_buffer: np.ndarray[Any, np.dtype[Any]] = np.full(
@@ -109,6 +111,27 @@ class Raycaster:
 
         # Precalculate ray angles relative to player angle
         self._update_ray_angles()
+
+    def _generate_shading_caches(self) -> None:
+        """Pre-generate 1-pixel wide surfaces for all alpha levels of shading and fog."""
+        # Height must cover max possible wall height
+        cache_height = C.SCREEN_HEIGHT * 2
+        self.shading_surfaces = []
+        self.fog_surfaces = []
+
+        # Generate shading surfaces (Black with varying alpha)
+        for alpha in range(256):
+            s = pygame.Surface((1, cache_height), pygame.SRCALPHA)
+            s.fill((0, 0, 0, alpha))
+            self.shading_surfaces.append(s)
+
+        # Generate fog surfaces (Fog Color with varying alpha)
+        # Assuming FOG_COLOR is constant during runtime
+        fog_col = C.FOG_COLOR
+        for alpha in range(256):
+            s = pygame.Surface((1, cache_height), pygame.SRCALPHA)
+            s.fill((*fog_col, alpha))
+            self.fog_surfaces.append(s)
 
     def _update_ray_angles(self) -> None:
         """Pre-calculate relative ray angles."""
@@ -413,7 +436,8 @@ class Raycaster:
         # No, because alpha changes per ray.
 
         view_surface = self.view_surface
-        shade_surface = self.shade_surface
+        shading_surfaces = self.shading_surfaces
+        fog_surfaces = self.fog_surfaces
 
         # Loop
         for i in range(self.num_rays):
@@ -453,24 +477,31 @@ class Raycaster:
                             if shade < 1.0:
                                 alpha = int(255 * (1.0 - shade))
                                 if alpha > 0:
-                                    # Use optimized fill + blit with shared surface
-                                    # Only fill the necessary height
-                                    shade_surface.fill((0, 0, 0, alpha), (0, 0, 1, h))
-                                    view_surface.blit(
-                                        shade_surface, (i, top), (0, 0, 1, h)
-                                    )
+                                    # Use cached shading surface
+                                    # Blit handles clipping if h > cache_height (unlikely) or top < 0
+                                    try:
+                                        view_surface.blit(
+                                            shading_surfaces[alpha],
+                                            (i, top),
+                                            (0, 0, 1, h),
+                                        )
+                                    except IndexError:
+                                        pass
 
                             # Fog
                             fog = fog_factors[i]
                             if fog > 0:
                                 fog_alpha = int(255 * fog)
                                 if fog_alpha > 0:
-                                    shade_surface.fill(
-                                        (*C.FOG_COLOR, fog_alpha), (0, 0, 1, h)
-                                    )
-                                    view_surface.blit(
-                                        shade_surface, (i, top), (0, 0, 1, h)
-                                    )
+                                    # Use cached fog surface
+                                    try:
+                                        view_surface.blit(
+                                            fog_surfaces[fog_alpha],
+                                            (i, top),
+                                            (0, 0, 1, h),
+                                        )
+                                    except IndexError:
+                                        pass
 
                         except (pygame.error, ValueError):
                             pass
