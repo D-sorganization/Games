@@ -117,7 +117,7 @@ def main() -> None:
             try:
                 # Use sys.executable to ensure we use the same python interpreter
                 subprocess.Popen(
-                    [sys.executable, str(game["path"])], cwd=str(game["cwd"])
+                    [sys.executable, str(game['path'])], cwd=str(game['cwd'])
                 )
             except Exception as e:
                 print(f"Error launching {game['name']}: {e}")
@@ -136,6 +136,19 @@ def main() -> None:
     last_launch_time = 0.0
     selected_index = -1
     using_keyboard = False
+
+    # Pre-calculate rects for consistent hit testing
+    game_rects = []
+    start_x = (WIDTH - (GRID_COLS * ITEM_WIDTH)) // 2
+    start_y = 150
+    for i in range(len(GAMES)):
+        row = i // GRID_COLS
+        col = i % GRID_COLS
+        x = start_x + col * ITEM_WIDTH
+        y = start_y + row * ITEM_HEIGHT
+        game_rects.append(
+            pygame.Rect(x + 10, y + 10, ITEM_WIDTH - 20, ITEM_HEIGHT - 20)
+        )
 
     while running:
         mx, my = pygame.mouse.get_pos()
@@ -171,22 +184,12 @@ def main() -> None:
 
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:
-                    # Check clicks
-                    start_x = (WIDTH - (GRID_COLS * ITEM_WIDTH)) // 2
-                    start_y = 150
-
-                    for i, game in enumerate(GAMES):
-                        row = i // GRID_COLS
-                        col = i % GRID_COLS
-                        x = start_x + col * ITEM_WIDTH
-                        y = start_y + row * ITEM_HEIGHT
-
-                        rect = pygame.Rect(x, y, ITEM_WIDTH, ITEM_HEIGHT)
+                    for i, rect in enumerate(game_rects):
                         if rect.collidepoint(mx, my):
                             now = time.time()
                             if now - last_launch_time > 1.0:
                                 last_launch_time = now
-                                launch_game(game)
+                                launch_game(GAMES[i])
 
         # Draw
         screen.fill(BG_COLOR)
@@ -201,18 +204,9 @@ def main() -> None:
             center=True,
         )
 
-        # Grid
-        start_x = (WIDTH - (GRID_COLS * ITEM_WIDTH)) // 2
-        start_y = 150
-
         for i, game in enumerate(GAMES):
-            row = i // GRID_COLS
-            col = i % GRID_COLS
-            x = start_x + col * ITEM_WIDTH
-            y = start_y + row * ITEM_HEIGHT
-
-            # Hover effect
-            rect = pygame.Rect(x + 10, y + 10, ITEM_WIDTH - 20, ITEM_HEIGHT - 20)
+            rect = game_rects[i]
+            is_selected = (i == selected_index)
 
             is_highlighted = False
             if using_keyboard:
@@ -225,6 +219,10 @@ def main() -> None:
 
             bg = HIGHLIGHT_COLOR if is_highlighted else (30, 30, 35)
             pygame.draw.rect(screen, bg, rect, border_radius=15)
+
+            # Position variables needed for icon/text
+            x = rect.x - 10
+            y = rect.y - 10
 
             # Icon
             if "img" in game:
