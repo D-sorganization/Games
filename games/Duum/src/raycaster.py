@@ -12,6 +12,7 @@ from . import constants as C  # noqa: N812
 from .bot import Bot
 from .bot_renderer import BotRenderer
 from .projectile import Projectile
+from .texture_generator import TextureGenerator
 from .utils import cast_ray_dda
 
 # Sprite Rendering thresholds
@@ -25,7 +26,7 @@ if TYPE_CHECKING:
 
 
 class Raycaster:
-    """Raycasting engine for 3D rendering (Optimized with NumPy)"""
+    """Raycasting engine for 3D rendering"""
 
     VISUAL_SCALE = 2.2
 
@@ -42,22 +43,34 @@ class Raycaster:
         # Cache for theme
         self._cached_level: int = -1
         self._cached_wall_colors: dict[int, tuple[int, int, int]] = {}
-        self._cached_color_lut: np.ndarray[Any, Any] | None = None
 
         # Pre-rendered background surface (Sky/Floor)
         self._background_surface: pygame.Surface | None = None
         self._cached_background_theme_idx: int = -1
 
-        # Texture mapping (Duum doesn't have TextureGenerator yet)
-        # For now, we stick to color-based rendering but keep the structure compatible
-        self.use_textures = False
-        self.textures: dict[str, pygame.Surface] = {}
+        # Texture mapping (Enable textures for Duum)
+        self.use_textures = True
+        self.textures = TextureGenerator.generate_textures()
+
+        # Map wall types to texture names
+        self.texture_map = {1: "stone", 2: "brick", 3: "metal", 4: "tech", 5: "secret"}
+
+        # Pre-cache texture strips for performance
         self.texture_strips: dict[str, list[pygame.Surface]] = {}
-        self.texture_map: dict[int, str] = {}
+        for name, tex in self.textures.items():
+            w = tex.get_width()
+            h = tex.get_height()
+            strips = []
+            for x in range(w):
+                strips.append(tex.subsurface((x, 0, 1, h)))
+            self.texture_strips[name] = strips
+
+        # Initialize strip cache
         self._strip_cache: dict[tuple[str, int, int], pygame.Surface] = {}
 
         # Pre-generate stars
         self.stars = []
+
         for _ in range(100):
             self.stars.append(
                 (
@@ -86,8 +99,10 @@ class Raycaster:
         size = (self.num_rays, C.SCREEN_HEIGHT)
         self.view_surface = pygame.Surface(size, pygame.SRCALPHA)
 
-        # Optimization: Single reusable surface for vertical strips shading
-        self.shade_surface = pygame.Surface((1, C.SCREEN_HEIGHT), pygame.SRCALPHA)
+        # Optimization: Caches for shading/fog overlays
+        self.shading_surfaces: list[pygame.Surface] = []
+        self.fog_surfaces: list[pygame.Surface] = []
+        self._generate_shading_caches()
 
         # Z-Buffer for occlusion (Euclidean distance)
         self.z_buffer: np.ndarray[Any, np.dtype[Any]] = np.full(
@@ -96,6 +111,27 @@ class Raycaster:
 
         # Precalculate ray angles relative to player angle
         self._update_ray_angles()
+
+    def _generate_shading_caches(self) -> None:
+        """Pre-generate 1-pixel wide surfaces for shading and fog alpha levels."""
+        # Height must cover max possible wall height
+        cache_height = C.SCREEN_HEIGHT * 2
+        self.shading_surfaces = []
+        self.fog_surfaces = []
+
+        # Generate shading surfaces (Black with varying alpha)
+        for alpha in range(256):
+            s = pygame.Surface((1, cache_height), pygame.SRCALPHA)
+            s.fill((0, 0, 0, alpha))
+            self.shading_surfaces.append(s)
+
+        # Generate fog surfaces (Fog Color with varying alpha)
+        # Assuming FOG_COLOR is constant during runtime
+        fog_col = C.FOG_COLOR
+        for alpha in range(256):
+            s = pygame.Surface((1, cache_height), pygame.SRCALPHA)
+            s.fill((*fog_col, alpha))
+            self.fog_surfaces.append(s)
 
     def _update_ray_angles(self) -> None:
         """Pre-calculate relative ray angles."""
@@ -113,6 +149,28 @@ class Raycaster:
         self.z_buffer = np.full(self.num_rays, float("inf"), dtype=np.float64)
         self._update_ray_angles()
 
+    def update_cache(self) -> None:
+        """Perform cache maintenance once per frame."""
+        # Limit cache size to prevent memory issues
+        if len(self._strip_cache) > 10000:
+            # Remove oldest entries
+            # simple dict iteration is insertion order in modern Python
+            keys_to_remove = list(itertools.islice(self._strip_cache, 1000))
+            for key in keys_to_remove:
+                del self._strip_cache[key]
+
+        if len(self.sprite_cache) > 400:
+            sprite_keys_to_remove = list(itertools.islice(self.sprite_cache, 40))
+            for k in sprite_keys_to_remove:
+                del self.sprite_cache[k]
+
+        if len(self._scaled_sprite_cache) > 200:
+            scaled_keys_to_remove = list(
+                itertools.islice(self._scaled_sprite_cache, 20)
+            )
+            for scaled_k in scaled_keys_to_remove:
+                del self._scaled_sprite_cache[scaled_k]
+
     def _get_cached_strip(
         self, texture_name: str, strip_x: int, height: int
     ) -> pygame.Surface | None:
@@ -127,14 +185,6 @@ class Raycaster:
             return None
         try:
             scaled_strip = pygame.transform.scale(strips[strip_x], (1, height))
-
-            # Limit cache size to prevent memory issues
-            if len(self._strip_cache) > 10000:
-                # Remove oldest entries (simple FIFO)
-                oldest_keys = list(self._strip_cache.keys())[:1000]
-                for key in oldest_keys:
-                    del self._strip_cache[key]
-
             self._strip_cache[cache_key] = scaled_strip
             return scaled_strip
         except (pygame.error, ValueError, IndexError):
@@ -171,6 +221,7 @@ class Raycaster:
         projectiles: list[Projectile] | None = None,
     ) -> None:
         """Render 3D view using vectorized raycasting."""
+        self.update_cache()
         self._update_map_cache_if_needed()
 
         # Clear view surface
@@ -202,10 +253,7 @@ class Raycaster:
 
         # Render Sprites
         current_fov = C.FOV * (C.ZOOM_FOV_MULT if player.zoomed else 1.0)
-
-        # If projectiles list is None, we assume empty or handled elsewhere
         projs = projectiles if projectiles is not None else []
-
         self._render_sprites(player, bots, projs, current_fov / 2, view_offset_y)
 
         # Blit to Screen
@@ -357,11 +405,10 @@ class Raycaster:
         level: int,
         view_offset_y: float,
     ) -> None:
-        """Render walls using vectorized operations and surfarray."""
+        """Render walls using computed arrays."""
         # Theme Setup
         if hasattr(self, "_cached_level") and self._cached_level == level:
             wall_colors = self._cached_wall_colors
-            lut = self._cached_color_lut
         else:
             theme_idx = (level - 1) % len(C.LEVEL_THEMES)
             theme = C.LEVEL_THEMES[theme_idx]
@@ -369,117 +416,146 @@ class Raycaster:
             self._cached_level = level
             self._cached_wall_colors = wall_colors
 
-            # Create Lookup Table (LUT) for colors
-            # Find max wall type for LUT size
-            max_type = max(wall_colors.keys()) if wall_colors else 1
-            # Ensure LUT is large enough for potential random map values if any
-            lut_size = max(max_type + 1, 10)
-            lut = np.zeros((lut_size, 3), dtype=np.float32)
-
-            # Fill LUT
-            for t, c in wall_colors.items():
-                if t < lut_size:
-                    lut[t] = c
-
-            self._cached_color_lut = lut
-
-        if lut is None:
-            # Fallback (should normally be set above)
-            lut = np.zeros((10, 3), dtype=np.float32)
-
         # Fisheye correction
         corrected_dists = distances * np.cos(player.angle - ray_angles)
         safe_dists = np.maximum(0.01, corrected_dists)
 
         # Calculate heights
-        wall_heights = np.minimum(C.SCREEN_HEIGHT * 2, (C.SCREEN_HEIGHT / safe_dists))
+        wall_heights = np.minimum(C.SCREEN_HEIGHT * 4, (C.SCREEN_HEIGHT / safe_dists))
         wall_tops = (
             (C.SCREEN_HEIGHT - wall_heights) // 2 + player.pitch + view_offset_y
         ).astype(np.int32)
-        wall_bottoms = wall_tops + wall_heights.astype(np.int32)
-
-        # Clip wall types to LUT size to prevent index error
-        lut_len = len(lut)
-        clipped_wall_types = np.clip(wall_types, 0, lut_len - 1)
-
-        # Base Colors from LUT
-        # Shape: (num_rays, 3)
-        base_colors = lut[clipped_wall_types]
+        wall_heights_int = wall_heights.astype(np.int32)
 
         # Shading
-        shades = np.maximum(0.2, 1.0 - distances / 50.0)[:, np.newaxis]
+        shades = np.maximum(0.2, 1.0 - distances / 50.0)
 
         # Fog
         fog_factors = np.clip(
             (distances - C.MAX_DEPTH * C.FOG_START) / (C.MAX_DEPTH * (1 - C.FOG_START)),
             0.0,
             1.0,
-        )[:, np.newaxis]
-
-        fog_color_arr = np.array(C.FOG_COLOR, dtype=np.float32)
-
-        # Calculate Final Colors per Ray (Vectorized mixing)
-        # Apply shade
-        shaded_colors = base_colors * shades
-
-        # Apply fog
-        final_colors_float = (
-            shaded_colors * (1.0 - fog_factors) + fog_color_arr * fog_factors
         )
 
-        # Clip and Cast
-        final_colors = np.clip(final_colors_float, 0, 255).astype(np.uint8)
+        use_textures = self.use_textures and len(self.textures) > 0
 
-        # --- Pixel Filling using Surfarray ---
+        # Pre-fetch texture strips
+        # Map integer wall types to texture strip lists
+        wall_strips = {}
+        for wt in wall_colors.keys():
+            tname = self.texture_map.get(wt, "brick")
+            if tname in self.texture_strips:
+                wall_strips[wt] = self.texture_strips[tname]
 
-        # Lock and get array reference
-        # view_surface is (num_rays, HEIGHT)
-        # pixels3d is (num_rays, HEIGHT, 3)
-        pixels = pygame.surfarray.pixels3d(self.view_surface)
-        pixels_alpha = pygame.surfarray.pixels_alpha(self.view_surface)
+        view_surface = self.view_surface
+        shading_surfaces = self.shading_surfaces
+        fog_surfaces = self.fog_surfaces
 
-        height = self.view_surface.get_height()
+        # Batched Blit List
+        # Batched Blit List
+        blits_sequence: list[
+            tuple[pygame.Surface, tuple[int, int]]
+            | tuple[pygame.Surface, tuple[int, int], tuple[int, int, int, int]]
+        ] = []
 
-        # We need a Y coordinate grid: (1, HEIGHT)
-        y_coords = np.arange(height)[np.newaxis, :]
+        # Loop
+        for i in range(self.num_rays):
+            dist = distances[i]
+            if dist >= C.MAX_DEPTH:
+                continue
 
-        # Render Mask: Only draw rays that hit something and are within range
-        render_mask = (distances < C.MAX_DEPTH) & (wall_types > 0)
+            wt = wall_types[i]
+            if wt == 0:
+                continue
 
-        # We can process valid rays only, or mask later.
-        # Since num_rays is ~width (e.g. 600-1200), full broadcasting is ~1M elements.
-        # This is fast in NumPy.
+            h = wall_heights_int[i]
+            top = wall_tops[i]
 
-        # Broadcast tops and bottoms to (num_rays, 1)
-        tops_b = wall_tops[:, np.newaxis]
-        bottoms_b = wall_bottoms[:, np.newaxis]
+            # Texture rendering
+            if use_textures and wt in wall_strips:
+                strips = wall_strips[wt]
+                tex_w = len(strips)
 
-        # Create geometric mask: (num_rays, HEIGHT)
-        # y >= top AND y < bottom
-        geo_mask = (y_coords >= tops_b) & (y_coords < bottoms_b)
+                # Calculate texture X
+                tex_x = int(wall_x_hits[i] * tex_w)
+                tex_x = int(np.clip(tex_x, 0, tex_w - 1))
 
-        # Combine with render_mask (broadcasted)
-        # render_mask is (num_rays,) -> (num_rays, 1)
-        final_mask = geo_mask & render_mask[:, np.newaxis]
+                # Only render if height is reasonable
+                if h < 8000:
+                    tname = self.texture_map.get(wt, "brick")
+                    # Ensure height is int for cache hit
+                    scaled_strip = self._get_cached_strip(tname, tex_x, int(h))
 
-        if np.any(final_mask):
-            # Apply colors
-            # final_colors is (num_rays, 3) -> broadcast to (num_rays, 1, 3)
-            # -> broadcast to mask
-            # Using broadcast_to to avoid allocating large array if possible,
-            # but for assignment we need matching shape on RHS or broadcastable.
+                    if scaled_strip:
+                        blits_sequence.append((scaled_strip, (i, top)))
 
-            expanded_colors = np.broadcast_to(
-                final_colors[:, np.newaxis, :], (self.num_rays, height, 3)
-            )
-            pixels[final_mask] = expanded_colors[final_mask]
+                        # Shading (Darken)
+                        shade = shades[i]
+                        if shade < 1.0:
+                            alpha = int(255 * (1.0 - shade))
+                            if alpha > 0:
+                                try:
+                                    blits_sequence.append(
+                                        (
+                                            shading_surfaces[alpha],
+                                            (i, top),
+                                            (0, 0, 1, h),
+                                        )
+                                    )
+                                except IndexError:
+                                    pass
 
-            # Set Alpha to Opaque (255)
-            pixels_alpha[final_mask] = 255
+                        # Fog
+                        fog = fog_factors[i]
+                        if fog > 0:
+                            fog_alpha = int(255 * fog)
+                            if fog_alpha > 0:
+                                try:
+                                    blits_sequence.append(
+                                        (
+                                            fog_surfaces[fog_alpha],
+                                            (i, top),
+                                            (0, 0, 1, h),
+                                        )
+                                    )
+                                except IndexError:
+                                    pass
+                    else:
+                        # Fallback if cache failed
+                        col = wall_colors.get(wt, C.GRAY)
+                        pygame.draw.rect(view_surface, col, (i, top, 1, h))
+                else:
+                    # Solid color fallback for massive closeness
+                    col = wall_colors.get(wt, C.GRAY)
+                    shade = shades[i]
+                    col = (
+                        int(col[0] * shade),
+                        int(col[1] * shade),
+                        int(col[2] * shade),
+                    )
+                    pygame.draw.rect(view_surface, col, (i, top, 1, h))
+            else:
+                # Solid Color Fallback
+                col = wall_colors.get(wt, C.GRAY)
+                shade = shades[i]
+                fog = fog_factors[i]
 
-        # Unlock surface
-        del pixels
-        del pixels_alpha
+                # Mix color
+                r = col[0] * shade
+                g = col[1] * shade
+                b = col[2] * shade
+
+                fr = r * (1 - fog) + C.FOG_COLOR[0] * fog
+                fg = g * (1 - fog) + C.FOG_COLOR[1] * fog
+                fb = b * (1 - fog) + C.FOG_COLOR[2] * fog
+
+                final_col = (int(fr), int(fg), int(fb))
+
+                pygame.draw.rect(view_surface, final_col, (i, top, 1, h))
+
+        # Perform batched blits
+        if blits_sequence:
+            view_surface.blits(blits_sequence, doreturn=False)
 
     def _render_sprites(
         self,
@@ -600,6 +676,9 @@ class Raycaster:
             f"{bot.dead}_{int(bot.death_timer // 5)}_{cached_size}_{shade_level}"
         )
 
+        if bot.frozen:
+            cache_key += "_frozen"
+
         if cache_key in self.sprite_cache:
             sprite_surface = self.sprite_cache[cache_key]
         else:
@@ -619,6 +698,10 @@ class Raycaster:
 
             if shade_color != (255, 255, 255):
                 sprite_surface.fill(shade_color, special_flags=pygame.BLEND_MULT)
+
+            if bot.frozen:
+                # Apply blue tint for frozen effect
+                sprite_surface.fill((150, 200, 255), special_flags=pygame.BLEND_MULT)
 
             if len(self.sprite_cache) > 400:
                 # Evict oldest efficiently
@@ -699,10 +782,9 @@ class Raycaster:
                     if len(self._scaled_sprite_cache) > 200:
                         # Evict oldest (simple dict iteration is insertion order)
                         # We remove a chunk to avoid frequent maintenance
-                        # Converting to list is cheap for 200 items
-                        scaled_keys_to_remove = list(self._scaled_sprite_cache.keys())[
-                            :20
-                        ]
+                        scaled_keys_to_remove = list(
+                            itertools.islice(self._scaled_sprite_cache, 20)
+                        )
                         for scaled_k in scaled_keys_to_remove:
                             del self._scaled_sprite_cache[scaled_k]
 
@@ -844,8 +926,6 @@ class Raycaster:
                         2,
                     )
                 elif proj.weapon_type == "flamethrower":
-                    import random
-
                     # Dynamic flame effect
                     flame_color = (
                         255,
@@ -876,6 +956,20 @@ class Raycaster:
                     pygame.draw.circle(
                         self.view_surface,
                         (100, 100, 255),
+                        rect.center,
+                        rect.width // 3,
+                    )
+                elif proj.weapon_type == "freezer":
+                    # Freezer projectile: Cyan energy ball
+                    pygame.draw.circle(
+                        self.view_surface,
+                        (200, 255, 255),
+                        rect.center,
+                        rect.width // 2,
+                    )
+                    pygame.draw.circle(
+                        self.view_surface,
+                        (150, 200, 255),
                         rect.center,
                         rect.width // 3,
                     )

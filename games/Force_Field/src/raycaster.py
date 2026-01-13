@@ -149,6 +149,28 @@ class Raycaster:
         self.z_buffer = np.full(self.num_rays, float("inf"), dtype=np.float64)
         self._update_ray_angles()
 
+    def update_cache(self) -> None:
+        """Perform cache maintenance once per frame."""
+        # Limit cache size to prevent memory issues
+        if len(self._strip_cache) > 10000:
+            # Remove oldest entries
+            # simple dict iteration is insertion order in modern Python
+            keys_to_remove = list(itertools.islice(self._strip_cache, 1000))
+            for key in keys_to_remove:
+                del self._strip_cache[key]
+
+        if len(self.sprite_cache) > 400:
+            sprite_keys_to_remove = list(itertools.islice(self.sprite_cache, 40))
+            for k in sprite_keys_to_remove:
+                del self.sprite_cache[k]
+
+        if len(self._scaled_sprite_cache) > 200:
+            scaled_keys_to_remove = list(
+                itertools.islice(self._scaled_sprite_cache, 20)
+            )
+            for scaled_k in scaled_keys_to_remove:
+                del self._scaled_sprite_cache[scaled_k]
+
     def _get_cached_strip(
         self, texture_name: str, strip_x: int, height: int
     ) -> pygame.Surface | None:
@@ -163,15 +185,6 @@ class Raycaster:
             return None
         try:
             scaled_strip = pygame.transform.scale(strips[strip_x], (1, height))
-
-            # Limit cache size to prevent memory issues
-            if len(self._strip_cache) > 10000:
-                # Remove oldest entries (simple FIFO) using islice for O(k) efficiency
-                # dicts preserve insertion order in Python 3.7+
-                keys_to_remove = list(itertools.islice(self._strip_cache, 1000))
-                for key in keys_to_remove:
-                    del self._strip_cache[key]
-
             self._strip_cache[cache_key] = scaled_strip
             return scaled_strip
         except (pygame.error, ValueError, IndexError):
@@ -208,6 +221,7 @@ class Raycaster:
         view_offset_y: float = 0.0,
     ) -> None:
         """Render 3D view using vectorized raycasting."""
+        self.update_cache()
         self._update_map_cache_if_needed()
 
         # Clear view surface
@@ -406,7 +420,7 @@ class Raycaster:
         safe_dists = np.maximum(0.01, corrected_dists)
 
         # Calculate heights
-        wall_heights = np.minimum(C.SCREEN_HEIGHT * 2, (C.SCREEN_HEIGHT / safe_dists))
+        wall_heights = np.minimum(C.SCREEN_HEIGHT * 4, (C.SCREEN_HEIGHT / safe_dists))
         wall_tops = (
             (C.SCREEN_HEIGHT - wall_heights) // 2 + player.pitch + view_offset_y
         ).astype(np.int32)
@@ -432,12 +446,16 @@ class Raycaster:
             if tname in self.texture_strips:
                 wall_strips[wt] = self.texture_strips[tname]
 
-        # Optimization: Pre-allocate fill color for shade surface if possible?
-        # No, because alpha changes per ray.
-
         view_surface = self.view_surface
         shading_surfaces = self.shading_surfaces
         fog_surfaces = self.fog_surfaces
+
+        # Batched Blit List
+        # Batched Blit List
+        blits_sequence: list[
+            tuple[pygame.Surface, tuple[int, int]]
+            | tuple[pygame.Surface, tuple[int, int], tuple[int, int, int, int]]
+        ] = []
 
         # Loop
         for i in range(self.num_rays):
@@ -468,43 +486,39 @@ class Raycaster:
                     scaled_strip = self._get_cached_strip(tname, tex_x, int(h))
 
                     if scaled_strip:
-                        try:
-                            # Blit texture
-                            view_surface.blit(scaled_strip, (i, top))
+                        blits_sequence.append((scaled_strip, (i, top)))
 
-                            # Shading (Darken)
-                            shade = shades[i]
-                            if shade < 1.0:
-                                alpha = int(255 * (1.0 - shade))
-                                if alpha > 0:
-                                    # Use cached shading surface
-                                    # Blit handles clipping if h > cache_height/top < 0
-                                    try:
-                                        view_surface.blit(
+                        # Shading (Darken)
+                        shade = shades[i]
+                        if shade < 1.0:
+                            alpha = int(255 * (1.0 - shade))
+                            if alpha > 0:
+                                try:
+                                    blits_sequence.append(
+                                        (
                                             shading_surfaces[alpha],
                                             (i, top),
                                             (0, 0, 1, h),
                                         )
-                                    except IndexError:
-                                        pass
+                                    )
+                                except IndexError:
+                                    pass
 
-                            # Fog
-                            fog = fog_factors[i]
-                            if fog > 0:
-                                fog_alpha = int(255 * fog)
-                                if fog_alpha > 0:
-                                    # Use cached fog surface
-                                    try:
-                                        view_surface.blit(
+                        # Fog
+                        fog = fog_factors[i]
+                        if fog > 0:
+                            fog_alpha = int(255 * fog)
+                            if fog_alpha > 0:
+                                try:
+                                    blits_sequence.append(
+                                        (
                                             fog_surfaces[fog_alpha],
                                             (i, top),
                                             (0, 0, 1, h),
                                         )
-                                    except IndexError:
-                                        pass
-
-                        except (pygame.error, ValueError):
-                            pass
+                                    )
+                                except IndexError:
+                                    pass
                     else:
                         # Fallback if cache failed
                         col = wall_colors.get(wt, C.GRAY)
@@ -537,6 +551,10 @@ class Raycaster:
                 final_col = (int(fr), int(fg), int(fb))
 
                 pygame.draw.rect(view_surface, final_col, (i, top, 1, h))
+
+        # Perform batched blits
+        if blits_sequence:
+            view_surface.blits(blits_sequence, doreturn=False)
 
     def _render_sprites(
         self,
