@@ -177,7 +177,9 @@ def main() -> None:
                     using_keyboard = False
             elif event.type == pygame.KEYDOWN:
                 using_keyboard = True
-                if selected_index == -1:
+                if event.key == pygame.K_ESCAPE:
+                    running = False
+                elif selected_index == -1:
                     selected_index = 0
                 else:
                     if event.key == pygame.K_RIGHT:
@@ -264,11 +266,11 @@ def main() -> None:
                 center=True,
             )
 
-        # Helper Text
+        # Helper Footer
         draw_text(
             screen,
-            "Use Arrow Keys to Select • Enter to Start",
-            helper_font,
+            "Use Arrow Keys to Select • Enter to Start • Esc to Quit",
+            font,
             (150, 150, 150),
             (WIDTH // 2, HEIGHT - 30),
             center=True,
