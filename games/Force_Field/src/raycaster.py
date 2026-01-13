@@ -134,8 +134,17 @@ class Raycaster:
             self.fog_surfaces.append(s)
 
     def _update_ray_angles(self) -> None:
-        """Pre-calculate relative ray angles."""
+        """Pre-calculate relative ray angles and trig tables."""
+        # Normal FOV
         self.deltas = np.linspace(-C.HALF_FOV, C.HALF_FOV, self.num_rays)
+        self.cos_deltas = np.cos(self.deltas)
+        self.sin_deltas = np.sin(self.deltas)
+
+        # Zoomed FOV
+        zoomed_fov = C.FOV * C.ZOOM_FOV_MULT
+        self.deltas_zoomed = np.linspace(-zoomed_fov / 2, zoomed_fov / 2, self.num_rays)
+        self.cos_deltas_zoomed = np.cos(self.deltas_zoomed)
+        self.sin_deltas_zoomed = np.sin(self.deltas_zoomed)
 
     def set_render_scale(self, scale: int) -> None:
         """Update render scale and related buffers."""
@@ -275,13 +284,23 @@ class Raycaster:
         np.ndarray[Any, np.dtype[Any]],
     ]:
         """Perform vectorized raycasting math."""
-        current_fov = C.FOV * (C.ZOOM_FOV_MULT if player.zoomed else 1.0)
-        ray_angles = player.angle + np.linspace(
-            -current_fov / 2, current_fov / 2, self.num_rays
-        )
+        # Select cached tables based on zoom state
+        if player.zoomed:
+            cos_deltas = self.cos_deltas_zoomed
+            sin_deltas = self.sin_deltas_zoomed
+        else:
+            cos_deltas = self.cos_deltas
+            sin_deltas = self.sin_deltas
 
-        ray_dir_x = np.cos(ray_angles)
-        ray_dir_y = np.sin(ray_angles)
+        # Use angle sum identities to calculate ray direction vectors
+        # ray_angle = player_angle + delta
+        # cos(a+b) = cos(a)cos(b) - sin(a)sin(b)
+        # sin(a+b) = sin(a)cos(b) + cos(a)sin(b)
+        p_cos = math.cos(player.angle)
+        p_sin = math.sin(player.angle)
+
+        ray_dir_x = p_cos * cos_deltas - p_sin * sin_deltas
+        ray_dir_y = p_sin * cos_deltas + p_cos * sin_deltas
 
         # Avoid division by zero
         ray_dir_x[ray_dir_x == 0] = 1e-30
@@ -381,7 +400,7 @@ class Raycaster:
         )
         wall_x_hit -= np.floor(wall_x_hit)
 
-        return perp_wall_dist, wall_types, wall_x_hit, side, ray_angles
+        return perp_wall_dist, wall_types, wall_x_hit, side, cos_deltas
 
     def _blit_view_to_screen(self, screen: pygame.Surface) -> None:
         """Blit the rendered view to the main screen."""
@@ -400,7 +419,7 @@ class Raycaster:
         wall_x_hits: np.ndarray[Any, Any],
         sides: np.ndarray[Any, Any],
         player: Player,
-        ray_angles: np.ndarray[Any, Any],
+        cos_deltas: np.ndarray[Any, Any],
         level: int,
         view_offset_y: float,
     ) -> None:
@@ -416,7 +435,7 @@ class Raycaster:
             self._cached_wall_colors = wall_colors
 
         # Fisheye correction
-        corrected_dists = distances * np.cos(player.angle - ray_angles)
+        corrected_dists = distances * cos_deltas
         safe_dists = np.maximum(0.01, corrected_dists)
 
         # Calculate heights
