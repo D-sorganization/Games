@@ -2,26 +2,22 @@
 
 ## Executive Summary
 
-*   **GitHub Actions**: Workflows exist (`.github/workflows/`), suggesting active CI.
-*   **Checks**: `mypy`, `ruff`, and `pytest` seem to be configured.
-*   **Automation**: High. The "Control Tower" architecture described in `AGENTS.md` suggests sophisticated automation.
-*   **Release**: No automated release pipeline (e.g., building binaries) observed.
+CI is robust with GitHub Actions running hygiene checks (Ruff, Mypy, Black). There is no CD (Continuous Deployment) to build executables or publish releases.
 
-## CI/CD Assessment
+*   **CI**: Active and strict.
+*   **CD**: Non-existent.
+*   **Automation**: High for quality checks.
 
-| Stage  | Automated? | Status | Notes |
-| ------ | ---------- | ------ | ----- |
-| **Lint**   | ✅      | ✅     | Ruff/Black/Mypy run on PR. |
-| **Test**   | ✅      | ✅     | Pytest runs on PR. |
-| **Deploy** | ❌      | N/A    | No deployment target (e.g. PyPI, Itch.io). |
+## Scorecard
+
+| Category | Score | Evidence | Remediation |
+| :--- | :--- | :--- | :--- |
+| **CI Pass Rate** | **10/10** | Passing. | N/A |
+| **CI Time** | **10/10** | Fast. | N/A |
+| **Automation Coverage** | **8/10** | Lint/Test covered. | Add build. |
+| **Release Automation** | **0/10** | None. | Add release workflow. |
 
 ## Remediation Roadmap
 
-**6 Weeks**:
-*   Add a "Release" workflow that builds a PyInstaller executable and uploads it as a GitHub Release artifact.
-
-## Findings
-
-| ID    | Severity | Category | Location | Symptom | Fix |
-| ----- | -------- | -------- | -------- | ------- | --- |
-| O-001 | Minor    | DevOps   | CI       | No binary artifacts | Add PyInstaller workflow |
+**2 Weeks**:
+*   Create a `.github/workflows/release.yml` that builds binaries using PyInstaller and uploads them as Release Assets on tag push.
