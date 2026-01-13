@@ -134,7 +134,7 @@ class Raycaster:
             self.fog_surfaces.append(s)
 
     def _update_ray_angles(self) -> None:
-        """Pre-calculate relative ray angles and trigonometric tables."""
+        """Pre-calculate relative ray angles."""
         # Normal FOV
         self.deltas = np.linspace(-C.HALF_FOV, C.HALF_FOV, self.num_rays)
         self.cos_deltas = np.cos(self.deltas)
@@ -242,7 +242,7 @@ class Raycaster:
             wall_types,
             wall_x_hit,
             side,
-            fisheye_correction,
+            fisheye_factors,
         ) = self._calculate_rays(player)
 
         # Update Z Buffer
@@ -255,7 +255,7 @@ class Raycaster:
             wall_x_hit,
             side,
             player,
-            fisheye_correction,
+            fisheye_factors,
             level,
             view_offset_y,
         )
@@ -286,7 +286,7 @@ class Raycaster:
         np.ndarray[Any, np.dtype[Any]],
     ]:
         """Perform vectorized raycasting math."""
-        # Use pre-calculated tables
+        # Select pre-calculated tables
         if player.zoomed:
             cos_deltas = self.cos_deltas_zoomed
             sin_deltas = self.sin_deltas_zoomed
@@ -294,7 +294,9 @@ class Raycaster:
             cos_deltas = self.cos_deltas
             sin_deltas = self.sin_deltas
 
-        # Angle sum identity for ray direction
+        # Angle sum identity optimization:
+        # cos(a + b) = cos(a)cos(b) - sin(a)sin(b)
+        # sin(a + b) = sin(a)cos(b) + cos(a)sin(b)
         p_cos = math.cos(player.angle)
         p_sin = math.sin(player.angle)
 
@@ -399,7 +401,7 @@ class Raycaster:
         )
         wall_x_hit -= np.floor(wall_x_hit)
 
-        # Return cos_deltas (fisheye correction) instead of ray_angles
+        # Return cos_deltas instead of ray_angles for fisheye correction
         return perp_wall_dist, wall_types, wall_x_hit, side, cos_deltas
 
     def _blit_view_to_screen(self, screen: pygame.Surface) -> None:
@@ -419,7 +421,7 @@ class Raycaster:
         wall_x_hits: np.ndarray[Any, Any],
         sides: np.ndarray[Any, Any],
         player: Player,
-        fisheye_correction: np.ndarray[Any, Any],
+        fisheye_factors: np.ndarray[Any, Any],
         level: int,
         view_offset_y: float,
     ) -> None:
@@ -435,7 +437,9 @@ class Raycaster:
             self._cached_wall_colors = wall_colors
 
         # Fisheye correction
-        corrected_dists = distances * fisheye_correction
+        # corrected_dists = distances * np.cos(player.angle - ray_angles)
+        # fisheye_factors already contains cos(deltas) which equals cos(player.angle - ray_angles)
+        corrected_dists = distances * fisheye_factors
         safe_dists = np.maximum(0.01, corrected_dists)
 
         # Calculate heights
