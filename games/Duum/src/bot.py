@@ -79,6 +79,7 @@ class Bot:
         self.dead = False
         self.death_timer = 0
         self.disintegrate_timer = 0
+        self.frozen = False  # Status effect
         self.removed = False  # When fully disintegrated
 
     def update(

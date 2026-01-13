@@ -160,8 +160,8 @@ class Raycaster:
                 del self._strip_cache[key]
 
         if len(self.sprite_cache) > 400:
-            keys_to_remove = list(itertools.islice(self.sprite_cache, 40))
-            for k in keys_to_remove:
+            sprite_keys_to_remove = list(itertools.islice(self.sprite_cache, 40))
+            for k in sprite_keys_to_remove:
                 del self.sprite_cache[k]
 
         if len(self._scaled_sprite_cache) > 200:
@@ -452,7 +452,11 @@ class Raycaster:
         fog_surfaces = self.fog_surfaces
 
         # Batched Blit List
-        blits_sequence = []
+        # Batched Blit List
+        blits_sequence: list[
+            tuple[pygame.Surface, tuple[int, int]]
+            | tuple[pygame.Surface, tuple[int, int], tuple[int, int, int, int]]
+        ] = []
 
         # Loop
         for i in range(self.num_rays):
