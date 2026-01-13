@@ -20,6 +20,7 @@ logger = logging.getLogger("GameLauncher")
 WIDTH, HEIGHT = 1000, 700
 BG_COLOR = (20, 20, 25)
 TEXT_COLOR = (240, 240, 240)
+TEXT_MUTED = (150, 150, 150)
 HIGHLIGHT_COLOR = (60, 60, 80)
 ACCENT_COLOR = (0, 200, 255)
 ICON_SIZE = (128, 128)
@@ -95,6 +96,7 @@ def main() -> None:
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
     font = pygame.font.SysFont("Segoe UI", 24)
     title_font = pygame.font.SysFont("Segoe UI", 48, bold=True)
+    helper_font = pygame.font.SysFont("Segoe UI", 18)
 
     # Load Icons
     for game in GAMES:
@@ -176,7 +178,9 @@ def main() -> None:
                     using_keyboard = False
             elif event.type == pygame.KEYDOWN:
                 using_keyboard = True
-                if selected_index == -1:
+                if event.key == pygame.K_ESCAPE:
+                    running = False
+                elif selected_index == -1:
                     selected_index = 0
                 else:
                     if event.key == pygame.K_RIGHT:
@@ -219,6 +223,16 @@ def main() -> None:
             center=True,
         )
 
+        # Helper Text
+        draw_text(
+            screen,
+            "Use Arrow Keys to Select • Enter to Start • Esc to Quit",
+            helper_font,
+            TEXT_MUTED,
+            (WIDTH // 2, HEIGHT - 30),
+            center=True,
+        )
+
         for i, game in enumerate(GAMES):
             rect = game_rects[i]
             # is_selected is handled by is_highlighted logic below
@@ -234,6 +248,9 @@ def main() -> None:
 
             bg = HIGHLIGHT_COLOR if is_highlighted else (30, 30, 35)
             pygame.draw.rect(screen, bg, rect, border_radius=15)
+
+            if is_highlighted:
+                pygame.draw.rect(screen, ACCENT_COLOR, rect, width=2, border_radius=15)
 
             # Position variables needed for icon/text
             x = rect.x - 10
@@ -257,6 +274,16 @@ def main() -> None:
                 (x + ITEM_WIDTH // 2, y + ICON_SIZE[1] + 30),
                 center=True,
             )
+
+        # Helper Footer
+        draw_text(
+            screen,
+            "Use Arrow Keys to Select • Enter to Start • Esc to Quit",
+            font,
+            (150, 150, 150),
+            (WIDTH // 2, HEIGHT - 30),
+            center=True,
+        )
 
         pygame.display.flip()
         clock.tick(60)
