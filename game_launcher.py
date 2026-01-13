@@ -236,9 +236,7 @@ def main() -> None:
             pygame.draw.rect(screen, bg, rect, border_radius=15)
 
             if is_highlighted:
-                pygame.draw.rect(
-                    screen, ACCENT_COLOR, rect, width=3, border_radius=15
-                )
+                pygame.draw.rect(screen, ACCENT_COLOR, rect, width=3, border_radius=15)
 
             # Position variables needed for icon/text
             x = rect.x - 10
@@ -263,12 +261,12 @@ def main() -> None:
                 center=True,
             )
 
-        # Helper Text
+        # Footer Help Text
         draw_text(
             screen,
             "Use Arrow Keys to Select • Enter to Start",
             font,
-            (100, 100, 100),
+            (150, 150, 150),
             (WIDTH // 2, HEIGHT - 40),
             center=True,
         )
