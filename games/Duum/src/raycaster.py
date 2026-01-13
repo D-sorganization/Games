@@ -46,6 +46,7 @@ class Raycaster:
 
         # Pre-rendered background surface (Sky/Floor)
         self._background_surface: pygame.Surface | None = None
+        self._scaled_background_surface: pygame.Surface | None = None
         self._cached_background_theme_idx: int = -1
 
         # Texture mapping (Enable textures for Duum)
@@ -1042,6 +1043,11 @@ class Raycaster:
 
             self._background_surface.set_at((0, h + y), (int(r), int(g), int(b)))
 
+        # Cache scaled version (Optimization: Do this once per level load, not per frame)
+        self._scaled_background_surface = pygame.transform.scale(
+            self._background_surface, (C.SCREEN_WIDTH, h * 2)
+        )
+
         self._cached_background_theme_idx = theme_idx
 
     def render_floor_ceiling(
@@ -1064,25 +1070,37 @@ class Raycaster:
 
         horizon = C.SCREEN_HEIGHT // 2 + int(player.pitch + view_offset_y)
 
-        bg = self._background_surface
+        bg = self._scaled_background_surface
+        # Fallback if scaling failed or wasn't generated
+        if bg is None and self._background_surface is not None:
+            self._scaled_background_surface = pygame.transform.scale(
+                self._background_surface, (C.SCREEN_WIDTH, C.SCREEN_HEIGHT * 2)
+            )
+            bg = self._scaled_background_surface
+
         assert bg is not None
 
         # Fill screen with appropriate sections
         # Sky
         if horizon > 0:
-            sky_strip = bg.subsurface((0, 0, 1, C.SCREEN_HEIGHT))
-            scaled_sky = pygame.transform.scale(
-                sky_strip, (C.SCREEN_WIDTH, C.SCREEN_HEIGHT)
+            # Optimized: Use pre-scaled surface
+            # We want the top half (Sky)
+            # Source area is entire top half: (0, 0, W, H)
+            # Dest Y is horizon - H.
+            screen.blit(
+                bg,
+                (0, horizon - C.SCREEN_HEIGHT),
+                (0, 0, C.SCREEN_WIDTH, C.SCREEN_HEIGHT),
             )
-            screen.blit(scaled_sky, (0, horizon - C.SCREEN_HEIGHT))
 
         # Floor
         if horizon < C.SCREEN_HEIGHT:
-            floor_strip = bg.subsurface((0, C.SCREEN_HEIGHT, 1, C.SCREEN_HEIGHT))
-            scaled_floor = pygame.transform.scale(
-                floor_strip, (C.SCREEN_WIDTH, C.SCREEN_HEIGHT)
+            # Optimized: Use pre-scaled surface
+            # We want the bottom half (Floor)
+            # Source area starts at Y=H
+            screen.blit(
+                bg, (0, horizon), (0, C.SCREEN_HEIGHT, C.SCREEN_WIDTH, C.SCREEN_HEIGHT)
             )
-            screen.blit(scaled_floor, (0, horizon))
 
         # Stars
         star_offset = int(player_angle * 200) % C.SCREEN_WIDTH
