@@ -277,9 +277,7 @@ class Raycaster:
             self.grid = self.game_map.grid
             self.np_grid = np.array(self.game_map.grid, dtype=np.int8)
 
-    def _calculate_rays(
-        self, player: Player
-    ) -> tuple[
+    def _calculate_rays(self, player: Player) -> tuple[
         np.ndarray[Any, np.dtype[Any]],
         np.ndarray[Any, np.dtype[Any]],
         np.ndarray[Any, np.dtype[Any]],
@@ -439,7 +437,8 @@ class Raycaster:
 
         # Fisheye correction
         # corrected_dists = distances * np.cos(player.angle - ray_angles)
-        # fisheye_factors already contains cos(deltas) which equals cos(player.angle - ray_angles)
+        # fisheye_factors already contains cos(deltas) which equals
+        # cos(player.angle - ray_angles)
         corrected_dists = distances * fisheye_factors
         safe_dists = np.maximum(0.01, corrected_dists)
 
@@ -1044,7 +1043,8 @@ class Raycaster:
 
             self._background_surface.set_at((0, h + y), (int(r), int(g), int(b)))
 
-        # Cache scaled version (Optimization: Do this once per level load, not per frame)
+        # Cache scaled version
+        # (Optimization: Do this once per level load, not per frame)
         self._scaled_background_surface = pygame.transform.scale(
             self._background_surface, (C.SCREEN_WIDTH, h * 2)
         )
