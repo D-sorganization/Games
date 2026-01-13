@@ -491,7 +491,11 @@ class Raycaster:
                             if alpha > 0:
                                 try:
                                     blits_sequence.append(
-                                        (shading_surfaces[alpha], (i, top), (0, 0, 1, h))
+                                        (
+                                            shading_surfaces[alpha],
+                                            (i, top),
+                                            (0, 0, 1, h),
+                                        )
                                     )
                                 except IndexError:
                                     pass
@@ -503,7 +507,11 @@ class Raycaster:
                             if fog_alpha > 0:
                                 try:
                                     blits_sequence.append(
-                                        (fog_surfaces[fog_alpha], (i, top), (0, 0, 1, h))
+                                        (
+                                            fog_surfaces[fog_alpha],
+                                            (i, top),
+                                            (0, 0, 1, h),
+                                        )
                                     )
                                 except IndexError:
                                     pass
