@@ -1,3 +1,4 @@
+import logging
 import subprocess
 import sys
 import time
@@ -6,6 +7,14 @@ from pathlib import Path
 from typing import Any
 
 import pygame
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[logging.StreamHandler()],
+)
+logger = logging.getLogger("GameLauncher")
 
 # Constants
 WIDTH, HEIGHT = 1000, 700
@@ -70,6 +79,10 @@ GAMES: list[dict[str, Any]] = [
 
 
 def main() -> None:
+    """
+    Main entry point for the Game Launcher.
+    Initializes Pygame, loads assets, and handles the main event loop.
+    """
     pygame.display.init()
     pygame.font.init()
     pygame.display.set_caption("Game Launcher")
@@ -104,6 +117,7 @@ def main() -> None:
         pos: tuple[int, int],
         center: bool = False,
     ) -> None:
+        """Helper to draw text on a surface."""
         t = font.render(text, True, color)
         if center:
             rect = t.get_rect(center=pos)
@@ -112,7 +126,8 @@ def main() -> None:
             surf.blit(t, pos)
 
     def launch_game(game: dict[str, Any]) -> None:
-        print(f"Launching {game['name']}...")
+        """Launches the selected game based on its type configuration."""
+        logger.info(f"Launching {game['name']}...")
         if game["type"] == "python":
             try:
                 # Use sys.executable to ensure we use the same python interpreter
@@ -120,14 +135,14 @@ def main() -> None:
                     [sys.executable, str(game["path"])], cwd=str(game["cwd"])
                 )
             except Exception as e:
-                print(f"Error launching {game['name']}: {e}")
+                logger.error(f"Error launching {game['name']}: {e}")
         elif game["type"] == "module":
             try:
                 subprocess.Popen(
                     [sys.executable, "-m", game["module_name"]], cwd=str(game["cwd"])
                 )
             except Exception as e:
-                print(f"Error launching {game['name']}: {e}")
+                logger.error(f"Error launching {game['name']}: {e}")
         elif game["type"] == "web":
             webbrowser.open(str(game["path"]))
 
