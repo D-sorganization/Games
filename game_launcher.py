@@ -176,7 +176,9 @@ def main() -> None:
                     using_keyboard = False
             elif event.type == pygame.KEYDOWN:
                 using_keyboard = True
-                if selected_index == -1:
+                if event.key == pygame.K_ESCAPE:
+                    running = False
+                elif selected_index == -1:
                     selected_index = 0
                 else:
                     if event.key == pygame.K_RIGHT:
@@ -257,6 +259,16 @@ def main() -> None:
                 (x + ITEM_WIDTH // 2, y + ICON_SIZE[1] + 30),
                 center=True,
             )
+
+        # Helper Footer
+        draw_text(
+            screen,
+            "Use Arrow Keys to Select • Enter to Start • Esc to Quit",
+            font,
+            (150, 150, 150),
+            (WIDTH // 2, HEIGHT - 30),
+            center=True,
+        )
 
         pygame.display.flip()
         clock.tick(60)
