@@ -28,3 +28,7 @@
 ## 2025-05-20 - [Duplicate Text Rendering]
 **Learning:** Drawing text twice at the same position with different fonts (or even same fonts) creates a blurry, unreadable artifact that impacts accessibility, often resulting from copy-paste errors.
 **Action:** Always audit rendering loops for duplicate draw calls, especially for static UI elements.
+
+## 2025-10-24 - [Interactive Cursor Feedback]
+**Learning:** Pygame apps often feel "dead" because they default to the arrow cursor. Switching to `SYSTEM_CURSOR_HAND` on hover significantly improves the perceived responsiveness and web-like familiarity of the interface.
+**Action:** Always map interactive elements to `SYSTEM_CURSOR_HAND` in Pygame GUIs.
