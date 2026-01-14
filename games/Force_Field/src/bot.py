@@ -17,6 +17,36 @@ if TYPE_CHECKING:
 class Bot:
     """Enemy bot with AI"""
 
+    x: float
+    y: float
+    z: float
+    angle: float
+    enemy_type: str
+    type_data: EnemyData
+    health: int
+    max_health: int
+    speed: float
+    alive: bool
+    attack_timer: int
+    level: int
+    walk_animation: float
+    shoot_animation: float
+    last_x: float
+    last_y: float
+    vx: float
+    vy: float
+    mouth_open: bool
+    mouth_timer: int
+    eye_rotation: float
+    drool_offset: float
+    dead: bool
+    death_timer: float
+    disintegrate_timer: float
+    removed: bool
+    pain_timer: int
+    frozen: bool
+    frozen_timer: int
+
     def __init__(
         self,
         x: float,
@@ -34,6 +64,7 @@ class Bot:
         """
         self.x = x
         self.y = y
+        self.z = 0.0
         self.angle: float = 0.0
         if enemy_type:
             self.enemy_type = enemy_type

@@ -9,6 +9,11 @@ from typing import Any
 
 import pygame
 
+from games.shared.config import RaycasterConfig
+
+# Shared components
+from games.shared.raycaster import Raycaster
+
 from . import constants as C  # noqa: N812
 from .bot import Bot
 from .entity_manager import EntityManager
@@ -17,7 +22,6 @@ from .map import Map
 from .particle_system import ParticleSystem
 from .player import Player
 from .projectile import Projectile
-from .raycaster import Raycaster
 from .renderer import GameRenderer
 from .sound import SoundManager
 from .ui_renderer import UIRenderer
@@ -118,6 +122,31 @@ class Game:
         # Input Manager
         self.input_manager = InputManager()
         self.binding_action: str | None = None
+
+        # Raycaster Config
+        self.raycaster_config = RaycasterConfig(
+            SCREEN_WIDTH=C.SCREEN_WIDTH,
+            SCREEN_HEIGHT=C.SCREEN_HEIGHT,
+            FOV=C.FOV,
+            HALF_FOV=C.HALF_FOV,
+            ZOOM_FOV_MULT=C.ZOOM_FOV_MULT,
+            DEFAULT_RENDER_SCALE=C.DEFAULT_RENDER_SCALE,
+            MAX_DEPTH=C.MAX_DEPTH,
+            FOG_START=C.FOG_START,
+            FOG_COLOR=C.FOG_COLOR,
+            LEVEL_THEMES=C.LEVEL_THEMES,
+            WALL_COLORS=C.WALL_COLORS,
+            ENEMY_TYPES=C.ENEMY_TYPES,
+            # Colors
+            DARK_GRAY=C.DARK_GRAY,
+            BLACK=C.BLACK,
+            CYAN=C.CYAN,
+            RED=C.RED,
+            GREEN=C.GREEN,
+            GRAY=C.GRAY,
+            WHITE=C.WHITE,
+            YELLOW=C.YELLOW,
+        )
 
     @property
     def bots(self) -> list[Bot]:
@@ -332,7 +361,7 @@ class Game:
 
         # Create map with selected size
         self.game_map = Map(self.selected_map_size)
-        self.raycaster = Raycaster(self.game_map)
+        self.raycaster = Raycaster(self.game_map, self.raycaster_config)
         self.raycaster.set_render_scale(self.render_scale)
         self.last_death_pos = None
 
