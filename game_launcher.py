@@ -37,6 +37,7 @@ ASSETS_DIR = BASE_DIR / "launcher_assets"
 GAMES: list[dict[str, Any]] = [
     {
         "name": "Force Field",
+        "description": "FPS with raycasting engine, 3D environments, and bot AI.",
         "icon": "force_field_icon.png",
         "type": "python",
         "path": GAMES_DIR / "Force_Field" / "force_field.py",
@@ -44,6 +45,7 @@ GAMES: list[dict[str, Any]] = [
     },
     {
         "name": "Peanut Butter Panic",
+        "description": "A quirky arcade-style game about peanut butter.",
         "icon": "peanut_butter_panic_icon.png",
         "type": "module",
         "module_name": "peanut_butter_panic.game",
@@ -51,6 +53,7 @@ GAMES: list[dict[str, Any]] = [
     },
     {
         "name": "Tetris",
+        "description": "Modern take on the classic puzzle game with hold mechanics.",
         "icon": "tetris_icon.png",
         "type": "python",
         "path": GAMES_DIR / "Tetris" / "tetris.py",
@@ -58,6 +61,7 @@ GAMES: list[dict[str, Any]] = [
     },
     {
         "name": "Wizard of Wor",
+        "description": "Remake of the classic arcade shooter. Battle monsters in a maze.",
         "icon": "wizard_of_wor_icon.png",
         "type": "python",
         "path": GAMES_DIR / "Wizard_of_Wor" / "wizard_of_wor" / "game.py",
@@ -65,6 +69,7 @@ GAMES: list[dict[str, Any]] = [
     },
     {
         "name": "Duum",
+        "description": "High-octane FPS reimagining the classic Doom experience.",
         "icon": "doom_icon.png",
         "type": "python",
         "path": GAMES_DIR / "Duum" / "duum.py",
@@ -72,6 +77,7 @@ GAMES: list[dict[str, Any]] = [
     },
     {
         "name": "Zombie Games (Web)",
+        "description": "Collection of web-based 3D survival shooters.",
         "icon": "zombie_games_icon.png",
         "type": "web",
         "path": GAMES_DIR / "Zombie_Games" / "Zombie_Game_v5" / "index.html",
@@ -170,6 +176,16 @@ def main() -> None:
     while running:
         mx, my = pygame.mouse.get_pos()
 
+        # Update cursor
+        hovering = False
+        for rect in game_rects:
+            if rect.collidepoint(mx, my):
+                hovering = True
+                break
+        pygame.mouse.set_cursor(
+            pygame.SYSTEM_CURSOR_HAND if hovering else pygame.SYSTEM_CURSOR_ARROW
+        )
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
@@ -223,15 +239,26 @@ def main() -> None:
             center=True,
         )
 
-        # Helper Text
-        draw_text(
-            screen,
-            "Use Arrow Keys to Select • Enter to Start • Esc to Quit",
-            helper_font,
-            TEXT_MUTED,
-            (WIDTH // 2, HEIGHT - 30),
-            center=True,
-        )
+        # Helper Text or Description
+        if selected_index != -1:
+            desc = GAMES[selected_index].get("description", "")
+            draw_text(
+                screen,
+                desc,
+                helper_font,
+                (200, 200, 200),
+                (WIDTH // 2, HEIGHT - 30),
+                center=True,
+            )
+        else:
+            draw_text(
+                screen,
+                "Use Arrow Keys to Select • Enter to Start • Esc to Quit",
+                helper_font,
+                TEXT_MUTED,
+                (WIDTH // 2, HEIGHT - 30),
+                center=True,
+            )
 
         for i, game in enumerate(GAMES):
             rect = game_rects[i]
