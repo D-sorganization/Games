@@ -41,6 +41,9 @@ GAMES: list[dict[str, Any]] = [
         "type": "python",
         "path": GAMES_DIR / "Force_Field" / "force_field.py",
         "cwd": GAMES_DIR / "Force_Field",
+        "description": (
+            "A robust FPS with custom raycasting, 3D environments, and bot AI."
+        ),
     },
     {
         "name": "Peanut Butter Panic",
@@ -48,6 +51,7 @@ GAMES: list[dict[str, Any]] = [
         "type": "module",
         "module_name": "peanut_butter_panic.game",
         "cwd": GAMES_DIR / "Peanut_Butter_Panic",
+        "description": "A quirky arcade-style game where you panic over peanut butter.",
     },
     {
         "name": "Tetris",
@@ -55,6 +59,9 @@ GAMES: list[dict[str, Any]] = [
         "type": "python",
         "path": GAMES_DIR / "Tetris" / "tetris.py",
         "cwd": GAMES_DIR / "Tetris",
+        "description": (
+            "Modern puzzle game with hold mechanics, combos, and particle effects."
+        ),
     },
     {
         "name": "Wizard of Wor",
@@ -62,6 +69,9 @@ GAMES: list[dict[str, Any]] = [
         "type": "python",
         "path": GAMES_DIR / "Wizard_of_Wor" / "wizard_of_wor" / "game.py",
         "cwd": GAMES_DIR / "Wizard_of_Wor" / "wizard_of_wor",
+        "description": (
+            "Classic arcade shooter remake. Battle monsters in a maze (1-2 Players)."
+        ),
     },
     {
         "name": "Duum",
@@ -69,12 +79,16 @@ GAMES: list[dict[str, Any]] = [
         "type": "python",
         "path": GAMES_DIR / "Duum" / "duum.py",
         "cwd": GAMES_DIR / "Duum",
+        "description": (
+            "High-octane FPS reimagining with projectile weapons and hordes of enemies."
+        ),
     },
     {
         "name": "Zombie Games (Web)",
         "icon": "zombie_games_icon.png",
         "type": "web",
         "path": GAMES_DIR / "Zombie_Games" / "Zombie_Game_v5" / "index.html",
+        "description": "A collection of web-based 3D survival shooters.",
     },
 ]
 
@@ -97,6 +111,7 @@ def main() -> None:
     font = pygame.font.SysFont("Segoe UI", 24)
     title_font = pygame.font.SysFont("Segoe UI", 48, bold=True)
     helper_font = pygame.font.SysFont("Segoe UI", 18)
+    desc_font = pygame.font.SysFont("Segoe UI", 20, italic=True)
 
     # Load Icons
     for game in GAMES:
@@ -169,6 +184,7 @@ def main() -> None:
 
     while running:
         mx, my = pygame.mouse.get_pos()
+        hovered_any = False
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -176,8 +192,13 @@ def main() -> None:
             elif event.type == pygame.MOUSEMOTION:
                 if event.rel != (0, 0):
                     using_keyboard = False
+                    if not pygame.mouse.get_visible():
+                        pygame.mouse.set_visible(True)
             elif event.type == pygame.KEYDOWN:
                 using_keyboard = True
+                if pygame.mouse.get_visible():
+                    pygame.mouse.set_visible(False)
+
                 if event.key == pygame.K_ESCAPE:
                     running = False
                 elif selected_index == -1:
@@ -233,6 +254,19 @@ def main() -> None:
             center=True,
         )
 
+        # Description Text (if selected)
+        if selected_index != -1 and selected_index < len(GAMES):
+            desc = GAMES[selected_index].get("description", "")
+            if desc:
+                draw_text(
+                    screen,
+                    desc,
+                    desc_font,
+                    TEXT_COLOR,
+                    (WIDTH // 2, HEIGHT - 70),
+                    center=True,
+                )
+
         for i, game in enumerate(GAMES):
             rect = game_rects[i]
             # is_selected is handled by is_highlighted logic below
@@ -245,6 +279,7 @@ def main() -> None:
                 if rect.collidepoint(mx, my):
                     is_highlighted = True
                     selected_index = i
+                    hovered_any = True
 
             draw_rect = rect.copy()
             if is_highlighted:
@@ -281,6 +316,12 @@ def main() -> None:
                 (x + ITEM_WIDTH // 2, y + ICON_SIZE[1] + 30),
                 center=True,
             )
+
+        # Update Cursor
+        if hovered_any:
+            pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND)
+        else:
+            pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
 
         pygame.display.flip()
         clock.tick(60)

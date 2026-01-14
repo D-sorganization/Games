@@ -78,9 +78,9 @@ class GameRenderer:
             self.screen,
             game.player,
             game.bots,
-            game.projectiles,
             game.level,
             view_offset_y=bob_offset + shake_y,
+            projectiles=game.projectiles,
         )
 
         # 2. Effects
