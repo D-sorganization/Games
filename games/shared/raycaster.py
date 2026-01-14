@@ -3,6 +3,7 @@ from __future__ import annotations
 import itertools
 import math
 import random
+from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
@@ -14,17 +15,15 @@ from .utils import cast_ray_dda
 
 if TYPE_CHECKING:
     from .config import RaycasterConfig
-    from .custom_types import EnemyData
-    from .map import Map
-    from .bot import Bot
-    from .projectile import Projectile
-    from .player import Player
+    from .interfaces import Bot, EnemyData, Map, Player, Projectile
 
 
 class Raycaster:
     """Raycasting engine for 3D rendering"""
 
     VISUAL_SCALE = 2.2
+    STRIP_VISIBILITY_THRESHOLD = 0.3
+    LARGE_SPRITE_THRESHOLD = 200
 
     def __init__(self, game_map: Map, config: RaycasterConfig):
         """Initialize raycaster"""
@@ -135,7 +134,9 @@ class Raycaster:
     def _update_ray_angles(self) -> None:
         """Pre-calculate relative ray angles."""
         # Normal FOV
-        self.deltas = np.linspace(-self.config.HALF_FOV, self.config.HALF_FOV, self.num_rays)
+        self.deltas = np.linspace(
+            -self.config.HALF_FOV, self.config.HALF_FOV, self.num_rays
+        )
         self.cos_deltas = np.cos(self.deltas)
         self.sin_deltas = np.sin(self.deltas)
 
@@ -222,17 +223,19 @@ class Raycaster:
         self,
         screen: pygame.Surface,
         player: Player,
-        bots: list[Bot],
+        bots: Sequence[Bot],
         level: int,
         view_offset_y: float = 0.0,
-        projectiles: list[Projectile] | None = None,
+        projectiles: Sequence[Projectile] | None = None,
     ) -> None:
         """Render 3D view using vectorized raycasting."""
         self.update_cache()
         self._update_map_cache_if_needed()
 
         # Determine current FOV
-        current_fov = self.config.FOV * (self.config.ZOOM_FOV_MULT if player.zoomed else 1.0)
+        current_fov = self.config.FOV * (
+            self.config.ZOOM_FOV_MULT if player.zoomed else 1.0
+        )
 
         # Clear view surface
         self.view_surface.fill((0, 0, 0, 0))
@@ -429,9 +432,13 @@ class Raycaster:
         if hasattr(self, "_cached_level") and self._cached_level == level:
             wall_colors = self._cached_wall_colors
         else:
-            theme_idx = (level - 1) % len(self.config.LEVEL_THEMES)
-            theme = self.config.LEVEL_THEMES[theme_idx]
-            wall_colors = theme["walls"]
+            # 0. Setup themes
+            level_themes = self.config.LEVEL_THEMES or []
+            theme_idx = (level - 1) % len(level_themes) if level_themes else 0
+            theme = level_themes[theme_idx] if level_themes else None
+            wall_colors = (
+                theme["walls"] if theme else {}
+            )  # Ensure wall_colors is a dict
             self._cached_level = level
             self._cached_wall_colors = wall_colors
 
@@ -443,9 +450,13 @@ class Raycaster:
         safe_dists = np.maximum(0.01, corrected_dists)
 
         # Calculate heights
-        wall_heights = np.minimum(self.config.SCREEN_HEIGHT * 4, (self.config.SCREEN_HEIGHT / safe_dists))
+        wall_heights = np.minimum(
+            self.config.SCREEN_HEIGHT * 4, (self.config.SCREEN_HEIGHT / safe_dists)
+        )
         wall_tops = (
-            (self.config.SCREEN_HEIGHT - wall_heights) // 2 + player.pitch + view_offset_y
+            (self.config.SCREEN_HEIGHT - wall_heights) // 2
+            + player.pitch
+            + view_offset_y
         ).astype(np.int32)
         wall_heights_int = wall_heights.astype(np.int32)
 
@@ -454,7 +465,8 @@ class Raycaster:
 
         # Fog
         fog_factors = np.clip(
-            (distances - self.config.MAX_DEPTH * self.config.FOG_START) / (self.config.MAX_DEPTH * (1 - self.config.FOG_START)),
+            (distances - self.config.MAX_DEPTH * self.config.FOG_START)
+            / (self.config.MAX_DEPTH * (1 - self.config.FOG_START)),
             0.0,
             1.0,
         )
@@ -582,8 +594,8 @@ class Raycaster:
     def _render_sprites(
         self,
         player: Player,
-        bots: list[Bot],
-        projectiles: list[Projectile],
+        bots: Sequence[Bot],
+        projectiles: Sequence[Projectile],
         half_fov: float,
         view_offset_y: float = 0.0,
     ) -> None:
@@ -675,7 +687,12 @@ class Raycaster:
         sprite_ray_width = sprite_size / self.render_scale
         sprite_ray_x = ray_x
 
-        sprite_y = self.config.SCREEN_HEIGHT / 2 - sprite_size / 2 + player.pitch + view_offset_y
+        sprite_y = (
+            self.config.SCREEN_HEIGHT / 2
+            - sprite_size / 2
+            + player.pitch
+            + view_offset_y
+        )
 
         visual_scale = self.VISUAL_SCALE
 
@@ -774,8 +791,8 @@ class Raycaster:
         # Scale whole strategy (most common)
         scale_whole = True
         if (
-            total_visible_pixels < target_width * STRIP_VISIBILITY_THRESHOLD
-            and target_width > LARGE_SPRITE_THRESHOLD
+            total_visible_pixels < target_width * self.STRIP_VISIBILITY_THRESHOLD
+            and target_width > self.LARGE_SPRITE_THRESHOLD
         ):
             scale_whole = False
 
@@ -1001,14 +1018,15 @@ class Raycaster:
 
     def _generate_background_surface(self, level: int) -> None:
         """Pre-generate a high quality background surface for the level theme."""
-        theme_idx = (level - 1) % len(self.config.LEVEL_THEMES)
-        theme = self.config.LEVEL_THEMES[theme_idx]
+        level_themes = self.config.LEVEL_THEMES or []
+        theme_idx = (level - 1) % len(level_themes) if level_themes else 0
+        theme = level_themes[theme_idx] if level_themes else None
 
         h = self.config.SCREEN_HEIGHT
         self._background_surface = pygame.Surface((1, h * 2))
 
-        ceiling_color = theme["ceiling"]
-        floor_color = theme["floor"]
+        ceiling_color = theme["ceiling"] if theme else self.config.GRAY
+        floor_color = theme["floor"] if theme else self.config.DARK_GRAY
 
         # Sky Gradient (Top half)
         # Top of surface is Zenith (darker?), Middle is Horizon (lighter/ceiling_color)
@@ -1059,8 +1077,9 @@ class Raycaster:
         view_offset_y: float = 0.0,
     ) -> None:
         """Render floor and sky with stars"""
-        theme_idx = (level - 1) % len(self.config.LEVEL_THEMES)
-        theme = self.config.LEVEL_THEMES[theme_idx]
+        level_themes = self.config.LEVEL_THEMES or []
+        theme_idx = (level - 1) % len(level_themes) if level_themes else 0
+        theme = level_themes[theme_idx] if level_themes else None
         player_angle = player.angle
 
         if (
@@ -1075,7 +1094,8 @@ class Raycaster:
         # Fallback if scaling failed or wasn't generated
         if bg is None and self._background_surface is not None:
             self._scaled_background_surface = pygame.transform.scale(
-                self._background_surface, (self.config.SCREEN_WIDTH, self.config.SCREEN_HEIGHT * 2)
+                self._background_surface,
+                (self.config.SCREEN_WIDTH, self.config.SCREEN_HEIGHT * 2),
             )
             bg = self._scaled_background_surface
 
@@ -1100,7 +1120,14 @@ class Raycaster:
             # We want the bottom half (Floor)
             # Source area starts at Y=H
             screen.blit(
-                bg, (0, horizon), (0, self.config.SCREEN_HEIGHT, self.config.SCREEN_WIDTH, self.config.SCREEN_HEIGHT)
+                bg,
+                (0, horizon),
+                (
+                    0,
+                    self.config.SCREEN_HEIGHT,
+                    self.config.SCREEN_WIDTH,
+                    self.config.SCREEN_HEIGHT,
+                ),
             )
 
         # Stars
@@ -1123,24 +1150,26 @@ class Raycaster:
             if 0 <= moon_y < horizon + 40:
                 pygame.draw.circle(screen, (220, 220, 200), (int(moon_x), moon_y), 40)
                 shadow_pos = (int(moon_x) - 10, moon_y)
-                pygame.draw.circle(screen, theme["ceiling"], shadow_pos, 40)
+                moon_color = theme["ceiling"] if theme else self.config.GRAY
+                pygame.draw.circle(screen, moon_color, shadow_pos, 40)
 
     def _generate_minimap_cache(self) -> None:
         """Generate static minimap surface."""
         self.minimap_surface = pygame.Surface((self.minimap_size, self.minimap_size))
         self.minimap_surface.fill(self.config.DARK_GRAY)
 
-        for i in range(self.map_size):
-            for j in range(self.map_size):
-                if self.grid[i][j] != 0:
-                    wall_type = self.grid[i][j]
-                    color = self.config.WALL_COLORS.get(wall_type, self.config.GRAY)
+        wall_colors = self.config.WALL_COLORS or {}
+        for y in range(self.map_height):
+            for x in range(self.map_width):
+                w_type = self.grid[y][x]
+                if w_type > 0:
+                    color = wall_colors.get(w_type, self.config.GRAY)
                     pygame.draw.rect(
                         self.minimap_surface,
                         color,
                         (
-                            j * self.minimap_scale,
-                            i * self.minimap_scale,
+                            x * self.minimap_scale,
+                            y * self.minimap_scale,
                             self.minimap_scale,
                             self.minimap_scale,
                         ),
@@ -1150,7 +1179,7 @@ class Raycaster:
         self,
         screen: pygame.Surface,
         player: Player,
-        bots: list[Bot],
+        bots: Sequence[Bot],
         visited_cells: set[tuple[int, int]] | None = None,
         portal: dict[str, Any] | None = None,
     ) -> None:
@@ -1195,12 +1224,11 @@ class Raycaster:
             else:
                 screen.blit(self.minimap_surface, (minimap_x, minimap_y))
 
-        if portal:
-            portal_x = int(portal["x"])
-            portal_y = int(portal["y"])
-            if visited_cells is None or (portal_x, portal_y) in visited_cells:
-                portal_map_x = minimap_x + portal_x * self.minimap_scale
-                portal_map_y = minimap_y + portal_y * self.minimap_scale
+        if portal is not None:
+            px, py = int(portal["x"]), int(portal["y"])
+            if visited_cells is None or (px, py) in visited_cells:
+                portal_map_x = minimap_x + px * self.minimap_scale
+                portal_map_y = minimap_y + py * self.minimap_scale
                 pygame.draw.circle(
                     screen,
                     self.config.CYAN,
@@ -1212,14 +1240,18 @@ class Raycaster:
             if (
                 bot.alive
                 and bot.enemy_type != "health_pack"
-                and self.config.ENEMY_TYPES[bot.enemy_type].get("visual_style") != "item"
+                and self.config.ENEMY_TYPES is not None
+                and self.config.ENEMY_TYPES[bot.enemy_type].get("visual_style")
+                != "item"
             ):
                 bot_cell_x = int(bot.x)
                 bot_cell_y = int(bot.y)
                 if visited_cells is None or (bot_cell_x, bot_cell_y) in visited_cells:
                     bot_x = minimap_x + bot.x * self.minimap_scale
                     bot_y = minimap_y + bot.y * self.minimap_scale
-                    pygame.draw.circle(screen, self.config.RED, (int(bot_x), int(bot_y)), 3)
+                    pygame.draw.circle(
+                        screen, self.config.RED, (int(bot_x), int(bot_y)), 3
+                    )
 
         player_x = minimap_x + player.x * self.minimap_scale
         player_y = minimap_y + player.y * self.minimap_scale
@@ -1227,4 +1259,6 @@ class Raycaster:
 
         dir_x = player_x + math.cos(player.angle) * 10
         dir_y = player_y + math.sin(player.angle) * 10
-        pygame.draw.line(screen, self.config.GREEN, (player_x, player_y), (dir_x, dir_y), 2)
+        pygame.draw.line(
+            screen, self.config.GREEN, (player_x, player_y), (dir_x, dir_y), 2
+        )

@@ -9,6 +9,11 @@ from typing import Any
 
 import pygame
 
+from games.shared.config import RaycasterConfig
+
+# Shared components
+from games.shared.raycaster import Raycaster
+
 from . import constants as C  # noqa: N812
 from .bot import Bot
 from .entity_manager import EntityManager
@@ -20,10 +25,6 @@ from .projectile import Projectile
 from .renderer import GameRenderer
 from .sound import SoundManager
 from .ui_renderer import UIRenderer
-
-# Shared components
-from games.shared.raycaster import Raycaster
-from games.shared.config import RaycasterConfig
 
 logger = logging.getLogger(__name__)
 

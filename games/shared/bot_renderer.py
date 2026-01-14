@@ -7,9 +7,8 @@ from typing import TYPE_CHECKING
 import pygame
 
 if TYPE_CHECKING:
-    from .custom_types import EnemyData
     from .config import RaycasterConfig
-    from .interfaces import Bot
+    from .interfaces import Bot, EnemyData
 
 
 class BotRenderer:
@@ -112,7 +111,14 @@ class BotRenderer:
 
         if visual_style == "baby":
             BotRenderer._render_baby(
-                screen, bot, center_x, render_y, render_width, render_height, base_color, config
+                screen,
+                bot,
+                center_x,
+                render_y,
+                render_width,
+                render_height,
+                base_color,
+                config,
             )
             return
 
@@ -142,13 +148,27 @@ class BotRenderer:
 
         if bot.enemy_type == "minigunner":
             BotRenderer._render_minigunner(
-                screen, bot, center_x, render_y, render_width, render_height, base_color, config
+                screen,
+                bot,
+                center_x,
+                render_y,
+                render_width,
+                render_height,
+                base_color,
+                config,
             )
             return
 
         # Monster Style (Default)
         BotRenderer._render_monster(
-            screen, bot, center_x, render_y, render_width, render_height, base_color, config
+            screen,
+            bot,
+            center_x,
+            render_y,
+            render_width,
+            render_height,
+            base_color,
+            config,
         )
 
     @staticmethod

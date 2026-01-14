@@ -1,12 +1,16 @@
-
 from __future__ import annotations
 
 import logging
 import math
 import random
-from typing import Any, cast
+from typing import Any
 
 import pygame
+
+from games.shared.config import RaycasterConfig
+
+# Shared components
+from games.shared.raycaster import Raycaster
 
 from . import constants as C  # noqa: N812
 from .bot import Bot
@@ -21,10 +25,6 @@ from .projectile import Projectile
 from .renderer import GameRenderer
 from .sound import SoundManager
 from .ui_renderer import UIRenderer
-
-# Shared components
-from games.shared.raycaster import Raycaster
-from games.shared.config import RaycasterConfig
 
 logger = logging.getLogger(__name__)
 
@@ -1296,6 +1296,6 @@ class Game:
                 self.clock.tick(C.FPS)
         except Exception as e:
             logger.critical("CRASH: %s", e)
-            # Re-raise to ensure proper exit if needed, but logging critical is good practice.
+            # Re-raise to ensure proper exit; logging critical is good practice.
             # In a robust system, we might want to show a crash dialog.
             raise e
