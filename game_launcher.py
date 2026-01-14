@@ -37,6 +37,7 @@ ASSETS_DIR = BASE_DIR / "launcher_assets"
 GAMES: list[dict[str, Any]] = [
     {
         "name": "Force Field",
+        "description": "Defend the core from endless waves of enemies.",
         "icon": "force_field_icon.png",
         "type": "python",
         "path": GAMES_DIR / "Force_Field" / "force_field.py",
@@ -44,6 +45,7 @@ GAMES: list[dict[str, Any]] = [
     },
     {
         "name": "Peanut Butter Panic",
+        "description": "Protect your sandwiches from swarms of enemies!",
         "icon": "peanut_butter_panic_icon.png",
         "type": "module",
         "module_name": "peanut_butter_panic.game",
@@ -51,6 +53,7 @@ GAMES: list[dict[str, Any]] = [
     },
     {
         "name": "Tetris",
+        "description": "The classic tile-matching puzzle game.",
         "icon": "tetris_icon.png",
         "type": "python",
         "path": GAMES_DIR / "Tetris" / "tetris.py",
@@ -58,6 +61,7 @@ GAMES: list[dict[str, Any]] = [
     },
     {
         "name": "Wizard of Wor",
+        "description": "Battle monsters in this classic arcade maze shooter.",
         "icon": "wizard_of_wor_icon.png",
         "type": "python",
         "path": GAMES_DIR / "Wizard_of_Wor" / "wizard_of_wor" / "game.py",
@@ -65,6 +69,7 @@ GAMES: list[dict[str, Any]] = [
     },
     {
         "name": "Duum",
+        "description": "A 3D raycasting shooter engine demo.",
         "icon": "doom_icon.png",
         "type": "python",
         "path": GAMES_DIR / "Duum" / "duum.py",
@@ -72,6 +77,7 @@ GAMES: list[dict[str, Any]] = [
     },
     {
         "name": "Zombie Games (Web)",
+        "description": "A collection of web-based zombie survival games.",
         "icon": "zombie_games_icon.png",
         "type": "web",
         "path": GAMES_DIR / "Zombie_Games" / "Zombie_Game_v5" / "index.html",
@@ -223,6 +229,18 @@ def main() -> None:
             center=True,
         )
 
+        # Description
+        if selected_index != -1:
+            desc = GAMES[selected_index].get("description", "")
+            draw_text(
+                screen,
+                desc,
+                font,
+                TEXT_COLOR,
+                (WIDTH // 2, HEIGHT - 60),
+                center=True,
+            )
+
         # Helper Text
         draw_text(
             screen,
@@ -232,6 +250,8 @@ def main() -> None:
             (WIDTH // 2, HEIGHT - 30),
             center=True,
         )
+
+        any_highlighted = False
 
         for i, game in enumerate(GAMES):
             rect = game_rects[i]
@@ -245,6 +265,7 @@ def main() -> None:
                 if rect.collidepoint(mx, my):
                     is_highlighted = True
                     selected_index = i
+                    any_highlighted = True
 
             draw_rect = rect.copy()
             if is_highlighted:
@@ -281,6 +302,12 @@ def main() -> None:
                 (x + ITEM_WIDTH // 2, y + ICON_SIZE[1] + 30),
                 center=True,
             )
+
+        # Cursor
+        if any_highlighted and not using_keyboard:
+            pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND)
+        else:
+            pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
 
         pygame.display.flip()
         clock.tick(60)
