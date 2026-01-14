@@ -480,18 +480,28 @@ class Raycaster:
             | tuple[pygame.Surface, tuple[int, int], tuple[int, int, int, int]]
         ] = []
 
+        # Optimization: Convert numpy arrays to lists for faster iteration
+        # Accessing numpy elements in a loop is significantly slower than list access
+        distances_list = distances.tolist()
+        wall_types_list = wall_types.tolist()
+        wall_x_hits_list = wall_x_hits.tolist()
+        wall_heights_int_list = wall_heights_int.tolist()
+        wall_tops_list = wall_tops.tolist()
+        shades_list = shades.tolist()
+        fog_factors_list = fog_factors.tolist()
+
         # Loop
         for i in range(self.num_rays):
-            dist = distances[i]
+            dist = distances_list[i]
             if dist >= C.MAX_DEPTH:
                 continue
 
-            wt = wall_types[i]
+            wt = wall_types_list[i]
             if wt == 0:
                 continue
 
-            h = wall_heights_int[i]
-            top = wall_tops[i]
+            h = wall_heights_int_list[i]
+            top = wall_tops_list[i]
 
             # Texture rendering
             if use_textures and wt in wall_strips:
@@ -499,7 +509,7 @@ class Raycaster:
                 tex_w = len(strips)
 
                 # Calculate texture X
-                tex_x = int(wall_x_hits[i] * tex_w)
+                tex_x = int(wall_x_hits_list[i] * tex_w)
                 tex_x = int(np.clip(tex_x, 0, tex_w - 1))
 
                 # Only render if height is reasonable
@@ -512,7 +522,7 @@ class Raycaster:
                         blits_sequence.append((scaled_strip, (i, top)))
 
                         # Shading (Darken)
-                        shade = shades[i]
+                        shade = shades_list[i]
                         if shade < 1.0:
                             alpha = int(255 * (1.0 - shade))
                             if alpha > 0:
@@ -528,7 +538,7 @@ class Raycaster:
                                     pass
 
                         # Fog
-                        fog = fog_factors[i]
+                        fog = fog_factors_list[i]
                         if fog > 0:
                             fog_alpha = int(255 * fog)
                             if fog_alpha > 0:
@@ -549,7 +559,7 @@ class Raycaster:
                 else:
                     # Solid color fallback for massive closeness
                     col = wall_colors.get(wt, C.GRAY)
-                    shade = shades[i]
+                    shade = shades_list[i]
                     col = (
                         int(col[0] * shade),
                         int(col[1] * shade),
@@ -559,8 +569,8 @@ class Raycaster:
             else:
                 # Solid Color Fallback
                 col = wall_colors.get(wt, C.GRAY)
-                shade = shades[i]
-                fog = fog_factors[i]
+                shade = shades_list[i]
+                fog = fog_factors_list[i]
 
                 # Mix color
                 r = col[0] * shade
