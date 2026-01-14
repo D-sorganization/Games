@@ -246,15 +246,22 @@ def main() -> None:
                     is_highlighted = True
                     selected_index = i
 
+            draw_rect = rect.copy()
+            if is_highlighted:
+                draw_rect.y -= 6
+
             bg = HIGHLIGHT_COLOR if is_highlighted else (30, 30, 35)
-            pygame.draw.rect(screen, bg, rect, border_radius=15)
+            pygame.draw.rect(screen, bg, draw_rect, border_radius=15)
 
             if is_highlighted:
-                pygame.draw.rect(screen, ACCENT_COLOR, rect, width=2, border_radius=15)
+                pygame.draw.rect(
+                    screen, ACCENT_COLOR, draw_rect, width=2, border_radius=15
+                )
 
             # Position variables needed for icon/text
-            x = rect.x - 10
-            y = rect.y - 10
+            # Use draw_rect to ensure content moves with the background
+            x = draw_rect.x - 10
+            y = draw_rect.y - 10
 
             # Icon
             if "img" in game:
@@ -274,16 +281,6 @@ def main() -> None:
                 (x + ITEM_WIDTH // 2, y + ICON_SIZE[1] + 30),
                 center=True,
             )
-
-        # Helper Footer
-        draw_text(
-            screen,
-            "Use Arrow Keys to Select • Enter to Start • Esc to Quit",
-            font,
-            (150, 150, 150),
-            (WIDTH // 2, HEIGHT - 30),
-            center=True,
-        )
 
         pygame.display.flip()
         clock.tick(60)
