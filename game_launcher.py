@@ -176,8 +176,13 @@ def main() -> None:
             elif event.type == pygame.MOUSEMOTION:
                 if event.rel != (0, 0):
                     using_keyboard = False
+                    if not pygame.mouse.get_visible():
+                        pygame.mouse.set_visible(True)
             elif event.type == pygame.KEYDOWN:
                 using_keyboard = True
+                if pygame.mouse.get_visible():
+                    pygame.mouse.set_visible(False)
+
                 if event.key == pygame.K_ESCAPE:
                     running = False
                 elif selected_index == -1:
