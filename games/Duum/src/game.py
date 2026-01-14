@@ -9,11 +9,10 @@ from typing import Any
 
 import pygame
 
-from games.shared.config import RaycasterConfig
+from ...shared.config import RaycasterConfig
 
 # Shared components
-from games.shared.raycaster import Raycaster
-
+from ...shared.raycaster import Raycaster
 from . import constants as C  # noqa: N812
 from .bot import Bot
 from .entity_manager import EntityManager
