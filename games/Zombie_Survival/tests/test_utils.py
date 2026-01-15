@@ -3,9 +3,9 @@
 import math
 import unittest
 
-from games.Force_Field.src.map import Map
-from games.Force_Field.src.projectile import Projectile
-from games.Force_Field.src.utils import cast_ray_dda, has_line_of_sight, try_move_entity
+from games.shared.utils import cast_ray_dda, has_line_of_sight, try_move_entity
+from games.Zombie_Survival.src.map import Map
+from games.Zombie_Survival.src.projectile import Projectile
 
 
 class MockEntity:

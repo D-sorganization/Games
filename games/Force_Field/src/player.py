@@ -111,7 +111,7 @@ class Player:
         dx = math.cos(self.angle) * current_speed * (1 if forward else -1)
         dy = math.sin(self.angle) * current_speed * (1 if forward else -1)
 
-        from .utils import try_move_entity
+        from games.shared.utils import try_move_entity
 
         try_move_entity(self, dx, dy, game_map, bots, radius=0.5)
 
@@ -137,7 +137,7 @@ class Player:
         dx = math.cos(angle) * current_speed
         dy = math.sin(angle) * current_speed
 
-        from .utils import try_move_entity
+        from games.shared.utils import try_move_entity
 
         try_move_entity(self, dx, dy, game_map, bots, radius=0.5)
 
