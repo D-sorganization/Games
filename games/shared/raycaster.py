@@ -429,7 +429,7 @@ class Raycaster:
     ) -> None:
         """Render walls using computed arrays."""
         # Theme Setup
-        if hasattr(self, "_cached_level") and self._cached_level == level:
+        if self._cached_level == level:
             wall_colors = self._cached_wall_colors
         else:
             # 0. Setup themes

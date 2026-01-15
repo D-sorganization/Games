@@ -4,9 +4,10 @@ import math
 import random
 from typing import TYPE_CHECKING
 
+from games.shared.utils import has_line_of_sight
+
 from . import constants as C  # noqa: N812
 from .projectile import Projectile
-from .utils import has_line_of_sight
 
 if TYPE_CHECKING:
     from .custom_types import EnemyData
