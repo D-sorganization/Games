@@ -10,8 +10,9 @@ on:
     types: [completed]
   schedule:
     # RELAXED WEEKLY SCHEDULE - Games is a fun side project (Tier 3)
+    # Aligned with overnight window (midnight-4 AM UTC)
     - cron: "0 2 * * 0"   # Sunday 2 AM - Weekly assessment
-    - cron: "0 5 * * 1"   # Monday 5 AM - Security check
+    - cron: "0 3 * * 1"   # Monday 3 AM - Security check (within midnight-4 AM window)
 
 concurrency:
   group: jules-control-tower
@@ -48,7 +49,7 @@ jobs:
             }
             // 2. WEEKLY SCHEDULE - Minimal maintenance
             else if (event === "schedule") {
-              const day = new Date().getDay();
+              const day = new Date().getUTCDay();
               if (day === 0) { // Sunday
                  target = "assessment-generator";
               } else if (day === 1) { // Monday
