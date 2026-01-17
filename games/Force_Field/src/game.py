@@ -8,6 +8,7 @@ from typing import Any
 import pygame
 
 from games.shared.config import RaycasterConfig
+from games.shared.interfaces import Portal
 
 # Shared components
 from games.shared.raycaster import Raycaster
@@ -93,7 +94,7 @@ class Game:
         self.entity_manager = EntityManager()
         self.combat_system = CombatSystem(self)
         self.raycaster: Raycaster | None = None
-        self.portal: dict[str, Any] | None = None
+        self.portal: Portal | None = None
         self.health = 100
         self.lives = C.DEFAULT_LIVES
 

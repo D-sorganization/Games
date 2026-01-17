@@ -82,16 +82,16 @@ class UIRenderer:
             for x in range(vw):
                 dx = x - cx
                 dy = y - cy
-                dist = math.sqrt(dx*dx + dy*dy)
+                dist = math.sqrt(dx * dx + dy * dy)
 
                 # Normalized distance 0..1
                 # Start darkening at 40% distance
                 d = dist / max_dist
                 val = max(0.0, d - 0.4)
-                val = val / 0.6 # Normalize 0..1
+                val = val / 0.6  # Normalize 0..1
 
-                alpha = int(255 * (val ** 2)) # Quadratic falloff
-                if alpha > 255: alpha = 255
+                alpha = int(255 * (val**2))  # Quadratic falloff
+                alpha = min(alpha, 255)
 
                 vig_small.set_at((x, y), (0, 0, 0, alpha))
 
@@ -563,10 +563,11 @@ class UIRenderer:
         outline = (0, 0, 0)
 
         # Draw outline (thicker lines behind)
-        pygame.draw.line(self.screen, outline, (cx - length - 2, cy), (cx - gap + 2, cy), 4)
-        pygame.draw.line(self.screen, outline, (cx + gap - 2, cy), (cx + length + 2, cy), 4)
-        pygame.draw.line(self.screen, outline, (cx, cy - length - 2), (cx, cy - gap + 2), 4)
-        pygame.draw.line(self.screen, outline, (cx, cy + gap - 2), (cx, cy + length + 2), 4)
+        ln, gp = length, gap
+        pygame.draw.line(self.screen, outline, (cx - ln - 2, cy), (cx - gp + 2, cy), 4)
+        pygame.draw.line(self.screen, outline, (cx + gp - 2, cy), (cx + ln + 2, cy), 4)
+        pygame.draw.line(self.screen, outline, (cx, cy - ln - 2), (cx, cy - gp + 2), 4)
+        pygame.draw.line(self.screen, outline, (cx, cy + gp - 2), (cx, cy + ln + 2), 4)
 
         # Draw main lines
         pygame.draw.line(self.screen, color, (cx - length, cy), (cx - gap, cy), 2)

@@ -7,6 +7,8 @@ from typing import TYPE_CHECKING, Any
 
 import pygame
 
+from games.shared.interfaces import Portal
+
 from . import constants as C  # noqa: N812
 from .weapon_renderer import WeaponRenderer
 
@@ -182,7 +184,7 @@ class GameRenderer:
                     int(p.size),
                 )
 
-    def _render_portal(self, portal: dict[str, Any] | None, player: Player) -> None:
+    def _render_portal(self, portal: Portal | None, player: Player) -> None:
         """Render portal visual effects if active.
 
         Args:
