@@ -3,6 +3,10 @@ on:
   deployment_status:
     state: [failure]
 
+permissions:
+  contents: write
+  deployments: read
+
 jobs:
   fix-deploy:
     if:

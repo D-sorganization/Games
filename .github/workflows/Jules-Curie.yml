@@ -5,6 +5,9 @@ on:
   schedule:
     - cron: "0 4 1 * *" # 1st of every month
 
+permissions:
+  contents: write
+
 jobs:
   hygiene-check:
     runs-on: ubuntu-latest

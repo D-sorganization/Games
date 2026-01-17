@@ -21,6 +21,8 @@ permissions:
 jobs:
   create-hotfix:
     runs-on: ubuntu-latest
+    # Only run for trusted branches (main/master)
+    if: inputs.failed_branch == 'main' || inputs.failed_branch == 'master'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -50,12 +52,13 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TARGET_RUN_ID: ${{ inputs.run_id }}
+          FAILED_BRANCH: ${{ inputs.failed_branch }}
+          HOTFIX_BRANCH: ${{ steps.hotfix.outputs.branch }}
         run: |
-          HOTFIX_BRANCH="${{ steps.hotfix.outputs.branch }}"
-          gh run view $TARGET_RUN_ID --log-failed > logs.txt
+          gh run view "$TARGET_RUN_ID" --log-failed > logs.txt
 
           LOG_CONTENT=$(cat logs.txt)
-          PROMPT="URGENT: CI failed on protected branch ${{ inputs.failed_branch }}.
+          PROMPT="URGENT: CI failed on protected branch ${FAILED_BRANCH}.
           Analyze the logs and create a minimal hotfix:
           1. **Formatting & Linting**: Run 'ruff check . --fix' and 'black .'
           2. **Import Sorting**: Run 'isort --profile black .'
@@ -63,7 +66,7 @@ jobs:
           4. **Test Failures**: Fix failing tests (fix implementation, not tests)
           5. **Coverage**: Generate tests if coverage dropped below 80%
           6. **Syntax**: Fix any syntax errors or missing imports
-          CRITICAL: This is a hotfix for ${{ inputs.failed_branch }}. Keep changes minimal and focused.
+          CRITICAL: This is a hotfix for ${FAILED_BRANCH}. Keep changes minimal and focused.
           CI Failure Logs:
           $LOG_CONTENT"
           jules task fix --branch "$HOTFIX_BRANCH" --prompt "$PROMPT"
@@ -71,22 +74,25 @@ jobs:
       - name: Create Urgent PR
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FAILED_BRANCH: ${{ inputs.failed_branch }}
+          HOTFIX_BRANCH: ${{ steps.hotfix.outputs.branch }}
+          RUN_ID: ${{ inputs.run_id }}
+          SERVER_URL: ${{ github.server_url }}
+          REPO: ${{ github.repository }}
         run: |
-          HOTFIX_BRANCH="${{ steps.hotfix.outputs.branch }}"
-
           gh pr create \
-            --base "${{ inputs.failed_branch }}" \
+            --base "$FAILED_BRANCH" \
             --head "$HOTFIX_BRANCH" \
-            --title "🚨 Urgent: Fix CI failure on ${{ inputs.failed_branch }}" \
+            --title "🚨 Urgent: Fix CI failure on ${FAILED_BRANCH}" \
             --label "urgent,auto-fix,hotfix" \
             --body "## 🚨 Automated Hotfix for Protected Branch
-            
-            **Failed Branch:** \`${{ inputs.failed_branch }}\`
-            **CI Run:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ inputs.run_id }}
+
+            **Failed Branch:** \`${FAILED_BRANCH}\`
+            **CI Run:** ${SERVER_URL}/${REPO}/actions/runs/${RUN_ID}
             **Created By:** Jules Hotfix-Creator
 
             ### Summary
-            CI failed on the protected branch \`${{ inputs.failed_branch }}\`. This automated hotfix attempts to resolve the issues.
+            CI failed on the protected branch \`${FAILED_BRANCH}\`. This automated hotfix attempts to resolve the issues.
 
             ### Changes
             Jules Auto-Repair has analyzed the CI failure logs and applied fixes for:
@@ -104,7 +110,7 @@ jobs:
 
             ### Next Steps
             1. Review the changes in this PR
-            2. If acceptable, merge immediately to restore ${{ inputs.failed_branch }}
+            2. If acceptable, merge immediately to restore ${FAILED_BRANCH}
             3. If issues remain, manually fix and push to this branch
 
             ---

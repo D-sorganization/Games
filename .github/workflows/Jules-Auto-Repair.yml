@@ -10,6 +10,11 @@ on:
         type: string
         default: ""
 
+permissions:
+  contents: write
+  pull-requests: write
+  actions: read
+
 jobs:
   fix:
     runs-on: ubuntu-latest
