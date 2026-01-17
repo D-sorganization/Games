@@ -1,5 +1,17 @@
 from __future__ import annotations
 
-from games.shared.interfaces import EnemyData, LevelTheme, WeaponData
+from typing import TypedDict
 
-__all__ = ["EnemyData", "LevelTheme", "WeaponData"]
+from games.shared.interfaces import EnemyData, LevelTheme, Portal, WeaponData
+
+
+class DamageText(TypedDict):
+    x: float
+    y: float
+    text: str
+    color: tuple[int, int, int]
+    timer: int
+    vy: float
+
+
+__all__ = ["DamageText", "EnemyData", "LevelTheme", "Portal", "WeaponData"]

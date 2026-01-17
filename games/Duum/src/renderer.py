@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any
 import pygame
 
 from . import constants as C  # noqa: N812
+from .custom_types import Portal
 from .weapon_renderer import WeaponRenderer
 
 if TYPE_CHECKING:
@@ -55,11 +56,6 @@ class GameRenderer:
 
         # 2. Effects
         self.effects_surface.fill((0, 0, 0, 0))
-
-        # Damage Flash Effect
-        if game.damage_flash_timer > 0:
-            alpha = int(100 * (game.damage_flash_timer / 15.0))
-            self.effects_surface.fill((255, 0, 0, alpha))
 
         self._render_particles(game.particle_system.particles)
         self.screen.blit(self.effects_surface, (0, 0))
@@ -125,7 +121,7 @@ class GameRenderer:
                     int(p.size),
                 )
 
-    def _render_portal(self, portal: dict[str, Any] | None, player: Player) -> None:
+    def _render_portal(self, portal: Portal | None, player: Player) -> None:
         """Render portal visual effects if active.
 
         Args:

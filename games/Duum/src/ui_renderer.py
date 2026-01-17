@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any, cast
 import pygame
 
 from . import constants as C  # noqa: N812
+from .custom_types import DamageText
 from .ui import Button
 
 try:
@@ -54,9 +55,47 @@ class UIRenderer:
         # Optimization: Shared surface for alpha effects
         size = (C.SCREEN_WIDTH, C.SCREEN_HEIGHT)
         self.overlay_surface = pygame.Surface(size, pygame.SRCALPHA)
+        self._generate_vignette()
 
         # Menu Visual State
         self.title_drips: list[dict[str, Any]] = []
+
+    def _generate_vignette(self) -> None:
+        """Generate a static vignette surface."""
+        w, h = C.SCREEN_WIDTH, C.SCREEN_HEIGHT
+        vw, vh = w // 8, h // 8  # Use smaller size for generation speed
+        vig_small = pygame.Surface((vw, vh), pygame.SRCALPHA)
+
+        cx, cy = vw // 2, vh // 2
+        max_dist = math.sqrt(cx**2 + cy**2)
+
+        # Use simple pixel array manipulation or drawing circles
+        # Drawing circles is faster in Python
+        vig_small.fill((0, 0, 0, 255))
+
+        # Draw transparent circles from center out? No.
+        # Draw filled circle of alpha 0 at center?
+        # No, pygame blending is tricky for "erasing" alpha without pixel access.
+        # Let's iterate pixels on the small surface, it's tiny (e.g. 100x75)
+
+        for y in range(vh):
+            for x in range(vw):
+                dx = x - cx
+                dy = y - cy
+                dist = math.sqrt(dx*dx + dy*dy)
+
+                # Normalized distance 0..1
+                # Start darkening at 40% distance
+                d = dist / max_dist
+                val = max(0.0, d - 0.4)
+                val = val / 0.6 # Normalize 0..1
+
+                alpha = int(255 * (val ** 2)) # Quadratic falloff
+                if alpha > 255: alpha = 255
+
+                vig_small.set_at((x, y), (0, 0, 0, alpha))
+
+        self.vignette = pygame.transform.smoothscale(vig_small, (w, h))
 
     def _init_fonts(self) -> None:
         """Initialize fonts"""
@@ -258,6 +297,9 @@ class UIRenderer:
         self._render_shield_effect(game.player)
         self.screen.blit(self.overlay_surface, (0, 0))
 
+        # Vignette
+        self.screen.blit(self.vignette, (0, 0))
+
         # Crosshair
         self._render_crosshair()
         self._render_secondary_charge(game.player)
@@ -442,7 +484,7 @@ class UIRenderer:
         if game.paused:
             self._render_pause_menu()
 
-    def _render_damage_texts(self, texts: list[dict[str, Any]]) -> None:
+    def _render_damage_texts(self, texts: list[DamageText]) -> None:
         """Render floating damage text indicators."""
         for t in texts:
             surf = self.small_font.render(t["text"], True, t["color"])
@@ -513,10 +555,28 @@ class UIRenderer:
         """Render the aiming crosshair at the center of the screen."""
         cx = C.SCREEN_WIDTH // 2
         cy = C.SCREEN_HEIGHT // 2
-        size = 12
-        pygame.draw.line(self.screen, C.RED, (cx - size, cy), (cx + size, cy), 2)
-        pygame.draw.line(self.screen, C.RED, (cx, cy - size), (cx, cy + size), 2)
-        pygame.draw.circle(self.screen, C.RED, (cx, cy), 2)
+
+        # Enhanced crosshair with outline and gap
+        gap = 5
+        length = 10
+        color = (255, 255, 255)
+        outline = (0, 0, 0)
+
+        # Draw outline (thicker lines behind)
+        pygame.draw.line(self.screen, outline, (cx - length - 2, cy), (cx - gap + 2, cy), 4)
+        pygame.draw.line(self.screen, outline, (cx + gap - 2, cy), (cx + length + 2, cy), 4)
+        pygame.draw.line(self.screen, outline, (cx, cy - length - 2), (cx, cy - gap + 2), 4)
+        pygame.draw.line(self.screen, outline, (cx, cy + gap - 2), (cx, cy + length + 2), 4)
+
+        # Draw main lines
+        pygame.draw.line(self.screen, color, (cx - length, cy), (cx - gap, cy), 2)
+        pygame.draw.line(self.screen, color, (cx + gap, cy), (cx + length, cy), 2)
+        pygame.draw.line(self.screen, color, (cx, cy - length), (cx, cy - gap), 2)
+        pygame.draw.line(self.screen, color, (cx, cy + gap), (cx, cy + length), 2)
+
+        # Center dot
+        pygame.draw.circle(self.screen, outline, (cx, cy), 3)
+        pygame.draw.circle(self.screen, color, (cx, cy), 1)
 
     def _render_secondary_charge(self, player: Player) -> None:
         """Render secondary weapon charge bar."""

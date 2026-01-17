@@ -36,6 +36,11 @@ class WeaponData(TypedDict, total=False):
     spread: float
 
 
+class Portal(TypedDict):
+    x: float
+    y: float
+
+
 @runtime_checkable
 class Map(Protocol):
     grid: list[list[int]]

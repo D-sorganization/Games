@@ -1,4 +1,5 @@
 import math
+from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -121,7 +122,7 @@ def try_move_entity(
     dx: float,
     dy: float,
     game_map: "Map",
-    obstacles: list[Any],
+    obstacles: Sequence[Any],
     radius: float = 0.5,
 ) -> None:
     """Try to move entity by dx, dy checking walls and obstacles."""
@@ -134,7 +135,9 @@ def try_move_entity(
         for ob in obstacles:
             if ob is entity:
                 continue
-            if hasattr(ob, "alive") and not ob.alive:
+
+            # Treat as alive if 'alive' attribute is missing
+            if not getattr(ob, "alive", True):
                 continue
 
             # Quick check
@@ -159,7 +162,8 @@ def try_move_entity(
         for ob in obstacles:
             if ob is entity:
                 continue
-            if hasattr(ob, "alive") and not ob.alive:
+
+            if not getattr(ob, "alive", True):
                 continue
 
             d_sq = (entity.x - ob.x) ** 2 + (new_y - ob.y) ** 2
