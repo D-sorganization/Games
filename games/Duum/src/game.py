@@ -5,7 +5,6 @@ import math
 import random
 import traceback
 from contextlib import suppress
-from typing import Any
 
 import pygame
 
@@ -16,6 +15,7 @@ from games.shared.raycaster import Raycaster
 
 from . import constants as C  # noqa: N812
 from .bot import Bot
+from .custom_types import DamageText, Portal
 from .entity_manager import EntityManager
 from .input_manager import InputManager
 from .map import Map
@@ -81,7 +81,7 @@ class Game:
 
         # Visual effects (Game Logic owned)
         self.particle_system = ParticleSystem()
-        self.damage_texts: list[dict[str, Any]] = []
+        self.damage_texts: list[DamageText] = []
         self.damage_flash_timer = 0
 
         # Game objects
@@ -89,7 +89,7 @@ class Game:
         self.player: Player | None = None
         self.entity_manager = EntityManager()
         self.raycaster: Raycaster | None = None
-        self.portal: dict[str, Any] | None = None
+        self.portal: Portal | None = None
         self.health = 100
         self.lives = C.DEFAULT_LIVES
 

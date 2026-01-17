@@ -15,7 +15,7 @@ from .utils import cast_ray_dda
 
 if TYPE_CHECKING:
     from .config import RaycasterConfig
-    from .interfaces import Bot, EnemyData, Map, Player, Projectile
+    from .interfaces import Bot, EnemyData, Map, Player, Portal, Projectile
 
 
 class Raycaster:
@@ -192,6 +192,9 @@ class Raycaster:
         if not strips:
             return None
         try:
+            # Optimization: Check if height is reasonable to prevent memory errors
+            if height > 16000:  # Arbitrary safe limit
+                return None
             scaled_strip = pygame.transform.scale(strips[strip_x], (1, height))
             self._strip_cache[cache_key] = scaled_strip
             return scaled_strip
@@ -537,33 +540,37 @@ class Raycaster:
                         shade = shades_list[i]
                         if shade < 1.0:
                             alpha = int(255 * (1.0 - shade))
+                            if alpha > 255:
+                                alpha = 255
+                            elif alpha < 0:
+                                alpha = 0
+
                             if alpha > 0:
-                                try:
-                                    blits_sequence.append(
-                                        (
-                                            shading_surfaces[alpha],
-                                            (i, top),
-                                            (0, 0, 1, h),
-                                        )
+                                blits_sequence.append(
+                                    (
+                                        shading_surfaces[alpha],
+                                        (i, top),
+                                        (0, 0, 1, h),
                                     )
-                                except IndexError:
-                                    pass
+                                )
 
                         # Fog
                         fog = fog_factors_list[i]
                         if fog > 0:
                             fog_alpha = int(255 * fog)
+                            if fog_alpha > 255:
+                                fog_alpha = 255
+                            elif fog_alpha < 0:
+                                fog_alpha = 0
+
                             if fog_alpha > 0:
-                                try:
-                                    blits_sequence.append(
-                                        (
-                                            fog_surfaces[fog_alpha],
-                                            (i, top),
-                                            (0, 0, 1, h),
-                                        )
+                                blits_sequence.append(
+                                    (
+                                        fog_surfaces[fog_alpha],
+                                        (i, top),
+                                        (0, 0, 1, h),
                                     )
-                                except IndexError:
-                                    pass
+                                )
                     else:
                         # Fallback if cache failed
                         col = wall_colors.get(wt, self.config.GRAY)
@@ -1191,7 +1198,7 @@ class Raycaster:
         player: Player,
         bots: Sequence[Bot],
         visited_cells: set[tuple[int, int]] | None = None,
-        portal: dict[str, Any] | None = None,
+        portal: Portal | None = None,
     ) -> None:
         """Render 2D minimap with fog of war support."""
         if self.minimap_surface is None:
