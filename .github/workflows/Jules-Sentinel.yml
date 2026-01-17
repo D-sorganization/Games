@@ -1,0 +1,54 @@
+name: Jules Sentinel (Security Audit)
+
+on:
+  workflow_call:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 5 * * 1"  # Weekly Mondays
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  security-events: write
+
+jobs:
+  security-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install
+        run: |
+          pip install bandit pip-audit semgrep || true
+          npm install -g @google/jules
+
+      - name: Scan
+        run: |
+          mkdir -p reports
+          pip-audit --format json -o reports/pip_audit.json 2>/dev/null || echo "[]" > reports/pip_audit.json
+          bandit -r . -f json -o reports/bandit.json --exclude './.git,./venv' 2>/dev/null || echo "[]" > reports/bandit.json
+          semgrep --config=auto --json -o reports/semgrep.json . 2>/dev/null || echo "{}" > reports/semgrep.json
+
+      - name: Analyze
+        env:
+          JULES_TOKEN: ${{ secrets.JULES_API_KEY }}
+        run: |
+          jules auth --token $JULES_TOKEN
+          jules task fix --prompt "Analyze ./reports/. DO NOT modify code. Create issues for HIGH severity. Update .jules/sentinel.md."
+
+      - name: Commit
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "docs(sentinel): security audit"
+          file_pattern: ".jules/sentinel.md"

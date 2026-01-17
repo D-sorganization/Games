@@ -1,0 +1,73 @@
+name: Jules Consolidator (Daily PR Merge)
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run'
+        required: false
+        default: 'false'
+        type: boolean
+  schedule:
+    - cron: "0 6 * * 1-5"  # Weekdays 6 AM UTC
+
+concurrency:
+  group: jules-consolidator
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    outputs:
+      pr_count: ${{ steps.list.outputs.count }}
+      pr_list: ${{ steps.list.outputs.prs }}
+      should_consolidate: ${{ steps.list.outputs.should_consolidate }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: List PRs
+        id: list
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          prs=$(gh pr list --base main --state open --json number,title,mergeable \
+            --jq '[.[] | select(.mergeable != "CONFLICTING")]')
+          count=$(echo "$prs" | jq 'length')
+          echo "count=$count" >> $GITHUB_OUTPUT
+          echo "prs=$(echo "$prs" | jq -c '.')" >> $GITHUB_OUTPUT
+          [ "$count" -gt 1 ] && echo "should_consolidate=true" >> $GITHUB_OUTPUT || echo "should_consolidate=false" >> $GITHUB_OUTPUT
+
+  consolidate:
+    needs: discover
+    if: needs.discover.outputs.should_consolidate == 'true' && inputs.dry_run != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Merge
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_LIST: ${{ needs.discover.outputs.pr_list }}
+        run: |
+          git config user.name "jules-bot"
+          git config user.email "jules-bot@users.noreply.github.com"
+
+          BRANCH="consolidated-$(date +%Y-%m-%d)"
+          git checkout -b "$BRANCH" origin/main
+
+          included=""
+          for row in $(echo "$PR_LIST" | jq -r '.[] | @base64'); do
+            pr_num=$(echo ${row} | base64 --decode | jq -r '.number')
+            gh pr checkout "$pr_num" --detach 2>/dev/null && git checkout "$BRANCH" && git merge FETCH_HEAD --no-edit && included="$included #$pr_num" || git merge --abort 2>/dev/null
+          done
+
+          git push origin "$BRANCH"
+          gh pr create --title "Consolidation - $(date +%Y-%m-%d)" --body "PRs:$included" --label "jules:consolidation"
