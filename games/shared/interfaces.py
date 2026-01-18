@@ -83,6 +83,16 @@ class Bot(Protocol):
 
 
 @runtime_checkable
+class WorldParticle(Protocol):
+    x: float
+    y: float
+    z: float
+    alive: bool
+    size: float
+    color: tuple[int, int, int]
+
+
+@runtime_checkable
 class Projectile(Protocol):
     x: float
     y: float

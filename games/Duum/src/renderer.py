@@ -29,7 +29,7 @@ class GameRenderer:
         size = (C.SCREEN_WIDTH, C.SCREEN_HEIGHT)
         self.effects_surface = pygame.Surface(size, pygame.SRCALPHA)
 
-    def render_game(self, game: Game) -> None:
+    def render_game(self, game: Game, flash_intensity: float = 0.0) -> None:
         """Render gameplay"""
         assert game.raycaster is not None
         assert game.player is not None
@@ -51,6 +51,8 @@ class GameRenderer:
             game.level,
             view_offset_y=bob_offset,
             projectiles=game.projectiles,
+            particles=game.particle_system.world_particles,
+            flash_intensity=flash_intensity,
         )
         # 'render_projectiles' merged into render_3d in the optimized Raycaster
 

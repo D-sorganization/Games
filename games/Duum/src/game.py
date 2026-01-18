@@ -83,6 +83,7 @@ class Game:
         self.particle_system = ParticleSystem()
         self.damage_texts: list[DamageText] = []
         self.damage_flash_timer = 0
+        self.flash_intensity = 0.0
 
         # Game objects
         self.game_map: Map | None = None
@@ -758,6 +759,9 @@ class Game:
         sound_name = f"shoot_{weapon}"
         self.sound_manager.play_sound(sound_name)
 
+        # Muzzle Flash Light
+        self.flash_intensity = 0.8
+
         # Visuals & Logic
         if weapon == "plasma" and not is_secondary:
             # Spawn Projectile
@@ -1038,6 +1042,18 @@ class Game:
             if not closest_bot:
                 # Wall Hit Effect at screen_hit_x, screen_hit_y
                 # Add sparks
+                hit_world_x = self.player.x + math.cos(aim_angle) * wall_dist
+                hit_world_y = self.player.y + math.sin(aim_angle) * wall_dist
+
+                self.particle_system.add_world_explosion(
+                    hit_world_x,
+                    hit_world_y,
+                    0.5,
+                    count=10,
+                    color=(255, 200, 100),
+                    speed=0.1,
+                )
+
                 for _ in range(5):
                     self.particle_system.add_particle(
                         x=screen_hit_x,
@@ -1064,6 +1080,12 @@ class Game:
             timer=40,
             size=3000,
         )
+
+        # 3D Explosion
+        self.particle_system.add_world_explosion(
+            self.player.x, self.player.y, 0.5, count=100, color=C.ORANGE, speed=0.5
+        )
+
         for _ in range(300):
             angle = random.uniform(0, 2 * math.pi)
             speed = random.uniform(5, 25)
@@ -1121,6 +1143,11 @@ class Game:
             logger.exception("Boom sound failed")
 
         try:
+            # 3D Explosion
+            self.particle_system.add_world_explosion(
+                impact_x, impact_y, 0.5, count=80, color=(0, 255, 255), speed=0.4
+            )
+
             hits = 0
             for bot in self.bots:
                 # Optimized alive check
@@ -1190,6 +1217,11 @@ class Game:
             self.damage_flash_timer = 15
 
         # Visuals
+        color = C.CYAN if weapon_type == "plasma" else C.ORANGE
+        self.particle_system.add_world_explosion(
+            projectile.x, projectile.y, projectile.z, count=50, color=color, speed=0.3
+        )
+
         if dist_to_player < 20:
             count = 5 if weapon_type == "rocket" else 3
             self.particle_system.add_explosion(
@@ -1197,7 +1229,6 @@ class Game:
             )
 
             # Add some colored particles
-            color = C.CYAN if weapon_type == "plasma" else C.ORANGE
             for _ in range(20):
                 self.particle_system.add_particle(
                     x=C.SCREEN_WIDTH // 2,
@@ -1521,6 +1552,12 @@ class Game:
                     )
                 self.kill_combo_count = 0
 
+        # Decay Flash
+        if self.flash_intensity > 0:
+            self.flash_intensity -= 0.1
+            if self.flash_intensity < 0:
+                self.flash_intensity = 0.0
+
     def _update_intro_logic(self, elapsed: int) -> None:
         """Update intro sequence logic and transitions.
 
@@ -1610,7 +1647,7 @@ class Game:
                                 self.groan_timer = 240
                     else:
                         self.update_game()
-                    self.renderer.render_game(self)
+                    self.renderer.render_game(self, self.flash_intensity)
                     # Decrement damage flash timer after rendering
                     # to maintain correct frame count
                     if not self.paused and self.damage_flash_timer > 0:
