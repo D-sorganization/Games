@@ -69,5 +69,10 @@ jobs:
             gh pr checkout "$pr_num" --detach 2>/dev/null && git checkout "$BRANCH" && git merge FETCH_HEAD --no-edit && included="$included #$pr_num" || git merge --abort 2>/dev/null
           done
 
-          git push origin "$BRANCH"
-          gh pr create --title "Consolidation - $(date +%Y-%m-%d)" --body "PRs:$included" --label "jules:consolidation"
+          # Only push and create PR if we actually merged something
+          if [ -n "$included" ]; then
+            git push origin "$BRANCH"
+            gh pr create --title "Consolidation - $(date +%Y-%m-%d)" --body "PRs:$included" --label "jules:consolidation"
+          else
+            echo "No PRs were successfully merged, skipping PR creation"
+          fi

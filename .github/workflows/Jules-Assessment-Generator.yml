@@ -28,7 +28,9 @@ jobs:
       - name: Archive
         run: |
           mkdir -p docs/assessments/archive
-          for f in docs/assessments/Assessment_*.md; do [ -f "$f" ] && mv "$f" docs/assessments/archive/; done
+          shopt -s nullglob
+          for f in docs/assessments/Assessment_*.md; do mv "$f" docs/assessments/archive/; done
+          shopt -u nullglob
 
       - name: Generate
         env:
