@@ -9,9 +9,11 @@ on:
     workflows: ["CI Standard"]
     types: [completed]
   schedule:
-    - cron: "0 2 * * *"
+    # RELAXED WEEKLY SCHEDULE - Games is a fun side project (Tier 3)
+    # Aligned with overnight window (midnight-4 AM UTC)
+    - cron: "0 2 * * 0"   # Sunday 2 AM - Weekly assessment
+    - cron: "0 3 * * 1"   # Monday 3 AM - Security check (within midnight-4 AM window)
 
-# Prevent multiple Control Tower instances from running simultaneously
 concurrency:
   group: jules-control-tower
   cancel-in-progress: false
@@ -26,10 +28,8 @@ jobs:
     runs-on: ubuntu-latest
     if: github.actor != 'jules-bot'
     outputs:
-      # FIX: Matched output name to what downstream jobs expect ("target")
       target: ${{ steps.decide.outputs.target }}
     steps:
-
       - name: Analyze Event Context
         id: decide
         uses: actions/github-script@v7
@@ -37,7 +37,8 @@ jobs:
           script: |
             const event = context.eventName;
             let target = "none";
-            // 1. CI FAILURE -> AUTO-REPAIR or HOTFIX-CREATOR (if protected branch)
+
+            // 1. CI FAILURE -> AUTO-REPAIR
             if (event === "workflow_run" && context.payload.workflow_run.conclusion === "failure") {
                const failedBranch = context.payload.workflow_run.head_branch;
                if (failedBranch === "main" || failedBranch === "master") {
@@ -46,52 +47,43 @@ jobs:
                   target = "auto-repair";
                }
             }
-            // 2. NIGHTLY SCHEDULE -> AUDITOR (Daily) or CUSTODIAN (Weekly)
+            // 2. WEEKLY SCHEDULE - Minimal maintenance
             else if (event === "schedule") {
-              const day = new Date().getDay();
-              if (day === 2) { // Tuesday
-                 target = "tech-custodian";
-              } else {
-                 target = "scientific-auditor";
+              const day = new Date().getUTCDay();
+              if (day === 0) { // Sunday
+                 target = "assessment-generator";
+              } else if (day === 1) { // Monday
+                 target = "sentinel";
               }
             }
-            // 3. PUSH TO MAIN -> DOCS (CodeWiki Feeder)
-            else if (event === "push" && context.ref === "refs/heads/main") {
-              target = "doc-scribe";
-            }
-            // 4. NEW PR -> TEST GENERATOR
+            // 3. PUSH TO MAIN -> Skip docs for games
+            // 4. NEW PR -> TEST GENERATOR (keep this)
             else if (event === "pull_request" && context.payload.action === 'opened') {
                target = "test-generator";
             }
-            // 5. PR CLOSED -> ARCHIVIST
-            else if (event === "pull_request" && context.payload.action === 'closed' && context.payload.pull_request.merged) {
-               target = "archivist";
-            }
+            // 5. PR CLOSED -> Skip archivist for games
+
             console.log(`Decision: Dispatching [${target}]`);
             core.setOutput("target", target);
 
-  # --- WORKER DISPATCH ---
+  # --- WORKER DISPATCH (Minimal for side project) ---
 
   call-repair:
     needs: triage
     if: needs.triage.outputs.target == 'auto-repair'
-    # FIX: Pass the specific Run ID so we repair the *exact* failure, not just "the latest one"
     uses: ./.github/workflows/Jules-Auto-Repair.yml
     with:
       run_id: ${{ github.event.workflow_run.id }}
       branch: ${{ github.event.workflow_run.head_branch }}
     secrets: inherit
 
-  call-auditor:
+  call-hotfix-creator:
     needs: triage
-    if: needs.triage.outputs.target == 'scientific-auditor'
-    uses: ./.github/workflows/Jules-Scientific-Auditor.yml
-    secrets: inherit
-
-  call-scribe:
-    needs: triage
-    if: needs.triage.outputs.target == 'doc-scribe'
-    uses: ./.github/workflows/Jules-Documentation-Scribe.yml
+    if: needs.triage.outputs.target == 'hotfix-creator'
+    uses: ./.github/workflows/Jules-Hotfix-Creator.yml
+    with:
+      run_id: ${{ github.event.workflow_run.id }}
+      failed_branch: ${{ github.event.workflow_run.head_branch }}
     secrets: inherit
 
   call-tests:
@@ -100,22 +92,14 @@ jobs:
     uses: ./.github/workflows/Jules-Test-Generator.yml
     secrets: inherit
 
-  call-custodian:
+  call-sentinel:
     needs: triage
-    if: needs.triage.outputs.target == 'tech-custodian'
-    uses: ./.github/workflows/Jules-Tech-Custodian.yml
+    if: needs.triage.outputs.target == 'sentinel'
+    uses: ./.github/workflows/Jules-Sentinel.yml
     secrets: inherit
 
-  call-archivist:
+  call-assessment-generator:
     needs: triage
-    if: needs.triage.outputs.target == 'archivist'
-    uses: ./.github/workflows/Jules-Archivist.yml
-    secrets: inherit
-  call-hotfix-creator:
-    needs: triage
-    if: needs.triage.outputs.target == 'hotfix-creator'
-    uses: ./.github/workflows/Jules-Hotfix-Creator.yml
-    with:
-      run_id: ${{ github.event.workflow_run.id }}
-      failed_branch: ${{ github.event.workflow_run.head_branch }}
+    if: needs.triage.outputs.target == 'assessment-generator'
+    uses: ./.github/workflows/Jules-Assessment-Generator.yml
     secrets: inherit
