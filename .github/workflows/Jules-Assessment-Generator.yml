@@ -3,8 +3,7 @@ name: Jules Assessment Generator (Worker)
 on:
   workflow_call:
   workflow_dispatch:
-  schedule:
-    - cron: "0 2 * * 0"  # Weekly Sundays
+  # NOTE: No schedule trigger - called by Control Tower to avoid duplicate runs
 
 permissions:
   contents: write

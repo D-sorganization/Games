@@ -3,8 +3,7 @@ name: Jules Sentinel (Security Audit)
 on:
   workflow_call:
   workflow_dispatch:
-  schedule:
-    - cron: "0 3 * * 1"  # Weekly Mondays at 3 AM UTC (within midnight-4 AM window)
+  # NOTE: No schedule trigger - called by Control Tower to avoid duplicate runs
 
 permissions:
   contents: write
@@ -36,9 +35,9 @@ jobs:
       - name: Scan
         run: |
           mkdir -p reports
-          pip-audit --format json -o reports/pip_audit.json 2>/dev/null || echo "[]" > reports/pip_audit.json
-          bandit -r . -f json -o reports/bandit.json --exclude './.git,./venv' 2>/dev/null || echo "[]" > reports/bandit.json
-          semgrep --config=auto --json -o reports/semgrep.json . 2>/dev/null || echo "{}" > reports/semgrep.json
+          pip-audit --format json -o reports/pip_audit.json 2>reports/pip_audit.stderr.log || echo "[]" > reports/pip_audit.json
+          bandit -r . -f json -o reports/bandit.json --exclude './.git,./venv' 2>reports/bandit.stderr.log || echo "[]" > reports/bandit.json
+          semgrep --config=auto --json -o reports/semgrep.json . 2>reports/semgrep.stderr.log || echo "{}" > reports/semgrep.json
 
       - name: Analyze
         env:
