@@ -218,7 +218,7 @@ class TextureGenerator:
             pygame.init()
 
         textures = {}
-        size = 64
+        size = 128
 
         textures["brick"] = TextureGenerator.generate_bricks(
             size, size, (160, 80, 60), (120, 120, 120)

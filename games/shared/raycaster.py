@@ -15,7 +15,15 @@ from .utils import cast_ray_dda
 
 if TYPE_CHECKING:
     from .config import RaycasterConfig
-    from .interfaces import Bot, EnemyData, Map, Player, Portal, Projectile
+    from .interfaces import (
+        Bot,
+        EnemyData,
+        Map,
+        Player,
+        Portal,
+        Projectile,
+        WorldParticle,
+    )
 
 
 class Raycaster:
@@ -230,6 +238,8 @@ class Raycaster:
         level: int,
         view_offset_y: float = 0.0,
         projectiles: Sequence[Projectile] | None = None,
+        particles: Sequence[WorldParticle] | None = None,
+        flash_intensity: float = 0.0,
     ) -> None:
         """Render 3D view using vectorized raycasting."""
         self.update_cache()
@@ -265,11 +275,21 @@ class Raycaster:
             fisheye_factors,
             level,
             view_offset_y,
+            flash_intensity,
         )
 
         # Render Sprites
         projs = projectiles if projectiles is not None else []
-        self._render_sprites(player, bots, projs, current_fov / 2, view_offset_y)
+        parts = particles if particles is not None else []
+        self._render_sprites(
+            player,
+            bots,
+            projs,
+            parts,
+            current_fov / 2,
+            view_offset_y,
+            flash_intensity,
+        )
 
         # Blit to Screen
         self._blit_view_to_screen(screen)
@@ -429,6 +449,7 @@ class Raycaster:
         fisheye_factors: np.ndarray[Any, Any],
         level: int,
         view_offset_y: float,
+        flash_intensity: float,
     ) -> None:
         """Render walls using computed arrays."""
         # Theme Setup
@@ -488,7 +509,6 @@ class Raycaster:
         shading_surfaces = self.shading_surfaces
         fog_surfaces = self.fog_surfaces
 
-        # Batched Blit List
         # Batched Blit List
         blits_sequence: list[
             tuple[pygame.Surface, tuple[int, int]]
@@ -613,31 +633,40 @@ class Raycaster:
         player: Player,
         bots: Sequence[Bot],
         projectiles: Sequence[Projectile],
+        particles: Sequence[WorldParticle],
         half_fov: float,
         view_offset_y: float = 0.0,
+        flash_intensity: float = 0.0,
     ) -> None:
-        """Render all sprites (bots and projectiles) to the view surface"""
-        sprites_to_render: list[tuple[Any, bool]] = []
+        """Render all sprites (bots, projectiles, particles) to the view surface"""
+        # Entity tuple: (Object, TypeID)
+        # TypeID: 0=Bot, 1=Projectile, 2=Particle
+        sprites_to_render: list[tuple[Any, int]] = []
 
         # Optimization: Pre-calculate player direction vector
         p_cos = math.cos(player.angle)
         p_sin = math.sin(player.angle)
         max_dist_sq = self.config.MAX_DEPTH * self.config.MAX_DEPTH
 
-        # Merge bots and projectiles
+        # Merge all sprites
         for bot in bots:
             if bot.removed:
                 continue
-            sprites_to_render.append((bot, False))
+            sprites_to_render.append((bot, 0))
 
         for proj in projectiles:
             if not proj.alive:
                 continue
-            sprites_to_render.append((proj, True))
+            sprites_to_render.append((proj, 1))
+
+        for part in particles:
+            if not part.alive:
+                continue
+            sprites_to_render.append((part, 2))
 
         final_sprites = []
 
-        for entity, is_projectile in sprites_to_render:
+        for entity, type_id in sprites_to_render:
             dx = entity.x - player.x
             dy = entity.y - player.y
 
@@ -660,22 +689,85 @@ class Raycaster:
                 angle_to_sprite += 2 * math.pi
 
             if abs(angle_to_sprite) < half_fov + 0.5:
-                final_sprites.append((entity, dist, angle_to_sprite, is_projectile))
+                final_sprites.append((entity, dist, angle_to_sprite, type_id))
 
         # Sort by distance (far to near)
         final_sprites.sort(key=lambda x: x[1], reverse=True)
 
-        for entity, dist, angle, is_proj in final_sprites:
-            if is_proj:
+        for entity, dist, angle, type_id in final_sprites:
+            if type_id == 1:
                 proj = cast("Projectile", entity)
                 self._draw_single_projectile(
                     player, proj, dist, angle, half_fov, view_offset_y
                 )
+            elif type_id == 2:
+                part = cast("WorldParticle", entity)
+                self._draw_single_particle(
+                    player, part, dist, angle, half_fov, view_offset_y
+                )
             else:
                 bot = cast("Bot", entity)
                 self._draw_single_sprite(
-                    player, bot, dist, angle, half_fov, view_offset_y
+                    player,
+                    bot,
+                    dist,
+                    angle,
+                    half_fov,
+                    view_offset_y,
+                    flash_intensity,
                 )
+
+    def _draw_single_particle(
+        self,
+        player: Player,
+        particle: WorldParticle,
+        dist: float,
+        angle: float,
+        half_fov: float,
+        view_offset_y: float = 0.0,
+    ) -> None:
+        """Draw a world particle."""
+        safe_dist = max(0.01, dist)
+
+        # Calculate screen position
+        base_size = self.config.SCREEN_HEIGHT / safe_dist
+        sprite_size = base_size * float(particle.size)
+
+        center_ray = self.num_rays / 2
+        sprite_scale = sprite_size / self.render_scale
+        ray_x = center_ray + (angle / half_fov) * center_ray - sprite_scale / 2
+
+        z_offset = (particle.z - 0.5) * (self.config.SCREEN_HEIGHT / safe_dist)
+        sprite_y = (
+            (self.config.SCREEN_HEIGHT / 2)
+            - (sprite_size / 2)
+            - z_offset
+            + player.pitch
+            + view_offset_y
+        )
+
+        if ray_x + sprite_scale < 0 or ray_x >= self.num_rays:
+            return
+
+        # Simple Center occlusion check
+        center_ray_idx = int(ray_x + sprite_scale / 2)
+        if 0 <= center_ray_idx < self.num_rays:
+            if dist > self.z_buffer[center_ray_idx]:
+                return  # Occluded
+
+        # Draw
+        try:
+            rect = pygame.Rect(
+                int(ray_x), int(sprite_y), int(sprite_scale), int(sprite_scale)
+            )
+            if rect.width > 0 and rect.height > 0:
+                # Particles are often somewhat transparent or additive?
+                # For now simple circle
+                pygame.draw.circle(
+                    self.view_surface, particle.color, rect.center, rect.width // 2
+                )
+        except (ValueError, pygame.error):
+            pass
 
     def _draw_single_sprite(
         self,
@@ -685,6 +777,7 @@ class Raycaster:
         angle: float,
         half_fov: float,
         view_offset_y: float = 0.0,
+        flash_intensity: float = 0.0,
     ) -> None:
         """Draw a single sprite to the view surface.
 
@@ -724,6 +817,11 @@ class Raycaster:
 
         # Calculate shade level (0-20)
         distance_shade = max(0.2, 1.0 - dist / 50.0)  # Match wall shading intensity
+        if flash_intensity > 0:
+            flash_factor = flash_intensity * max(0.0, 1.0 - dist / 15.0)
+            distance_shade += flash_factor
+            distance_shade = min(1.0, distance_shade)
+
         shade_level = int(distance_shade * 20)
 
         cache_key = (

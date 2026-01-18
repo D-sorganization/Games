@@ -7,6 +7,54 @@ import pygame
 from . import constants as C  # noqa: N812
 
 
+class WorldParticle:
+    """3D Particle in the world space."""
+
+    def __init__(
+        self,
+        x: float,
+        y: float,
+        z: float,
+        dx: float,
+        dy: float,
+        dz: float,
+        color: tuple[int, int, int],
+        timer: int,
+        size: float,
+        gravity: float = 0.0,
+    ):
+        self.x = x
+        self.y = y
+        self.z = z
+        self.dx = dx
+        self.dy = dy
+        self.dz = dz
+        self.color = color
+        self.timer = timer
+        self.size = size
+        self.alive = True
+        self.gravity = gravity
+
+    def update(self) -> bool:
+        """Update particle physics."""
+        self.x += self.dx
+        self.y += self.dy
+        self.z += self.dz
+        self.dz -= self.gravity
+
+        # Ground collision
+        if self.z < 0:
+            self.z = 0
+            self.dz = -self.dz * 0.5
+            self.dx *= 0.8
+            self.dy *= 0.8
+
+        self.timer -= 1
+        if self.timer <= 0:
+            self.alive = False
+        return self.alive
+
+
 class Particle:
     def __init__(
         self,
@@ -62,6 +110,60 @@ class ParticleSystem:
     def __init__(self) -> None:
         """Initialize the particle system."""
         self.particles: list[Particle] = []
+        self.world_particles: list[WorldParticle] = []
+
+    def add_world_particle(
+        self,
+        x: float,
+        y: float,
+        z: float,
+        dx: float,
+        dy: float,
+        dz: float,
+        color: tuple[int, int, int],
+        timer: int = 60,
+        size: float = 0.1,
+        gravity: float = 0.01,
+    ) -> None:
+        """Add a 3D world particle."""
+        self.world_particles.append(
+            WorldParticle(x, y, z, dx, dy, dz, color, timer, size, gravity)
+        )
+
+    def add_world_explosion(
+        self,
+        x: float,
+        y: float,
+        z: float,
+        count: int = 20,
+        color: tuple[int, int, int] | None = None,
+        speed: float = 0.2,
+    ) -> None:
+        """Create a 3D explosion in the world."""
+        for _ in range(count):
+            c = (
+                color
+                if color
+                else (
+                    random.randint(200, 255),
+                    random.randint(50, 150),
+                    0,
+                )
+            )
+
+            v = random.uniform(0.05, speed)
+            dx = v * random.uniform(-1, 1)
+            dy = v * random.uniform(-1, 1)
+            dz = v * random.uniform(-1, 1)
+
+            self.add_world_particle(
+                x, y, z,
+                dx, dy, dz,
+                c,
+                timer=random.randint(30, 60),
+                size=random.uniform(0.05, 0.15),
+                gravity=0.005
+            )
 
     def add_particle(
         self,
@@ -151,6 +253,7 @@ class ParticleSystem:
     def update(self) -> None:
         """Update all particles."""
         self.particles = [p for p in self.particles if p.update()]
+        self.world_particles = [p for p in self.world_particles if p.update()]
 
     def render(self, screen: pygame.Surface) -> None:
         """Render all particles."""
