@@ -157,12 +157,16 @@ class ParticleSystem:
             dz = v * random.uniform(-1, 1)
 
             self.add_world_particle(
-                x, y, z,
-                dx, dy, dz,
+                x,
+                y,
+                z,
+                dx,
+                dy,
+                dz,
                 c,
                 timer=random.randint(30, 60),
                 size=random.uniform(0.05, 0.15),
-                gravity=0.005
+                gravity=0.005,
             )
 
     def add_particle(
