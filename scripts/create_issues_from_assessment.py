@@ -24,8 +24,13 @@ def get_existing_issues() -> list[dict[str, Any]]:
     try:
         result = subprocess.run(
             [
-                "gh", "issue", "list", "--limit", "200",
-                "--json", "number,title,state,labels",
+                "gh",
+                "issue",
+                "list",
+                "--limit",
+                "200",
+                "--json",
+                "number,title,state,labels",
             ],
             capture_output=True,
             text=True,
