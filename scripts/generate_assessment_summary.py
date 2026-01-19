@@ -142,7 +142,8 @@ def generate_summary(
     overall_score = total_weighted_score / total_weight if total_weight > 0 else 7.0
 
     # Count critical issues
-    critical_issues = [i for i in all_issues if i["severity"] in ("BLOCKER", "CRITICAL")]
+    critical_sevs = ("BLOCKER", "CRITICAL")
+    critical_issues = [i for i in all_issues if i["severity"] in critical_sevs]
 
     # Generate markdown summary
     md_content = f"""# Comprehensive Assessment Summary
@@ -167,7 +168,9 @@ Repository assessment completed across all {len(scores)} categories.
         if assessment_id in categories:
             cat_info = categories[assessment_id]
             score = scores[assessment_id]
-            md_content += f"| **{assessment_id}** | {cat_info['name']} | {score:.1f} | {cat_info['weight']}x |\n"
+            name = cat_info["name"]
+            weight = cat_info["weight"]
+            md_content += f"| **{assessment_id}** | {name} | {score:.1f} | {weight}x |\n"  # noqa: E501
 
     md_content += f"""
 ## Critical Issues
@@ -177,9 +180,10 @@ Found {len(critical_issues)} critical issues requiring immediate attention:
 """
 
     for i, issue in enumerate(critical_issues[:10], 1):
-        md_content += (
-            f"{i}. **[{issue['severity']}]** {issue['description']} (Source: {issue['source']})\n"
-        )
+        sev = issue["severity"]
+        desc = issue["description"]
+        src = issue["source"]
+        md_content += f"{i}. **[{sev}]** {desc} (Source: {src})\n"
 
     md_content += """
 ## Recommendations
@@ -210,7 +214,11 @@ Recommended: 30 days from today
         "timestamp": datetime.now().isoformat(),
         "overall_score": round(overall_score, 2),
         "category_scores": {
-            k: {"score": v, "name": categories[k]["name"], "weight": categories[k]["weight"]}
+            k: {
+                "score": v,
+                "name": categories[k]["name"],
+                "weight": categories[k]["weight"],
+            }
             for k, v in scores.items()
             if k in categories
         },
