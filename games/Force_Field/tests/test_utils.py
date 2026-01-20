@@ -32,7 +32,11 @@ class TestUtils(unittest.TestCase):
         """Test that cast_ray_dda properly handles out-of-bounds coordinates."""
         # Test ray going out of bounds from near boundary
         distance, wall_type, hit_x, hit_y, _, _, _ = cast_ray_dda(
-            18.5, 10.0, 0.0, self.map, max_dist=50.0  # Ray going east
+            18.5,
+            10.0,
+            0.0,
+            self.map,
+            max_dist=50.0,  # Ray going east
         )
 
         # Should hit a wall (either boundary or existing wall)
@@ -41,7 +45,11 @@ class TestUtils(unittest.TestCase):
 
         # Test ray going in negative direction (out of bounds)
         distance, wall_type, hit_x, hit_y, _, _, _ = cast_ray_dda(
-            1.5, 10.0, math.pi, self.map, max_dist=50.0  # Ray going west
+            1.5,
+            10.0,
+            math.pi,
+            self.map,
+            max_dist=50.0,  # Ray going west
         )
 
         # Should hit a wall

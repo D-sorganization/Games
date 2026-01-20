@@ -2,6 +2,7 @@
 """
 Create a proper ICO file from PNG and desktop shortcut for Games Launcher
 """
+
 import subprocess
 import sys
 from pathlib import Path
