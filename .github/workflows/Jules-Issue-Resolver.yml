@@ -1,19 +1,16 @@
-name: Jules Code Quality Fixer (Worker)
+name: Jules Issue Resolver (Daily Priority Fixer)
 
 on:
   workflow_call:
   workflow_dispatch:
     inputs:
-      assessment_file:
-        description: 'Path to assessment file'
+      max_issues:
+        description: 'Maximum issues to fix per run'
         required: false
-        default: 'docs/assessments/Code_Quality_Review_Latest.md'
+        default: '5'
         type: string
-      dry_run:
-        description: 'Dry run - analyze only'
-        required: false
-        default: false
-        type: boolean
+  schedule:
+    - cron: "30 2 * * *"  # Daily at 2:30 AM UTC (overnight window)
 
 permissions:
   contents: write
@@ -21,11 +18,11 @@ permissions:
   issues: write
 
 concurrency:
-  group: jules-code-quality-fixer-${{ github.repository }}
+  group: jules-issue-resolver-${{ github.repository }}
   cancel-in-progress: false
 
 jobs:
-  fix-issues:
+  resolve-issues:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -46,18 +43,32 @@ jobs:
           pip install ruff black mypy || true
           npm install -g @google/jules
 
+      - name: Gather Priority Issues
+        id: gather
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p .jules/resolver_data
+
+          gh issue list --state open --limit 50 --json number,title,labels,body \
+            --jq '[.[] | select(.labels | map(.name) | (contains(["critical"]) or contains(["high-priority"])))]' \
+            > .jules/resolver_data/priority_issues.json
+
+          [ -f "docs/assessments/issues/summary.md" ] && cp docs/assessments/issues/summary.md .jules/resolver_data/
+          [ -f "docs/assessments/Code_Quality_Review_Latest.md" ] && cp docs/assessments/Code_Quality_Review_Latest.md .jules/resolver_data/
+
+          echo "issue_count=$(cat .jules/resolver_data/priority_issues.json | jq 'length')" >> $GITHUB_OUTPUT
+
       - name: Create Fix Branch
         run: |
-          BRANCH_NAME="jules/code-quality-fix-$(date +%Y%m%d-%H%M%S)"
+          BRANCH_NAME="jules/issue-resolver-$(date +%Y%m%d-%H%M)"
           git checkout -b "$BRANCH_NAME"
           echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
 
-      - name: Check and Fix
-        if: inputs.dry_run != 'true'
+      - name: Jules Issue Resolution
         env:
           JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
-          ASSESSMENT_FILE: ${{ inputs.assessment_file || 'docs/assessments/Code_Quality_Review_Latest.md' }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MAX_ISSUES: ${{ inputs.max_issues || '5' }}
         run: |
           set -e
           DATE=$(date +%Y-%m-%d)
@@ -87,16 +98,15 @@ jobs:
           
           # Create session prompt
           PROMPT=$(cat << 'PROMPT_EOF'
-          You are the CODE QUALITY FIXER agent.
+          '
+          You are the ISSUE RESOLVER agent. FIX identified issues from .jules/resolver_data/.
           
-          Fix issues in the assessment file. Priority: CRITICAL > HIGH > MEDIUM > LOW
+          1. Identify TOP $MAX_ISSUES priority items
+          2. ACTUALLY FIX THEM - make code changes
+          3. Run: ruff check . --fix && black .
+          4. Document in docs/assessments/issues/resolved/
           
-          Rules:
-          - DO NOT modify test assertions
-          - DO NOT disable linting rules without justification
-          - Run: ruff check . --fix && black .
-          
-          Document fixes in docs/assessments/issues/
+          Include "Fixes #NUM" for issues you completely resolve.
           PROMPT_EOF
           )
           
@@ -160,23 +170,33 @@ jobs:
           
 
 
+      - name: Run Linters
+        continue-on-error: true
+        run: |
           ruff check . --fix || true
           black . || true
 
+      - name: Commit and Create PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p docs/assessments/issues/resolved
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
           git add -A
           if ! git diff --staged --quiet; then
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-            git commit -m "fix: code quality improvements"
-            git push -u origin "$BRANCH_NAME"
+            git commit -m "fix: resolve priority issues
 
-            gh pr create \
-              --title "Code Quality Fixes - $(date +%Y-%m-%d)" \
-              --body "Automated code quality fixes" \
-              --base main \
-              --head "$BRANCH_NAME" \
-              --label "jules:code-quality,automated-fix"
-            
+          Co-Authored-By: Jules <jules-bot@users.noreply.github.com>"
+            git push origin "$BRANCH_NAME"
+            gh pr create --title "Issue Resolution - $(date +%Y-%m-%d)" \
+              --body "Daily issue resolution from assessments." \
+              --label "jules:issue-resolver,automated-fix" || \
+            gh pr create --title "Issue Resolution - $(date +%Y-%m-%d)" \
+              --body "Daily issue resolution from assessments."
+
             # Post-processing: Remove reviewers to reduce noise
             PR_NUM=$(gh pr list --head "$BRANCH_NAME" --json number -q '.[0].number')
             if [ -n "$PR_NUM" ]; then
