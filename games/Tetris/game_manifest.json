@@ -1,0 +1,7 @@
+{
+    "name": "Tetris",
+    "icon": "tetris_icon.png",
+    "type": "python",
+    "path": "tetris.py",
+    "description": "Modern puzzle game with hold mechanics, combos, and particle effects."
+}

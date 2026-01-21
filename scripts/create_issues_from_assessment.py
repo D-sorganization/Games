@@ -23,12 +23,21 @@ def get_existing_issues() -> list[dict[str, Any]]:
     """Fetch existing GitHub issues."""
     try:
         result = subprocess.run(
-            ["gh", "issue", "list", "--limit", "200", "--json", "number,title,state,labels"],
+            [
+                "gh",
+                "issue",
+                "list",
+                "--limit",
+                "200",
+                "--json",
+                "number,title,state,labels",
+            ],
             capture_output=True,
             text=True,
             check=True,
         )
-        return json.loads(result.stdout)
+        data: list[dict[str, Any]] = json.loads(result.stdout)
+        return data
     except Exception as e:
         logger.warning(f"Could not fetch existing issues: {e}")
         return []
@@ -134,7 +143,8 @@ def process_assessment_findings(
     filtered_issues = [i for i in critical_issues if i.get("severity") in severities]
 
     logger.info(
-        f"Filtered to {len(filtered_issues)} issues with severities: {', '.join(severities)}"
+        f"Filtered to {len(filtered_issues)} issues with severities: "
+        f"{', '.join(severities)}"
     )
 
     # Get repository name from current directory
@@ -151,13 +161,17 @@ def process_assessment_findings(
         "Repository_Management": "RepoMgmt",
     }
     repo_short = repo_short_names.get(repo_name, repo_name[:8])
-    
+
     # Category classification based on source
     def classify_category(source_name: str, description: str) -> str:
         """Classify issue into a category."""
         text = (source_name + " " + description).lower()
-        
-        if "architecture" in text or "implementation" in text or "Assessment_A" in source_name:
+
+        if (
+            "architecture" in text
+            or "implementation" in text
+            or "Assessment_A" in source_name
+        ):
             return "Architecture"
         elif "quality" in text or "hygiene" in text or "Assessment_B" in source_name:
             return "Code Quality"
@@ -167,7 +181,11 @@ def process_assessment_findings(
             return "User Experience"
         elif "performance" in text or "Assessment_E" in source_name:
             return "Performance"
-        elif "installation" in text or "deployment" in text or "Assessment_F" in source_name:
+        elif (
+            "installation" in text
+            or "deployment" in text
+            or "Assessment_F" in source_name
+        ):
             return "Installation"
         elif "test" in text or "Assessment_G" in source_name:
             return "Testing"
@@ -189,7 +207,7 @@ def process_assessment_findings(
             return "CI/CD"
         else:
             return "General"
-    
+
     # Create issues
     created_count = 0
     skipped_count = 0
@@ -201,22 +219,26 @@ def process_assessment_findings(
 
         # Classify category
         category = classify_category(source, description)
-        
+
         # Clean description for title (remove markdown, truncate)
         clean_desc = description.replace("**", "").replace("*", "").replace("`", "")
         clean_desc = clean_desc.split("\n")[0]  # First line only
         if len(clean_desc) > 60:
             clean_desc = clean_desc[:57] + "..."
-        
+
         # Generate standardized title
         title = f"[{repo_short}] {severity} {category}: {clean_desc}"
+
+        # Get date string safely
+        time_data = summary.get("timestamp", "")
+        date_str = time_data[:10] if time_data else "Unknown"
 
         body = f"""## Issue Description
 
 **Severity**: {severity}
 **Category**: {category}
 **Source**: {source}
-**Identified**: {summary.get('timestamp', 'Unknown')}
+**Identified**: {summary.get("timestamp", "Unknown")}
 
 ### Problem
 
@@ -230,7 +252,7 @@ This issue was identified during automated repository assessment and requires at
 ### References
 
 - Assessment Report: {source}
-- Full Assessment: docs/assessments/COMPREHENSIVE_ASSESSMENT_SUMMARY_{summary.get('timestamp', '')[:10]}.md
+- Full Assessment: docs/assessments/COMPREHENSIVE_ASSESSMENT_SUMMARY_{date_str}.md
 
 ### Next Steps
 
@@ -267,7 +289,7 @@ This issue was identified during automated repository assessment and requires at
     return 0
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description="Create GitHub issues from assessment")
     parser.add_argument(
         "--input",

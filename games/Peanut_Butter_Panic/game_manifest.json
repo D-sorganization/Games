@@ -1,0 +1,7 @@
+{
+    "name": "Peanut Butter Panic",
+    "icon": "peanut_butter_panic_icon.png",
+    "type": "module",
+    "module_name": "peanut_butter_panic.game",
+    "description": "A quirky arcade-style game where you panic over peanut butter."
+}

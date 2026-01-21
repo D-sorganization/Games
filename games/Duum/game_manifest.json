@@ -1,0 +1,7 @@
+{
+    "name": "Duum",
+    "icon": "doom_icon.png",
+    "type": "python",
+    "path": "duum.py",
+    "description": "High-octane FPS reimagining with projectile weapons and hordes of enemies."
+}

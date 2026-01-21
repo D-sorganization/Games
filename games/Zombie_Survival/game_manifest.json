@@ -1,0 +1,7 @@
+{
+    "name": "Zombie Survival",
+    "icon": "zombie_games_icon.png",
+    "type": "python",
+    "path": "zombie_survival.py",
+    "description": "A survival shooter game."
+}
