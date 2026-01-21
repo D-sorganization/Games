@@ -142,7 +142,8 @@ def process_assessment_findings(
     filtered_issues = [i for i in critical_issues if i.get("severity") in severities]
 
     logger.info(
-        f"Filtered to {len(filtered_issues)} issues with severities: {', '.join(severities)}"
+        f"Filtered to {len(filtered_issues)} issues with severities: "
+        f"{', '.join(severities)}"
     )
 
     # Get repository name from current directory
@@ -227,6 +228,10 @@ def process_assessment_findings(
         # Generate standardized title
         title = f"[{repo_short}] {severity} {category}: {clean_desc}"
 
+        # Get date string safely
+        time_data = summary.get("timestamp", "")
+        date_str = time_data[:10] if time_data else "Unknown"
+
         body = f"""## Issue Description
 
 **Severity**: {severity}
@@ -246,7 +251,7 @@ This issue was identified during automated repository assessment and requires at
 ### References
 
 - Assessment Report: {source}
-- Full Assessment: docs/assessments/COMPREHENSIVE_ASSESSMENT_SUMMARY_{summary.get("timestamp", "")[:10]}.md
+- Full Assessment: docs/assessments/COMPREHENSIVE_ASSESSMENT_SUMMARY_{date_str}.md
 
 ### Next Steps
 
