@@ -1,0 +1,7 @@
+{
+    "name": "Wizard of Wor",
+    "icon": "wizard_of_wor_icon.png",
+    "type": "python",
+    "path": "wizard_of_wor/game.py",
+    "description": "Classic arcade shooter remake. Battle monsters in a maze (1-2 Players)."
+}
