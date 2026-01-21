@@ -37,7 +37,7 @@ ASSETS_DIR = BASE_DIR / "launcher_assets"
 
 def load_games() -> list[dict[str, Any]]:
     """Dynamically load games from manifest files."""
-    games = []
+    games: list[dict[str, Any]] = []
     if not GAMES_DIR.exists():
         logger.error(f"Games directory not found: {GAMES_DIR}")
         return games
@@ -166,7 +166,7 @@ def main() -> None:
     using_keyboard = False
 
     # Pre-calculate rects for consistent hit testing (dynamic based on games count)
-    game_rects = []
+    game_rects: list[pygame.Rect] = []
     start_x = (WIDTH - (GRID_COLS * ITEM_WIDTH)) // 2
     start_y = 150
 

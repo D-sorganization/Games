@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 
 
-def run_tests():
+def run_tests() -> None:
     root_dir = Path(__file__).resolve().parent
 
     # List of game directories that have tests and need specific PYTHONPATH

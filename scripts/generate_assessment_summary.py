@@ -136,8 +136,11 @@ def generate_summary(
     for assessment_id, score in scores.items():
         if assessment_id in categories:
             weight = categories[assessment_id]["weight"]
-            total_weighted_score += score * weight
-            total_weight += weight
+            # Ensure values are float
+            w_val = float(weight) if isinstance(weight, (int, float, str)) else 0.0
+            s_val = float(score)
+            total_weighted_score += s_val * w_val
+            total_weight += w_val
 
     overall_score = total_weighted_score / total_weight if total_weight > 0 else 7.0
 
@@ -238,7 +241,7 @@ Recommended: 30 days from today
     return 0
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description="Generate assessment summary")
     parser.add_argument(
         "--input",
@@ -263,7 +266,7 @@ def main():
     args = parser.parse_args()
 
     # Expand wildcards if needed
-    input_reports = []
+    input_reports: list[Path] = []
     for pattern in args.input:
         if "*" in str(pattern):
             # Expand glob pattern
@@ -276,7 +279,7 @@ def main():
 
     if not input_reports:
         logger.error("No valid input reports found")
-        return 1
+        sys.exit(1)
 
     exit_code = generate_summary(input_reports, args.output, args.json_output)
     sys.exit(exit_code)
