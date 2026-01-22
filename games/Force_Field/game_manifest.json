@@ -1,0 +1,7 @@
+{
+    "name": "Force Field",
+    "icon": "force_field_icon.png",
+    "type": "python",
+    "path": "force_field.py",
+    "description": "A robust FPS with custom raycasting, 3D environments, and bot AI."
+}
