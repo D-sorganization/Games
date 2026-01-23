@@ -36,8 +36,7 @@ def get_existing_issues() -> list[dict[str, Any]]:
             text=True,
             check=True,
         )
-        data: list[dict[str, Any]] = json.loads(result.stdout)
-        return data
+        return json.loads(result.stdout)
     except Exception as e:
         logger.warning(f"Could not fetch existing issues: {e}")
         return []
@@ -142,10 +141,8 @@ def process_assessment_findings(
     # Filter by severity
     filtered_issues = [i for i in critical_issues if i.get("severity") in severities]
 
-    logger.info(
-        f"Filtered to {len(filtered_issues)} issues with severities: "
-        f"{', '.join(severities)}"
-    )
+    sev_str = ", ".join(severities)
+    logger.info(f"Filtered to {len(filtered_issues)} issues with severities: {sev_str}")
 
     # Get repository name from current directory
     repo_name = Path.cwd().name
@@ -229,16 +226,16 @@ def process_assessment_findings(
         # Generate standardized title
         title = f"[{repo_short}] {severity} {category}: {clean_desc}"
 
-        # Get date string safely
-        time_data = summary.get("timestamp", "")
-        date_str = time_data[:10] if time_data else "Unknown"
+        timestamp = summary.get("timestamp", "")
+        timestamp_date = timestamp[:10] if timestamp else "UNKNOWN"
+        assessment_file = f"COMPREHENSIVE_ASSESSMENT_SUMMARY_{timestamp_date}.md"
 
         body = f"""## Issue Description
 
 **Severity**: {severity}
 **Category**: {category}
 **Source**: {source}
-**Identified**: {summary.get("timestamp", "Unknown")}
+**Identified**: {summary.get('timestamp', 'Unknown')}
 
 ### Problem
 
@@ -252,7 +249,7 @@ This issue was identified during automated repository assessment and requires at
 ### References
 
 - Assessment Report: {source}
-- Full Assessment: docs/assessments/COMPREHENSIVE_ASSESSMENT_SUMMARY_{date_str}.md
+- Full Assessment: docs/assessments/{assessment_file}
 
 ### Next Steps
 
@@ -289,7 +286,7 @@ This issue was identified during automated repository assessment and requires at
     return 0
 
 
-def main() -> None:
+def main():
     parser = argparse.ArgumentParser(description="Create GitHub issues from assessment")
     parser.add_argument(
         "--input",
