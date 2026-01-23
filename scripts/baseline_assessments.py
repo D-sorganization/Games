@@ -4,7 +4,7 @@ logging.basicConfig(level=logging.INFO, format="%(message)s")
 logger = logging.getLogger(__name__)
 
 
-from pathlib import Path
+from pathlib import Path  # noqa: E402
 
 repo_name = "Games"
 date = "2026-01-22"
@@ -32,7 +32,10 @@ output_dir.mkdir(parents=True, exist_ok=True)
 
 # Analysis findings for Games
 findings = {
-    "A": "Good monorepo structure with engines/ and shared/. PyQt6 and Tkinter launchers present.",
+    "A": (
+        "Good monorepo structure with engines/ and shared/. "
+        "PyQt6 and Tkinter launchers present."
+    ),
     "B": "Ruff and Black configured. .gitignore updated to include coverage artifacts.",
     "C": "Comprehensive README. Added .env.example. Documentation Hub is well-structured.",
     "G": "Test coverage crisis: 0.7% detected. Need to wire more tests into the suite.",
