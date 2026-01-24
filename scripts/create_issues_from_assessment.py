@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any
 
 from scripts.shared.logging_config import setup_script_logging
+from scripts.shared.subprocess_utils import run_gh_command
 
 logger = setup_script_logging()
 
@@ -21,9 +22,8 @@ logger = setup_script_logging()
 def get_existing_issues() -> list[dict[str, Any]]:
     """Fetch existing GitHub issues."""
     try:
-        result = subprocess.run(
+        result = run_gh_command(
             [
-                "gh",
                 "issue",
                 "list",
                 "--limit",
@@ -31,8 +31,6 @@ def get_existing_issues() -> list[dict[str, Any]]:
                 "--json",
                 "number,title,state,labels",
             ],
-            capture_output=True,
-            text=True,
             check=True,
         )
         return json.loads(result.stdout)
@@ -79,14 +77,14 @@ def create_github_issue(
         return True
 
     try:
-        # Build gh command
-        cmd = ["gh", "issue", "create", "--title", title, "--body", body]
+        # Build gh command args
+        args = ["issue", "create", "--title", title, "--body", body]
 
         # Add labels
         if labels:
-            cmd.extend(["--label", ",".join(labels)])
+            args.extend(["--label", ",".join(labels)])
 
-        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        result = run_gh_command(args, check=True)
         issue_url = result.stdout.strip()
         logger.info(f"✓ Created issue: {issue_url}")
         return True

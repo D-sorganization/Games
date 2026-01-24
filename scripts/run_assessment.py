@@ -7,12 +7,12 @@ based on actual code analysis.
 """
 
 import argparse
-import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
 
 from scripts.shared.logging_config import setup_script_logging
+from scripts.shared.subprocess_utils import run_black_check, run_ruff_check
 
 logger = setup_script_logging()
 
@@ -58,14 +58,10 @@ def find_python_files() -> list[Path]:
     return [f for f in python_files if not any(p in f.parts for p in excluded)]
 
 
-def run_ruff_check() -> dict:
+def run_ruff_check_wrapper() -> dict:
     """Run ruff and return statistics."""
     try:
-        result = subprocess.run(
-            ["ruff", "check", ".", "--statistics", "--output-format=json"],
-            capture_output=True,
-            text=True,
-        )
+        result = run_ruff_check(statistics=True, json_output=True)
         return {
             "exit_code": result.returncode,
             "output": result.stdout,
@@ -75,14 +71,10 @@ def run_ruff_check() -> dict:
         return {"exit_code": -1, "output": "", "errors": "ruff not installed"}
 
 
-def run_black_check() -> dict:
+def run_black_check_wrapper() -> dict:
     """Run black check and return results."""
     try:
-        result = subprocess.run(
-            ["black", "--check", "--quiet", "."],
-            capture_output=True,
-            text=True,
-        )
+        result = run_black_check()
         return {
             "exit_code": result.returncode,
             "files_to_format": result.stdout.count("would reformat"),
@@ -150,8 +142,8 @@ def run_assessment(assessment_id: str, output_path: Path) -> int:
             score -= 1
 
     elif assessment_id == "B":  # Hygiene & Quality
-        ruff_result = run_ruff_check()
-        black_result = run_black_check()
+        ruff_result = run_ruff_check_wrapper()
+        black_result = run_black_check_wrapper()
         ruff_status = "✓ passed" if ruff_result["exit_code"] == 0 else "✗ issues found"
         findings.append(f"- Ruff check: {ruff_status}")
         black_status = (

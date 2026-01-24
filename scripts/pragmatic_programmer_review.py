@@ -21,7 +21,6 @@ import ast
 import hashlib
 import json
 import re
-import subprocess
 import sys
 from collections import defaultdict
 from datetime import datetime
@@ -29,6 +28,7 @@ from pathlib import Path
 from typing import Any
 
 from scripts.shared.logging_config import setup_script_logging
+from scripts.shared.subprocess_utils import run_gh_command
 
 logger = setup_script_logging()
 
@@ -844,7 +844,9 @@ def generate_markdown_report(results: dict[str, Any], output_path: Path) -> None
         status = (
             "Pass"
             if info["score"] >= 7
-            else "Needs Work" if info["score"] >= 4 else "Critical"
+            else "Needs Work"
+            if info["score"] >= 4
+            else "Critical"
         )
         md += (
             f"| {info['name']} | {info['score']:.1f} | {info['weight']}x | {status} |\n"
@@ -957,10 +959,10 @@ Based on principles from "The Pragmatic Programmer" by David Thomas and Andrew H
 
     # Create issues using gh CLI
     created = []
+
     for issue_data in issues_to_create[:10]:  # Limit to 10 issues per run
         try:
-            cmd = [
-                "gh",
+            args = [
                 "issue",
                 "create",
                 "--title",
@@ -969,11 +971,11 @@ Based on principles from "The Pragmatic Programmer" by David Thomas and Andrew H
                 issue_data["body"],
             ]
             # Try with labels first
-            label_cmd = cmd + ["--label", ",".join(issue_data["labels"])]
-            result = subprocess.run(label_cmd, capture_output=True, text=True)
+            label_args = args + ["--label", ",".join(issue_data["labels"])]
+            result = run_gh_command(label_args)
             if result.returncode != 0:
                 # Retry without labels
-                result = subprocess.run(cmd, capture_output=True, text=True)
+                result = run_gh_command(args)
 
             if result.returncode == 0:
                 logger.info(f"Created issue: {result.stdout.strip()}")
