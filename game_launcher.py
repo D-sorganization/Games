@@ -358,6 +358,7 @@ def main() -> None:
                 if pygame.mouse.get_visible():
                     pygame.mouse.set_visible(False)
 
+                prev_selected_index = selected_index
                 selected_index, should_quit = handle_keyboard_navigation(
                     event, selected_index, len(games)
                 )
@@ -365,10 +366,14 @@ def main() -> None:
                     running = False
                 elif event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
                     if selected_index != -1 and selected_index < len(games):
-                        now = time.time()
-                        if now - last_launch_time > 1.0:
-                            last_launch_time = now
-                            launch_game(games[selected_index])
+                        # Don't launch if we just auto-selected from -1
+                        if prev_selected_index == -1:
+                            pass
+                        else:
+                            now = time.time()
+                            if now - last_launch_time > 1.0:
+                                last_launch_time = now
+                                launch_game(games[selected_index])
 
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:

@@ -30,6 +30,7 @@ QUALITY_CHECK_SCRIPTS = {
     "quality_check.py",
     "matlab_quality_check.py",
     "code_quality_check.py",
+    "quality_checks_common.py",
 }
 
 EXCLUDE_DIRS = {
