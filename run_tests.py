@@ -9,7 +9,10 @@ def get_test_environment(game_path: Path, root_dir: Path) -> dict[str, str]:
     env = os.environ.copy()
     original_pythonpath = env.get("PYTHONPATH", "")
     src_path = root_dir / "src"
-    new_pythonpath = f"{game_path}{os.pathsep}{root_dir}{os.pathsep}{src_path}{os.pathsep}{original_pythonpath}"
+    new_pythonpath = (
+        f"{game_path}{os.pathsep}{root_dir}{os.pathsep}"
+        f"{src_path}{os.pathsep}{original_pythonpath}"
+    )
     env["PYTHONPATH"] = new_pythonpath
     return env
 
