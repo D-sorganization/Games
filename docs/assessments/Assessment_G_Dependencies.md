@@ -1,18 +1,18 @@
-# Assessment G: Dependencies
+# Assessment: Dependencies (Category G)
 
 ## Grade: 8/10
 
 ## Analysis
-Dependencies are managed via a root `requirements.txt`. The list is concise (`pygame`, `opencv-python`, `numpy`, `pytest`). However, the lack of a lock file (like `package-lock.json` or `poetry.lock`) means builds are not strictly reproducible if transitive dependencies update.
+Dependencies are managed via `requirements.txt`. Key libraries (`pygame`, `numpy`, `opencv-python`) are listed.
 
 ## Strengths
-- **Minimalism**: Keeps the dependency tree relatively shallow.
-- **Standard Libraries**: Heavy reliance on standard `pathlib`, `logging`, `subprocess`.
+- **Simplicity**: `requirements.txt` is easy to parse.
+- **Standard**: Uses standard PyPI packages.
 
 ## Weaknesses
-- **No Lock File**: Installing from `requirements.txt` might yield different versions in the future.
-- **Heavy Packages**: `opencv-python` is a large dependency if only used for minor image processing (e.g., intro video).
+- **Versioning**: Packages are unpinned (e.g., just `pygame` instead of `pygame==2.5.0`). This can lead to breaking changes in future installs.
+- **Lock File**: No `requirements.lock` or `Pipfile.lock` to ensure reproducible builds.
 
 ## Recommendations
-1.  **Lock Dependencies**: Use `pip-tools` (pip-compile) or `poetry` to generate a lock file to ensure reproducible builds.
-2.  **Review OpenCV Usage**: If OpenCV is only used for playing a video, consider if `pygame`'s native movie support (or a lighter alternative) suffices to reduce install size.
+1. **Pin Versions**: Specify version numbers in `requirements.txt`.
+2. **Lock Dependencies**: Consider using `pip-tools` or `poetry` to generate a lock file.

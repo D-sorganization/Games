@@ -1,16 +1,17 @@
-# Assessment M: Configuration
+# Assessment: Configuration (Category M)
 
-## Grade: 8/10
+## Grade: 7/10
 
 ## Analysis
-Configuration is managed through a mix of `constants.py` files and the `RaycasterConfig` object. This separates tuning values from logic effectively. The use of a typed config object for the raycaster is a highlight.
+Configuration is distributed (manifests) and central (constants in launcher). However, the hardcoded paths that caused the structure issue lower the score.
 
 ## Strengths
-- **Separation of Concerns**: Game tuning (speed, damage, colors) is largely kept in `constants.py`.
-- **Typed Configuration**: `RaycasterConfig` ensures the engine receives valid parameters.
+- **Manifests**: Good decentralized config.
+- **Constants**: Defined at top of files.
 
 ## Weaknesses
-- **Hardcoded Constants**: Some configuration is static in python files rather than loaded from external config files (JSON/TOML), requiring code changes to tweak gameplay balance.
+- **Hardcoded Paths**: `games/` vs `src/games/` hardcoding caused breakage.
 
 ## Recommendations
-1.  **External Config**: Move gameplay constants (damage values, speeds) to a `game_config.json` or `balance.toml` to allow designers to tweak the game without modifying code.
+1. **Dynamic Paths**: Use relative paths from `__file__` reliably (which is attempted but failed due to folder move).
+2. **Env Vars**: Support `GAMES_DIR` environment variable override.
