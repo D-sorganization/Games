@@ -53,12 +53,16 @@ class BotBase:
         diff_stats = difficulties.get(difficulty, difficulties["NORMAL"])
 
         # Health calculation
-        base_health = int(base_bot_health * float(self.type_data.get("health_mult", 1.0)))
+        base_health = int(
+            base_bot_health * float(self.type_data.get("health_mult", 1.0))
+        )
         self.health = int((base_health + (level - 1) * 3) * diff_stats["health_mult"])
         self.max_health = self.health
 
         # Damage calculation
-        base_damage = int(base_bot_damage * float(self.type_data.get("damage_mult", 1.0)))
+        base_damage = int(
+            base_bot_damage * float(self.type_data.get("damage_mult", 1.0))
+        )
         self.damage = int((base_damage + (level - 1) * 2) * diff_stats["damage_mult"])
 
         # Speed

@@ -5,7 +5,6 @@ import random
 
 import pygame
 
-
 # Constants used by UI components
 WHITE = (255, 255, 255)
 

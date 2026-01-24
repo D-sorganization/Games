@@ -8,7 +8,9 @@ from typing import Any
 class PlayerBase:
     """Base class for players with common initialization and state."""
 
-    def __init__(self, x: float, y: float, angle: float, weapons_config: dict[str, Any]):
+    def __init__(
+        self, x: float, y: float, angle: float, weapons_config: dict[str, Any]
+    ):
         """Initialize player base.
 
         Args:
