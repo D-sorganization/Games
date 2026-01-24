@@ -20,21 +20,20 @@ import argparse
 import ast
 import hashlib
 import json
-import logging
 import re
-import subprocess
 import sys
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-# Configure logging
-logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
-logger = logging.getLogger(__name__)
+from scripts.shared.logging_config import setup_script_logging
+from scripts.shared.subprocess_utils import run_gh_command
+
+logger = setup_script_logging()
 
 # Pragmatic Programmer principles and their assessment criteria
-PRINCIPLES: dict[str, dict[str, Any]] = {
+PRINCIPLES = {
     "DRY": {
         "name": "Don't Repeat Yourself",
         "description": (
@@ -116,9 +115,9 @@ def compute_file_hash(content: str) -> str:
     return hashlib.md5(normalized.encode()).hexdigest()
 
 
-def extract_functions(content: str) -> list[dict[str, Any]]:
+def extract_functions(content: str) -> list[dict]:
     """Extract function definitions from Python code."""
-    functions: list[dict[str, Any]] = []
+    functions = []
     try:
         tree = ast.parse(content)
         for node in ast.walk(tree):
@@ -129,8 +128,8 @@ def extract_functions(content: str) -> list[dict[str, Any]]:
                         "lineno": node.lineno,
                         "args": len(node.args.args),
                         "body_lines": (
-                            (node.end_lineno - node.lineno + 1)
-                            if node.end_lineno is not None
+                            node.end_lineno - node.lineno + 1
+                            if hasattr(node, "end_lineno")
                             else 0
                         ),
                         "has_docstring": (ast.get_docstring(node) is not None),
@@ -141,7 +140,7 @@ def extract_functions(content: str) -> list[dict[str, Any]]:
     return functions
 
 
-def check_dry_violations(files: list[Path]) -> list[dict[str, Any]]:
+def check_dry_violations(files: list[Path]) -> list[dict]:
     """
     Check for DRY (Don't Repeat Yourself) violations.
 
@@ -152,9 +151,9 @@ def check_dry_violations(files: list[Path]) -> list[dict[str, Any]]:
     - Copy-paste patterns
     """
     issues = []
-    code_blocks: dict[str, list[tuple[Path, int]]] = defaultdict(list)
-    magic_numbers: dict[str, list[tuple[Path, int]]] = defaultdict(list)
-    magic_strings: dict[str, list[tuple[Path, int]]] = defaultdict(list)
+    code_blocks = defaultdict(list)
+    magic_numbers = defaultdict(list)
+    magic_strings = defaultdict(list)
 
     for file_path in files:
         try:
@@ -216,7 +215,7 @@ def check_dry_violations(files: list[Path]) -> list[dict[str, Any]]:
     return issues
 
 
-def check_orthogonality(files: list[Path]) -> list[dict[str, Any]]:
+def check_orthogonality(files: list[Path]) -> list[dict]:
     """
     Check for orthogonality and decoupling issues.
 
@@ -227,8 +226,8 @@ def check_orthogonality(files: list[Path]) -> list[dict[str, Any]]:
     - God classes/functions
     """
     issues = []
-    imports_graph: dict[str, set[str]] = defaultdict(set)
-    global_vars: list[dict[str, Any]] = []
+    imports_graph = defaultdict(set)
+    global_vars = []
 
     for file_path in files:
         try:
@@ -275,7 +274,7 @@ def check_orthogonality(files: list[Path]) -> list[dict[str, Any]]:
                             "Functions over 50 lines violate single responsibility"
                         ),
                         "files": [str(file_path)],
-                        "recommendation": "Break into smaller, focused functions",
+                        "recommendation": ("Break into smaller, focused functions"),
                     }
                 )
 
@@ -295,7 +294,7 @@ def check_orthogonality(files: list[Path]) -> list[dict[str, Any]]:
     return issues
 
 
-def check_reversibility(root_path: Path) -> list[dict[str, Any]]:
+def check_reversibility(root_path: Path) -> list[dict]:
     """
     Check for reversibility and flexibility issues.
 
@@ -329,11 +328,11 @@ def check_reversibility(root_path: Path) -> list[dict[str, Any]]:
                         "principle": "REVERSIBILITY",
                         "severity": "MAJOR",
                         "title": description,
-                            "description": (
-                                "Configuration should be external, not hardcoded"
-                            ),
+                        "description": (
+                            "Configuration should be external, not hardcoded"
+                        ),
                         "files": [str(file_path)],
-                        "recommendation": "Use environment variables or config files",
+                        "recommendation": ("Use environment variables or config files"),
                     }
                 )
                 break  # One issue per file
@@ -358,7 +357,7 @@ def check_reversibility(root_path: Path) -> list[dict[str, Any]]:
     return issues
 
 
-def check_quality(files: list[Path]) -> list[dict[str, Any]]:
+def check_quality(files: list[Path]) -> list[dict]:
     """
     Check for code quality and craftsmanship issues.
 
@@ -369,8 +368,8 @@ def check_quality(files: list[Path]) -> list[dict[str, Any]]:
     - Unfinished work markers
     """
     issues = []
-    todos: list[tuple[Path, int, str]] = []
-    fixmes: list[tuple[Path, int, str]] = []
+    todos = []
+    fixmes = []
     missing_type_hints = 0
 
     # Use constructed strings to avoid false positives in quality checks
@@ -438,7 +437,7 @@ def check_quality(files: list[Path]) -> list[dict[str, Any]]:
     return issues
 
 
-def check_robustness(files: list[Path]) -> list[dict[str, Any]]:
+def check_robustness(files: list[Path]) -> list[dict]:
     """
     Check for error handling and robustness issues.
 
@@ -449,8 +448,8 @@ def check_robustness(files: list[Path]) -> list[dict[str, Any]]:
     - Resource management
     """
     issues = []
-    bare_excepts: list[tuple[Path, int]] = []
-    broad_excepts: list[tuple[Path, int]] = []
+    bare_excepts = []
+    broad_excepts = []
     no_finally = 0
 
     for file_path in files:
@@ -481,10 +480,9 @@ def check_robustness(files: list[Path]) -> list[dict[str, Any]]:
                 "principle": "ROBUSTNESS",
                 "severity": "CRITICAL",
                 "title": f"Bare except clauses ({len(bare_excepts)} found)",
-                        "description": (
-                            "Bare 'except:' catches all exceptions including "
-                            "KeyboardInterrupt"
-                        ),
+                "description": (
+                    "Bare 'except:' catches all exceptions including KeyboardInterrupt"
+                ),
                 "files": list({str(b[0]) for b in bare_excepts[:5]}),
                 "recommendation": "Specify exception types explicitly",
             }
@@ -495,10 +493,9 @@ def check_robustness(files: list[Path]) -> list[dict[str, Any]]:
             {
                 "principle": "ROBUSTNESS",
                 "severity": "MAJOR",
-                        "title": (
-                            f"Overly broad exception handling "
-                            f"({len(broad_excepts)} found)"
-                        ),
+                "title": (
+                    f"Overly broad exception handling ({len(broad_excepts)} found)"
+                ),
                 "description": "Catching 'Exception' hides specific errors",
                 "files": list({str(b[0]) for b in broad_excepts[:5]}),
                 "recommendation": "Catch specific exception types",
@@ -508,7 +505,7 @@ def check_robustness(files: list[Path]) -> list[dict[str, Any]]:
     return issues
 
 
-def check_testing(root_path: Path) -> list[dict[str, Any]]:
+def check_testing(root_path: Path) -> list[dict]:
     """
     Check for testing and validation issues.
 
@@ -521,7 +518,7 @@ def check_testing(root_path: Path) -> list[dict[str, Any]]:
 
     # Find test files
     test_patterns = ["**/test_*.py", "**/*_test.py", "**/tests/*.py"]
-    test_files: set[Path] = set()
+    test_files = set()
     for pattern in test_patterns:
         test_files.update(root_path.glob(pattern))
 
@@ -548,10 +545,10 @@ def check_testing(root_path: Path) -> list[dict[str, Any]]:
             {
                 "principle": "TESTING",
                 "severity": "MAJOR",
-                        "title": (
-                            f"Low test coverage ({len(test_files)} tests for "
-                            f"{len(source_files)} source files)"
-                        ),
+                "title": (
+                    f"Low test coverage ({len(test_files)} tests for "
+                    f"{len(source_files)} source files)"
+                ),
                 "description": "Test ratio below 30%",
                 "files": [],
                 "recommendation": "Increase test coverage",
@@ -579,7 +576,7 @@ def check_testing(root_path: Path) -> list[dict[str, Any]]:
     return issues
 
 
-def check_documentation(root_path: Path, files: list[Path]) -> list[dict[str, Any]]:
+def check_documentation(root_path: Path, files: list[Path]) -> list[dict]:
     """
     Check for documentation and communication issues.
 
@@ -611,11 +608,11 @@ def check_documentation(root_path: Path, files: list[Path]) -> list[dict[str, An
                     "principle": "DOCUMENTATION",
                     "severity": "MINOR",
                     "title": "README is too brief",
-                            "description": (
-                                "README should explain purpose, installation, and usage"
-                            ),
+                    "description": (
+                        "README should explain purpose, installation, and usage"
+                    ),
                     "files": [str(readme_files[0])],
-                    "recommendation": "Expand README with examples and API docs",
+                    "recommendation": ("Expand README with examples and API docs"),
                 }
             )
 
@@ -641,10 +638,10 @@ def check_documentation(root_path: Path, files: list[Path]) -> list[dict[str, An
                     "principle": "DOCUMENTATION",
                     "severity": "MINOR",
                     "title": f"Low docstring coverage ({docstring_rate:.0%})",
-                        "description": (
-                            f"{functions_without_docstrings} public functions "
-                            "lack docstrings"
-                        ),
+                    "description": (
+                        f"{functions_without_docstrings} public functions "
+                        f"lack docstrings"
+                    ),
                     "files": [],
                     "recommendation": "Add docstrings to public functions",
                 }
@@ -653,7 +650,7 @@ def check_documentation(root_path: Path, files: list[Path]) -> list[dict[str, An
     return issues
 
 
-def check_automation(root_path: Path) -> list[dict[str, Any]]:
+def check_automation(root_path: Path) -> list[dict]:
     """
     Check for automation and tooling issues.
 
@@ -831,11 +828,11 @@ def generate_markdown_report(results: dict[str, Any], output_path: Path) -> None
     """Generate a markdown report from the assessment results."""
     md = f"""# Pragmatic Programmer Review
 
-**Repository**: {results['repository']}
-**Date**: {results['timestamp'][:10]}
-**Files Analyzed**: {results['python_files_analyzed']}
+**Repository**: {results["repository"]}
+**Date**: {results["timestamp"][:10]}
+**Files Analyzed**: {results["python_files_analyzed"]}
 
-## Overall Score: {results['overall_score']:.1f}/10
+## Overall Score: {results["overall_score"]:.1f}/10
 
 ## Principle Scores
 
@@ -847,7 +844,9 @@ def generate_markdown_report(results: dict[str, Any], output_path: Path) -> None
         status = (
             "Pass"
             if info["score"] >= 7
-            else "Needs Work" if info["score"] >= 4 else "Critical"
+            else "Needs Work"
+            if info["score"] >= 4
+            else "Critical"
         )
         md += (
             f"| {info['name']} | {info['score']:.1f} | {info['weight']}x | {status} |\n"
@@ -856,9 +855,9 @@ def generate_markdown_report(results: dict[str, Any], output_path: Path) -> None
     md += f"""
 ## Issue Summary
 
-- **Critical**: {results['issue_summary']['CRITICAL']}
-- **Major**: {results['issue_summary']['MAJOR']}
-- **Minor**: {results['issue_summary']['MINOR']}
+- **Critical**: {results["issue_summary"]["CRITICAL"]}
+- **Major**: {results["issue_summary"]["MAJOR"]}
+- **Minor**: {results["issue_summary"]["MINOR"]}
 
 ## Detailed Findings
 
@@ -898,9 +897,7 @@ def generate_markdown_report(results: dict[str, Any], output_path: Path) -> None
     logger.info(f"Report saved to: {output_path}")
 
 
-def create_github_issues(
-    results: dict[str, Any], dry_run: bool = False
-) -> list[dict[str, Any]]:
+def create_github_issues(results: dict[str, Any], dry_run: bool = False) -> list[dict]:
     """Create GitHub issues for critical and major findings."""
     issues_to_create = []
 
@@ -912,17 +909,17 @@ def create_github_issues(
 
         body = f"""## Pragmatic Programmer Review Finding
 
-**Principle**: {PRINCIPLES[issue['principle']]['name']}
-**Severity**: {issue['severity']}
-**Identified**: {results['timestamp'][:10]}
+**Principle**: {PRINCIPLES[issue["principle"]]["name"]}
+**Severity**: {issue["severity"]}
+**Identified**: {results["timestamp"][:10]}
 
 ### Description
 
-{issue['description']}
+{issue["description"]}
 
 ### Recommendation
 
-{issue['recommendation']}
+{issue["recommendation"]}
 
 ### Affected Files
 
@@ -962,10 +959,10 @@ Based on principles from "The Pragmatic Programmer" by David Thomas and Andrew H
 
     # Create issues using gh CLI
     created = []
+
     for issue_data in issues_to_create[:10]:  # Limit to 10 issues per run
         try:
-            cmd = [
-                "gh",
+            args = [
                 "issue",
                 "create",
                 "--title",
@@ -974,11 +971,11 @@ Based on principles from "The Pragmatic Programmer" by David Thomas and Andrew H
                 issue_data["body"],
             ]
             # Try with labels first
-            label_cmd = cmd + ["--label", ",".join(issue_data["labels"])]
-            result = subprocess.run(label_cmd, capture_output=True, text=True)
+            label_args = args + ["--label", ",".join(issue_data["labels"])]
+            result = run_gh_command(label_args)
             if result.returncode != 0:
                 # Retry without labels
-                result = subprocess.run(cmd, capture_output=True, text=True)
+                result = run_gh_command(args)
 
             if result.returncode == 0:
                 logger.info(f"Created issue: {result.stdout.strip()}")
@@ -991,7 +988,7 @@ Based on principles from "The Pragmatic Programmer" by David Thomas and Andrew H
     return created
 
 
-def main() -> None:
+def main():
     """Main entry point for the Pragmatic Programmer review."""
     parser = argparse.ArgumentParser(
         description="Pragmatic Programmer Review - Automated Code Assessment"

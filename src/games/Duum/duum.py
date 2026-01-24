@@ -3,38 +3,15 @@
 Duum - The Reimagining
 """
 
-import logging
-import sys
-from pathlib import Path
-
-import pygame
-
-logger = logging.getLogger(__name__)
+from games.shared.game_launcher import run_game, setup_game_path
 
 
 def main() -> None:
     """Entry point of the Duum application."""
-    game_dir = Path(__file__).resolve().parent
-    if str(game_dir) not in sys.path:
-        sys.path.insert(0, str(game_dir))
-
+    setup_game_path(__file__)
     from src.game import Game
 
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        handlers=[logging.StreamHandler()],
-    )
-
-    pygame.init()
-    try:
-        game = Game()
-        game.run()
-    except KeyboardInterrupt:
-        logger.info("Game interrupted by user")
-    finally:
-        pygame.quit()
-        sys.exit()
+    run_game(Game, __file__)
 
 
 if __name__ == "__main__":

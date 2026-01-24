@@ -69,42 +69,17 @@ def load_games() -> list[dict[str, Any]]:
                 except Exception as e:
                     logger.error(f"Failed to load manifest for {game_dir.name}: {e}")
 
-    # Sort games by name
     games.sort(key=lambda x: str(x["name"]))
     return games
 
 
-def main() -> None:
-    """
-    Main entry point for the Game Launcher.
-    Initializes Pygame, loads assets, and handles the main event loop.
-    """
-    pygame.display.init()
-    pygame.font.init()
-    pygame.display.set_caption("Game Launcher")
-
-    # Set window icon
-    icon_path = ASSETS_DIR / "force_field_icon.png"
-    if icon_path.exists():
-        pygame.display.set_icon(pygame.image.load(str(icon_path)))
-
-    screen = pygame.display.set_mode((WIDTH, HEIGHT))
-    font = pygame.font.SysFont("Segoe UI", 24)
-    title_font = pygame.font.SysFont("Segoe UI", 48, bold=True)
-    helper_font = pygame.font.SysFont("Segoe UI", 18)
-    desc_font = pygame.font.SysFont("Segoe UI", 20, italic=True)
-
-    # Load Games
-    games = load_games()
-
-    # Load Icons
+def load_game_icons(games: list[dict[str, Any]]) -> None:
+    """Load icons for all games."""
     for game in games:
         icon_loaded = False
         if game.get("icon"):
-            # Check assets dir first (legacy/centralized)
             icon_path = ASSETS_DIR / game["icon"]
             if not icon_path.exists():
-                # Check game dir (decentralized)
                 icon_path = game["cwd"] / game["icon"]
 
             if icon_path.exists():
@@ -117,75 +92,258 @@ def main() -> None:
                     logger.warning(f"Failed to load icon for {game['name']}: {e}")
 
         if not icon_loaded:
-            # Fallback
             surf = pygame.Surface(ICON_SIZE)
             surf.fill((100, 100, 100))
             game["img"] = surf
 
-    def draw_text(
-        surf: pygame.Surface,
-        text: str,
-        font: pygame.font.Font,
-        color: tuple[int, int, int],
-        pos: tuple[int, int],
-        center: bool = False,
-    ) -> None:
-        """Helper to draw text on a surface."""
-        t = font.render(text, True, color)
-        if center:
-            rect = t.get_rect(center=pos)
-            surf.blit(t, rect)
-        else:
-            surf.blit(t, pos)
 
-    def launch_game(game: dict[str, Any]) -> None:
-        """Launches the selected game based on its type configuration."""
-        logger.info(f"Launching {game['name']}...")
-        if game["type"] == "python":
-            try:
-                # Use sys.executable to ensure we use the same python interpreter
-                subprocess.Popen(
-                    [sys.executable, str(game["path"])], cwd=str(game["cwd"])
-                )
-            except Exception as e:
-                logger.error(f"Error launching {game['name']}: {e}")
-        elif game["type"] == "module":
-            try:
-                subprocess.Popen(
-                    [sys.executable, "-m", game["module_name"]], cwd=str(game["cwd"])
-                )
-            except Exception as e:
-                logger.error(f"Error launching {game['name']}: {e}")
-        elif game["type"] == "web":
-            webbrowser.open(str(game["path"]))
+def initialize_display() -> pygame.Surface:
+    """Initialize Pygame display and return the screen surface."""
+    pygame.display.init()
+    pygame.font.init()
+    pygame.display.set_caption("Game Launcher")
+
+    icon_path = ASSETS_DIR / "force_field_icon.png"
+    if icon_path.exists():
+        pygame.display.set_icon(pygame.image.load(str(icon_path)))
+
+    return pygame.display.set_mode((WIDTH, HEIGHT))
+
+
+def draw_text(
+    surf: pygame.Surface,
+    text: str,
+    font: pygame.font.Font,
+    color: tuple[int, int, int],
+    pos: tuple[int, int],
+    center: bool = False,
+) -> None:
+    """Helper to draw text on a surface."""
+    t = font.render(text, True, color)
+    if center:
+        rect = t.get_rect(center=pos)
+        surf.blit(t, rect)
+    else:
+        surf.blit(t, pos)
+
+
+def launch_game(game: dict[str, Any]) -> None:
+    """Launches the selected game based on its type configuration."""
+    logger.info(f"Launching {game['name']}...")
+    if game["type"] == "python":
+        try:
+            subprocess.Popen([sys.executable, str(game["path"])], cwd=str(game["cwd"]))
+        except Exception as e:
+            logger.error(f"Error launching {game['name']}: {e}")
+    elif game["type"] == "module":
+        try:
+            subprocess.Popen(
+                [sys.executable, "-m", game["module_name"]], cwd=str(game["cwd"])
+            )
+        except Exception as e:
+            logger.error(f"Error launching {game['name']}: {e}")
+    elif game["type"] == "web":
+        webbrowser.open(str(game["path"]))
+
+
+def calculate_game_rects(num_games: int) -> list[pygame.Rect]:
+    """Calculate rectangles for game grid layout."""
+    game_rects: list[pygame.Rect] = []
+    start_x = (WIDTH - (GRID_COLS * ITEM_WIDTH)) // 2
+    start_y = 150
+
+    for i in range(num_games):
+        row = i // GRID_COLS
+        col = i % GRID_COLS
+        x = start_x + col * ITEM_WIDTH
+        y = start_y + row * ITEM_HEIGHT
+        game_rects.append(
+            pygame.Rect(x + 10, y + 10, ITEM_WIDTH - 20, ITEM_HEIGHT - 20)
+        )
+
+    return game_rects
+
+
+def handle_keyboard_navigation(
+    event: pygame.event.Event,
+    selected_index: int,
+    num_games: int,
+) -> tuple[int, bool]:
+    """Handle keyboard navigation and return new selected index and quit flag."""
+    if event.key == pygame.K_ESCAPE:
+        return selected_index, True
+
+    if num_games == 0:
+        return selected_index, False
+
+    if selected_index == -1:
+        return 0, False
+
+    if event.key == pygame.K_RIGHT:
+        return (selected_index + 1) % num_games, False
+    elif event.key == pygame.K_LEFT:
+        return (selected_index - 1) % num_games, False
+    elif event.key == pygame.K_DOWN:
+        new_idx = selected_index + GRID_COLS
+        if new_idx < num_games:
+            return new_idx, False
+    elif event.key == pygame.K_UP:
+        new_idx = selected_index - GRID_COLS
+        if new_idx >= 0:
+            return new_idx, False
+
+    return selected_index, False
+
+
+def draw_game_grid(
+    screen: pygame.Surface,
+    games: list[dict[str, Any]],
+    game_rects: list[pygame.Rect],
+    selected_index: int,
+    using_keyboard: bool,
+    mouse_pos: tuple[int, int],
+    font: pygame.font.Font,
+) -> tuple[int, bool]:
+    """Draw the game grid and return updated selected index and hover state."""
+    mx, my = mouse_pos
+    hovered_any = False
+
+    for i, game in enumerate(games):
+        rect = game_rects[i]
+
+        is_highlighted = False
+        if using_keyboard:
+            if i == selected_index:
+                is_highlighted = True
+        else:
+            if rect.collidepoint(mx, my):
+                is_highlighted = True
+                selected_index = i
+                hovered_any = True
+
+        draw_rect = rect.copy()
+        if is_highlighted:
+            draw_rect.y -= 6
+
+        bg = HIGHLIGHT_COLOR if is_highlighted else (30, 30, 35)
+        pygame.draw.rect(screen, bg, draw_rect, border_radius=15)
+
+        if is_highlighted:
+            pygame.draw.rect(screen, ACCENT_COLOR, draw_rect, width=2, border_radius=15)
+
+        x = draw_rect.x - 10
+        y = draw_rect.y - 10
+
+        if "img" in game:
+            game_img = game["img"]
+            if isinstance(game_img, pygame.Surface):
+                icon_x = x + (ITEM_WIDTH - ICON_SIZE[0]) // 2
+                icon_y = y + 20
+                screen.blit(game_img, (icon_x, icon_y))
+
+        colors = ACCENT_COLOR if is_highlighted else TEXT_COLOR
+        draw_text(
+            screen,
+            str(game["name"]),
+            font,
+            colors,
+            (x + ITEM_WIDTH // 2, y + ICON_SIZE[1] + 30),
+            center=True,
+        )
+
+    return selected_index, hovered_any
+
+
+def draw_ui(
+    screen: pygame.Surface,
+    games: list[dict[str, Any]],
+    game_rects: list[pygame.Rect],
+    selected_index: int,
+    using_keyboard: bool,
+    mouse_pos: tuple[int, int],
+    fonts: dict[str, pygame.font.Font],
+) -> tuple[int, bool]:
+    """Draw the complete UI and return updated selected index and hover state."""
+    screen.fill(BG_COLOR)
+
+    draw_text(
+        screen,
+        "Game Launcher",
+        fonts["title"],
+        ACCENT_COLOR,
+        (WIDTH // 2, 60),
+        center=True,
+    )
+
+    draw_text(
+        screen,
+        "Use Arrow Keys to Select • Enter to Start • Esc to Quit",
+        fonts["helper"],
+        TEXT_MUTED,
+        (WIDTH // 2, HEIGHT - 30),
+        center=True,
+    )
+
+    if not games:
+        draw_text(
+            screen,
+            "No games found in games/ directory.",
+            fonts["desc"],
+            (255, 100, 100),
+            (WIDTH // 2, HEIGHT // 2),
+            center=True,
+        )
+        return selected_index, False
+
+    if selected_index != -1 and selected_index < len(games):
+        desc = games[selected_index].get("description", "")
+        if desc:
+            draw_text(
+                screen,
+                desc,
+                fonts["desc"],
+                TEXT_COLOR,
+                (WIDTH // 2, HEIGHT - 70),
+                center=True,
+            )
+
+    return draw_game_grid(
+        screen,
+        games,
+        game_rects,
+        selected_index,
+        using_keyboard,
+        mouse_pos,
+        fonts["normal"],
+    )
+
+
+def main() -> None:
+    """Main entry point for the Game Launcher."""
+    screen = initialize_display()
+
+    fonts = {
+        "normal": pygame.font.SysFont("Segoe UI", 24),
+        "title": pygame.font.SysFont("Segoe UI", 48, bold=True),
+        "helper": pygame.font.SysFont("Segoe UI", 18),
+        "desc": pygame.font.SysFont("Segoe UI", 20, italic=True),
+    }
+
+    games = load_games()
+    load_game_icons(games)
 
     running = True
     clock = pygame.time.Clock()
     last_launch_time = 0.0
     selected_index = -1
     using_keyboard = False
-
-    # Pre-calculate rects for consistent hit testing (dynamic based on games count)
     game_rects: list[pygame.Rect] = []
-    start_x = (WIDTH - (GRID_COLS * ITEM_WIDTH)) // 2
-    start_y = 150
 
     while running:
-        # Re-calculate rects in case games list changes
-        # But games list is constant during run.
         if len(game_rects) != len(games):
-            game_rects = []
-            for i in range(len(games)):
-                row = i // GRID_COLS
-                col = i % GRID_COLS
-                x = start_x + col * ITEM_WIDTH
-                y = start_y + row * ITEM_HEIGHT
-                game_rects.append(
-                    pygame.Rect(x + 10, y + 10, ITEM_WIDTH - 20, ITEM_HEIGHT - 20)
-                )
+            game_rects = calculate_game_rects(len(games))
 
-        mx, my = pygame.mouse.get_pos()
-        hovered_any = False
+        mouse_pos = pygame.mouse.get_pos()
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -200,137 +358,36 @@ def main() -> None:
                 if pygame.mouse.get_visible():
                     pygame.mouse.set_visible(False)
 
-                if event.key == pygame.K_ESCAPE:
+                prev_selected_index = selected_index
+                selected_index, should_quit = handle_keyboard_navigation(
+                    event, selected_index, len(games)
+                )
+                if should_quit:
                     running = False
-                elif not games:
-                    continue
-                elif selected_index == -1:
-                    selected_index = 0
-                else:
-                    if event.key == pygame.K_RIGHT:
-                        selected_index = (selected_index + 1) % len(games)
-                    elif event.key == pygame.K_LEFT:
-                        selected_index = (selected_index - 1) % len(games)
-                    elif event.key == pygame.K_DOWN:
-                        new_idx = selected_index + GRID_COLS
-                        if new_idx < len(games):
-                            selected_index = new_idx
-                    elif event.key == pygame.K_UP:
-                        new_idx = selected_index - GRID_COLS
-                        if new_idx >= 0:
-                            selected_index = new_idx
-                    elif event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
-                        now = time.time()
-                        if now - last_launch_time > 1.0:
-                            last_launch_time = now
-                            launch_game(games[selected_index])
+                elif event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
+                    if selected_index != -1 and selected_index < len(games):
+                        # Don't launch if we just auto-selected from -1
+                        if prev_selected_index == -1:
+                            pass
+                        else:
+                            now = time.time()
+                            if now - last_launch_time > 1.0:
+                                last_launch_time = now
+                                launch_game(games[selected_index])
 
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:
                     for i, rect in enumerate(game_rects):
-                        if rect.collidepoint(mx, my):
+                        if rect.collidepoint(mouse_pos):
                             now = time.time()
                             if now - last_launch_time > 1.0:
                                 last_launch_time = now
                                 launch_game(games[i])
 
-        # Draw
-        screen.fill(BG_COLOR)
-
-        # Title
-        draw_text(
-            screen,
-            "Game Launcher",
-            title_font,
-            ACCENT_COLOR,
-            (WIDTH // 2, 60),
-            center=True,
+        selected_index, hovered_any = draw_ui(
+            screen, games, game_rects, selected_index, using_keyboard, mouse_pos, fonts
         )
 
-        # Helper Text
-        draw_text(
-            screen,
-            "Use Arrow Keys to Select • Enter to Start • Esc to Quit",
-            helper_font,
-            TEXT_MUTED,
-            (WIDTH // 2, HEIGHT - 30),
-            center=True,
-        )
-
-        if not games:
-            draw_text(
-                screen,
-                "No games found in games/ directory.",
-                desc_font,
-                (255, 100, 100),
-                (WIDTH // 2, HEIGHT // 2),
-                center=True,
-            )
-        else:
-            # Description Text (if selected)
-            if selected_index != -1 and selected_index < len(games):
-                desc = games[selected_index].get("description", "")
-                if desc:
-                    draw_text(
-                        screen,
-                        desc,
-                        desc_font,
-                        TEXT_COLOR,
-                        (WIDTH // 2, HEIGHT - 70),
-                        center=True,
-                    )
-
-            for i, game in enumerate(games):
-                rect = game_rects[i]
-                # is_selected is handled by is_highlighted logic below
-
-                is_highlighted = False
-                if using_keyboard:
-                    if i == selected_index:
-                        is_highlighted = True
-                else:
-                    if rect.collidepoint(mx, my):
-                        is_highlighted = True
-                        selected_index = i
-                        hovered_any = True
-
-                draw_rect = rect.copy()
-                if is_highlighted:
-                    draw_rect.y -= 6
-
-                bg = HIGHLIGHT_COLOR if is_highlighted else (30, 30, 35)
-                pygame.draw.rect(screen, bg, draw_rect, border_radius=15)
-
-                if is_highlighted:
-                    pygame.draw.rect(
-                        screen, ACCENT_COLOR, draw_rect, width=2, border_radius=15
-                    )
-
-                # Position variables needed for icon/text
-                # Use draw_rect to ensure content moves with the background
-                x = draw_rect.x - 10
-                y = draw_rect.y - 10
-
-                # Icon
-                if "img" in game:
-                    game_img = game["img"]
-                    if isinstance(game_img, pygame.Surface):
-                        icon_x = x + (ITEM_WIDTH - ICON_SIZE[0]) // 2
-                        icon_y = y + 20
-                        screen.blit(game_img, (icon_x, icon_y))
-
-                # Name
-                colors = ACCENT_COLOR if is_highlighted else TEXT_COLOR
-                draw_text(
-                    screen,
-                    str(game["name"]),
-                    font,
-                    colors,
-                    (x + ITEM_WIDTH // 2, y + ICON_SIZE[1] + 30),
-                    center=True,
-                )
-
-        # Update Cursor
         if hovered_any:
             pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND)
         else:

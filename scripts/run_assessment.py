@@ -7,16 +7,14 @@ based on actual code analysis.
 """
 
 import argparse
-import logging
-import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any
 
-# Configure logging
-logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
-logger = logging.getLogger(__name__)
+from scripts.shared.logging_config import setup_script_logging
+from scripts.shared.subprocess_utils import run_black_check, run_ruff_check
+
+logger = setup_script_logging()
 
 # Assessment definitions
 ASSESSMENTS = {
@@ -43,7 +41,7 @@ ASSESSMENTS = {
 
 def find_python_files() -> list[Path]:
     """Find all Python files in the repository."""
-    python_files: list[Path] = []
+    python_files = []
     for pattern in ["**/*.py"]:
         python_files.extend(Path(".").glob(pattern))
     # Exclude common non-source directories
@@ -60,14 +58,10 @@ def find_python_files() -> list[Path]:
     return [f for f in python_files if not any(p in f.parts for p in excluded)]
 
 
-def run_ruff_check() -> dict[str, Any]:
+def run_ruff_check_wrapper() -> dict:
     """Run ruff and return statistics."""
     try:
-        result = subprocess.run(
-            ["ruff", "check", ".", "--statistics", "--output-format=json"],
-            capture_output=True,
-            text=True,
-        )
+        result = run_ruff_check(statistics=True, json_output=True)
         return {
             "exit_code": result.returncode,
             "output": result.stdout,
@@ -77,14 +71,10 @@ def run_ruff_check() -> dict[str, Any]:
         return {"exit_code": -1, "output": "", "errors": "ruff not installed"}
 
 
-def run_black_check() -> dict[str, Any]:
+def run_black_check_wrapper() -> dict:
     """Run black check and return results."""
     try:
-        result = subprocess.run(
-            ["black", "--check", "--quiet", "."],
-            capture_output=True,
-            text=True,
-        )
+        result = run_black_check()
         return {
             "exit_code": result.returncode,
             "files_to_format": result.stdout.count("would reformat"),
@@ -96,13 +86,13 @@ def run_black_check() -> dict[str, Any]:
 def count_test_files() -> int:
     """Count test files in the repository."""
     test_patterns = ["**/test_*.py", "**/*_test.py", "**/tests/*.py"]
-    test_files: set[Path] = set()
+    test_files = set()
     for pattern in test_patterns:
         test_files.update(Path(".").glob(pattern))
     return len(test_files)
 
 
-def check_documentation() -> dict[str, bool]:
+def check_documentation() -> dict:
     """Check documentation status."""
     has_readme = Path("README.md").exists()
     has_docs = Path("docs").exists()
@@ -152,8 +142,8 @@ def run_assessment(assessment_id: str, output_path: Path) -> int:
             score -= 1
 
     elif assessment_id == "B":  # Hygiene & Quality
-        ruff_result = run_ruff_check()
-        black_result = run_black_check()
+        ruff_result = run_ruff_check_wrapper()
+        black_result = run_black_check_wrapper()
         ruff_status = "✓ passed" if ruff_result["exit_code"] == 0 else "✗ issues found"
         findings.append(f"- Ruff check: {ruff_status}")
         black_status = (
@@ -193,11 +183,11 @@ def run_assessment(assessment_id: str, output_path: Path) -> int:
     score = max(0, min(10, score))
 
     # Generate report
-    report_content = f"""# Assessment {assessment_id}: {assessment['name']}
+    report_content = f"""# Assessment {assessment_id}: {assessment["name"]}
 
 **Date**: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
-**Assessment**: {assessment_id} - {assessment['name']}
-**Description**: {assessment['description']}
+**Assessment**: {assessment_id} - {assessment["name"]}
+**Description**: {assessment["description"]}
 **Generated**: Automated via Jules Assessment Auto-Fix workflow
 
 ## Score: {score}/10
@@ -232,7 +222,7 @@ This assessment was generated automatically. For detailed analysis:
     return 0
 
 
-def main() -> None:
+def main():
     parser = argparse.ArgumentParser(description="Run repository assessment")
     parser.add_argument(
         "--assessment",

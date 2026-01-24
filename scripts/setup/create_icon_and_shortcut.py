@@ -8,6 +8,11 @@ import sys
 from pathlib import Path
 from typing import Any
 
+# Add parent directory to path for imports
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from scripts.shared.subprocess_utils import run_powershell
+
 # Global variables for PIL availability
 PIL_AVAILABLE = False
 PIL_Image: Any | None = None
@@ -24,16 +29,16 @@ except ImportError:
 def get_desktop_path() -> Path:
     """Get the correct Desktop path using Windows API via PowerShell"""
     try:
-        result = subprocess.run(
-            ["powershell", "-Command", "[Environment]::GetFolderPath('Desktop')"],
+        result = run_powershell(
+            "[Environment]::GetFolderPath('Desktop')",
             capture_output=True,
             text=True,
-            check=True,
         )
-        desktop_path = result.stdout.strip()
-        if desktop_path:
-            return Path(desktop_path)
-    except subprocess.CalledProcessError as e:
+        if result.returncode == 0:
+            desktop_path = result.stdout.strip()
+            if desktop_path:
+                return Path(desktop_path)
+    except Exception as e:
         print(f"⚠️  Failed to get Desktop path via PowerShell: {e}")
 
     # Fallback to home/Desktop if PowerShell fails
@@ -129,17 +134,14 @@ $Shortcut.WindowStyle = 1
 
     # Execute PowerShell script
     try:
-        result = subprocess.run(
-            ["powershell", "-Command", ps_script],
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-        print("✅ PowerShell execution successful:")
-        print(result.stdout)
+        result = run_powershell(ps_script, capture_output=True, text=True)
 
-        if shortcut_path.exists():
-            print("🎉 Desktop shortcut created successfully!")
+        if result.returncode == 0:
+            print("✅ PowerShell execution successful:")
+            print(result.stdout)
+
+            if shortcut_path.exists():
+                print("🎉 Desktop shortcut created successfully!")
             print(f"📍 Location: {shortcut_path}")
             return True
         else:
