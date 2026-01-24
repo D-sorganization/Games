@@ -3,7 +3,9 @@ import sys
 import unittest
 
 # Add games/Tetris to path so we can import src
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))  # noqa: PTH100
+sys.path.append(
+    os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+)  # noqa: PTH100
 
 from games.Tetris.src.constants import BLACK, CYAN, GRID_HEIGHT, GRID_WIDTH, RED
 from games.Tetris.src.game_logic import TetrisLogic
