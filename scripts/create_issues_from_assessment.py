@@ -8,15 +8,14 @@ for untracked critical findings.
 
 import argparse
 import json
-import logging
 import subprocess
 import sys
 from pathlib import Path
 from typing import Any
 
-# Configure logging
-logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
-logger = logging.getLogger(__name__)
+from scripts.shared.logging_config import setup_script_logging
+
+logger = setup_script_logging()
 
 
 def get_existing_issues() -> list[dict[str, Any]]:
@@ -235,7 +234,7 @@ def process_assessment_findings(
 **Severity**: {severity}
 **Category**: {category}
 **Source**: {source}
-**Identified**: {summary.get('timestamp', 'Unknown')}
+**Identified**: {summary.get("timestamp", "Unknown")}
 
 ### Problem
 

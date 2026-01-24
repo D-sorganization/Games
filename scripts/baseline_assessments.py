@@ -1,10 +1,8 @@
-import logging
+from pathlib import Path
 
-logging.basicConfig(level=logging.INFO, format="%(message)s")
-logger = logging.getLogger(__name__)
+from scripts.shared.logging_config import setup_script_logging
 
-
-from pathlib import Path  # noqa: E402
+logger = setup_script_logging(format_string="%(message)s")
 
 repo_name = "Games"
 date = "2026-01-22"
