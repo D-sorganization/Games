@@ -31,8 +31,8 @@ ITEM_HEIGHT = 200
 
 # Base Dir
 BASE_DIR = Path(__file__).resolve().parent
-GAMES_DIR = BASE_DIR / "games"
-ASSETS_DIR = BASE_DIR / "launcher_assets"
+GAMES_DIR = BASE_DIR / "src" / "games"
+ASSETS_DIR = GAMES_DIR / "launcher_assets"
 
 
 def load_games() -> list[dict[str, Any]]:

@@ -8,8 +8,9 @@ def get_test_environment(game_path: Path, root_dir: Path) -> dict[str, str]:
     """Create environment with proper PYTHONPATH for game tests."""
     env = os.environ.copy()
     original_pythonpath = env.get("PYTHONPATH", "")
+    src_path = root_dir / "src"
     new_pythonpath = (
-        f"{game_path}{os.pathsep}{root_dir}{os.pathsep}{original_pythonpath}"
+        f"{game_path}{os.pathsep}{root_dir}{os.pathsep}{src_path}{os.pathsep}{original_pythonpath}"
     )
     env["PYTHONPATH"] = new_pythonpath
     return env
@@ -49,12 +50,12 @@ def run_tests() -> None:
     root_dir = Path(__file__).resolve().parent
 
     games_to_test = [
-        ("Duum", "games/Duum"),
-        ("Force_Field", "games/Force_Field"),
-        ("Peanut_Butter_Panic", "games/Peanut_Butter_Panic"),
-        ("Tetris", "games/Tetris"),
-        ("Wizard_of_Wor", "games/Wizard_of_Wor"),
-        ("Zombie_Survival", "games/Zombie_Survival"),
+        ("Duum", "src/games/Duum"),
+        ("Force_Field", "src/games/Force_Field"),
+        ("Peanut_Butter_Panic", "src/games/Peanut_Butter_Panic"),
+        ("Tetris", "src/games/Tetris"),
+        ("Wizard_of_Wor", "src/games/Wizard_of_Wor"),
+        ("Zombie_Survival", "src/games/Zombie_Survival"),
     ]
 
     all_passed = True
