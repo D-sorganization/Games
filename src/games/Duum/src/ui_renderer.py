@@ -2,14 +2,13 @@ from __future__ import annotations
 
 import logging
 import math
-import os
 import random
-from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
 import pygame
 
 from games.shared.ui import Button
+from games.shared.ui_renderer_base import UIRendererBase
 
 from . import constants as C  # noqa: N812
 from .custom_types import DamageText
@@ -28,20 +27,12 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class UIRenderer:
+class UIRenderer(UIRendererBase):
     """Handles all UI, HUD, and Menu rendering operations"""
 
     def __init__(self, screen: pygame.Surface) -> None:
         """Initialize the UI renderer"""
-        self.screen = screen
-
-        # Load Intro Images
-        self.intro_images: dict[str, pygame.Surface] = {}
-        self.intro_video: Any | None = None
-        self._load_assets()
-
-        # Fonts
-        self._init_fonts()
+        super().__init__(screen, C.SCREEN_WIDTH, C.SCREEN_HEIGHT)
 
         # Buttons
         self.start_button = Button(
@@ -53,31 +44,19 @@ class UIRenderer:
             C.DARK_RED,
         )
 
-        # Optimization: Shared surface for alpha effects
-        size = (C.SCREEN_WIDTH, C.SCREEN_HEIGHT)
-        self.overlay_surface = pygame.Surface(size, pygame.SRCALPHA)
+        # Generate vignette
         self._generate_vignette()
-
-        # Menu Visual State
-        self.title_drips: list[dict[str, Any]] = []
 
     def _generate_vignette(self) -> None:
         """Generate a static vignette surface."""
         w, h = C.SCREEN_WIDTH, C.SCREEN_HEIGHT
-        vw, vh = w // 8, h // 8  # Use smaller size for generation speed
+        vw, vh = w // 8, h // 8
         vig_small = pygame.Surface((vw, vh), pygame.SRCALPHA)
 
         cx, cy = vw // 2, vh // 2
         max_dist = math.sqrt(cx**2 + cy**2)
 
-        # Use simple pixel array manipulation or drawing circles
-        # Drawing circles is faster in Python
         vig_small.fill((0, 0, 0, 255))
-
-        # Draw transparent circles from center out? No.
-        # Draw filled circle of alpha 0 at center?
-        # No, pygame blending is tricky for "erasing" alpha without pixel access.
-        # Let's iterate pixels on the small surface, it's tiny (e.g. 100x75)
 
         for y in range(vh):
             for x in range(vw):
@@ -85,79 +64,16 @@ class UIRenderer:
                 dy = y - cy
                 dist = math.sqrt(dx * dx + dy * dy)
 
-                # Normalized distance 0..1
-                # Start darkening at 40% distance
                 d = dist / max_dist
                 val = max(0.0, d - 0.4)
-                val = val / 0.6  # Normalize 0..1
+                val = val / 0.6
 
-                alpha = int(255 * (val**2))  # Quadratic falloff
+                alpha = int(255 * (val**2))
                 alpha = min(alpha, 255)
 
                 vig_small.set_at((x, y), (0, 0, 0, alpha))
 
         self.vignette = pygame.transform.smoothscale(vig_small, (w, h))
-
-    def _init_fonts(self) -> None:
-        """Initialize fonts"""
-        try:
-            self.title_font = pygame.font.SysFont("impact", 100)
-            self.font = pygame.font.SysFont("franklingothicmedium", 40)
-            self.small_font = pygame.font.SysFont("franklingothicmedium", 28)
-            self.tiny_font = pygame.font.SysFont("consolas", 20)
-            self.subtitle_font = pygame.font.SysFont("georgia", 36)
-            # 'chiller' is a non-standard font used for intro slides.
-            # If unavailable, it falls back to title_font in the exception handler.
-            self.chiller_font = pygame.font.SysFont("chiller", 70)
-        except Exception:  # noqa: BLE001
-            self.title_font = pygame.font.Font(None, 80)
-            self.font = pygame.font.Font(None, 48)
-            self.small_font = pygame.font.Font(None, 32)
-            self.tiny_font = pygame.font.Font(None, 24)
-            self.subtitle_font = pygame.font.Font(None, 40)
-            self.chiller_font = self.title_font
-
-    def _load_assets(self) -> None:
-        """Load images and video"""
-        try:
-            base_dir = Path(__file__).resolve().parent.parent
-            self.assets_dir = str(base_dir / "assets")
-            pics_dir = str(base_dir / "pics")
-
-            # Willy Wonk
-            willy_path = os.path.join(pics_dir, "WillyWonk.JPG")
-            if os.path.exists(willy_path):
-                img = pygame.image.load(willy_path)
-                img = pygame.transform.rotate(img, -90)
-                scale = min(500 / img.get_height(), 800 / img.get_width())
-                if scale < 1:
-                    new_size = (
-                        int(img.get_width() * scale),
-                        int(img.get_height() * scale),
-                    )
-                    img = pygame.transform.scale(img, new_size)
-                self.intro_images["willy"] = img
-
-            # Setup Video
-            video_path = os.path.join(pics_dir, "DeadFishSwimming.mp4")
-            if HAS_CV2 and os.path.exists(video_path):
-                self.intro_video = cv2.VideoCapture(video_path)
-
-            # Fallback Image
-            deadfish_path = os.path.join(pics_dir, "DeadFishSwimming_0.JPG")
-            if os.path.exists(deadfish_path):
-                img = pygame.image.load(deadfish_path)
-                scale = min(500 / img.get_height(), 800 / img.get_width())
-                if scale < 1:
-                    new_size = (
-                        int(img.get_width() * scale),
-                        int(img.get_height() * scale),
-                    )
-                    img = pygame.transform.scale(img, new_size)
-                self.intro_images["deadfish"] = img
-
-        except Exception:
-            logger.exception("Failed to load assets")
 
     def render_menu(self) -> None:
         """Render main menu"""

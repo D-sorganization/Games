@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import logging
 import math
-import os
 import random
 import sys
 from pathlib import Path
@@ -11,6 +10,7 @@ from typing import TYPE_CHECKING, Any, cast
 import pygame
 
 from games.shared.ui import Button
+from games.shared.ui_renderer_base import UIRendererBase
 
 from . import constants as C  # noqa: N812
 
@@ -28,20 +28,12 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class UIRenderer:
+class UIRenderer(UIRendererBase):
     """Handles all UI, HUD, and Menu rendering operations"""
 
     def __init__(self, screen: pygame.Surface) -> None:
         """Initialize the UI renderer"""
-        self.screen = screen
-
-        # Load Intro Images
-        self.intro_images: dict[str, pygame.Surface] = {}
-        self.intro_video: Any | None = None
-        self._load_assets()
-
-        # Fonts
-        self._init_fonts()
+        super().__init__(screen, C.SCREEN_WIDTH, C.SCREEN_HEIGHT)
 
         # Buttons
         self.start_button = Button(
@@ -53,97 +45,37 @@ class UIRenderer:
             C.DARK_RED,
         )
 
-        # Optimization: Shared surface for alpha effects
-        size = (C.SCREEN_WIDTH, C.SCREEN_HEIGHT)
-        self.overlay_surface = pygame.Surface(size, pygame.SRCALPHA)
-        self.particle_surface = pygame.Surface(size, pygame.SRCALPHA)
+        # Particle surface
+        self.particle_surface = pygame.Surface(
+            (C.SCREEN_WIDTH, C.SCREEN_HEIGHT), pygame.SRCALPHA
+        )
 
-        # Menu Visual State
-        self.title_drips: list[dict[str, Any]] = []
+        # Additional font aliases for Force_Field
+        self._init_additional_fonts()
 
-    def _init_fonts(self) -> None:
-        """Initialize fonts with modern gaming aesthetics"""
+    def _init_additional_fonts(self) -> None:
+        """Initialize additional fonts specific to Force_Field."""
         try:
-            # Try modern gaming fonts first
-            self.title_font = pygame.font.SysFont("orbitron", 100, bold=True)
-            self.font = pygame.font.SysFont("exo", 40, bold=True)
-            self.small_font = pygame.font.SysFont("exo", 28, bold=True)
-            self.tiny_font = pygame.font.SysFont("rajdhani", 20, bold=True)
-            self.subtitle_font = pygame.font.SysFont("orbitron", 36, bold=True)
-            self.chiller_font = pygame.font.SysFont("orbitron", 70, bold=True)
+            self.retro_title_font = pygame.font.SysFont("orbitron", 100, bold=True)
+            self.retro_subtitle_font = pygame.font.SysFont("orbitron", 36, bold=True)
+            self.retro_font = pygame.font.SysFont("exo", 40, bold=True)
+            self.modern_font = pygame.font.SysFont("exo", 40, bold=True)
+            self.modern_small_font = pygame.font.SysFont("exo", 28, bold=True)
+            self.modern_tiny_font = pygame.font.SysFont("rajdhani", 20, bold=True)
         except Exception:  # noqa: BLE001
-            # Fallback to available system fonts with gaming feel
-            try:
-                self.title_font = pygame.font.SysFont("impact", 100, bold=True)
-                self.font = pygame.font.SysFont("arial", 40, bold=True)
-                self.small_font = pygame.font.SysFont("arial", 28, bold=True)
-                self.tiny_font = pygame.font.SysFont("courier", 20, bold=True)
-                self.subtitle_font = pygame.font.SysFont("impact", 36, bold=True)
-                self.chiller_font = pygame.font.SysFont("impact", 70, bold=True)
-            except Exception:  # noqa: BLE001
-                # Final fallback to default fonts
-                self.title_font = pygame.font.Font(None, 100)
-                self.font = pygame.font.Font(None, 48)
-                self.small_font = pygame.font.Font(None, 32)
-                self.tiny_font = pygame.font.Font(None, 24)
-                self.subtitle_font = pygame.font.Font(None, 40)
-                self.chiller_font = pygame.font.Font(None, 80)
+            # Fallback to base fonts
+            self.retro_title_font = self.title_font
+            self.retro_subtitle_font = self.subtitle_font
+            self.retro_font = self.font
+            self.modern_font = self.font
+            self.modern_small_font = self.small_font
+            self.modern_tiny_font = self.tiny_font
 
-        # Aliases for compatibility with recent layout changes
-        self.retro_title_font = self.title_font
-        self.retro_subtitle_font = self.subtitle_font
-        self.retro_font = self.font
-        self.modern_font = self.font
-        self.modern_small_font = self.small_font
-        self.modern_tiny_font = self.tiny_font
-
-    def _load_assets(self) -> None:
-        """Load images and video"""
-        try:
-            if getattr(sys, "frozen", False):
-                base_dir = Path(sys._MEIPASS)  # type: ignore[attr-defined]
-            else:
-                base_dir = Path(__file__).resolve().parent.parent
-
-            self.assets_dir = str(base_dir / "assets")
-            pics_dir = str(base_dir / "pics")
-
-            # Willy Wonk
-            willy_path = os.path.join(pics_dir, "WillyWonk.JPG")
-            if os.path.exists(willy_path):
-                img = pygame.image.load(willy_path)
-                img = pygame.transform.rotate(img, -90)
-                # Reduced max height to prevent text overlap
-                # on smaller screens (600px height)
-                scale = min(350 / img.get_height(), 800 / img.get_width())
-                if scale < 1:
-                    new_size = (
-                        int(img.get_width() * scale),
-                        int(img.get_height() * scale),
-                    )
-                    img = pygame.transform.scale(img, new_size)
-                self.intro_images["willy"] = img
-
-            # Setup Video
-            video_path = os.path.join(pics_dir, "DeadFishSwimming.mp4")
-            if HAS_CV2 and os.path.exists(video_path):
-                self.intro_video = cv2.VideoCapture(video_path)
-
-            # Fallback Image
-            deadfish_path = os.path.join(pics_dir, "DeadFishSwimming_0.JPG")
-            if os.path.exists(deadfish_path):
-                img = pygame.image.load(deadfish_path)
-                scale = min(500 / img.get_height(), 800 / img.get_width())
-                if scale < 1:
-                    new_size = (
-                        int(img.get_width() * scale),
-                        int(img.get_height() * scale),
-                    )
-                    img = pygame.transform.scale(img, new_size)
-                self.intro_images["deadfish"] = img
-
-        except Exception:
-            logger.exception("Failed to load assets")
+    def _get_base_dir(self) -> Path:
+        """Override to handle frozen executables."""
+        if getattr(sys, "frozen", False):
+            return Path(sys._MEIPASS)  # type: ignore[attr-defined]
+        return Path(__file__).resolve().parent.parent
 
     def render_menu(self) -> None:
         """Render main menu"""
