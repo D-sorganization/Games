@@ -1,16 +1,16 @@
-# Assessment N: Scalability
+# Assessment: Scalability (Category N)
 
-## Grade: 9/10
+## Grade: 8/10
 
 ## Analysis
-The architecture supports scalability well. The `game_launcher.py` uses dynamic discovery, meaning adding a new game requires no changes to the launcher code—simply dropping a folder with a manifest into `games/` works.
+The architecture allows for adding new games easily by just dropping a folder into `src/games`. This is highly scalable for a game collection.
 
 ## Strengths
-- **Dynamic Discovery**: New games are plugins.
-- **Decoupled Architecture**: Games run in separate processes, so a crash in one doesn't kill the launcher.
+- **Plugin Architecture**: Games are plugins.
+- **Decoupling**: Launcher doesn't need to know about game internals.
 
 ## Weaknesses
-- **Shared Code Bottleneck**: If the `games.shared` library changes, it impacts all games. Proper versioning or rigorous testing is needed.
+- **Resource Loading**: As mentioned in Performance, loading all icons at startup might become slow eventually.
 
 ## Recommendations
-1.  **Versioning**: If the number of games grows significantly, consider versioning the shared library or ensuring strict backward compatibility.
+1. **Lazy Loading**: Load icons only when visible or paged (if pagination is added).

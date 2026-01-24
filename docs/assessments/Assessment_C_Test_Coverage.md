@@ -1,19 +1,19 @@
-# Assessment C: Test Coverage
+# Assessment: Test Coverage (Category C)
 
-## Grade: 9/10
+## Grade: 6/10
 
 ## Analysis
-Test coverage is impressive for a game repository. All games have associated test suites that pass. The use of `pytest` is standard and effective. The `run_tests.py` script simplifies execution.
+Tests exist for most games (`Duum`, `Force_Field`, `Tetris`, etc.), which is excellent. However, the mechanism to run them (`run_tests.py`) is broken. Manual execution shows that tests are passing for `Force_Field` (32 tests) and `Duum` (22 tests), indicating good underlying test quality.
 
 ## Strengths
-- **Universal Coverage**: Every game has tests.
-- **Passing Tests**: 100% pass rate on 120 tests.
-- **Unit & Logic Tests**: Tests cover entity management, game logic, and utilities.
+- **Presence**: Unit tests exist for game logic and entities.
+- **Pass Rate**: Sampled tests pass when run correctly.
 
 ## Weaknesses
-- **Integration Testing**: The `game_launcher.py` logic is not heavily tested (e.g., mocking subprocess calls).
-- **UI/Visual Testing**: No automated visual regression testing (common in games, but hard to implement).
+- **Execution**: The provided test runner is non-functional.
+- **Discovery**: `pytest` discovery fails without manual `PYTHONPATH` intervention due to layout issues.
 
 ## Recommendations
-1.  **Launcher Tests**: Add unit tests for `game_launcher.py`, specifically mocking the file system and `subprocess` to verify game discovery and launch logic.
-2.  **CI Integration**: Ensure `run_tests.py` is the standard entry point for CI pipelines.
+1. **Fix `run_tests.py`**: Update it to handle the `src/` directory.
+2. **CI Integration**: Ensure CI workflows use the correct paths so tests actually run.
+3. **Coverage Reporting**: Enable coverage reports to track metric over time.
