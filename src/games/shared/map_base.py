@@ -9,15 +9,17 @@ import random
 class MapBase:
     """Base class for game maps with walls and buildings using cellular automata."""
 
-    def __init__(self, size: int):
+    def __init__(self, size: int, generate: bool = True):
         """Initialize a map with walls and buildings.
 
         Args:
             size: Map size (grid dimensions)
+            generate: Whether to generate the map immediately (default: True)
         """
         self.size = size
         self.grid = [[0 for _ in range(size)] for _ in range(size)]
-        self.create_map()
+        if generate:
+            self.create_map()
 
     @property
     def width(self) -> int:

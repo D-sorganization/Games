@@ -50,7 +50,7 @@ class SoundManagerBase:
 
     def load_assets(self) -> None:
         """Load all sound files from the game's assets directory."""
-        base_dir = Path(__file__).resolve().parent.parent.parent / self.get_game_name()
+        base_dir = Path(__file__).resolve().parent.parent / self.get_game_name()
         sound_dir = base_dir / "assets" / "sounds"
 
         for name, filename in self.SOUND_FILES.items():

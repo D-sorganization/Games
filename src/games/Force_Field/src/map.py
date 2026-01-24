@@ -16,7 +16,7 @@ class Map(MapBase):
         Args:
             size: Map size (default: DEFAULT_MAP_SIZE)
         """
-        super().__init__(size)
+        super().__init__(size, generate=False)
         self._create_validated_map()
 
     def _create_validated_map(self) -> None:
