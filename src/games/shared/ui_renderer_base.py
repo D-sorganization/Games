@@ -74,7 +74,7 @@ class UIRendererBase:
 
         Subclasses can override this if needed.
         """
-        return Path(__file__).resolve().parent.parent.parent / self._get_game_name()
+        return Path(__file__).resolve().parent.parent / self._get_game_name()
 
     def _get_game_name(self) -> str:
         """Get the game name from the class module path.
