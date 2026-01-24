@@ -82,14 +82,10 @@ class UIRendererBase:
         Subclasses can override this if needed.
         """
         # Extract game name from module path
-        # (e.g., 'src.games.Duum.src.ui_renderer' -> 'Duum')
+        # (e.g., 'games.Duum.src.ui_renderer' -> 'Duum')
         module_parts = self.__class__.__module__.split(".")
-        if (
-            len(module_parts) >= 3
-            and module_parts[0] == "src"
-            and module_parts[1] == "games"
-        ):
-            return module_parts[2]
+        if len(module_parts) >= 2 and module_parts[0] == "games":
+            return module_parts[1]
         return "unknown"
 
     def _load_assets(self) -> None:
@@ -176,6 +172,4 @@ class UIRendererBase:
 
             # Simple red line for drip
             if start_y < self.screen_height:
-                pygame.draw.line(
-                    self.screen, (139, 0, 0), (x, start_y), (x, end_y), 2
-                )
+                pygame.draw.line(self.screen, (139, 0, 0), (x, start_y), (x, end_y), 2)
