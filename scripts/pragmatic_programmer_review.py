@@ -34,7 +34,7 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
 
 # Pragmatic Programmer principles and their assessment criteria
-PRINCIPLES = {
+PRINCIPLES: dict[str, dict[str, Any]] = {
     "DRY": {
         "name": "Don't Repeat Yourself",
         "description": (
@@ -116,9 +116,9 @@ def compute_file_hash(content: str) -> str:
     return hashlib.md5(normalized.encode()).hexdigest()
 
 
-def extract_functions(content: str) -> list[dict]:
+def extract_functions(content: str) -> list[dict[str, Any]]:
     """Extract function definitions from Python code."""
-    functions = []
+    functions: list[dict[str, Any]] = []
     try:
         tree = ast.parse(content)
         for node in ast.walk(tree):
@@ -129,8 +129,8 @@ def extract_functions(content: str) -> list[dict]:
                         "lineno": node.lineno,
                         "args": len(node.args.args),
                         "body_lines": (
-                            node.end_lineno - node.lineno + 1
-                            if hasattr(node, "end_lineno")
+                            (node.end_lineno - node.lineno + 1)
+                            if node.end_lineno is not None
                             else 0
                         ),
                         "has_docstring": (ast.get_docstring(node) is not None),
@@ -141,7 +141,7 @@ def extract_functions(content: str) -> list[dict]:
     return functions
 
 
-def check_dry_violations(files: list[Path]) -> list[dict]:
+def check_dry_violations(files: list[Path]) -> list[dict[str, Any]]:
     """
     Check for DRY (Don't Repeat Yourself) violations.
 
@@ -152,9 +152,9 @@ def check_dry_violations(files: list[Path]) -> list[dict]:
     - Copy-paste patterns
     """
     issues = []
-    code_blocks = defaultdict(list)
-    magic_numbers = defaultdict(list)
-    magic_strings = defaultdict(list)
+    code_blocks: dict[str, list[tuple[Path, int]]] = defaultdict(list)
+    magic_numbers: dict[str, list[tuple[Path, int]]] = defaultdict(list)
+    magic_strings: dict[str, list[tuple[Path, int]]] = defaultdict(list)
 
     for file_path in files:
         try:
@@ -216,7 +216,7 @@ def check_dry_violations(files: list[Path]) -> list[dict]:
     return issues
 
 
-def check_orthogonality(files: list[Path]) -> list[dict]:
+def check_orthogonality(files: list[Path]) -> list[dict[str, Any]]:
     """
     Check for orthogonality and decoupling issues.
 
@@ -227,8 +227,8 @@ def check_orthogonality(files: list[Path]) -> list[dict]:
     - God classes/functions
     """
     issues = []
-    imports_graph = defaultdict(set)
-    global_vars = []
+    imports_graph: dict[str, set[str]] = defaultdict(set)
+    global_vars: list[dict[str, Any]] = []
 
     for file_path in files:
         try:
@@ -295,7 +295,7 @@ def check_orthogonality(files: list[Path]) -> list[dict]:
     return issues
 
 
-def check_reversibility(root_path: Path) -> list[dict]:
+def check_reversibility(root_path: Path) -> list[dict[str, Any]]:
     """
     Check for reversibility and flexibility issues.
 
@@ -358,7 +358,7 @@ def check_reversibility(root_path: Path) -> list[dict]:
     return issues
 
 
-def check_quality(files: list[Path]) -> list[dict]:
+def check_quality(files: list[Path]) -> list[dict[str, Any]]:
     """
     Check for code quality and craftsmanship issues.
 
@@ -369,8 +369,8 @@ def check_quality(files: list[Path]) -> list[dict]:
     - Unfinished work markers
     """
     issues = []
-    todos = []
-    fixmes = []
+    todos: list[tuple[Path, int, str]] = []
+    fixmes: list[tuple[Path, int, str]] = []
     missing_type_hints = 0
 
     # Use constructed strings to avoid false positives in quality checks
@@ -438,7 +438,7 @@ def check_quality(files: list[Path]) -> list[dict]:
     return issues
 
 
-def check_robustness(files: list[Path]) -> list[dict]:
+def check_robustness(files: list[Path]) -> list[dict[str, Any]]:
     """
     Check for error handling and robustness issues.
 
@@ -449,8 +449,8 @@ def check_robustness(files: list[Path]) -> list[dict]:
     - Resource management
     """
     issues = []
-    bare_excepts = []
-    broad_excepts = []
+    bare_excepts: list[tuple[Path, int]] = []
+    broad_excepts: list[tuple[Path, int]] = []
     no_finally = 0
 
     for file_path in files:
@@ -508,7 +508,7 @@ def check_robustness(files: list[Path]) -> list[dict]:
     return issues
 
 
-def check_testing(root_path: Path) -> list[dict]:
+def check_testing(root_path: Path) -> list[dict[str, Any]]:
     """
     Check for testing and validation issues.
 
@@ -521,7 +521,7 @@ def check_testing(root_path: Path) -> list[dict]:
 
     # Find test files
     test_patterns = ["**/test_*.py", "**/*_test.py", "**/tests/*.py"]
-    test_files = set()
+    test_files: set[Path] = set()
     for pattern in test_patterns:
         test_files.update(root_path.glob(pattern))
 
@@ -579,7 +579,7 @@ def check_testing(root_path: Path) -> list[dict]:
     return issues
 
 
-def check_documentation(root_path: Path, files: list[Path]) -> list[dict]:
+def check_documentation(root_path: Path, files: list[Path]) -> list[dict[str, Any]]:
     """
     Check for documentation and communication issues.
 
@@ -653,7 +653,7 @@ def check_documentation(root_path: Path, files: list[Path]) -> list[dict]:
     return issues
 
 
-def check_automation(root_path: Path) -> list[dict]:
+def check_automation(root_path: Path) -> list[dict[str, Any]]:
     """
     Check for automation and tooling issues.
 
@@ -898,7 +898,9 @@ def generate_markdown_report(results: dict[str, Any], output_path: Path) -> None
     logger.info(f"Report saved to: {output_path}")
 
 
-def create_github_issues(results: dict[str, Any], dry_run: bool = False) -> list[dict]:
+def create_github_issues(
+    results: dict[str, Any], dry_run: bool = False
+) -> list[dict[str, Any]]:
     """Create GitHub issues for critical and major findings."""
     issues_to_create = []
 
@@ -989,7 +991,7 @@ Based on principles from "The Pragmatic Programmer" by David Thomas and Andrew H
     return created
 
 
-def main():
+def main() -> None:
     """Main entry point for the Pragmatic Programmer review."""
     parser = argparse.ArgumentParser(
         description="Pragmatic Programmer Review - Automated Code Assessment"
