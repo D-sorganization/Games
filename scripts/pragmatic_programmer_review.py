@@ -36,7 +36,9 @@ logger = setup_script_logging()
 PRINCIPLES = {
     "DRY": {
         "name": "Don't Repeat Yourself",
-        "description": "Every piece of knowledge must have a single, unambiguous representation",
+        "description": (
+            "Every piece of knowledge must have a single, unambiguous representation"
+        ),
         "weight": 2.0,
     },
     "ORTHOGONALITY": {
@@ -46,7 +48,9 @@ PRINCIPLES = {
     },
     "REVERSIBILITY": {
         "name": "Reversibility & Flexibility",
-        "description": "Make decisions reversible; avoid painting yourself into a corner",
+        "description": (
+            "Make decisions reversible; avoid painting yourself into a corner"
+        ),
         "weight": 1.0,
     },
     "QUALITY": {
@@ -263,10 +267,14 @@ def check_orthogonality(files: list[Path]) -> list[dict]:
                     {
                         "principle": "ORTHOGONALITY",
                         "severity": "MAJOR",
-                        "title": f"God function: {func['name']} ({func['body_lines']} lines)",
-                        "description": "Functions over 50 lines violate single responsibility",
+                        "title": (
+                            f"God function: {func['name']} ({func['body_lines']} lines)"
+                        ),
+                        "description": (
+                            "Functions over 50 lines violate single responsibility"
+                        ),
                         "files": [str(file_path)],
-                        "recommendation": "Break into smaller, focused functions",
+                        "recommendation": ("Break into smaller, focused functions"),
                     }
                 )
 
@@ -320,9 +328,11 @@ def check_reversibility(root_path: Path) -> list[dict]:
                         "principle": "REVERSIBILITY",
                         "severity": "MAJOR",
                         "title": description,
-                        "description": "Configuration should be external, not hardcoded",
+                        "description": (
+                            "Configuration should be external, not hardcoded"
+                        ),
                         "files": [str(file_path)],
-                        "recommendation": "Use environment variables or config files",
+                        "recommendation": ("Use environment variables or config files"),
                     }
                 )
                 break  # One issue per file
@@ -470,7 +480,9 @@ def check_robustness(files: list[Path]) -> list[dict]:
                 "principle": "ROBUSTNESS",
                 "severity": "CRITICAL",
                 "title": f"Bare except clauses ({len(bare_excepts)} found)",
-                "description": "Bare 'except:' catches all exceptions including KeyboardInterrupt",
+                "description": (
+                    "Bare 'except:' catches all exceptions including KeyboardInterrupt"
+                ),
                 "files": list({str(b[0]) for b in bare_excepts[:5]}),
                 "recommendation": "Specify exception types explicitly",
             }
@@ -481,7 +493,9 @@ def check_robustness(files: list[Path]) -> list[dict]:
             {
                 "principle": "ROBUSTNESS",
                 "severity": "MAJOR",
-                "title": f"Overly broad exception handling ({len(broad_excepts)} found)",
+                "title": (
+                    f"Overly broad exception handling ({len(broad_excepts)} found)"
+                ),
                 "description": "Catching 'Exception' hides specific errors",
                 "files": list({str(b[0]) for b in broad_excepts[:5]}),
                 "recommendation": "Catch specific exception types",
@@ -531,7 +545,10 @@ def check_testing(root_path: Path) -> list[dict]:
             {
                 "principle": "TESTING",
                 "severity": "MAJOR",
-                "title": f"Low test coverage ({len(test_files)} tests for {len(source_files)} source files)",
+                "title": (
+                    f"Low test coverage ({len(test_files)} tests for "
+                    f"{len(source_files)} source files)"
+                ),
                 "description": "Test ratio below 30%",
                 "files": [],
                 "recommendation": "Increase test coverage",
@@ -591,9 +608,11 @@ def check_documentation(root_path: Path, files: list[Path]) -> list[dict]:
                     "principle": "DOCUMENTATION",
                     "severity": "MINOR",
                     "title": "README is too brief",
-                    "description": "README should explain purpose, installation, and usage",
+                    "description": (
+                        "README should explain purpose, installation, and usage"
+                    ),
                     "files": [str(readme_files[0])],
-                    "recommendation": "Expand README with examples and API docs",
+                    "recommendation": ("Expand README with examples and API docs"),
                 }
             )
 
@@ -619,7 +638,10 @@ def check_documentation(root_path: Path, files: list[Path]) -> list[dict]:
                     "principle": "DOCUMENTATION",
                     "severity": "MINOR",
                     "title": f"Low docstring coverage ({docstring_rate:.0%})",
-                    "description": f"{functions_without_docstrings} public functions lack docstrings",
+                    "description": (
+                        f"{functions_without_docstrings} public functions "
+                        f"lack docstrings"
+                    ),
                     "files": [],
                     "recommendation": "Add docstrings to public functions",
                 }
