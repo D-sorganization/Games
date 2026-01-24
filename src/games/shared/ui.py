@@ -5,7 +5,9 @@ import random
 
 import pygame
 
-from . import constants as C  # noqa: N812
+
+# Constants used by UI components
+WHITE = (255, 255, 255)
 
 
 class Button:
@@ -48,9 +50,9 @@ class Button:
         """Draw button"""
         color = self.hover_color if self.hovered else self.color
         pygame.draw.rect(screen, color, self.rect)
-        pygame.draw.rect(screen, C.WHITE, self.rect, 3)
+        pygame.draw.rect(screen, WHITE, self.rect, 3)
 
-        text_surface = font.render(self.text, True, C.WHITE)
+        text_surface = font.render(self.text, True, WHITE)
         text_rect = text_surface.get_rect(center=self.rect.center)
         screen.blit(text_surface, text_rect)
 
@@ -177,7 +179,7 @@ class BloodButton(Button):
         pygame.draw.line(screen, color, self.rect.topright, self.rect.bottomright, 2)
 
         # Text with shadow
-        text_surf = font.render(self.text, True, C.WHITE)
+        text_surf = font.render(self.text, True, WHITE)
         text_rect = text_surf.get_rect(center=self.rect.center)
 
         # Shadow

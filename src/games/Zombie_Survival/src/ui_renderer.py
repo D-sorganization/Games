@@ -9,8 +9,9 @@ from typing import TYPE_CHECKING, Any, cast
 
 import pygame
 
+from games.shared.ui import Button
+
 from . import constants as C  # noqa: N812
-from .ui import Button
 
 try:
     import cv2
