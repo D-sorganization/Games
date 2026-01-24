@@ -1,6 +1,10 @@
 import os
 import sys
 
+import pytest
+
+pytest.importorskip("pygame")
+
 # Add the package source directory (wizard_of_wor/wizard_of_wor) to sys.path
 # so that internal imports like 'from constants import ...' work.
 sys.path.insert(

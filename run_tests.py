@@ -5,6 +5,7 @@ from pathlib import Path
 
 
 def run_tests() -> None:
+    """Run pytest for each game test folder."""
     root_dir = Path(__file__).resolve().parent
 
     # List of game directories that have tests and need specific PYTHONPATH

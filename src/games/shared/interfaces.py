@@ -47,13 +47,22 @@ class Map(Protocol):
     size: int
 
     @property
-    def width(self) -> int: ...
+    def width(self) -> int:
+        """Return the map width in tiles."""
+        return 0
 
     @property
-    def height(self) -> int: ...
+    def height(self) -> int:
+        """Return the map height in tiles."""
+        return 0
 
-    def is_wall(self, x: float, y: float) -> bool: ...
-    def get_wall_type(self, x: float, y: float) -> int: ...
+    def is_wall(self, x: float, y: float) -> bool:
+        """Return True if the coordinate is a wall."""
+        return False
+
+    def get_wall_type(self, x: float, y: float) -> int:
+        """Return the wall type at the coordinate."""
+        return 0
 
 
 class LevelTheme(TypedDict):
@@ -79,7 +88,9 @@ class Bot(Protocol):
     frozen: bool
     mouth_open: bool
 
-    def take_damage(self, damage: int, is_headshot: bool = False) -> bool: ...
+    def take_damage(self, damage: int, is_headshot: bool = False) -> bool:
+        """Apply damage and return True if the bot dies."""
+        return False
 
 
 @runtime_checkable

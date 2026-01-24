@@ -14,7 +14,7 @@ import re
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, TypedDict
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
@@ -99,7 +99,11 @@ def generate_summary(
     logger.info(f"Generating assessment summary from {len(input_reports)} reports...")
 
     # Category mapping
-    categories = {
+    class Category(TypedDict):
+        name: str
+        weight: float
+
+    categories: dict[str, Category] = {
         "A": {"name": "Architecture & Implementation", "weight": 2.0},
         "B": {"name": "Hygiene, Security & Quality", "weight": 2.0},
         "C": {"name": "Documentation & Integration", "weight": 1.5},
@@ -118,8 +122,8 @@ def generate_summary(
     }
 
     # Collect scores and issues
-    scores = {}
-    all_issues = []
+    scores: dict[str, float] = {}
+    all_issues: list[dict[str, Any]] = []
 
     for report in input_reports:
         # Extract assessment ID from filename (e.g., Assessment_A_Results_2026-01-17.md)
@@ -169,7 +173,10 @@ Repository assessment completed across all {len(scores)} categories.
         if assessment_id in categories:
             cat_info = categories[assessment_id]
             score = scores[assessment_id]
-            md_content += f"| **{assessment_id}** | {cat_info['name']} | {score:.1f} | {cat_info['weight']}x |\n"
+            md_content += (
+                f"| **{assessment_id}** | {cat_info['name']} | {score:.1f} | "
+                f"{cat_info['weight']}x |\n"
+            )
 
     md_content += f"""
 ## Critical Issues
@@ -179,7 +186,10 @@ Found {len(critical_issues)} critical issues requiring immediate attention:
 """
 
     for i, issue in enumerate(critical_issues[:10], 1):
-        md_content += f"{i}. **[{issue['severity']}]** {issue['description']} (Source: {issue['source']})\n"
+        md_content += (
+            f"{i}. **[{issue['severity']}]** {issue['description']} "
+            f"(Source: {issue['source']})\n"
+        )
 
     md_content += """
 ## Recommendations
@@ -232,7 +242,7 @@ Recommended: 30 days from today
     return 0
 
 
-def main():
+def main() -> int:
     """Parse CLI arguments and generate assessment summary."""
     parser = argparse.ArgumentParser(description="Generate assessment summary")
     parser.add_argument(
@@ -258,7 +268,7 @@ def main():
     args = parser.parse_args()
 
     # Expand wildcards if needed
-    input_reports = []
+    input_reports: list[Path] = []
     for pattern in args.input:
         if "*" in str(pattern):
             # Expand glob pattern
@@ -278,4 +288,4 @@ def main():
 
 
 if __name__ == "__main__":
-    sys.exit(main() or 0)
+    sys.exit(main())

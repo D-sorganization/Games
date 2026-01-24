@@ -290,6 +290,7 @@ This issue was identified during automated repository assessment and requires at
 
 
 def main() -> None:
+    """Parse CLI arguments and create issues from assessments."""
     parser = argparse.ArgumentParser(description="Create GitHub issues from assessment")
     parser.add_argument(
         "--input",

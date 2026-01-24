@@ -8,6 +8,7 @@ from src.map import Map
 
 
 def test_map_size() -> None:
+    """Report how many generated maps are too small."""
     print("Testing Map Generation for Small Areas...")
     small_maps = 0
     total = 100

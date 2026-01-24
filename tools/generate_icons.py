@@ -26,12 +26,14 @@ COLORS = {
 
 
 def save_icon(surface: pygame.Surface, name: str) -> None:
+    """Write a generated icon to disk."""
     path = OUTPUT_DIR / f"{name}.png"
     pygame.image.save(surface, str(path))
     print(f"Saved {path}")
 
 
 def create_force_field_icon() -> None:
+    """Generate the Force Field icon asset."""
     surf = pygame.Surface(ICON_SIZE)
     surf.fill(COLORS["black"])
 
@@ -50,6 +52,7 @@ def create_force_field_icon() -> None:
 
 
 def create_doom_icon() -> None:
+    """Generate the Duum icon asset."""
     surf = pygame.Surface(ICON_SIZE)
     surf.fill(COLORS["black"])
 
@@ -67,6 +70,7 @@ def create_doom_icon() -> None:
 
 
 def create_peanut_butter_panic_icon() -> None:
+    """Generate the Peanut Butter Panic icon asset."""
     surf = pygame.Surface(ICON_SIZE)
     surf.fill((255, 228, 196))  # Bisque background
 
@@ -87,6 +91,7 @@ def create_peanut_butter_panic_icon() -> None:
 
 
 def create_tetris_icon() -> None:
+    """Generate the Tetris icon asset."""
     surf = pygame.Surface(ICON_SIZE)
     surf.fill(COLORS["black"])
 
@@ -117,6 +122,7 @@ def create_tetris_icon() -> None:
 
 
 def create_wizard_of_wor_icon() -> None:
+    """Generate the Wizard of Wor icon asset."""
     surf = pygame.Surface(ICON_SIZE)
     surf.fill(COLORS["dark_blue"])
 
@@ -137,6 +143,7 @@ def create_wizard_of_wor_icon() -> None:
 
 
 def create_zombie_games_icon() -> None:
+    """Generate the Zombie Survival icon asset."""
     surf = pygame.Surface(ICON_SIZE)
     surf.fill(COLORS["black"])
 

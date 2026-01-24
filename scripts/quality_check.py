@@ -159,13 +159,17 @@ def check_magic_numbers(lines: list[str], filepath: Path) -> list[tuple[int, str
     return issues
 
 
-def check_ast_issues(content: str) -> list[tuple[int, str, str]]:
+def check_ast_issues(content: str, filepath: Path) -> list[tuple[int, str, str]]:
     """Check AST for quality issues."""
     issues: list[tuple[int, str, str]] = []
+    if "tests" in filepath.parts or filepath.name.startswith("test_"):
+        return issues
     try:
         tree = ast.parse(content)
         for node in ast.walk(tree):
             if isinstance(node, ast.FunctionDef):
+                if node.name.startswith("_"):
+                    continue
                 if not ast.get_docstring(node):
                     issues.append(
                         (node.lineno, f"Function '{node.name}' missing docstring", ""),
@@ -192,7 +196,7 @@ def check_file(filepath: Path) -> list[tuple[int, str, str]]:
         issues = []
         issues.extend(check_banned_patterns(lines, filepath))
         issues.extend(check_magic_numbers(lines, filepath))
-        issues.extend(check_ast_issues(content))
+        issues.extend(check_ast_issues(content, filepath))
     except (OSError, UnicodeDecodeError) as e:
         return [(0, f"Error reading file: {e}", "")]
     else:

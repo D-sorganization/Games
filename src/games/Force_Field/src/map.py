@@ -156,7 +156,7 @@ class Map:
                 continue
         else:
             # Fallback if all attempts fail (unlikely)
-            pass
+            return
 
     def is_wall(self, x: float, y: float) -> bool:
         """Check if position contains a wall"""

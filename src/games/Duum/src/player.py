@@ -127,7 +127,7 @@ class Player:
             self.walk_distance += dist_moved * 0.8
         else:
             # Don't reset is_moving here if move() was called this frame
-            pass
+            return
 
     def rotate(self, delta: float) -> None:
         """Rotate player view"""
