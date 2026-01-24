@@ -71,12 +71,17 @@ class SoundManagerBase:
 
     def get_game_name(self) -> str:
         """Get the game name from the class module path.
-        
+
         Subclasses can override this if needed.
         """
-        # Extract game name from module path (e.g., 'src.games.Duum.src.sound' -> 'Duum')
+        # Extract game name from module path
+        # (e.g., 'src.games.Duum.src.sound' -> 'Duum')
         module_parts = self.__class__.__module__.split(".")
-        if len(module_parts) >= 3 and module_parts[0] == "src" and module_parts[1] == "games":
+        if (
+            len(module_parts) >= 3
+            and module_parts[0] == "src"
+            and module_parts[1] == "games"
+        ):
             return module_parts[2]
         return "unknown"
 

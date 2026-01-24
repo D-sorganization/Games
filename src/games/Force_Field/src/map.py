@@ -12,7 +12,7 @@ class Map(MapBase):
 
     def __init__(self, size: int = DEFAULT_MAP_SIZE):
         """Initialize a map with walls and buildings.
-        
+
         Args:
             size: Map size (default: DEFAULT_MAP_SIZE)
         """
@@ -36,10 +36,10 @@ class Map(MapBase):
         """Check if map meets quality criteria (15% walkable area)."""
         size = self.size
         min_walkable = int(size * size * 0.15)
-        
+
         # Count walkable tiles
         walkable_count = sum(
             1 for i in range(size) for j in range(size) if self.grid[i][j] == 0
         )
-        
+
         return walkable_count >= min_walkable

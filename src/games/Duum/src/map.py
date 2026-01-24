@@ -12,7 +12,7 @@ class Map(MapBase):
 
     def __init__(self, size: int = DEFAULT_MAP_SIZE):
         """Initialize a map with walls and buildings.
-        
+
         Args:
             size: Map size (default: DEFAULT_MAP_SIZE)
         """

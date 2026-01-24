@@ -11,7 +11,7 @@ class MapBase:
 
     def __init__(self, size: int):
         """Initialize a map with walls and buildings.
-        
+
         Args:
             size: Map size (grid dimensions)
         """
@@ -78,11 +78,11 @@ class MapBase:
         """Add rectangular rooms to the map."""
         size = self.size
         num_rooms = random.randint(3, 5)
-        
+
         for _ in range(num_rooms):
             w = random.randint(5, 10)
             h = random.randint(5, 10)
-            
+
             # Ensure within bounds
             if size - w - 2 < 2 or size - h - 2 < 2:
                 continue
@@ -116,7 +116,7 @@ class MapBase:
         size = self.size
         cx, cy = size // 2, size // 2
         start_x, start_y = -1, -1
-        
+
         # Find valid start point near center
         for r in range(size // 2):
             for angle in range(0, 360, 45):
