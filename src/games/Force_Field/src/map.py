@@ -16,9 +16,7 @@ class Map(MapBase):
         Args:
             size: Map size (default: DEFAULT_MAP_SIZE)
         """
-        # Don't call super().__init__ yet, we need custom logic
-        self.size = size
-        self.grid = [[0 for _ in range(size)] for _ in range(size)]
+        super().__init__(size)
         self._create_validated_map()
 
     def _create_validated_map(self) -> None:

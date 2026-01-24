@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 class SoundManagerBase:
     """Base class for managing sound effects and music with singleton pattern."""
 
-    _instance: SoundManagerBase | None = None
+    _instances: dict[type[SoundManagerBase], SoundManagerBase] = {}
     initialized: bool
 
     # Subclasses should override this with their sound file mappings
@@ -22,11 +22,10 @@ class SoundManagerBase:
 
     def __new__(cls) -> SoundManagerBase:  # noqa: PYI034
         """Create singleton instance."""
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
-            cls._instance.initialized = False
-        assert cls._instance is not None
-        return cls._instance
+        if cls not in cls._instances:
+            cls._instances[cls] = super().__new__(cls)
+            cls._instances[cls].initialized = False
+        return cls._instances[cls]
 
     def __init__(self) -> None:
         """Initialize SoundManager."""
