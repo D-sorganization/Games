@@ -19,4 +19,3 @@ def setup_script_logging(
     """
     logging.basicConfig(level=level, format=format_string)
     return logging.getLogger(__name__)
-
