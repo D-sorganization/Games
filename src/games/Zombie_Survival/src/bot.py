@@ -78,9 +78,9 @@ class Bot:
 
         # Death State
         self.dead = False
-        self.death_timer = 0
         self.disintegrate_timer = 0
         self.removed = False  # When fully disintegrated
+        self.z = 0.5  # Sprite height
 
     def update(
         self, game_map: Map, player: Player, other_bots: list[Bot]

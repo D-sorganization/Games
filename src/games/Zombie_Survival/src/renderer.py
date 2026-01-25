@@ -43,10 +43,12 @@ class GameRenderer:
             self.screen, game.player, game.level, view_offset_y=bob_offset
         )
         game.raycaster.render_3d(
-            self.screen, game.player, game.bots, game.level, view_offset_y=bob_offset
-        )
-        game.raycaster.render_projectiles(
-            self.screen, game.player, game.projectiles, view_offset_y=bob_offset
+            self.screen,
+            game.player,
+            game.bots,
+            game.level,
+            view_offset_y=bob_offset,
+            projectiles=game.projectiles,
         )
 
         # 2. Effects

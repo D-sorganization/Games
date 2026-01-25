@@ -46,6 +46,7 @@ class PlayerBase:
         self.y = y
         self.angle = angle
         self.pitch = 0.0  # Vertical look offset
+        self.z = 0.5  # Camera height
 
         # Health
         self.health = 100

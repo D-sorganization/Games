@@ -31,6 +31,7 @@ class Projectile:
         self.size = size
         self.weapon_type = weapon_type
         self.alive = True
+        self.z = 0.5  # Projectile height
 
     def update(self, game_map: "Map") -> None:
         """Update projectile position"""
