@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from src.games.shared.map_base import MapBase
+from games.shared.map_base import MapBase
 
 from .constants import DEFAULT_MAP_SIZE
 
