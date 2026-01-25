@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import math
-import pygame
 from typing import TYPE_CHECKING
+
+import pygame
+
 from .base import BaseBotStyleRenderer
 
 if TYPE_CHECKING:
@@ -32,7 +34,7 @@ class GhostStyleRenderer(BaseBotStyleRenderer):
 
         # Note: Pygame 2.0+ supports RGBA for basic draw functions, but let's be safe
         # Create a temp surface for transparency if needed, or just use solid for now
-        # as per original code (which didn't actually handle alpha correctly in draw.circle)
+        # as per original code (didn't handle alpha correctly in draw.circle)
         ghost_color = (*color, 150)
 
         # Head
@@ -40,7 +42,9 @@ class GhostStyleRenderer(BaseBotStyleRenderer):
         pygame.draw.circle(screen, ghost_color, center, int(rw / 2))
 
         # Body (Rect)
-        body_rect = pygame.Rect(int(cx - rw / 2), int(gy + rw / 2), int(rw), int(rh * 0.6))
+        body_rect = pygame.Rect(
+            int(cx - rw / 2), int(gy + rw / 2), int(rw), int(rh * 0.6)
+        )
         pygame.draw.rect(screen, ghost_color, body_rect)
 
         # Tattered bottom

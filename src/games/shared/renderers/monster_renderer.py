@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import random
-import pygame
 from typing import TYPE_CHECKING
+
+import pygame
+
 from .base import BaseBotStyleRenderer
 
 if TYPE_CHECKING:
@@ -37,7 +39,6 @@ class MonsterStyleRenderer(BaseBotStyleRenderer):
         pygame.draw.ellipse(screen, color, torso_rect)
 
         # Muscle definition (Shadows)
-        dark_color = tuple(max(0, c - 40) for c in color)
         light_color = tuple(min(255, c + 30) for c in color)
 
         # Highlight top
@@ -68,7 +69,9 @@ class MonsterStyleRenderer(BaseBotStyleRenderer):
         if not bot.dead or bot.death_timer < 30:
             head_size = int(rw * 0.6)
             head_y = int(ry + rh * 0.05)
-            head_rect = pygame.Rect(int(cx - head_size // 2), int(head_y), int(head_size), int(head_size))
+            head_rect = pygame.Rect(
+                int(cx - head_size // 2), int(head_y), int(head_size), int(head_size)
+            )
             pygame.draw.rect(screen, color, head_rect)
 
             # Glowing Eyes
@@ -103,7 +106,12 @@ class MonsterStyleRenderer(BaseBotStyleRenderer):
                 pygame.draw.rect(
                     screen,
                     (50, 0, 0),
-                    (int(cx - mouth_w / 2), int(mouth_y), int(mouth_w), int(head_size * 0.3)),
+                    (
+                        int(cx - mouth_w / 2),
+                        int(mouth_y),
+                        int(mouth_w),
+                        int(head_size * 0.3),
+                    ),
                 )
             else:
                 pygame.draw.line(
@@ -121,7 +129,7 @@ class MonsterStyleRenderer(BaseBotStyleRenderer):
             start_arm = (int(body_x), int(arm_y + 10))
             end_arm = (int(body_x - 15), int(arm_y + 30))
             pygame.draw.line(screen, color, start_arm, end_arm, 6)
-            
+
             # Right
             weapon_x = body_x + rw
             pygame.draw.line(
@@ -131,7 +139,9 @@ class MonsterStyleRenderer(BaseBotStyleRenderer):
                 (int(weapon_x + 15), int(arm_y + 30)),
                 6,
             )
-            pygame.draw.rect(screen, (30, 30, 30), (int(weapon_x + 10), int(arm_y + 25), 25, 10))
+            pygame.draw.rect(
+                screen, (30, 30, 30), (int(weapon_x + 10), int(arm_y + 25), 25, 10)
+            )
             if getattr(bot, "shoot_animation", 0) > 0.5:
                 pygame.draw.circle(
                     screen,
@@ -145,7 +155,9 @@ class MonsterStyleRenderer(BaseBotStyleRenderer):
             leg_w = rw * 0.3
             leg_h = rh * 0.25
             leg_y = ry + rh * 0.75
-            pygame.draw.rect(screen, color, (int(body_x + 5), int(leg_y), int(leg_w), int(leg_h)))
+            pygame.draw.rect(
+                screen, color, (int(body_x + 5), int(leg_y), int(leg_w), int(leg_h))
+            )
             pygame.draw.rect(
                 screen,
                 color,

@@ -1,7 +1,9 @@
 from __future__ import annotations
 
-import pygame
 from typing import TYPE_CHECKING
+
+import pygame
+
 from .base import BaseBotStyleRenderer
 
 if TYPE_CHECKING:
@@ -28,7 +30,7 @@ class BallStyleRenderer(BaseBotStyleRenderer):
         r = rw / 2
         cy = ry + rh / 2
         pygame.draw.circle(screen, color, (int(cx), int(cy)), int(r))
-        
+
         # Shine
         pygame.draw.circle(
             screen,
@@ -37,4 +39,6 @@ class BallStyleRenderer(BaseBotStyleRenderer):
             int(r * 0.3),
         )
         # Stripes
-        pygame.draw.line(screen, (0, 0, 0), (int(cx - r), int(cy)), (int(cx + r), int(cy)), 3)
+        pygame.draw.line(
+            screen, (0, 0, 0), (int(cx - r), int(cy)), (int(cx + r), int(cy)), 3
+        )

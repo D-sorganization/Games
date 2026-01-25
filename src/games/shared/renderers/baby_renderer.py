@@ -1,7 +1,9 @@
 from __future__ import annotations
 
-import pygame
 from typing import TYPE_CHECKING
+
+import pygame
+
 from .base import BaseBotStyleRenderer
 
 if TYPE_CHECKING:
@@ -36,13 +38,15 @@ class BabyStyleRenderer(BaseBotStyleRenderer):
         # Head (Floating slightly above)
         head_size = rw
         head_y = ry
-        pygame.draw.circle(screen, color, (int(cx), int(head_y + head_size / 2)), int(head_size / 2))
+        pygame.draw.circle(
+            screen, color, (int(cx), int(head_y + head_size / 2)), int(head_size / 2)
+        )
 
         # Face
         eye_r = head_size * 0.15
         white = (255, 255, 255)
         black = (0, 0, 0)
-        
+
         pygame.draw.circle(
             screen,
             white,

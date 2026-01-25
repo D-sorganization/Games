@@ -1,7 +1,9 @@
 from __future__ import annotations
 
-import pygame
 from typing import TYPE_CHECKING
+
+import pygame
+
 from .renderers import BotStyleRendererFactory
 
 if TYPE_CHECKING:
@@ -10,7 +12,7 @@ if TYPE_CHECKING:
 
 
 class BotRenderer:
-    """Handles rendering of bot sprites to 2D surfaces by delegating to style renderers."""
+    """Handles rendering of bot sprites by delegating to style renderers."""
 
     @staticmethod
     def render_sprite(

@@ -1,15 +1,15 @@
 from __future__ import annotations
 
-from .factory import BotStyleRendererFactory
-from .monster_renderer import MonsterStyleRenderer
-from .beast_renderer import BeastStyleRenderer
-from .ghost_renderer import GhostStyleRenderer
 from .baby_renderer import BabyStyleRenderer
 from .ball_renderer import BallStyleRenderer
-from .minigunner_renderer import MinigunnerStyleRenderer
-from .item_renderer import ItemRenderer
-from .weapon_pickup_renderer import WeaponPickupRenderer
+from .beast_renderer import BeastStyleRenderer
 from .cyber_demon_renderer import CyberDemonStyleRenderer
+from .factory import BotStyleRendererFactory
+from .ghost_renderer import GhostStyleRenderer
+from .item_renderer import ItemRenderer
+from .minigunner_renderer import MinigunnerStyleRenderer
+from .monster_renderer import MonsterStyleRenderer
+from .weapon_pickup_renderer import WeaponPickupRenderer
 
 # Register all renderers
 BotStyleRendererFactory.register_renderer("monster", MonsterStyleRenderer())

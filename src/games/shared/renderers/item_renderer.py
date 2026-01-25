@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import random
-import pygame
 from typing import TYPE_CHECKING
+
+import pygame
+
 from .base import BaseBotStyleRenderer
 
 if TYPE_CHECKING:
@@ -33,9 +35,13 @@ class ItemRenderer(BaseBotStyleRenderer):
             self._render_bomb_item(screen, cx, ry, rw, rh)
         else:
             # Fallback
-            pygame.draw.rect(screen, color, (int(cx - rw/2), int(ry), int(rw), int(rh)))
+            pygame.draw.rect(
+                screen, color, (int(cx - rw / 2), int(ry), int(rw), int(rh))
+            )
 
-    def _render_health_pack(self, screen: pygame.Surface, cx: float, y: float, rw: float, rh: float) -> None:
+    def _render_health_pack(
+        self, screen: pygame.Surface, cx: float, y: float, rw: float, rh: float
+    ) -> None:
         """Render a health pack item."""
         size = rw
         rect_w = size * 0.8
@@ -51,7 +57,12 @@ class ItemRenderer(BaseBotStyleRenderer):
         pygame.draw.rect(
             screen,
             (200, 0, 0),
-            (int(cx - cross_thick / 2), int(kit_y + 5), int(cross_thick), int(rect_h - 10)),
+            (
+                int(cx - cross_thick / 2),
+                int(kit_y + 5),
+                int(cross_thick),
+                int(rect_h - 10),
+            ),
         )
         pygame.draw.rect(
             screen,
@@ -64,7 +75,9 @@ class ItemRenderer(BaseBotStyleRenderer):
             ),
         )
 
-    def _render_ammo_box(self, screen: pygame.Surface, cx: float, y: float, rw: float, rh: float) -> None:
+    def _render_ammo_box(
+        self, screen: pygame.Surface, cx: float, y: float, rw: float, rh: float
+    ) -> None:
         """Render an ammo box item."""
         size = rw
         rect_w = size * 0.8
@@ -75,10 +88,17 @@ class ItemRenderer(BaseBotStyleRenderer):
         pygame.draw.rect(
             screen,
             (200, 200, 0),
-            (int(cx - rect_w / 2 + 2), int(box_y + 2), int(rect_w - 4), int(rect_h - 4)),
+            (
+                int(cx - rect_w / 2 + 2),
+                int(box_y + 2),
+                int(rect_w - 4),
+                int(rect_h - 4),
+            ),
         )
 
-    def _render_bomb_item(self, screen: pygame.Surface, cx: float, y: float, rw: float, rh: float) -> None:
+    def _render_bomb_item(
+        self, screen: pygame.Surface, cx: float, y: float, rw: float, rh: float
+    ) -> None:
         """Render a bomb item."""
         size = rw
         r = size * 0.4
