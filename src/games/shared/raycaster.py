@@ -347,7 +347,9 @@ class Raycaster:
             ray_dir_y,
         )
 
-    def _get_ray_directions(self, player: Player) -> tuple[np.ndarray, np.ndarray]:
+    def _get_ray_directions(
+        self, player: Player
+    ) -> tuple[np.ndarray[Any, Any], np.ndarray[Any, Any]]:
         """Calculate ray direction vectors."""
         if player.zoomed:
             cos_deltas, sin_deltas = self.cos_deltas_zoomed, self.sin_deltas_zoomed
@@ -364,8 +366,11 @@ class Raycaster:
         return ray_dir_x, ray_dir_y
 
     def _init_dda_params(
-        self, player: Player, ray_dir_x: np.ndarray, ray_dir_y: np.ndarray
-    ) -> tuple:
+        self,
+        player: Player,
+        ray_dir_x: np.ndarray[Any, Any],
+        ray_dir_y: np.ndarray[Any, Any],
+    ) -> tuple[Any, ...]:
         """Initialize parameters for DDA algorithm."""
         map_x = np.full(self.num_rays, int(player.x), dtype=np.int32)
         map_y = np.full(self.num_rays, int(player.y), dtype=np.int32)
@@ -399,15 +404,15 @@ class Raycaster:
 
     def _perform_dda_loop(
         self,
-        map_x,
-        map_y,
-        side_dist_x,
-        side_dist_y,
-        delta_dist_x,
-        delta_dist_y,
-        step_x,
-        step_y,
-    ) -> tuple:
+        map_x: np.ndarray[Any, Any],
+        map_y: np.ndarray[Any, Any],
+        side_dist_x: np.ndarray[Any, Any],
+        side_dist_y: np.ndarray[Any, Any],
+        delta_dist_x: np.ndarray[Any, Any],
+        delta_dist_y: np.ndarray[Any, Any],
+        step_x: np.ndarray[Any, Any],
+        step_y: np.ndarray[Any, Any],
+    ) -> tuple[Any, ...]:
         """Perform the main DDA hit detection loop."""
         hits = np.zeros(self.num_rays, dtype=bool)
         side = np.zeros(self.num_rays, dtype=np.int32)
@@ -456,17 +461,17 @@ class Raycaster:
 
     def _finalize_ray_data(
         self,
-        player,
-        hits,
-        wall_types,
-        side,
-        side_dist_x,
-        side_dist_y,
-        delta_dist_x,
-        delta_dist_y,
-        ray_dir_x,
-        ray_dir_y,
-    ) -> tuple:
+        player: Player,
+        hits: np.ndarray[Any, Any],
+        wall_types: np.ndarray[Any, Any],
+        side: np.ndarray[Any, Any],
+        side_dist_x: np.ndarray[Any, Any],
+        side_dist_y: np.ndarray[Any, Any],
+        delta_dist_x: np.ndarray[Any, Any],
+        delta_dist_y: np.ndarray[Any, Any],
+        ray_dir_x: np.ndarray[Any, Any],
+        ray_dir_y: np.ndarray[Any, Any],
+    ) -> tuple[Any, ...]:
         """Calculate final distances and wall hit X coordinates."""
         perp_wall_dist = np.zeros(self.num_rays, dtype=np.float64)
         mask_0, mask_1 = side == 0, side == 1

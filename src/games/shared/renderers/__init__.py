@@ -28,4 +28,7 @@ BotStyleRendererFactory.register_renderer("pickup_rifle", WeaponPickupRenderer()
 BotStyleRendererFactory.register_renderer("pickup_shotgun", WeaponPickupRenderer())
 BotStyleRendererFactory.register_renderer("pickup_plasma", WeaponPickupRenderer())
 BotStyleRendererFactory.register_renderer("pickup_minigun", WeaponPickupRenderer())
+BotStyleRendererFactory.register_renderer("pickup_minigun", WeaponPickupRenderer())
 BotStyleRendererFactory.register_renderer("pickup_rocket", WeaponPickupRenderer())
+
+__all__ = ["BotStyleRendererFactory"]

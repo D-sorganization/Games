@@ -32,30 +32,32 @@ class BotRenderer:
         # Special handling for item types
         if bot.enemy_type in ("health_pack", "ammo_box", "bomb_item"):
             renderer = BotStyleRendererFactory.get_renderer(bot.enemy_type)
-            renderer.render(
-                screen,
-                bot,
-                center_x,
-                sprite_y,
-                sprite_size,
-                sprite_size,
-                base_color,
-                config,
-            )
+            if renderer:
+                renderer.render(
+                    screen,
+                    bot,
+                    center_x,
+                    sprite_y,
+                    sprite_size,
+                    sprite_size,
+                    base_color,
+                    config,
+                )
             return
 
         if bot.enemy_type.startswith("pickup_"):
             renderer = BotStyleRendererFactory.get_renderer("weapon_pickup")
-            renderer.render(
-                screen,
-                bot,
-                center_x,
-                sprite_y,
-                sprite_size,
-                sprite_size,
-                base_color,
-                config,
-            )
+            if renderer:
+                renderer.render(
+                    screen,
+                    bot,
+                    center_x,
+                    sprite_y,
+                    sprite_size,
+                    sprite_size,
+                    base_color,
+                    config,
+                )
             return
 
         render_height = sprite_size
@@ -102,13 +104,16 @@ class BotRenderer:
                 return
 
         # Delegate to specialized renderer
-        BotStyleRendererFactory.render(
-            screen,
-            bot,
-            center_x,
-            render_y,
-            render_width,
-            render_height,
-            base_color,
-            config,
-        )
+        # Delegate to specialized renderer
+        renderer = BotStyleRendererFactory.get_renderer(visual_style)
+        if renderer:
+            renderer.render(
+                screen,
+                bot,
+                center_x,
+                render_y,
+                render_width,
+                render_height,
+                base_color,
+                config,
+            )
