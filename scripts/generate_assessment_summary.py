@@ -97,23 +97,24 @@ def generate_summary(
     """
     logger.info(f"Generating assessment summary from {len(input_reports)} reports...")
 
-    # Category mapping
+    # Category mapping with weights based on prompt
+    # Code 25%, Testing 15%, Docs 10%, Security 15%, Perf 15%, Ops 10%, Design 10%
     categories = {
-        "A": {"name": "Architecture & Implementation", "weight": 2.0},
-        "B": {"name": "Hygiene, Security & Quality", "weight": 2.0},
-        "C": {"name": "Documentation & Integration", "weight": 1.5},
-        "D": {"name": "User Experience", "weight": 1.5},
-        "E": {"name": "Performance & Scalability", "weight": 1.5},
-        "F": {"name": "Installation & Deployment", "weight": 1.0},
-        "G": {"name": "Testing & Validation", "weight": 2.0},
-        "H": {"name": "Error Handling", "weight": 1.0},
-        "I": {"name": "Security & Input Validation", "weight": 2.0},
-        "J": {"name": "Extensibility & Plugins", "weight": 1.0},
-        "K": {"name": "Reproducibility & Provenance", "weight": 1.0},
-        "L": {"name": "Long-Term Maintainability", "weight": 1.5},
-        "M": {"name": "Educational Resources", "weight": 1.0},
-        "N": {"name": "Visualization & Export", "weight": 1.0},
-        "O": {"name": "CI/CD & DevOps", "weight": 2.0},
+        "A": {"name": "Code Structure", "weight": 8.33},
+        "B": {"name": "Documentation", "weight": 10.0},
+        "C": {"name": "Test Coverage", "weight": 15.0},
+        "D": {"name": "Error Handling", "weight": 2.5},
+        "E": {"name": "Performance", "weight": 15.0},
+        "F": {"name": "Security", "weight": 15.0},
+        "G": {"name": "Dependencies", "weight": 2.5},
+        "H": {"name": "CI/CD", "weight": 2.5},
+        "I": {"name": "Code Style", "weight": 8.33},
+        "J": {"name": "API Design", "weight": 2.5},
+        "K": {"name": "Data Handling", "weight": 2.5},
+        "L": {"name": "Logging", "weight": 2.5},
+        "M": {"name": "Configuration", "weight": 2.5},
+        "N": {"name": "Scalability", "weight": 2.5},
+        "O": {"name": "Maintainability", "weight": 8.34},
     }
 
     # Collect scores and issues
@@ -121,8 +122,8 @@ def generate_summary(
     all_issues = []
 
     for report in input_reports:
-        # Extract assessment ID from filename (e.g., Assessment_A_Results_2026-01-17.md)
-        match = re.search(r"Assessment_([A-O])_Results", report.name)
+        # Extract assessment ID from filename (e.g., Assessment_A_Code_Structure.md)
+        match = re.search(r"Assessment_([A-O])_.*", report.name)
         if match:
             assessment_id = match.group(1)
             scores[assessment_id] = extract_score_from_report(report)
@@ -169,7 +170,7 @@ Repository assessment completed across all {len(scores)} categories.
             score = scores[aid]
             name = cat_info["name"]
             weight = cat_info["weight"]
-            md_content += f"| **{aid}** | {name} | {score:.1f} | {weight}x |\n"
+            md_content += f"| **{aid}** | {name} | {score:.1f} | {weight}% |\n"
 
     md_content += f"""
 ## Critical Issues

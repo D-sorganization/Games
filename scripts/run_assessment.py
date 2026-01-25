@@ -7,6 +7,7 @@ based on actual code analysis.
 """
 
 import argparse
+import re
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -18,18 +19,15 @@ logger = setup_script_logging()
 
 # Assessment definitions
 ASSESSMENTS = {
-    "A": {"name": "Architecture", "description": "Code structure and organization"},
-    "B": {
-        "name": "Hygiene & Quality",
-        "description": "Linting, formatting, code quality",
-    },
-    "C": {"name": "Documentation", "description": "README, docstrings, comments"},
-    "D": {"name": "User Experience", "description": "CLI, API usability"},
+    "A": {"name": "Code Structure", "description": "Code structure and organization"},
+    "B": {"name": "Documentation", "description": "README, docstrings, comments"},
+    "C": {"name": "Test Coverage", "description": "Test coverage, test quality"},
+    "D": {"name": "Error Handling", "description": "Exception handling, logging"},
     "E": {"name": "Performance", "description": "Efficiency, optimization"},
-    "F": {"name": "Installation", "description": "Setup, dependencies, packaging"},
-    "G": {"name": "Testing", "description": "Test coverage, test quality"},
-    "H": {"name": "Error Handling", "description": "Exception handling, logging"},
-    "I": {"name": "Security", "description": "Vulnerabilities, best practices"},
+    "F": {"name": "Security", "description": "Vulnerabilities, best practices"},
+    "G": {"name": "Dependencies", "description": "Dependency management"},
+    "H": {"name": "CI/CD", "description": "Continuous Integration/Deployment"},
+    "I": {"name": "Code Style", "description": "Linting, formatting, code quality"},
     "J": {"name": "API Design", "description": "Interface consistency"},
     "K": {"name": "Data Handling", "description": "Data validation, serialization"},
     "L": {"name": "Logging", "description": "Logging practices"},
@@ -104,6 +102,19 @@ def check_documentation() -> dict:
     }
 
 
+def grep_in_files(pattern: str, files: list[Path]) -> int:
+    """Count files containing a pattern."""
+    count = 0
+    for file in files:
+        try:
+            content = file.read_text(encoding="utf-8")
+            if re.search(pattern, content):
+                count += 1
+        except Exception:
+            pass
+    return count
+
+
 def run_assessment(assessment_id: str, output_path: Path) -> int:
     """
     Run a specific assessment and generate report.
@@ -129,19 +140,112 @@ def run_assessment(assessment_id: str, output_path: Path) -> int:
     python_files = find_python_files()
     file_count = len(python_files)
 
-    if assessment_id == "A":  # Architecture
-        # Check directory structure
-        has_src = Path("src").exists() or Path("python").exists()
-        has_tests = Path("tests").exists()
+    if assessment_id == "A":  # Code Structure
+        has_src = Path("src").exists()
+        has_tests = (
+            Path("tests").exists()
+            or Path("src/tests").exists()
+            or (file_count > 0 and count_test_files() > 0)
+        )
         findings.append(f"- Python files found: {file_count}")
-        findings.append(f"- Source directory structure: {'✓' if has_src else '✗'}")
-        findings.append(f"- Tests directory: {'✓' if has_tests else '✗'}")
+        findings.append(
+            f"- Source directory structure (src/): {'✓' if has_src else '✗'}"
+        )
+        findings.append(f"- Tests directory/files: {'✓' if has_tests else '✗'}")
         if not has_src:
             score -= 2
         if not has_tests:
+            score -= 2
+
+    elif assessment_id == "B":  # Documentation
+        docs = check_documentation()
+        findings.append(f"- README.md: {'✓' if docs['has_readme'] else '✗'}")
+        findings.append(f"- docs/ directory: {'✓' if docs['has_docs_dir'] else '✗'}")
+        findings.append(f"- CHANGELOG.md: {'✓' if docs['has_changelog'] else '✗'}")
+
+        # Check for docstrings in top 10 files
+        docstring_count = 0
+        checked_files = 0
+        for p in python_files[:10]:
+            content = p.read_text(encoding="utf-8")
+            if '"""' in content or "'''" in content:
+                docstring_count += 1
+            checked_files += 1
+
+        if checked_files > 0:
+            docstring_percent = (docstring_count / checked_files) * 100
+            findings.append(f"- Docstring presence (sample): {docstring_percent:.0f}%")
+            if docstring_percent < 50:
+                score -= 2
+
+        if not docs["has_readme"]:
+            score -= 3
+        if not docs["has_docs_dir"]:
             score -= 1
 
-    elif assessment_id == "B":  # Hygiene & Quality
+    elif assessment_id == "C":  # Test Coverage
+        test_count = count_test_files()
+        findings.append(f"- Test files found: {test_count}")
+        if test_count == 0:
+            score -= 5
+            findings.append("- Critical: No tests found")
+        elif test_count < 5:
+            score -= 2
+            findings.append("- Warning: Low number of test files")
+        else:
+            findings.append("- Good number of test files")
+
+    elif assessment_id == "D":  # Error Handling
+        try_count = grep_in_files(r"try:", python_files)
+        except_count = grep_in_files(r"except:", python_files)
+        findings.append(f"- Files with try blocks: {try_count}")
+        findings.append(f"- Files with except blocks: {except_count}")
+        if try_count == 0:
+            score -= 2
+            findings.append("- Warning: No error handling detected in sample")
+
+    elif assessment_id == "E":  # Performance
+        # Check for profilers or common optimization patterns
+        perf_imports = grep_in_files(
+            r"import cProfile|import timeit|import pstats", python_files
+        )
+        findings.append(f"- Files with performance tools: {perf_imports}")
+        if perf_imports == 0:
+            findings.append(
+                "- Note: No explicit performance profiling tools found in code"
+            )
+            # Deduct slightly or neutral depending on philosophy.
+            # Let's keep it neutral but report it.
+            score -= 1
+
+    elif assessment_id == "F":  # Security
+        # Basic check for subprocess without shell=True or hardcoded secrets (very basic)
+        subprocess_shell = grep_in_files(r"subprocess\..*shell=True", python_files)
+        if subprocess_shell > 0:
+            findings.append(
+                f"- Critical: subprocess with shell=True found in {subprocess_shell} files"
+            )
+            score -= 3
+        else:
+            findings.append("- subprocess with shell=True: Not found (Good)")
+
+    elif assessment_id == "G":  # Dependencies
+        has_req = Path("requirements.txt").exists()
+        has_pyproject = Path("pyproject.toml").exists()
+        findings.append(f"- requirements.txt: {'✓' if has_req else '✗'}")
+        findings.append(f"- pyproject.toml: {'✓' if has_pyproject else '✗'}")
+        if not (has_req or has_pyproject):
+            score -= 5
+            findings.append("- Critical: No dependency definition found")
+
+    elif assessment_id == "H":  # CI/CD
+        has_github_workflows = Path(".github/workflows").exists()
+        findings.append(f"- GitHub Workflows: {'✓' if has_github_workflows else '✗'}")
+        if not has_github_workflows:
+            score -= 3
+            findings.append("- Warning: No GitHub Actions workflows found")
+
+    elif assessment_id == "I":  # Code Style
         ruff_result = run_ruff_check_wrapper()
         black_result = run_black_check_wrapper()
         ruff_status = "✓ passed" if ruff_result["exit_code"] == 0 else "✗ issues found"
@@ -151,33 +255,36 @@ def run_assessment(assessment_id: str, output_path: Path) -> int:
         )
         findings.append(f"- Black formatting: {black_status}")
         if ruff_result["exit_code"] != 0:
-            score -= 2
-        if black_result["exit_code"] != 0:
-            score -= 1
-
-    elif assessment_id == "C":  # Documentation
-        docs = check_documentation()
-        findings.append(f"- README.md: {'✓' if docs['has_readme'] else '✗'}")
-        findings.append(f"- docs/ directory: {'✓' if docs['has_docs_dir'] else '✗'}")
-        findings.append(f"- CHANGELOG.md: {'✓' if docs['has_changelog'] else '✗'}")
-        if not docs["has_readme"]:
             score -= 3
-        if not docs["has_docs_dir"]:
-            score -= 1
-
-    elif assessment_id == "G":  # Testing
-        test_count = count_test_files()
-        findings.append(f"- Test files found: {test_count}")
-        findings.append("- Test coverage: Run pytest --cov for details")
-        if test_count == 0:
-            score -= 5
-        elif test_count < 5:
+        if black_result["exit_code"] != 0:
             score -= 2
+
+    elif assessment_id == "L":  # Logging
+        logging_imports = grep_in_files(
+            r"import logging|from logging import", python_files
+        )
+        findings.append(f"- Files importing logging: {logging_imports}")
+        if logging_imports < 2 and file_count > 5:
+            score -= 2
+            findings.append("- Warning: Sparse logging detected")
+
+    elif assessment_id == "M":  # Configuration
+        config_files = (
+            list(Path(".").glob("*.ini"))
+            + list(Path(".").glob("*.toml"))
+            + list(Path(".").glob("*.env"))
+        )
+        findings.append(f"- Config files found: {[f.name for f in config_files]}")
+        if not config_files:
+            score -= 1
+            findings.append("- Note: No standard config files found in root")
 
     else:
-        # Generic assessment
+        # Generic assessment for J, K, N, O
         findings.append(f"- Python files analyzed: {file_count}")
         findings.append("- Manual review recommended for detailed assessment")
+        # Default neutral score for subjective categories unless we have specific heuristics
+        score = 7
 
     # Ensure score is within bounds
     score = max(0, min(10, score))
