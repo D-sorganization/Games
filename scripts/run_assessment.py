@@ -219,11 +219,12 @@ def run_assessment(assessment_id: str, output_path: Path) -> int:
             score -= 1
 
     elif assessment_id == "F":  # Security
-        # Basic check for subprocess without shell=True or hardcoded secrets (very basic)
+        # Basic check for subprocess without shell=True or hardcoded secrets
         subprocess_shell = grep_in_files(r"subprocess\..*shell=True", python_files)
         if subprocess_shell > 0:
             findings.append(
-                f"- Critical: subprocess with shell=True found in {subprocess_shell} files"
+                f"- Critical: subprocess with shell=True found in "
+                f"{subprocess_shell} files"
             )
             score -= 3
         else:
@@ -283,7 +284,8 @@ def run_assessment(assessment_id: str, output_path: Path) -> int:
         # Generic assessment for J, K, N, O
         findings.append(f"- Python files analyzed: {file_count}")
         findings.append("- Manual review recommended for detailed assessment")
-        # Default neutral score for subjective categories unless we have specific heuristics
+        # Default neutral score for subjective categories unless we have
+        # specific heuristics
         score = 7
 
     # Ensure score is within bounds
