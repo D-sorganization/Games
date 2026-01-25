@@ -20,10 +20,8 @@ jobs:
         id: check
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LABELS: ${{ toJson(github.event.issue.labels) }}
         run: |
-          # Get issue labels
-          LABELS='${{ toJson(github.event.issue.labels) }}'
-
           # Skip if labeled with 'no-jules', 'question', 'documentation', or 'wontfix'
           SKIP_LABELS="no-jules question documentation wontfix duplicate invalid"
 
