@@ -2,27 +2,29 @@
 
 ## Executive Summary
 
-*   **Robustness**: Games generally handle asset loading failures gracefully (or crash with stacktrace, which is acceptable for dev).
-*   **Launcher**: The launcher catches some exceptions but could be more user-friendly (e.g., showing a popup instead of console log).
-*   **Logging**: `logging` module is used in newer components, but `print` debugging likely remains in older logic.
-*   **Asset Failures**: Force Field `Sound` class returns dummy objects on failure, preventing crashes. This is a **Good Pattern**.
+Error handling is basic but functional. The launcher now uses `logging` and wraps game execution in try-except blocks, preventing the launcher from crashing if a game fails to start. However, inside the games, error handling is minimal, mostly relying on Pygame's default exception printing.
+
+*   **Launcher**: Robust against launch failures. Logs errors.
+*   **Games**: Fail fast (crash to console) on errors, which is acceptable for dev but poor for end-users.
+*   **Logging**: `print` was prevalent but is being replaced.
 
 ## Error Quality Audit
 
-| Error Type     | Current Quality | Fix Priority    | Notes |
-| -------------- | --------------- | --------------- | ----- |
-| **Missing Asset**| GOOD            | Low             | Logs warning, sometimes uses fallback. |
-| **Config Error** | POOR            | Medium          | Often hardcoded or crashes. |
-| **Driver Error** | OK              | Low             | Pygame handles this mostly. |
+| Error Type | Quality | Fix Priority |
+| :--- | :--- | :--- |
+| Missing Asset | Poor (Crash) | High |
+| Config Error | Poor (Crash) | Medium |
+| Launch Failure | Good (Log) | Low |
+
+## Scorecard
+
+| Category | Score | Evidence | Remediation |
+| :--- | :--- | :--- | :--- |
+| **Actionable Error Rate** | **6/10** | Stack traces are actionable for devs. | Add user-friendly messages. |
+| **Recovery Path** | **5/10** | Restart game. | Implement auto-save/recovery. |
+| **Verbose Mode** | **0/10** | None. | Add `--debug` flag. |
 
 ## Remediation Roadmap
 
 **2 Weeks**:
-*   Implement a "Safe Mode" in Launcher that disables Sound/High-Res if previous launch failed.
-*   Ensure all `try-except` blocks logging errors to a file, not just stderr.
-
-## Findings
-
-| ID    | Severity | Category      | Location      | Symptom                            | Fix                                  |
-| ----- | -------- | ------------- | ------------- | ---------------------------------- | ------------------------------------ |
-| H-001 | Minor    | Error Handling| `Launcher`    | Silent failures on some launches?  | Add GUI Error Popup                  |
+*   Implement a global exception handler in each game's `main` loop to catch crashes and display a "Sorry" screen or log to file before exiting.

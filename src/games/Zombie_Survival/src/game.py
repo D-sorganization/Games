@@ -9,6 +9,10 @@ from typing import Any
 
 import pygame
 
+from games.shared.config import RaycasterConfig
+from games.shared.interfaces import Portal
+from games.shared.raycaster import Raycaster
+
 from . import constants as C  # noqa: N812
 from .bot import Bot
 from .entity_manager import EntityManager
@@ -17,7 +21,6 @@ from .map import Map
 from .particle_system import ParticleSystem
 from .player import Player
 from .projectile import Projectile
-from .raycaster import Raycaster
 from .renderer import GameRenderer
 from .sound import SoundManager
 from .ui_renderer import UIRenderer
@@ -81,7 +84,7 @@ class Game:
         self.player: Player | None = None
         self.entity_manager = EntityManager()
         self.raycaster: Raycaster | None = None
-        self.portal: dict[str, Any] | None = None
+        self.portal: Portal | None = None
         self.health = 100
         self.lives = C.DEFAULT_LIVES
 
@@ -327,9 +330,24 @@ class Game:
 
         # Create map with selected size
         self.game_map = Map(self.selected_map_size)
-        self.raycaster = Raycaster(self.game_map)
-        self.raycaster.set_render_scale(self.render_scale)
+
+        # Initialize Raycaster with Config
+        ray_config = RaycasterConfig(
+            SCREEN_WIDTH=C.SCREEN_WIDTH,
+            SCREEN_HEIGHT=C.SCREEN_HEIGHT,
+            FOV=C.FOV,
+            HALF_FOV=C.HALF_FOV,
+            ZOOM_FOV_MULT=C.ZOOM_FOV_MULT,
+            DEFAULT_RENDER_SCALE=self.render_scale,
+            MAX_DEPTH=C.MAX_DEPTH,
+            FOG_START=C.FOG_START,
+            FOG_COLOR=C.FOG_COLOR,
+            LEVEL_THEMES=C.LEVEL_THEMES,
+            ENEMY_TYPES=C.ENEMY_TYPES,
+        )
+        self.raycaster = Raycaster(self.game_map, ray_config)
         self.last_death_pos = None
+        self.portal = None
 
         # Grab mouse
         pygame.mouse.set_visible(False)
@@ -774,7 +792,7 @@ class Game:
 
             # 1. Cast ray to find wall distance
             # Use Raycaster to avoid code duplication
-            wall_dist, _ = self.raycaster.cast_ray(
+            wall_dist, _, _, _, _ = self.raycaster.cast_ray(
                 self.player.x, self.player.y, aim_angle
             )
 

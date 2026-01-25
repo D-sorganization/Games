@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from src.games.shared.sound_manager_base import SoundManagerBase
+from games.shared.sound_manager_base import SoundManagerBase
 
 
 class SoundManager(SoundManagerBase):
