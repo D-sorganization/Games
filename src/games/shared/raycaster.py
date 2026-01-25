@@ -38,7 +38,14 @@ class Raycaster:
         self.game_map = game_map
         self.config = config
 
-        # Create numpy grid for faster access in vectorized calculations
+        self._init_map_data(game_map)
+        self._init_textures()
+        self._init_atmosphere()
+        self._init_buffers()
+        self._update_ray_angles()
+
+    def _init_map_data(self, game_map: Map) -> None:
+        """Initialize map-related members."""
         self.grid = game_map.grid
         self.np_grid = np.array(game_map.grid, dtype=np.int8)
         self.map_size = game_map.size
@@ -49,19 +56,12 @@ class Raycaster:
         self._cached_level: int = -1
         self._cached_wall_colors: dict[int, tuple[int, int, int]] = {}
 
-        # Pre-rendered background surface (Sky/Floor)
-        self._background_surface: pygame.Surface | None = None
-        self._scaled_background_surface: pygame.Surface | None = None
-        self._cached_background_theme_idx: int = -1
-
-        # Texture mapping
+    def _init_textures(self) -> None:
+        """Initialize texture mapping and caches."""
         self.use_textures = True
         self.textures = TextureGenerator.generate_textures()
-
-        # Map wall types to texture names
         self.texture_map = {1: "stone", 2: "brick", 3: "metal", 4: "tech", 5: "secret"}
 
-        # Pre-cache texture strips for performance
         self.texture_strips: dict[str, list[pygame.Surface]] = {}
         for name, tex in self.textures.items():
             w = tex.get_width()
@@ -71,52 +71,47 @@ class Raycaster:
                 strips.append(tex.subsurface((x, 0, 1, h)))
             self.texture_strips[name] = strips
 
-        # Initialize strip cache
         self._strip_cache: dict[tuple[str, int, int], pygame.Surface] = {}
 
-        # Pre-generate stars
-        self.stars = []
+    def _init_atmosphere(self) -> None:
+        """Initialize sky backgrounds and stars."""
+        self._background_surface: pygame.Surface | None = None
+        self._scaled_background_surface: pygame.Surface | None = None
+        self._cached_background_theme_idx: int = -1
 
+        self.stars = []
         for _ in range(100):
             self.stars.append(
                 (
                     random.randint(0, self.config.SCREEN_WIDTH),
                     random.randint(0, self.config.SCREEN_HEIGHT // 2),
-                    random.uniform(0.5, 2.5),  # Size
+                    random.uniform(0.5, 2.5),
                     random.choice([(255, 255, 255), (200, 200, 255), (255, 255, 200)]),
                 )
             )
 
-        # Sprite cache
+    def _init_buffers(self) -> None:
+        """Initialize rendering buffers and surfaces."""
         self.sprite_cache: dict[str, pygame.Surface] = {}
-        # Scaled Sprite cache (key: (base_cache_key, width, height))
         self._scaled_sprite_cache: dict[tuple[str, int, int], pygame.Surface] = {}
 
-        # Minimap cache
         self.minimap_surface: pygame.Surface | None = None
         self.minimap_size = 200
         self.minimap_scale = self.minimap_size / self.map_size
 
-        # Resolution settings
         self.render_scale = self.config.DEFAULT_RENDER_SCALE
         self.num_rays = self.config.SCREEN_WIDTH // self.render_scale
 
-        # Offscreen surface for low-res rendering (Optimization)
         size = (self.num_rays, self.config.SCREEN_HEIGHT)
         self.view_surface = pygame.Surface(size, pygame.SRCALPHA)
 
-        # Optimization: Caches for shading/fog overlays
         self.shading_surfaces: list[pygame.Surface] = []
         self.fog_surfaces: list[pygame.Surface] = []
         self._generate_shading_caches()
 
-        # Z-Buffer for occlusion (Euclidean distance)
         self.z_buffer: np.ndarray[Any, np.dtype[Any]] = np.full(
             self.num_rays, float("inf"), dtype=np.float64
         )
-
-        # Precalculate ray angles relative to player angle
-        self._update_ray_angles()
 
     def _generate_shading_caches(self) -> None:
         """Pre-generate 1-pixel wide surfaces for shading and fog alpha levels."""
@@ -311,27 +306,67 @@ class Raycaster:
         np.ndarray[Any, np.dtype[Any]],
     ]:
         """Perform vectorized raycasting math."""
-        # Select pre-calculated tables
+        # 1. Setup ray directions
+        ray_dir_x, ray_dir_y = self._get_ray_directions(player)
+
+        # 2. Setup DDA parameters
+        (
+            map_x,
+            map_y,
+            delta_dist_x,
+            delta_dist_y,
+            side_dist_x,
+            side_dist_y,
+            step_x,
+            step_y,
+        ) = self._init_dda_params(player, ray_dir_x, ray_dir_y)
+
+        # 3. Perform DDA
+        hits, wall_types, side = self._perform_dda_loop(
+            map_x,
+            map_y,
+            side_dist_x,
+            side_dist_y,
+            delta_dist_x,
+            delta_dist_y,
+            step_x,
+            step_y,
+        )
+
+        # 4. Calculate final distances and hit points
+        return self._finalize_ray_data(
+            player,
+            hits,
+            wall_types,
+            side,
+            side_dist_x,
+            side_dist_y,
+            delta_dist_x,
+            delta_dist_y,
+            ray_dir_x,
+            ray_dir_y,
+        )
+
+    def _get_ray_directions(self, player: Player) -> tuple[np.ndarray, np.ndarray]:
+        """Calculate ray direction vectors."""
         if player.zoomed:
-            cos_deltas = self.cos_deltas_zoomed
-            sin_deltas = self.sin_deltas_zoomed
+            cos_deltas, sin_deltas = self.cos_deltas_zoomed, self.sin_deltas_zoomed
         else:
-            cos_deltas = self.cos_deltas
-            sin_deltas = self.sin_deltas
+            cos_deltas, sin_deltas = self.cos_deltas, self.sin_deltas
 
-        # Angle sum identity optimization:
-        # cos(a + b) = cos(a)cos(b) - sin(a)sin(b)
-        # sin(a + b) = sin(a)cos(b) + cos(a)sin(b)
-        p_cos = math.cos(player.angle)
-        p_sin = math.sin(player.angle)
-
+        p_cos, p_sin = math.cos(player.angle), math.sin(player.angle)
         ray_dir_x = p_cos * cos_deltas - p_sin * sin_deltas
         ray_dir_y = p_sin * cos_deltas + p_cos * sin_deltas
 
         # Avoid division by zero
         ray_dir_x[ray_dir_x == 0] = 1e-30
         ray_dir_y[ray_dir_y == 0] = 1e-30
+        return ray_dir_x, ray_dir_y
 
+    def _init_dda_params(
+        self, player: Player, ray_dir_x: np.ndarray, ray_dir_y: np.ndarray
+    ) -> tuple:
+        """Initialize parameters for DDA algorithm."""
         map_x = np.full(self.num_rays, int(player.x), dtype=np.int32)
         map_y = np.full(self.num_rays, int(player.y), dtype=np.int32)
 
@@ -351,19 +386,35 @@ class Raycaster:
             (player.y - map_y) * delta_dist_y,
             (map_y + 1.0 - player.y) * delta_dist_y,
         )
+        return (
+            map_x,
+            map_y,
+            delta_dist_x,
+            delta_dist_y,
+            side_dist_x,
+            side_dist_y,
+            step_x,
+            step_y,
+        )
 
+    def _perform_dda_loop(
+        self,
+        map_x,
+        map_y,
+        side_dist_x,
+        side_dist_y,
+        delta_dist_x,
+        delta_dist_y,
+        step_x,
+        step_y,
+    ) -> tuple:
+        """Perform the main DDA hit detection loop."""
         hits = np.zeros(self.num_rays, dtype=bool)
         side = np.zeros(self.num_rays, dtype=np.int32)
         wall_types = np.zeros(self.num_rays, dtype=np.int32)
-
-        max_steps = int(self.config.MAX_DEPTH * 1.5)
         active = np.ones(self.num_rays, dtype=bool)
 
-        map_width = self.map_width
-        map_height = self.map_height
-        np_grid = self.np_grid
-
-        # Vectorized DDA Loop
+        max_steps = int(self.config.MAX_DEPTH * 1.5)
         for _ in range(max_steps):
             mask_x = (side_dist_x < side_dist_y) & active
             mask_y = (~mask_x) & active
@@ -377,9 +428,11 @@ class Raycaster:
             side[mask_y] = 1
 
             in_bounds = (
-                (map_x >= 0) & (map_x < map_width) & (map_y >= 0) & (map_y < map_height)
+                (map_x >= 0)
+                & (map_x < self.map_width)
+                & (map_y >= 0)
+                & (map_y < self.map_height)
             )
-
             out_of_bounds = (~in_bounds) & active
             if np.any(out_of_bounds):
                 hits[out_of_bounds] = True
@@ -388,45 +441,44 @@ class Raycaster:
 
             check_mask = in_bounds & active
             if np.any(check_mask):
-                current_map_y = map_y[check_mask]
-                current_map_x = map_x[check_mask]
-                grid_vals = np_grid[current_map_y, current_map_x]
+                grid_vals = self.np_grid[map_y[check_mask], map_x[check_mask]]
                 wall_hit_mask = grid_vals > 0
 
-                active_indices = np.nonzero(check_mask)[0]
-                hit_local_indices = np.nonzero(wall_hit_mask)[0]
-                hit_global_indices = active_indices[hit_local_indices]
-
-                if len(hit_global_indices) > 0:
-                    hits[hit_global_indices] = True
-                    wall_types[hit_global_indices] = grid_vals[wall_hit_mask]
-                    active[hit_global_indices] = False
+                indices = np.nonzero(check_mask)[0][wall_hit_mask]
+                if len(indices) > 0:
+                    hits[indices] = True
+                    wall_types[indices] = grid_vals[wall_hit_mask]
+                    active[indices] = False
 
             if not np.any(active):
                 break
+        return hits, wall_types, side
 
-        # Calculate Distances
+    def _finalize_ray_data(
+        self,
+        player,
+        hits,
+        wall_types,
+        side,
+        side_dist_x,
+        side_dist_y,
+        delta_dist_x,
+        delta_dist_y,
+        ray_dir_x,
+        ray_dir_y,
+    ) -> tuple:
+        """Calculate final distances and wall hit X coordinates."""
         perp_wall_dist = np.zeros(self.num_rays, dtype=np.float64)
-        mask_side_0 = side == 0
-        perp_wall_dist[mask_side_0] = (
-            side_dist_x[mask_side_0] - delta_dist_x[mask_side_0]
-        )
-        mask_side_1 = side == 1
-        perp_wall_dist[mask_side_1] = (
-            side_dist_y[mask_side_1] - delta_dist_y[mask_side_1]
-        )
+        mask_0, mask_1 = side == 0, side == 1
+        perp_wall_dist[mask_0] = side_dist_x[mask_0] - delta_dist_x[mask_0]
+        perp_wall_dist[mask_1] = side_dist_y[mask_1] - delta_dist_y[mask_1]
 
-        # Wall X Hit
         wall_x_hit = np.zeros(self.num_rays, dtype=np.float64)
-        wall_x_hit[mask_side_0] = (
-            player.y + perp_wall_dist[mask_side_0] * ray_dir_y[mask_side_0]
-        )
-        wall_x_hit[mask_side_1] = (
-            player.x + perp_wall_dist[mask_side_1] * ray_dir_x[mask_side_1]
-        )
+        wall_x_hit[mask_0] = player.y + perp_wall_dist[mask_0] * ray_dir_y[mask_0]
+        wall_x_hit[mask_1] = player.x + perp_wall_dist[mask_1] * ray_dir_x[mask_1]
         wall_x_hit -= np.floor(wall_x_hit)
 
-        # Return cos_deltas instead of ray_angles for fisheye correction
+        cos_deltas = self.cos_deltas_zoomed if player.zoomed else self.cos_deltas
         return perp_wall_dist, wall_types, wall_x_hit, side, cos_deltas
 
     def _blit_view_to_screen(self, screen: pygame.Surface) -> None:
