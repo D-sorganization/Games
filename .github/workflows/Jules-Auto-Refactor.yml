@@ -84,28 +84,38 @@ jobs:
 
           # 1. Remove unused imports and variables
           echo "Running autoflake..."
-          autoflake --in-place --remove-all-unused-imports --remove-unused-variables "$TARGET" 2>/dev/null && \
+          autoflake --in-place --remove-all-unused-imports --remove-unused-variables "$TARGET" 2>/dev/null
+          if ! git diff --quiet "$TARGET" 2>/dev/null; then
             FIXES_APPLIED="$FIXES_APPLIED autoflake"
+          fi
 
           # 2. Sort imports
           echo "Running isort..."
-          isort "$TARGET" 2>/dev/null && \
+          isort "$TARGET" 2>/dev/null
+          if ! git diff --quiet "$TARGET" 2>/dev/null; then
             FIXES_APPLIED="$FIXES_APPLIED isort"
+          fi
 
           # 3. Ruff fixes (safe)
           echo "Running ruff check --fix..."
-          ruff check --fix "$TARGET" 2>/dev/null && \
+          ruff check --fix "$TARGET" 2>/dev/null || true
+          if ! git diff --quiet "$TARGET" 2>/dev/null; then
             FIXES_APPLIED="$FIXES_APPLIED ruff-fix"
+          fi
 
           # 4. Ruff unsafe fixes (more aggressive)
           echo "Running ruff check --fix --unsafe-fixes..."
-          ruff check --fix --unsafe-fixes "$TARGET" 2>/dev/null && \
+          ruff check --fix --unsafe-fixes "$TARGET" 2>/dev/null || true
+          if ! git diff --quiet "$TARGET" 2>/dev/null; then
             FIXES_APPLIED="$FIXES_APPLIED ruff-unsafe"
+          fi
 
           # 5. Ruff format
           echo "Running ruff format..."
-          ruff format "$TARGET" 2>/dev/null && \
+          ruff format "$TARGET" 2>/dev/null
+          if ! git diff --quiet "$TARGET" 2>/dev/null; then
             FIXES_APPLIED="$FIXES_APPLIED ruff-format"
+          fi
 
           echo "fixes=$FIXES_APPLIED" >> $GITHUB_OUTPUT
 

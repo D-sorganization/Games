@@ -20,6 +20,7 @@ on:
     - cron: "30 11 * * *" # 3:30 AM PST - Issue Resolver (daily fix)
     - cron: "0 13 * * *"  # 5 AM PST - Auto-Rebase
     - cron: "0 12 * * *"  # 4 AM PST - PR Compiler (consolidate PRs)
+    - cron: "30 12 * * *" # 4:30 AM PST - Documentation Auditor
   workflow_dispatch:
     inputs:
       target:
@@ -40,6 +41,7 @@ on:
           - thesis-defender
           - issue-resolver
           - pr-compiler
+          - documentation-auditor
 
 # SAFEGUARD: Maximum iterations to prevent infinite repair loops
 env:
@@ -155,6 +157,9 @@ jobs:
                   case "0 12 * * *":
                     target = "pr-compiler";
                     break;
+                  case "30 12 * * *":
+                    target = "documentation-auditor";
+                    break;
                   case "0 13 * * *":
                     target = "auto-rebase";
                     break;
@@ -185,8 +190,10 @@ jobs:
                   target = day === 4 ? "thesis-defender" : "auto-refactor";
                 } else if (hour === 11 && minute >= 30) {
                   target = "issue-resolver";
-                } else if (hour === 12) {
+                } else if (hour === 12 && minute < 30) {
                   target = "pr-compiler";
+                } else if (hour === 12 && minute >= 30) {
+                  target = "documentation-auditor";
                 } else if (hour === 13) {
                   target = "auto-rebase";
                 } else {
@@ -322,4 +329,10 @@ jobs:
     needs: triage
     if: needs.triage.outputs.target == 'pr-compiler'
     uses: ./.github/workflows/Jules-PR-Compiler.yml
+    secrets: inherit
+
+  call-documentation-auditor:
+    needs: triage
+    if: needs.triage.outputs.target == 'documentation-auditor'
+    uses: ./.github/workflows/Jules-Documentation-Auditor.yml
     secrets: inherit
