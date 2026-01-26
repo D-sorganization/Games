@@ -285,7 +285,9 @@ def run_assessment(assessment_id: str, output_path: Path) -> int:
         # DO NOT fabricate a score - require real bot/manual review
         score = None  # Explicitly unscored - requires real review
         findings.append(f"- Python files analyzed: {file_count}")
-        findings.append("- **REQUIRES REVIEW**: No automated checks available for this category")
+        findings.append(
+            "- **REQUIRES REVIEW**: No automated checks available for this category"
+        )
         findings.append("- Score must be assigned by Jules bot or manual code review")
         findings.append("- Do NOT use a default score - real analysis is required")
 
