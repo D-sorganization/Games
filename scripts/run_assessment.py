@@ -281,19 +281,20 @@ def run_assessment(assessment_id: str, output_path: Path) -> int:
             findings.append("- Note: No standard config files found in root")
 
     else:
-        # Generic assessment for J, K, N, O
-        # IMPORTANT: Use conservative score since no real checks performed
-        score = 7.0
+        # No automated checks available for this category
+        # DO NOT fabricate a score - require real bot/manual review
+        score = None  # Explicitly unscored - requires real review
         findings.append(f"- Python files analyzed: {file_count}")
-        findings.append(
-            "- **NOTE**: This category requires manual review for accurate scoring"
-        )
-        findings.append(
-            "- Score is conservative estimate (7.0) - actual score may differ"
-        )
+        findings.append("- **REQUIRES REVIEW**: No automated checks available for this category")
+        findings.append("- Score must be assigned by Jules bot or manual code review")
+        findings.append("- Do NOT use a default score - real analysis is required")
 
-    # Ensure score is within bounds
-    score = max(0, min(10, score))
+    # Format score display
+    if score is not None:
+        score = max(0, min(10, score))
+        score_display = f"{score}/10"
+    else:
+        score_display = "PENDING REVIEW"
 
     # Generate report
     report_content = f"""# Assessment {assessment_id}: {assessment["name"]}
@@ -303,7 +304,7 @@ def run_assessment(assessment_id: str, output_path: Path) -> int:
 **Description**: {assessment["description"]}
 **Generated**: Automated via Jules Assessment Auto-Fix workflow
 
-## Score: {score}/10
+## Score: {score_display}
 
 ## Findings
 
@@ -331,7 +332,7 @@ This assessment was generated automatically. For detailed analysis:
         f.write(report_content)
 
     logger.info(f"✓ Assessment {assessment_id} report saved to {output_path}")
-    logger.info(f"  Score: {score}/10")
+    logger.info(f"  Score: {score_display}")
     return 0
 
 

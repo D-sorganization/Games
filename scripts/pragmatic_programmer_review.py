@@ -844,7 +844,9 @@ def generate_markdown_report(results: dict[str, Any], output_path: Path) -> None
         status = (
             "Pass"
             if info["score"] >= 7
-            else "Needs Work" if info["score"] >= 4 else "Critical"
+            else "Needs Work"
+            if info["score"] >= 4
+            else "Critical"
         )
         md += (
             f"| {info['name']} | {info['score']:.1f} | {info['weight']}x | {status} |\n"
