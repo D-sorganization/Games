@@ -285,8 +285,12 @@ def run_assessment(assessment_id: str, output_path: Path) -> int:
         # IMPORTANT: Use conservative score since no real checks performed
         score = 7.0
         findings.append(f"- Python files analyzed: {file_count}")
-        findings.append("- **NOTE**: This category requires manual review for accurate scoring")
-        findings.append("- Score is conservative estimate (7.0) - actual score may differ")
+        findings.append(
+            "- **NOTE**: This category requires manual review for accurate scoring"
+        )
+        findings.append(
+            "- Score is conservative estimate (7.0) - actual score may differ"
+        )
 
     # Ensure score is within bounds
     score = max(0, min(10, score))

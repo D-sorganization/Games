@@ -11,12 +11,10 @@ if TYPE_CHECKING:
     class Map(Protocol):
         """Map protocol for type checking."""
 
-        pass
 
     class Bot(Protocol):
         """Bot protocol for type checking."""
 
-        pass
 
 
 class PlayerBase:
