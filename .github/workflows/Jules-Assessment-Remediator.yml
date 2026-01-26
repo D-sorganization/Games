@@ -120,6 +120,9 @@ jobs:
           COMMENT
           )"
 
+                # Create label if it doesn't exist
+                gh label create "jules-assigned" --repo "$REPO" --color "7057ff" --description "Issue assigned to Jules AI" 2>/dev/null || true
+
                 # Add tracking labels
                 gh issue edit "$SPECIFIC_ISSUE" --repo "$REPO" --add-label "jules-assigned" || true
 
@@ -219,6 +222,9 @@ jobs:
           *Assigned by Jules Assessment Remediator*
           COMMENT
           )"
+
+                  # Create label if it doesn't exist
+                  gh label create "jules-assigned" --repo "$REPO" --color "7057ff" --description "Issue assigned to Jules AI" 2>/dev/null || true
 
                   # Add tracking label
                   gh issue edit "$issue_num" --repo "$REPO" --add-label "jules-assigned" || true
