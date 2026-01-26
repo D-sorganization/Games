@@ -140,13 +140,24 @@ jobs:
           file_pattern: "docs/assessments/documentation/*"
 
       - name: Create Issue for Low Coverage
-        if: ${{ steps.scan.outputs.coverage < '50%' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           COVERAGE: ${{ steps.scan.outputs.coverage }}
         run: |
+          # Extract numeric portion of coverage percentage for proper comparison
+          COVERAGE_NUM=$(echo "$COVERAGE" | grep -oP '\d+\.?\d*' | head -1)
+          if [ -z "$COVERAGE_NUM" ]; then
+            COVERAGE_NUM=0
+          fi
+
+          # Skip if coverage is 50% or higher (using numeric comparison)
+          if [ "$(echo "$COVERAGE_NUM >= 50" | bc -l)" -eq 1 ]; then
+            echo "Coverage ($COVERAGE_NUM%) is at or above 50%, skipping issue creation"
+            exit 0
+          fi
+
           # Check if issue already exists
-          EXISTING=$(gh issue list --state open --label "documentation" --search "Documentation Coverage" --json number --jq 'length')
+          EXISTING=$(gh issue list --state open --label "documentation" --search "Documentation Coverage" --json number --jq 'length' 2>/dev/null || echo "0")
 
           if [ "$EXISTING" -eq 0 ]; then
             gh issue create \
