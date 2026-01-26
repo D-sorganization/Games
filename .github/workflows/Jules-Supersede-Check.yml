@@ -23,7 +23,9 @@ jobs:
     name: Check for Superseded Jules PRs
     runs-on: ubuntu-latest
     # Skip if the push was from a Jules workflow (avoid closing our own PRs)
+    # Also skip if head_commit is null (e.g., workflow_dispatch with no prior commits)
     if: |
+      github.event.head_commit != null &&
       !contains(github.event.head_commit.message, 'Co-Authored-By: Jules') &&
       !startsWith(github.event.head_commit.message, '[Jules/')
 
@@ -39,8 +41,14 @@ jobs:
         run: |
           echo "Checking for superseded Jules PRs after push to main..."
 
-          # Get files changed in this push
-          CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || git diff --name-only HEAD HEAD 2>/dev/null || echo "")
+          # Get files changed in this push (use github event data as fallback)
+          if git rev-parse HEAD~1 >/dev/null 2>&1; then
+            CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null)
+          else
+            # Fallback: Use github context for files changed
+            echo "No parent commit available, using commit info"
+            CHANGED_FILES=""
+          fi
 
           if [ -z "$CHANGED_FILES" ]; then
             echo "No changed files detected, skipping"
