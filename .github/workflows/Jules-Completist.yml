@@ -77,8 +77,8 @@ jobs:
             -r . 2>/dev/null | grep "def " | head -20 >> "$REPORT_FILE" || echo "No stub functions found" >> "$REPORT_FILE"
 
           # Count findings
-          TODO_COUNT=$(grep -rc "TODO" --include="*.py" --exclude-dir=.git --exclude-dir=.venv . 2>/dev/null | awk -F: '{sum+=$2} END {print sum}' || echo "0")
-          FIXME_COUNT=$(grep -rc "FIXME" --include="*.py" --exclude-dir=.git --exclude-dir=.venv . 2>/dev/null | awk -F: '{sum+=$2} END {print sum}' || echo "0")
+          TODO_COUNT=$(grep -rc "TODO" --include="*.py" --include="*.js" --include="*.ts" --exclude-dir=.git --exclude-dir=.venv --exclude-dir=node_modules . 2>/dev/null | awk -F: '{sum+=$2} END {print sum}' || echo "0")
+          FIXME_COUNT=$(grep -rc "FIXME" --include="*.py" --include="*.js" --include="*.ts" --exclude-dir=.git --exclude-dir=.venv --exclude-dir=node_modules . 2>/dev/null | awk -F: '{sum+=$2} END {print sum}' || echo "0")
 
           echo "todo_count=${TODO_COUNT:-0}" >> $GITHUB_OUTPUT
           echo "fixme_count=${FIXME_COUNT:-0}" >> $GITHUB_OUTPUT

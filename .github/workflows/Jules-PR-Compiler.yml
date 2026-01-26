@@ -77,13 +77,13 @@ jobs:
           QUALITY_COUNT=$(echo "$QUALITY_PRS" | jq 'length')
           echo "**Code Quality PRs**: $QUALITY_COUNT" >> $GITHUB_STEP_SUMMARY
 
-          # Documentation PRs
-          DOCS_PRS=$(cat /tmp/candidate_prs.json | jq '[.[] | select(.headRefName | test("docs/|documentation"))]')
+          # Documentation PRs (excluding those already counted as quality PRs)
+          DOCS_PRS=$(cat /tmp/candidate_prs.json | jq '[.[] | select((.headRefName | test("docs/|documentation")) and ((.headRefName | test("code-quality|fix/")) | not))]')
           DOCS_COUNT=$(echo "$DOCS_PRS" | jq 'length')
           echo "**Documentation PRs**: $DOCS_COUNT" >> $GITHUB_STEP_SUMMARY
 
-          # Other PRs
-          OTHER_COUNT=$(($(cat /tmp/candidate_prs.json | jq 'length') - QUALITY_COUNT - DOCS_COUNT))
+          # Other PRs (excluding quality and docs PRs)
+          OTHER_COUNT=$(cat /tmp/candidate_prs.json | jq '[.[] | select(((.headRefName | test("code-quality|fix/")) | not) and ((.headRefName | test("docs/|documentation")) | not))] | length')
           echo "**Other PRs**: $OTHER_COUNT" >> $GITHUB_STEP_SUMMARY
 
           echo "" >> $GITHUB_STEP_SUMMARY
