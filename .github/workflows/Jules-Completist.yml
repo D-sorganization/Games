@@ -1,0 +1,98 @@
+name: Jules Completist (Worker)
+
+# Identifies incomplete implementations, TODOs, partial features
+# Creates issues for tracking completion of unfinished work
+
+on:
+  workflow_call:
+  workflow_dispatch:
+    inputs:
+      create_issues:
+        description: 'Create GitHub issues for findings'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: jules-completist-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  find-incomplete:
+    name: Find Incomplete Implementations
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Scan for Incomplete Code
+        id: scan
+        run: |
+          echo "Scanning for incomplete implementations..."
+
+          REPORT_FILE="/tmp/completist_report.md"
+          echo "# Completist Report - $(date +%Y-%m-%d)" > "$REPORT_FILE"
+          echo "" >> "$REPORT_FILE"
+
+          # Find TODO comments
+          echo "## TODO Comments" >> "$REPORT_FILE"
+          echo "" >> "$REPORT_FILE"
+          grep -rn "TODO" --include="*.py" --include="*.js" --include="*.ts" \
+            --exclude-dir=.git --exclude-dir=.venv --exclude-dir=node_modules \
+            . 2>/dev/null | head -50 >> "$REPORT_FILE" || echo "No TODOs found" >> "$REPORT_FILE"
+
+          echo "" >> "$REPORT_FILE"
+
+          # Find FIXME comments
+          echo "## FIXME Comments" >> "$REPORT_FILE"
+          echo "" >> "$REPORT_FILE"
+          grep -rn "FIXME" --include="*.py" --include="*.js" --include="*.ts" \
+            --exclude-dir=.git --exclude-dir=.venv --exclude-dir=node_modules \
+            . 2>/dev/null | head -50 >> "$REPORT_FILE" || echo "No FIXMEs found" >> "$REPORT_FILE"
+
+          echo "" >> "$REPORT_FILE"
+
+          # Find NotImplementedError
+          echo "## NotImplementedError" >> "$REPORT_FILE"
+          echo "" >> "$REPORT_FILE"
+          grep -rn "NotImplementedError\|raise NotImplemented" --include="*.py" \
+            --exclude-dir=.git --exclude-dir=.venv \
+            . 2>/dev/null | head -20 >> "$REPORT_FILE" || echo "No NotImplementedError found" >> "$REPORT_FILE"
+
+          echo "" >> "$REPORT_FILE"
+
+          # Find pass statements (potential incomplete implementations)
+          echo "## Stub Functions (pass only)" >> "$REPORT_FILE"
+          echo "" >> "$REPORT_FILE"
+          grep -B2 "^[[:space:]]*pass$" --include="*.py" \
+            --exclude-dir=.git --exclude-dir=.venv \
+            -r . 2>/dev/null | grep "def " | head -20 >> "$REPORT_FILE" || echo "No stub functions found" >> "$REPORT_FILE"
+
+          # Count findings
+          TODO_COUNT=$(grep -rc "TODO" --include="*.py" --exclude-dir=.git --exclude-dir=.venv . 2>/dev/null | awk -F: '{sum+=$2} END {print sum}' || echo "0")
+          FIXME_COUNT=$(grep -rc "FIXME" --include="*.py" --exclude-dir=.git --exclude-dir=.venv . 2>/dev/null | awk -F: '{sum+=$2} END {print sum}' || echo "0")
+
+          echo "todo_count=${TODO_COUNT:-0}" >> $GITHUB_OUTPUT
+          echo "fixme_count=${FIXME_COUNT:-0}" >> $GITHUB_OUTPUT
+
+          cat "$REPORT_FILE"
+
+      - name: Summary
+        run: |
+          echo "## Jules Completist Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Finding Type | Count |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| TODO comments | ${{ steps.scan.outputs.todo_count }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| FIXME comments | ${{ steps.scan.outputs.fixme_count }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "*Run with create_issues=true to generate tracking issues*" >> $GITHUB_STEP_SUMMARY

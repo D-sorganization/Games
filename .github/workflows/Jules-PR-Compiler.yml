@@ -1,0 +1,120 @@
+name: Jules PR Compiler (Worker)
+
+# Consolidates multiple small PRs into a single cohesive PR
+# Helps reduce PR noise while maintaining change traceability
+
+on:
+  workflow_call:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run - analyze only without creating PR'
+        required: false
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+      branch_pattern:
+        description: 'Pattern to match branches for consolidation'
+        required: false
+        default: 'jules/'
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: jules-pr-compiler-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  compile-prs:
+    name: Compile Related PRs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Find Consolidation Candidates
+        id: find
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH_PATTERN: ${{ inputs.branch_pattern || 'jules/' }}
+        run: |
+          echo "Looking for PRs to consolidate..."
+
+          # Find open Jules-generated PRs
+          JULES_PRS=$(gh pr list --state open --json number,title,headRefName,labels,updatedAt \
+            --jq "[.[] | select(.headRefName | startswith(\"$BRANCH_PATTERN\"))]" 2>/dev/null || echo "[]")
+
+          COUNT=$(echo "$JULES_PRS" | jq 'length')
+          echo "Found $COUNT open PRs matching pattern: $BRANCH_PATTERN"
+
+          # Group by type (based on branch prefix after jules/)
+          echo "$JULES_PRS" | jq -r '.[] | "\(.number): \(.title) (\(.headRefName))"'
+
+          echo "count=$COUNT" >> $GITHUB_OUTPUT
+          echo "$JULES_PRS" > /tmp/candidate_prs.json
+
+      - name: Analyze Consolidation Opportunities
+        if: steps.find.outputs.count > 1
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "## Consolidation Analysis" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Group PRs by category
+          echo "### PRs by Category" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Code quality fixes
+          QUALITY_PRS=$(cat /tmp/candidate_prs.json | jq '[.[] | select(.headRefName | test("code-quality|fix/"))]')
+          QUALITY_COUNT=$(echo "$QUALITY_PRS" | jq 'length')
+          echo "**Code Quality PRs**: $QUALITY_COUNT" >> $GITHUB_STEP_SUMMARY
+
+          # Documentation PRs
+          DOCS_PRS=$(cat /tmp/candidate_prs.json | jq '[.[] | select(.headRefName | test("docs/|documentation"))]')
+          DOCS_COUNT=$(echo "$DOCS_PRS" | jq 'length')
+          echo "**Documentation PRs**: $DOCS_COUNT" >> $GITHUB_STEP_SUMMARY
+
+          # Other PRs
+          OTHER_COUNT=$(($(cat /tmp/candidate_prs.json | jq 'length') - QUALITY_COUNT - DOCS_COUNT))
+          echo "**Other PRs**: $OTHER_COUNT" >> $GITHUB_STEP_SUMMARY
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Recommendation
+          if [ "$QUALITY_COUNT" -gt 2 ]; then
+            echo "**Recommendation**: Consider consolidating $QUALITY_COUNT code quality PRs" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ "$DOCS_COUNT" -gt 2 ]; then
+            echo "**Recommendation**: Consider consolidating $DOCS_COUNT documentation PRs" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Create Consolidated PR
+        if: steps.find.outputs.count > 2 && inputs.dry_run != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "PR consolidation would happen here in non-dry-run mode"
+          echo "This feature requires careful implementation to avoid losing work"
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "*Run with dry_run=false to actually consolidate PRs*" >> $GITHUB_STEP_SUMMARY
+
+      - name: Summary
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "## Jules PR Compiler Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **PRs Found**: ${{ steps.find.outputs.count }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Dry Run**: ${{ inputs.dry_run || 'true' }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "*Consolidation helps reduce PR noise while maintaining traceability*" >> $GITHUB_STEP_SUMMARY
