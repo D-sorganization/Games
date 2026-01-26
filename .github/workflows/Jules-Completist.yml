@@ -1,20 +1,11 @@
 name: Jules Completist (Worker)
 
 # Identifies incomplete implementations, TODOs, partial features
-# Creates issues for tracking completion of unfinished work
+# Reports findings in workflow summary
 
 on:
   workflow_call:
   workflow_dispatch:
-    inputs:
-      create_issues:
-        description: 'Create GitHub issues for findings'
-        required: false
-        default: 'false'
-        type: choice
-        options:
-          - 'true'
-          - 'false'
 
 permissions:
   contents: read
@@ -95,4 +86,4 @@ jobs:
           echo "| FIXME comments | ${{ steps.scan.outputs.fixme_count }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "---" >> $GITHUB_STEP_SUMMARY
-          echo "*Run with create_issues=true to generate tracking issues*" >> $GITHUB_STEP_SUMMARY
+          echo "*Review findings above and create issues manually for items requiring attention*" >> $GITHUB_STEP_SUMMARY
