@@ -52,8 +52,23 @@ jobs:
           echo "This document explains the codebase in simple terms." >> "$OUTPUT_FILE"
           echo "" >> "$OUTPUT_FILE"
 
-          # Summarize main directories
-          echo "## What's in this repository?" >> "$OUTPUT_FILE"
+          # Analyze the target path
+          echo "## Analysis of $TARGET_PATH" >> "$OUTPUT_FILE"
+          echo "" >> "$OUTPUT_FILE"
+
+          if [ -d "$TARGET_PATH" ]; then
+            echo "### Contents of $TARGET_PATH" >> "$OUTPUT_FILE"
+            echo "- Number of Python files: $(find "$TARGET_PATH" -name '*.py' 2>/dev/null | wc -l)" >> "$OUTPUT_FILE"
+            echo "- Number of MATLAB files: $(find "$TARGET_PATH" -name '*.m' 2>/dev/null | wc -l)" >> "$OUTPUT_FILE"
+            echo "- Number of JavaScript files: $(find "$TARGET_PATH" -name '*.js' 2>/dev/null | wc -l)" >> "$OUTPUT_FILE"
+            echo "" >> "$OUTPUT_FILE"
+          else
+            echo "*Target path '$TARGET_PATH' not found*" >> "$OUTPUT_FILE"
+            echo "" >> "$OUTPUT_FILE"
+          fi
+
+          # Also summarize main directories if they exist
+          echo "## Repository Overview" >> "$OUTPUT_FILE"
           echo "" >> "$OUTPUT_FILE"
 
           if [ -d "games" ]; then

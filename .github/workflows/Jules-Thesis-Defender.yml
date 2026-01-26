@@ -42,6 +42,8 @@ jobs:
 
       - name: Analyze Architecture
         id: analyze
+        env:
+          FOCUS_AREA: ${{ inputs.focus_area || 'all' }}
         run: |
           DATE=$(date +%Y-%m-%d)
           REPORT_DIR="docs/assessments/architecture"
@@ -49,29 +51,62 @@ jobs:
 
           echo "# Architectural Review - $DATE" > "$REPORT_DIR/review_${DATE}.md"
           echo "" >> "$REPORT_DIR/review_${DATE}.md"
-
-          # Analyze directory structure
-          echo "## Repository Structure" >> "$REPORT_DIR/review_${DATE}.md"
-          echo '```' >> "$REPORT_DIR/review_${DATE}.md"
-          find . -type d -maxdepth 3 \
-            -not -path './.git*' \
-            -not -path './.venv*' \
-            -not -path './__pycache__*' \
-            -not -path './archive*' | sort >> "$REPORT_DIR/review_${DATE}.md"
-          echo '```' >> "$REPORT_DIR/review_${DATE}.md"
-
-          # Count files by type
+          echo "**Focus Area**: $FOCUS_AREA" >> "$REPORT_DIR/review_${DATE}.md"
           echo "" >> "$REPORT_DIR/review_${DATE}.md"
-          echo "## File Statistics" >> "$REPORT_DIR/review_${DATE}.md"
-          echo "" >> "$REPORT_DIR/review_${DATE}.md"
-          echo "| Extension | Count |" >> "$REPORT_DIR/review_${DATE}.md"
-          echo "|-----------|-------|" >> "$REPORT_DIR/review_${DATE}.md"
-          echo "| .py | $(find . -name '*.py' -not -path './.venv/*' | wc -l) |" >> "$REPORT_DIR/review_${DATE}.md"
-          echo "| .yml | $(find . -name '*.yml' | wc -l) |" >> "$REPORT_DIR/review_${DATE}.md"
-          echo "| .md | $(find . -name '*.md' | wc -l) |" >> "$REPORT_DIR/review_${DATE}.md"
-          echo "| .m | $(find . -name '*.m' | wc -l) |" >> "$REPORT_DIR/review_${DATE}.md"
 
-          echo "" >> "$REPORT_DIR/review_${DATE}.md"
+          # Analyze directory structure (for 'all' or 'architecture')
+          if [ "$FOCUS_AREA" = "all" ] || [ "$FOCUS_AREA" = "architecture" ]; then
+            echo "## Repository Structure" >> "$REPORT_DIR/review_${DATE}.md"
+            echo '```' >> "$REPORT_DIR/review_${DATE}.md"
+            find . -type d -maxdepth 3 \
+              -not -path './.git*' \
+              -not -path './.venv*' \
+              -not -path './__pycache__*' \
+              -not -path './archive*' | sort >> "$REPORT_DIR/review_${DATE}.md"
+            echo '```' >> "$REPORT_DIR/review_${DATE}.md"
+            echo "" >> "$REPORT_DIR/review_${DATE}.md"
+          fi
+
+          # Count files by type (for 'all' or 'architecture')
+          if [ "$FOCUS_AREA" = "all" ] || [ "$FOCUS_AREA" = "architecture" ]; then
+            echo "## File Statistics" >> "$REPORT_DIR/review_${DATE}.md"
+            echo "" >> "$REPORT_DIR/review_${DATE}.md"
+            echo "| Extension | Count |" >> "$REPORT_DIR/review_${DATE}.md"
+            echo "|-----------|-------|" >> "$REPORT_DIR/review_${DATE}.md"
+            echo "| .py | $(find . -name '*.py' -not -path './.venv/*' | wc -l) |" >> "$REPORT_DIR/review_${DATE}.md"
+            echo "| .yml | $(find . -name '*.yml' | wc -l) |" >> "$REPORT_DIR/review_${DATE}.md"
+            echo "| .md | $(find . -name '*.md' | wc -l) |" >> "$REPORT_DIR/review_${DATE}.md"
+            echo "| .m | $(find . -name '*.m' | wc -l) |" >> "$REPORT_DIR/review_${DATE}.md"
+            echo "" >> "$REPORT_DIR/review_${DATE}.md"
+          fi
+
+          # Analyze dependencies (for 'all' or 'dependencies')
+          if [ "$FOCUS_AREA" = "all" ] || [ "$FOCUS_AREA" = "dependencies" ]; then
+            echo "## Dependencies" >> "$REPORT_DIR/review_${DATE}.md"
+            echo "" >> "$REPORT_DIR/review_${DATE}.md"
+            if [ -f "requirements.txt" ]; then
+              echo "### Python Dependencies (requirements.txt)" >> "$REPORT_DIR/review_${DATE}.md"
+              echo '```' >> "$REPORT_DIR/review_${DATE}.md"
+              cat requirements.txt >> "$REPORT_DIR/review_${DATE}.md"
+              echo '```' >> "$REPORT_DIR/review_${DATE}.md"
+            fi
+            if [ -f "pyproject.toml" ]; then
+              echo "### Project Config (pyproject.toml exists)" >> "$REPORT_DIR/review_${DATE}.md"
+            fi
+            echo "" >> "$REPORT_DIR/review_${DATE}.md"
+          fi
+
+          # Analyze patterns (for 'all' or 'patterns')
+          if [ "$FOCUS_AREA" = "all" ] || [ "$FOCUS_AREA" = "patterns" ]; then
+            echo "## Code Patterns" >> "$REPORT_DIR/review_${DATE}.md"
+            echo "" >> "$REPORT_DIR/review_${DATE}.md"
+            echo "### Classes per file" >> "$REPORT_DIR/review_${DATE}.md"
+            echo '```' >> "$REPORT_DIR/review_${DATE}.md"
+            find . -name '*.py' -not -path './.venv/*' -exec grep -l "^class " {} \; 2>/dev/null | head -20 >> "$REPORT_DIR/review_${DATE}.md" || echo "No classes found" >> "$REPORT_DIR/review_${DATE}.md"
+            echo '```' >> "$REPORT_DIR/review_${DATE}.md"
+            echo "" >> "$REPORT_DIR/review_${DATE}.md"
+          fi
+
           echo "---" >> "$REPORT_DIR/review_${DATE}.md"
           echo "*Generated by Jules Thesis Defender*" >> "$REPORT_DIR/review_${DATE}.md"
 

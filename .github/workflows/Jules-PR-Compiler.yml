@@ -98,7 +98,7 @@ jobs:
           fi
 
       - name: Create Consolidated PR
-        if: steps.find.outputs.count > 2 && inputs.dry_run != 'true'
+        if: steps.find.outputs.count > 2 && inputs.dry_run == 'false'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |

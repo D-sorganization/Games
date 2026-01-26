@@ -45,6 +45,8 @@ jobs:
 
       - name: Perform Critical Analysis
         id: analyze
+        env:
+          SEVERITY_THRESHOLD: ${{ inputs.severity_threshold || 'medium' }}
         run: |
           DATE=$(date +%Y-%m-%d)
           REPORT_DIR="docs/assessments/critics"
@@ -55,14 +57,32 @@ jobs:
           echo "# Critical Code Review - $DATE" > "$REPORT_FILE"
           echo "" >> "$REPORT_FILE"
           echo "This report provides constructive criticism for code improvement." >> "$REPORT_FILE"
+          echo "**Severity Threshold**: $SEVERITY_THRESHOLD" >> "$REPORT_FILE"
           echo "" >> "$REPORT_FILE"
+
+          # Set radon complexity grade filter based on severity threshold
+          # low = all grades (A-F), medium = B-F, high = C-F
+          case "$SEVERITY_THRESHOLD" in
+            low)
+              RADON_GRADE="A"
+              VULTURE_CONFIDENCE=60
+              ;;
+            high)
+              RADON_GRADE="C"
+              VULTURE_CONFIDENCE=90
+              ;;
+            *)  # medium (default)
+              RADON_GRADE="B"
+              VULTURE_CONFIDENCE=80
+              ;;
+          esac
 
           # Code Complexity Analysis
           echo "## Complexity Analysis" >> "$REPORT_FILE"
           echo "" >> "$REPORT_FILE"
           if command -v radon &> /dev/null; then
             echo '```' >> "$REPORT_FILE"
-            radon cc . -a -s --exclude ".venv,archive,__pycache__" 2>/dev/null | head -50 >> "$REPORT_FILE" || echo "No complexity issues found" >> "$REPORT_FILE"
+            radon cc . -a -s --exclude ".venv,archive,__pycache__" -n"$RADON_GRADE" 2>/dev/null | head -50 >> "$REPORT_FILE" || echo "No complexity issues found" >> "$REPORT_FILE"
             echo '```' >> "$REPORT_FILE"
           else
             echo "*Radon not available for complexity analysis*" >> "$REPORT_FILE"
@@ -74,7 +94,7 @@ jobs:
           echo "" >> "$REPORT_FILE"
           if command -v vulture &> /dev/null; then
             echo '```' >> "$REPORT_FILE"
-            vulture . --exclude ".venv,archive,__pycache__" --min-confidence 80 2>/dev/null | head -30 >> "$REPORT_FILE" || echo "No dead code found" >> "$REPORT_FILE"
+            vulture . --exclude ".venv,archive,__pycache__" --min-confidence "$VULTURE_CONFIDENCE" 2>/dev/null | head -30 >> "$REPORT_FILE" || echo "No dead code found" >> "$REPORT_FILE"
             echo '```' >> "$REPORT_FILE"
           else
             echo "*Vulture not available for dead code detection*" >> "$REPORT_FILE"
