@@ -282,11 +282,11 @@ def run_assessment(assessment_id: str, output_path: Path) -> int:
 
     else:
         # Generic assessment for J, K, N, O
+        # IMPORTANT: Use conservative score since no real checks performed
+        score = 7.0
         findings.append(f"- Python files analyzed: {file_count}")
-        findings.append("- Manual review recommended for detailed assessment")
-        # Default neutral score for subjective categories unless we have
-        # specific heuristics
-        score = 7
+        findings.append("- **NOTE**: This category requires manual review for accurate scoring")
+        findings.append("- Score is conservative estimate (7.0) - actual score may differ")
 
     # Ensure score is within bounds
     score = max(0, min(10, score))
