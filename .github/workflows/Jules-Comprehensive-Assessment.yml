@@ -2,7 +2,7 @@ name: Jules Comprehensive Assessment
 
 on:
   schedule:
-    - cron: "0 10 * * *"  # Daily at 5 AM UTC
+    - cron: "0 10 */3 * *"  # Every 3 days at 5 AM PST (10 UTC) - cost optimized
   workflow_dispatch:
 
 permissions:
@@ -19,6 +19,10 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Set Date
+        id: date
+        run: echo "date=$(date +%Y-%m-%d)" >> $GITHUB_OUTPUT
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -104,7 +108,7 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "docs(assessment): pre-assessment data collection"
-          branch: "automation/assessment-$(date +%Y-%m-%d)"
+          branch: "automation/assessment-${{ steps.date.outputs.date }}"
           create_branch: true
           push_options: '--force'
 
