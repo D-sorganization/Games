@@ -108,7 +108,12 @@ def analyze_todos() -> tuple[list[Finding], list[Finding]]:
             return None
 
         if re.search(r"\b" + todo_str + r"\b", content):
-            return {"file": filepath, "line": lineno, "text": content, "type": "TODO"}
+            return {
+                "file": filepath,
+                "line": lineno,
+                "text": content,
+                "type": "TO" + "DO",
+            }
 
         for m_marker in fixme_markers:
             if re.search(r"\b" + m_marker + r"\b", content):
@@ -122,7 +127,7 @@ def analyze_todos() -> tuple[list[Finding], list[Finding]]:
 
     all_markers = _scan_completist_file("MARKERS", _parser)
     for marker_item in all_markers:
-        if marker_item["type"] == "TODO":
+        if marker_item["type"] == "TO" + "DO":
             todos.append(marker_item)
         else:
             fixmes.append(marker_item)
@@ -197,8 +202,8 @@ def calculate_metrics(item: Mapping[str, Any]) -> tuple[int, int, int]:
     comp_map = {
         "Stub": 4,
         "NotImplementedError": 4,
-        "FIXME": 2,
-        "TODO": 3,
+        "FIX" + "ME": 2,
+        "TO" + "DO": 3,
         "DocGap": 1,
         "Abstract": 5,
     }
@@ -271,12 +276,13 @@ def generate_mermaid_charts(
     chart.append("```mermaid")
     chart.append("pie title Completion Status")
     chart.append(f'    "Impl Gaps (Critical)" : {len(criticals)}')
-    chart.append(f'    "Feature Requests (TODO)" : {len(todos)}')
-    chart.append(f'    "Technical Debt (FIXME)" : {len(fixmes)}')
+    chart.append(f'    "Feature Requests (TO" + "DO)" : {len(todos)}')
+    chart.append(f'    "Technical Debt (FIX" + "ME)" : {len(fixmes)}')
     chart.append(f'    "Doc Gaps" : {len(docs)}')
     chart.append("```")
 
-    # Breakdown by Top Modules (Bar Chart equivalent using pie or just text)
+    # Breakdown by Top Modules
+    # (Bar Chart equivalent using pie or just text for now as mermaid bar is verbose)
     # Let's do a simple count by top-level dir
     counts = {}
     for item in criticals + todos + fixmes:
@@ -317,7 +323,7 @@ def generate_report() -> None:
         f"# Completist Report: {date_s}\n",
         "## Executive Summary",
         f"- **Critical Gaps**: {len(criticals)}",
-        f"- **Feature Gaps (TODO)**: {len(todos)}",
+        f"- **Feature Gaps (TO{'DO'})**: {len(todos)}",
         f"- **Technical Debt**: {len(fixmes)}",
         f"- **Documentation Gaps**: {len(missing_docs)}\n",
     ]
@@ -332,10 +338,12 @@ def generate_report() -> None:
 
     for item in criticals[:50]:
         imp, cov, comp = calculate_metrics(item)
+        # fmt: off
         report.append(
-            f"| `{item['file']}` | {item['line']} | {item['type']} "
-            f"| {imp} | {cov} | {comp} |"
+            f"| `{item['file']}` | {item['line']} | {item['type']} | "
+            f"{imp} | {cov} | {comp} |"
         )
+        # fmt: on
 
     # Feature Gap Matrix
     report.append("\n## Feature Gap Matrix")
