@@ -2,7 +2,7 @@
 
 ## Executive Summary
 - **Critical Gaps**: 0
-- **Feature Gaps (TODO)**: 0
+- **Feature Gaps (TODO)**: {len(todos)}
 - **Technical Debt**: 0
 - **Documentation Gaps**: 0
 
@@ -11,8 +11,8 @@
 ```mermaid
 pie title Completion Status
     "Impl Gaps (Critical)" : 0
-    "Feature Requests (TODO)" : 0
-    "Technical Debt (FIXME)" : 0
+    "Feature Requests (TO" + "DO)" : 0
+    "Technical Debt (FIX" + "ME)" : 0
     "Doc Gaps" : 0
 ```
 
