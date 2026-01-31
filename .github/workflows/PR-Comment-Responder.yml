@@ -50,7 +50,7 @@ jobs:
           echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
 
           # Get PR details
-          gh pr view $PR_NUMBER --json headRefName,headRepository,headRepositoryOwner,isCrossRepository,title,body,comments,reviewComments \
+          gh pr view $PR_NUMBER --json headRefName,headRepository,headRepositoryOwner,isCrossRepository,title,body,comments \
             > .pr_details.json
 
           # Get the branch
