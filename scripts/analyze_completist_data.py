@@ -276,7 +276,8 @@ def generate_mermaid_charts(
     chart.append(f'    "Doc Gaps" : {len(docs)}')
     chart.append("```")
 
-    # Breakdown by Top Modules (Bar Chart equivalent using pie or just text for now as mermaid bar is verbose)
+    # Breakdown by Top Modules
+    # (Bar Chart equivalent using pie or just text for now as mermaid bar is verbose)
     # Let's do a simple count by top-level dir
     counts = {}
     for item in criticals + todos + fixmes:
@@ -332,9 +333,12 @@ def generate_report() -> None:
 
     for item in criticals[:50]:
         imp, cov, comp = calculate_metrics(item)
+        # fmt: off
         report.append(
-            f"| `{item['file']}` | {item['line']} | {item['type']} | {imp} | {cov} | {comp} |"
+            f"| `{item['file']}` | {item['line']} | {item['type']} | "
+            f"{imp} | {cov} | {comp} |"
         )
+        # fmt: on
 
     # Feature Gap Matrix
     report.append("\n## Feature Gap Matrix")
