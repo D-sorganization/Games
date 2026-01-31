@@ -50,7 +50,7 @@ jobs:
           echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
 
           # Get PR details
-          gh pr view $PR_NUMBER --json headRefName,headRepository,headRepositoryOwner,isCrossRepository,title,body,comments,reviewComments \
+          gh pr view $PR_NUMBER --json headRefName,headRepository,headRepositoryOwner,isCrossRepository,title,body,comments,reviews \
             > .pr_details.json
 
           # Get the branch
@@ -75,17 +75,18 @@ jobs:
           # Collect all comments that might need response
           actionable_comments = []
 
-          # Check review comments (inline code comments)
-          for comment in pr.get('reviewComments', []):
-              body = comment.get('body', '').lower()
-              # Look for actionable patterns
-              if any(word in body for word in ['please', 'should', 'could you', 'can you', 'fix', 'change', 'update', 'add', 'remove', '?']):
-                  actionable_comments.append({
-            'type': 'review',
-            'path': comment.get('path', ''),
-            'line': comment.get('line', 0),
-            'body': comment.get('body', '')
-                  })
+          # Check review comments (from reviews)
+          for review in pr.get('reviews', []):
+              for comment in review.get('comments', []):
+                  body = comment.get('body', '').lower()
+                  # Look for actionable patterns
+                  if any(word in body for word in ['please', 'should', 'could you', 'can you', 'fix', 'change', 'update', 'add', 'remove', '?']):
+                      actionable_comments.append({
+                          'type': 'review',
+                          'path': comment.get('path', ''),
+                          'line': comment.get('line', 0),
+                          'body': comment.get('body', '')
+                      })
 
           # Check PR comments
           for comment in pr.get('comments', []):
@@ -157,10 +158,14 @@ jobs:
           fi
           
           echo "Found source: $SOURCE_ID"
+
+          COMMENTS_CONTENT=$(cat .actionable_comments.json)
           
           # Create session prompt
-          PROMPT=$(cat << 'PROMPT_EOF'
-          Review and address the PR comments in .actionable_comments.json
+          PROMPT=$(cat << PROMPT_EOF
+          Review and address the PR comments in the following JSON data:
+
+          $COMMENTS_CONTENT
           
           For each comment:
           1. Understand what change is being requested

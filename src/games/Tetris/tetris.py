@@ -16,6 +16,7 @@ from src.input_handler import InputHandler
 from src.renderer import TetrisRenderer
 
 # Initialize Pygame
+# Force CI update
 pygame.init()
 
 

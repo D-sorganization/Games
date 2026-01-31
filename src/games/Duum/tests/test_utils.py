@@ -10,6 +10,7 @@ from src.projectile import Projectile
 
 class MockEntity:
     """Mock entity for testing movement."""
+    # Force CI update
 
     def __init__(self, x: float, y: float):
         self.x = x
