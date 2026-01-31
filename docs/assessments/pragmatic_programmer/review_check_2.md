@@ -1,0 +1,172 @@
+# Pragmatic Programmer Review: app
+**Date**: 2026-01-31
+**Files**: 152
+
+## Findings
+- **DRY** [MAJOR]: Duplicate code block
+  - Found in 2 locations
+  - Files: /app/game_launcher.py
+- **DRY** [MAJOR]: Duplicate code block
+  - Found in 2 locations
+  - Files: /app/scripts/analyze_completist_data.py
+- **DRY** [MAJOR]: Duplicate code block
+  - Found in 2 locations
+  - Files: /app/scripts/quality_check.py, /app/tools/code_quality_check.py
+- **DRY** [MAJOR]: Duplicate code block
+  - Found in 2 locations
+  - Files: /app/scripts/quality_check.py, /app/tools/code_quality_check.py
+- **DRY** [MAJOR]: Duplicate code block
+  - Found in 2 locations
+  - Files: /app/scripts/pragmatic_programmer_review.py, /app/scripts/shared/assessment_utils.py
+- **DRY** [MAJOR]: Duplicate code block
+  - Found in 2 locations
+  - Files: /app/scripts/pragmatic_programmer_review.py, /app/scripts/shared/assessment_utils.py
+- **DRY** [MAJOR]: Duplicate code block
+  - Found in 2 locations
+  - Files: /app/scripts/pragmatic_programmer_review.py, /app/scripts/shared/assessment_utils.py
+- **DRY** [MAJOR]: Duplicate code block
+  - Found in 2 locations
+  - Files: /app/scripts/pragmatic_programmer_review.py, /app/scripts/shared/assessment_utils.py
+- **DRY** [MAJOR]: Duplicate code block
+  - Found in 2 locations
+  - Files: /app/scripts/pragmatic_programmer_review.py, /app/scripts/shared/assessment_utils.py
+- **DRY** [MAJOR]: Duplicate code block
+  - Found in 2 locations
+  - Files: /app/scripts/pragmatic_programmer_review.py, /app/scripts/shared/assessment_utils.py
+- **DRY** [MAJOR]: Duplicate code block
+  - Found in 2 locations
+  - Files: /app/scripts/pragmatic_programmer_review.py, /app/scripts/shared/assessment_utils.py
+- **DRY** [MAJOR]: Duplicate code block
+  - Found in 2 locations
+  - Files: /app/scripts/pragmatic_programmer_review.py, /app/scripts/shared/assessment_utils.py
+- **DRY** [MAJOR]: Duplicate code block
+  - Found in 2 locations
+  - Files: /app/scripts/pragmatic_programmer_review.py, /app/scripts/shared/assessment_utils.py
+- **DRY** [MAJOR]: Duplicate code block
+  - Found in 2 locations
+  - Files: /app/scripts/pragmatic_programmer_review.py
+- **DRY** [MAJOR]: Duplicate code block
+  - Found in 2 locations
+  - Files: /app/scripts/pragmatic_programmer_review.py
+- **DRY** [MAJOR]: Duplicate code block
+  - Found in 2 locations
+  - Files: /app/scripts/generate_assessment_summary.py, /app/scripts/shared/assessment_utils.py
+- **DRY** [MAJOR]: Duplicate code block
+  - Found in 2 locations
+  - Files: /app/scripts/generate_assessment_summary.py, /app/scripts/shared/assessment_utils.py
+- **DRY** [MAJOR]: Duplicate code block
+  - Found in 2 locations
+  - Files: /app/scripts/generate_assessment_summary.py, /app/scripts/shared/assessment_utils.py
+- **DRY** [MAJOR]: Duplicate code block
+  - Found in 2 locations
+  - Files: /app/scripts/generate_assessment_summary.py, /app/scripts/shared/assessment_utils.py
+- **DRY** [MAJOR]: Duplicate code block
+  - Found in 2 locations
+  - Files: /app/scripts/generate_assessment_summary.py, /app/scripts/shared/assessment_utils.py
+- **DRY** [MAJOR]: Duplicate code block
+  - Found in 2 locations
+  - Files: /app/scripts/generate_assessment_summary.py, /app/scripts/shared/assessment_utils.py
+- **DRY** [MAJOR]: Duplicate code block
+  - Found in 2 locations
+  - Files: /app/scripts/generate_assessment_summary.py, /app/scripts/shared/assessment_utils.py
+- **DRY** [MAJOR]: Duplicate code block
+  - Found in 2 locations
+  - Files: /app/scripts/generate_assessment_summary.py, /app/scripts/shared/assessment_utils.py
+- **DRY** [MAJOR]: Duplicate code block
+  - Found in 2 locations
+  - Files: /app/scripts/generate_assessment_summary.py, /app/scripts/shared/assessment_utils.py
+- **DRY** [MAJOR]: Duplicate code block
+  - Found in 2 locations
+  - Files: /app/scripts/generate_assessment_summary.py, /app/scripts/shared/assessment_utils.py
+- **DRY** [MAJOR]: Duplicate code block
+  - Found in 2 locations
+  - Files: /app/scripts/generate_assessment_summary.py, /app/scripts/shared/assessment_utils.py
+- **DRY** [MAJOR]: Duplicate code block
+  - Found in 2 locations
+  - Files: /app/scripts/generate_assessment_summary.py, /app/scripts/shared/assessment_utils.py
+- **DRY** [MAJOR]: Duplicate code block
+  - Found in 2 locations
+  - Files: /app/scripts/generate_assessment_summary.py, /app/scripts/shared/assessment_utils.py
+- **DRY** [MAJOR]: Duplicate code block
+  - Found in 2 locations
+  - Files: /app/scripts/generate_assessment_summary.py, /app/scripts/shared/assessment_utils.py
+- **DRY** [MAJOR]: Duplicate code block
+  - Found in 2 locations
+  - Files: /app/scripts/generate_assessment_summary.py, /app/scripts/shared/assessment_utils.py
+- **DRY** [MAJOR]: Duplicate code block
+  - Found in 2 locations
+  - Files: /app/scripts/generate_assessment_summary.py, /app/scripts/shared/assessment_utils.py
+- **DRY** [MAJOR]: Duplicate code block
+  - Found in 2 locations
+  - Files: /app/scripts/generate_assessment_summary.py, /app/scripts/shared/assessment_utils.py
+- **DRY** [MAJOR]: Duplicate code block
+  - Found in 2 locations
+  - Files: /app/scripts/generate_assessment_summary.py, /app/scripts/shared/assessment_utils.py
+- **DRY** [MAJOR]: Duplicate code block
+  - Found in 2 locations
+  - Files: /app/scripts/generate_assessment_summary.py, /app/scripts/shared/assessment_utils.py
+- **DRY** [MAJOR]: Duplicate code block
+  - Found in 2 locations
+  - Files: /app/scripts/generate_assessment_summary.py, /app/scripts/shared/assessment_utils.py
+- **DRY** [MAJOR]: Duplicate code block
+  - Found in 2 locations
+  - Files: /app/scripts/generate_assessment_summary.py, /app/scripts/shared/assessment_utils.py
+- **DRY** [MAJOR]: Duplicate code block
+  - Found in 2 locations
+  - Files: /app/scripts/generate_assessment_summary.py, /app/scripts/shared/assessment_utils.py
+- **DRY** [MAJOR]: Duplicate code block
+  - Found in 2 locations
+  - Files: /app/src/games/Wizard_of_Wor/tests/test_wow.py, /app/tools/generate_icons.py
+- **DRY** [MAJOR]: Duplicate code block
+  - Found in 2 locations
+  - Files: /app/scripts/setup/generate_high_quality_sounds.py, /app/scripts/setup/generate_sounds.py
+- **DRY** [MAJOR]: Duplicate code block
+  - Found in 2 locations
+  - Files: /app/scripts/setup/generate_high_quality_sounds.py, /app/scripts/setup/generate_sounds.py
+- **DRY** [MAJOR]: Duplicate code block
+  - Found in 2 locations
+  - Files: /app/scripts/setup/generate_high_quality_sounds.py, /app/scripts/setup/generate_sounds.py
+- **DRY** [MAJOR]: Duplicate code block
+  - Found in 2 locations
+  - Files: /app/scripts/setup/generate_high_quality_sounds.py, /app/scripts/setup/generate_sounds.py
+- **DRY** [MAJOR]: Duplicate code block
+  - Found in 2 locations
+  - Files: /app/scripts/setup/generate_high_quality_sounds.py, /app/scripts/setup/generate_sounds.py
+- **DRY** [MAJOR]: Duplicate code block
+  - Found in 2 locations
+  - Files: /app/scripts/setup/generate_high_quality_sounds.py, /app/scripts/setup/generate_sounds.py
+- **DRY** [MAJOR]: Duplicate code block
+  - Found in 8 locations
+  - Files: /app/scripts/setup/generate_high_quality_sounds.py
+- **DRY** [MAJOR]: Duplicate code block
+  - Found in 2 locations
+  - Files: /app/scripts/setup/generate_high_quality_sounds.py
+- **DRY** [MAJOR]: Duplicate code block
+  - Found in 2 locations
+  - Files: /app/scripts/setup/generate_high_quality_sounds.py
+- **DRY** [MAJOR]: Duplicate code block
+  - Found in 3 locations
+  - Files: /app/scripts/setup/generate_high_quality_sounds.py
+- **DRY** [MAJOR]: Duplicate code block
+  - Found in 3 locations
+  - Files: /app/scripts/setup/generate_high_quality_sounds.py
+- **DRY** [MAJOR]: Duplicate code block
+  - Found in 2 locations
+  - Files: /app/scripts/setup/generate_high_quality_sounds.py
+- **ORTHOGONALITY** [MAJOR]: God function: render_hud
+  - Length 82 > 50 lines
+  - Files: /app/src/games/Zombie_Survival/src/ui_renderer.py
+- **ORTHOGONALITY** [MAJOR]: God function: __init__
+  - Length 56 > 50 lines
+  - Files: /app/src/games/Zombie_Survival/src/game.py
+- **ORTHOGONALITY** [MAJOR]: God function: __init__
+  - Length 62 > 50 lines
+  - Files: /app/src/games/Force_Field/src/game.py
+- **ORTHOGONALITY** [MAJOR]: God function: render_hud
+  - Length 83 > 50 lines
+  - Files: /app/src/games/Duum/src/ui_renderer.py
+- **ORTHOGONALITY** [MAJOR]: God function: __init__
+  - Length 60 > 50 lines
+  - Files: /app/src/games/Duum/src/game.py
+- **TESTING** [MAJOR]: Low Test Coverage
+  - Test/Src ratio 0.14 < 0.2
