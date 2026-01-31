@@ -84,10 +84,10 @@ jobs:
                   # Look for actionable patterns
                   if any(word in body for word in ['please', 'should', 'could you', 'can you', 'fix', 'change', 'update', 'add', 'remove', '?']):
                       actionable_comments.append({
-                'type': 'review',
-                'path': comment.get('path', ''),
-                'line': comment.get('line', 0),
-                'body': comment.get('body', '')
+                          'type': 'review',
+                          'path': comment.get('path', ''),
+                          'line': comment.get('line', 0),
+                          'body': comment.get('body', '')
                       })
 
           # Check PR comments
@@ -95,8 +95,8 @@ jobs:
               body = comment.get('body', '').lower()
               if any(word in body for word in ['please', 'should', 'could you', 'can you', 'fix', 'change', 'update', 'add', 'remove', '?']):
                   actionable_comments.append({
-            'type': 'pr',
-            'body': comment.get('body', '')
+                      'type': 'pr',
+                      'body': comment.get('body', '')
                   })
 
           with open('.actionable_comments.json', 'w') as f:
@@ -160,10 +160,14 @@ jobs:
           fi
           
           echo "Found source: $SOURCE_ID"
+
+          COMMENTS_CONTENT=$(cat .actionable_comments.json)
           
           # Create session prompt
-          PROMPT=$(cat << 'PROMPT_EOF'
-          Review and address the PR comments in .actionable_comments.json
+          PROMPT=$(cat << PROMPT_EOF
+          Review and address the PR comments in the following JSON data:
+
+          $COMMENTS_CONTENT
           
           For each comment:
           1. Understand what change is being requested
