@@ -1,6 +1,6 @@
 {
-  "timestamp": "2026-01-25T00:53:26.392579",
-  "overall_score": 9.27,
+  "timestamp": "2026-01-31T08:13:09.669132",
+  "overall_score": 9.5,
   "category_scores": {
     "A": {
       "score": 10.0,
@@ -48,12 +48,12 @@
       "weight": 8.33
     },
     "J": {
-      "score": 7.0,
+      "score": 10.0,
       "name": "API Design",
       "weight": 2.5
     },
     "K": {
-      "score": 7.0,
+      "score": 10.0,
       "name": "Data Handling",
       "weight": 2.5
     },
@@ -68,7 +68,7 @@
       "weight": 2.5
     },
     "N": {
-      "score": 7.0,
+      "score": 10.0,
       "name": "Scalability",
       "weight": 2.5
     },
