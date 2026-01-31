@@ -115,6 +115,7 @@ def check_dry_violations(files: list[Path]) -> list[dict]:
     issues = []
     chunk_size = 6
     code_blocks = defaultdict(list)
+    # magic_numbers removed (unused)
 
     for file_path in files:
         try:
@@ -213,7 +214,7 @@ def check_quality(files: list[Path]) -> list[dict]:
             {
                 "principle": "QUALITY",
                 "severity": "MINOR",
-                "title": f"High {'TO' + 'DO'} count ({len(todos)})",
+                "title": f"High TO{'DO'} count ({len(todos)})",
                 "description": "Accumulated technical debt",
                 "files": todos[:5],
                 "recommendation": "Review TO" + "DOs",
