@@ -269,6 +269,52 @@ def run_assessment(assessment_id: str, output_path: Path) -> int:
             score -= 2
             findings.append("- Warning: Sparse logging detected")
 
+    elif assessment_id == "J":  # API Design
+        # Check for type hints as a proxy for explicit API design
+        type_hint_pattern = r"def\s+.*\s*->\s*.*:"
+        files_with_hints = grep_in_files(type_hint_pattern, python_files)
+
+        findings.append(f"- Files with type hints: {files_with_hints}/{file_count}")
+
+        if file_count > 0:
+            ratio = files_with_hints / file_count
+            findings.append(f"- Type hint coverage: {ratio:.0%}")
+
+            if ratio < 0.2:
+                score -= 3
+                findings.append("- Warning: Low type hint usage (< 20%)")
+            elif ratio < 0.5:
+                score -= 1
+                findings.append("- Note: Moderate type hint usage")
+            else:
+                findings.append("- Good type hint usage")
+
+        # Check for abstract base classes
+        abc_usage = grep_in_files(
+            r"from abc import |class .*\(ABC\):|class .*\(Protocol\):", python_files
+        )
+        findings.append(f"- Files using ABC/Protocol: {abc_usage}")
+        if abc_usage > 0:
+            findings.append("- Detected use of Abstract Base Classes/Protocols")
+
+    elif assessment_id == "K":  # Data Handling
+        # Check for common data handling libraries
+        data_imports = grep_in_files(
+            r"import json|import pickle|import sqlite3|import csv|import pandas|import dataclasses",
+            python_files,
+        )
+        findings.append(f"- Files with data handling imports: {data_imports}")
+
+        # Check for data class usage
+        dataclass_usage = grep_in_files(r"@dataclass", python_files)
+        findings.append(f"- Files using @dataclass: {dataclass_usage}")
+
+        if data_imports == 0 and dataclass_usage == 0 and file_count > 5:
+            score -= 2
+            findings.append(
+                "- Note: Limited explicit data handling structures detected"
+            )
+
     elif assessment_id == "M":  # Configuration
         config_files = (
             list(Path(".").glob("*.ini"))
@@ -279,6 +325,52 @@ def run_assessment(assessment_id: str, output_path: Path) -> int:
         if not config_files:
             score -= 1
             findings.append("- Note: No standard config files found in root")
+
+    elif assessment_id == "N":  # Scalability
+        # Check for concurrency patterns
+        concurrency_usage = grep_in_files(
+            r"import asyncio|import multiprocessing|import threading|concurrent\.futures",
+            python_files,
+        )
+        findings.append(f"- Files with concurrency imports: {concurrency_usage}")
+
+        # Check for caching
+        cache_usage = grep_in_files(r"lru_cache|@cache", python_files)
+        findings.append(f"- Files using caching (lru_cache/cache): {cache_usage}")
+
+        if concurrency_usage == 0 and cache_usage == 0:
+            findings.append(
+                "- Note: No explicit concurrency or caching detected (may affect scalability)"
+            )
+            # Neutral score impact unless context implies high scale needed
+
+    elif assessment_id == "O":  # Maintainability
+        # Simple maintainability metrics
+        long_files = 0
+        total_lines = 0
+
+        for p in python_files:
+            try:
+                line_count = len(p.read_text(encoding="utf-8").splitlines())
+                total_lines += line_count
+                if line_count > 500:
+                    long_files += 1
+            except Exception:
+                pass
+
+        avg_lines = total_lines / file_count if file_count > 0 else 0
+        findings.append(f"- Average lines per file: {avg_lines:.0f}")
+        findings.append(f"- Files > 500 lines: {long_files}")
+
+        if long_files > 0:
+            score -= min(3, long_files)
+            findings.append(
+                f"- Warning: {long_files} large files detected (> 500 lines)"
+            )
+
+        if avg_lines > 200:
+            score -= 1
+            findings.append("- Warning: High average file size")
 
     else:
         # No automated checks available for this category
