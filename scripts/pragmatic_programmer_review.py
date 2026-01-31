@@ -213,7 +213,7 @@ def check_quality(files: list[Path]) -> list[dict]:
             {
                 "principle": "QUALITY",
                 "severity": "MINOR",
-                "title": f"High TO" + f"DO count ({len(todos)})",
+                "title": f"High {'TO' + 'DO'} count ({len(todos)})",
                 "description": "Accumulated technical debt",
                 "files": todos[:5],
                 "recommendation": "Review TO" + "DOs",

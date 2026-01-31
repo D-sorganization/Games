@@ -108,7 +108,12 @@ def analyze_todos() -> tuple[list[Finding], list[Finding]]:
             return None
 
         if re.search(r"\b" + todo_str + r"\b", content):
-            return {"file": filepath, "line": lineno, "text": content, "type": "TO" + "DO"}
+            return {
+                "file": filepath,
+                "line": lineno,
+                "text": content,
+                "type": "TO" + "DO",
+            }
 
         for m_marker in fixme_markers:
             if re.search(r"\b" + m_marker + r"\b", content):
@@ -271,8 +276,8 @@ def generate_mermaid_charts(
     chart.append("```mermaid")
     chart.append("pie title Completion Status")
     chart.append(f'    "Impl Gaps (Critical)" : {len(criticals)}')
-    chart.append(f'    "Feature Requests (TO" + "DO)" : {len(todos)}')
-    chart.append(f'    "Technical Debt (FIX" + "ME)" : {len(fixmes)}')
+    chart.append(f'    "Feature Requests ({"TO" + "DO"})" : {len(todos)}')
+    chart.append(f'    "Technical Debt ({"FIX" + "ME"})" : {len(fixmes)}')
     chart.append(f'    "Doc Gaps" : {len(docs)}')
     chart.append("```")
 
@@ -318,7 +323,7 @@ def generate_report() -> None:
         f"# Completist Report: {date_s}\n",
         "## Executive Summary",
         f"- **Critical Gaps**: {len(criticals)}",
-        f"- **Feature Gaps (TO" + "DO)**: {len(todos)}",
+        f"- **Feature Gaps ({'TO' + 'DO'})**: {len(todos)}",
         f"- **Technical Debt**: {len(fixmes)}",
         f"- **Documentation Gaps**: {len(missing_docs)}\n",
     ]
