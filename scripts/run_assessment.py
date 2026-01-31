@@ -300,7 +300,8 @@ def run_assessment(assessment_id: str, output_path: Path) -> int:
     elif assessment_id == "K":  # Data Handling
         # Check for common data handling libraries
         data_imports = grep_in_files(
-            r"import json|import pickle|import sqlite3|import csv|import pandas|import dataclasses",
+            r"import json|import pickle|import sqlite3|import csv|import pandas|"
+            r"import dataclasses",
             python_files,
         )
         findings.append(f"- Files with data handling imports: {data_imports}")
@@ -329,7 +330,8 @@ def run_assessment(assessment_id: str, output_path: Path) -> int:
     elif assessment_id == "N":  # Scalability
         # Check for concurrency patterns
         concurrency_usage = grep_in_files(
-            r"import asyncio|import multiprocessing|import threading|concurrent\.futures",
+            r"import asyncio|import multiprocessing|import threading|concurrent"
+            r"\.futures",
             python_files,
         )
         findings.append(f"- Files with concurrency imports: {concurrency_usage}")
@@ -340,7 +342,8 @@ def run_assessment(assessment_id: str, output_path: Path) -> int:
 
         if concurrency_usage == 0 and cache_usage == 0:
             findings.append(
-                "- Note: No explicit concurrency or caching detected (may affect scalability)"
+                "- Note: No explicit concurrency or caching detected "
+                "(may affect scalability)"
             )
             # Neutral score impact unless context implies high scale needed
 
