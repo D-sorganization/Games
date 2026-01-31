@@ -3,9 +3,10 @@
 import math
 import unittest
 
-from games.shared.utils import cast_ray_dda, has_line_of_sight, try_move_entity
 from src.map import Map
 from src.projectile import Projectile
+
+from games.shared.utils import cast_ray_dda, has_line_of_sight, try_move_entity
 
 
 class MockEntity:
