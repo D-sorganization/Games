@@ -39,7 +39,7 @@ ASSESSMENTS = {
 
 def find_python_files() -> list[Path]:
     """Find all Python files in the repository."""
-    python_files = []
+    python_files: list[Path] = []
     for pattern in ["**/*.py"]:
         python_files.extend(Path(".").glob(pattern))
     # Exclude common non-source directories
@@ -84,7 +84,7 @@ def run_black_check_wrapper() -> dict:
 def count_test_files() -> int:
     """Count test files in the repository."""
     test_patterns = ["**/test_*.py", "**/*_test.py", "**/tests/*.py"]
-    test_files = set()
+    test_files: set[Path] = set()
     for pattern in test_patterns:
         test_files.update(Path(".").glob(pattern))
     return len(test_files)
@@ -378,7 +378,7 @@ def run_assessment(assessment_id: str, output_path: Path) -> int:
     else:
         # No automated checks available for this category
         # DO NOT fabricate a score - require real bot/manual review
-        score = None  # Explicitly unscored - requires real review
+        score = None  # type: ignore [assignment]
         findings.append(f"- Python files analyzed: {file_count}")
         findings.append(
             "- **REQUIRES REVIEW**: No automated checks available for this category"
