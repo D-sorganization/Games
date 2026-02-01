@@ -9,16 +9,9 @@ on:
     workflows: ["CI Standard"]
     types: [completed]
   schedule:
-    # OVERNIGHT SCHEDULE - All work done before morning (midnight-6 AM PST / 8 AM-2 PM UTC)
-    - cron: "0 8 */3 * *"   # Midnight PST - Assessment Generator
-    - cron: "30 8 */3 * *"  # 12:30 AM PST - Code Quality Reviewer
-    - cron: "0 8 */3 * *"   # 1 AM PST - Completist (incomplete impl)
-    - cron: "30 9 */3 * *"  # 1:30 AM PST - Documentation Auditor
-    - cron: "30 10 */3 * *" # 2:30 AM PST - Sentinel (security)
-    - cron: "0 8 */3 * *"  # 3 AM PST - Auto-Refactor
-    - cron: "30 11 */3 * *" # 3:30 AM PST - Issue Resolver (daily fix)
-    - cron: "0 8 */3 * *"  # 5 AM PST - Auto-Rebase
-    - cron: "0 8 */3 * *"  # 4 AM PST - PR Compiler (consolidate PRs)
+    # COST OPTIMIZED: Runs Mon/Thu (2x weekly for active repos)
+    # Time-based routing in triage step handles worker selection
+    - cron: "0 8 * * 1,4"  # Monday and Thursday at midnight PST
   workflow_dispatch:
     inputs:
       target:
