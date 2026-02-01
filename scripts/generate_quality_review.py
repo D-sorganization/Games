@@ -138,7 +138,10 @@ def check_god_functions(files: list[Path]) -> list[dict[str, Any]]:
                             {
                                 "type": "Orthogonality / God Function",
                                 "severity": "CRITICAL",
-                                "description": f"Function `{node.name}` is too large ({length} lines)",
+                                "description": (
+                                    f"Function `{node.name}` is too large "
+                                    f"({length} lines)"
+                                ),
                                 "files": [str(file_path)],
                             }
                         )
@@ -147,7 +150,9 @@ def check_god_functions(files: list[Path]) -> list[dict[str, Any]]:
                             {
                                 "type": "Orthogonality / God Function",
                                 "severity": "MAJOR",
-                                "description": f"Function `{node.name}` is large ({length} lines)",
+                                "description": (
+                                    f"Function `{node.name}` is large ({length} lines)"
+                                ),
                                 "files": [str(file_path)],
                             }
                         )
@@ -201,7 +206,9 @@ def check_error_handling(files: list[Path]) -> list[dict[str, Any]]:
                     {
                         "type": "Error Handling",
                         "severity": severity,
-                        "description": f"Found {matches} broad `except Exception` clauses",
+                        "description": (
+                            f"Found {matches} broad `except Exception` clauses"
+                        ),
                         "files": [str(file_path)],
                     }
                 )
@@ -227,7 +234,9 @@ def check_magic_numbers(files: list[Path]) -> list[dict[str, Any]]:
                     {
                         "type": "Code Quality / Magic Numbers",
                         "severity": "MAJOR",
-                        "description": f"High usage of numeric literals ({count} occurrences)",
+                        "description": (
+                            f"High usage of numeric literals ({count} occurrences)"
+                        ),
                         "files": [str(file_path)],
                     }
                 )
@@ -251,7 +260,8 @@ def generate_markdown_report(issues: list[dict[str, Any]], output_path: Path):
         f"**Critical Issues**: {critical_count}",
         "",
         "## Executive Summary",
-        "This report is based on the analysis of files identified in `.jules/review_data/diffs.txt`.",
+        "This report is based on the analysis of files identified in "
+        "`.jules/review_data/diffs.txt`.",
         "It highlights critical quality issues requiring immediate attention.",
         "",
         "## Findings",
@@ -267,7 +277,7 @@ def generate_markdown_report(issues: list[dict[str, Any]], output_path: Path):
             md.append(f"- **Description**: {issue['description']}")
             if issue.get("files"):
                 md.append(f"- **Files**: {', '.join(issue['files'][:5])}")
-                if len(issue["files"]) > 5:
+                if len(issue['files']) > 5:
                     md.append(f"  ...and {len(issue['files']) - 5} more")
             md.append("")
 
@@ -302,9 +312,8 @@ def main():
 
     # Save JSON
     with open(OUTPUT_JSON_PATH, "w", encoding="utf-8") as f:
-        json.dump(
-            {"timestamp": datetime.now().isoformat(), "issues": all_issues}, f, indent=2
-        )
+        data = {"timestamp": datetime.now().isoformat(), "issues": all_issues}
+        json.dump(data, f, indent=2)
 
     generate_markdown_report(all_issues, OUTPUT_MD_PATH)
 
