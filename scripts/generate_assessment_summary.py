@@ -192,6 +192,7 @@ Found {len(critical_issues)} critical issues requiring immediate attention:
 2. Create action plan for CRITICAL issues
 3. Schedule remediation for MAJOR issues
 4. Monitor trends in assessment scores
+5. Run tests frequently to maintain coverage
 
 ## Next Assessment
 
