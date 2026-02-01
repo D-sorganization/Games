@@ -41,12 +41,12 @@ class PlayerBase:
         self.x = x
         self.y = y
         self.angle = angle
-        self.pitch = 0.0  # Vertical look offset
+        self.pitch: float = 0.0  # Vertical look offset
         self.z = 0.5  # Camera height
 
         # Health
-        self.health = 100
-        self.max_health = 100
+        self.health: int = 100
+        self.max_health: int = 100
 
         # Movement
         self.is_moving = False  # Track movement for bobbing
@@ -73,7 +73,7 @@ class PlayerBase:
         self.current_weapon = "rifle"
         self.shooting = False
         self.shoot_timer = 0
-        self.alive = True
+        self.alive: bool = True
 
         # Shield system
         self.shield_active = False

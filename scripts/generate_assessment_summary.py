@@ -13,7 +13,7 @@ import re
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, TypedDict
 
 from scripts.shared.logging_config import setup_script_logging
 
@@ -97,9 +97,13 @@ def generate_summary(
     """
     logger.info(f"Generating assessment summary from {len(input_reports)} reports...")
 
+    class CategoryInfo(TypedDict):
+        name: str
+        weight: float
+
     # Category mapping with weights based on prompt
     # Code 25%, Testing 15%, Docs 10%, Security 15%, Perf 15%, Ops 10%, Design 10%
-    categories = {
+    categories: dict[str, CategoryInfo] = {
         "A": {"name": "Code Structure", "weight": 8.33},
         "B": {"name": "Documentation", "weight": 10.0},
         "C": {"name": "Test Coverage", "weight": 15.0},
