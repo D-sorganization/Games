@@ -277,7 +277,7 @@ def generate_markdown_report(issues: list[dict[str, Any]], output_path: Path):
             md.append(f"- **Description**: {issue['description']}")
             if issue.get("files"):
                 md.append(f"- **Files**: {', '.join(issue['files'][:5])}")
-                if len(issue['files']) > 5:
+                if len(issue["files"]) > 5:
                     md.append(f"  ...and {len(issue['files']) - 5} more")
             md.append("")
 
