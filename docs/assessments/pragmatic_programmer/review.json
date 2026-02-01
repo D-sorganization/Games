@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-01-31T08:48:29.972524",
+  "timestamp": "2026-02-01T08:47:05.155694",
   "repository": "app",
   "files_analyzed": 152,
   "issues": [
@@ -141,6 +141,16 @@
       "files": [
         "/app/scripts/pragmatic_programmer_review.py",
         "/app/scripts/shared/assessment_utils.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/app/scripts/pragmatic_programmer_review.py"
       ],
       "recommendation": "Refactor into shared utility"
     },
@@ -518,16 +528,6 @@
       "severity": "MAJOR",
       "title": "Duplicate code block",
       "description": "Found in 3 locations",
-      "files": [
-        "/app/scripts/setup/generate_high_quality_sounds.py"
-      ],
-      "recommendation": "Refactor into shared utility"
-    },
-    {
-      "principle": "DRY",
-      "severity": "MAJOR",
-      "title": "Duplicate code block",
-      "description": "Found in 2 locations",
       "files": [
         "/app/scripts/setup/generate_high_quality_sounds.py"
       ],

@@ -1,5 +1,5 @@
 # Pragmatic Programmer Review: app
-**Date**: 2026-01-31
+**Date**: 2026-02-01
 **Files**: 152
 
 ## Findings
@@ -42,6 +42,9 @@
 - **DRY** [MAJOR]: Duplicate code block
   - Found in 2 locations
   - Files: /app/scripts/pragmatic_programmer_review.py, /app/scripts/shared/assessment_utils.py
+- **DRY** [MAJOR]: Duplicate code block
+  - Found in 2 locations
+  - Files: /app/scripts/pragmatic_programmer_review.py
 - **DRY** [MAJOR]: Duplicate code block
   - Found in 2 locations
   - Files: /app/scripts/pragmatic_programmer_review.py
@@ -146,9 +149,6 @@
   - Files: /app/scripts/setup/generate_high_quality_sounds.py
 - **DRY** [MAJOR]: Duplicate code block
   - Found in 3 locations
-  - Files: /app/scripts/setup/generate_high_quality_sounds.py
-- **DRY** [MAJOR]: Duplicate code block
-  - Found in 2 locations
   - Files: /app/scripts/setup/generate_high_quality_sounds.py
 - **DRY** [MAJOR]: Duplicate code block
   - Found in 2 locations

@@ -1,0 +1,909 @@
+{
+  "timestamp": "2026-02-01T08:51:02.601629",
+  "issues": [
+    {
+      "type": "DRY Violation",
+      "severity": "MAJOR",
+      "description": "Code block duplicated in 3 locations",
+      "files": [
+        "src/games/Duum/src/bot.py",
+        "src/games/Force_Field/src/bot.py",
+        "src/games/Zombie_Survival/src/bot.py"
+      ]
+    },
+    {
+      "type": "DRY Violation",
+      "severity": "MAJOR",
+      "description": "Code block duplicated in 3 locations",
+      "files": [
+        "src/games/Duum/src/bot.py",
+        "src/games/Force_Field/src/bot.py",
+        "src/games/Zombie_Survival/src/bot.py"
+      ]
+    },
+    {
+      "type": "DRY Violation",
+      "severity": "MAJOR",
+      "description": "Code block duplicated in 3 locations",
+      "files": [
+        "src/games/Duum/src/bot.py",
+        "src/games/Force_Field/src/bot.py",
+        "src/games/Zombie_Survival/src/bot.py"
+      ]
+    },
+    {
+      "type": "DRY Violation",
+      "severity": "MAJOR",
+      "description": "Code block duplicated in 3 locations",
+      "files": [
+        "src/games/Duum/src/bot.py",
+        "src/games/Force_Field/src/bot.py",
+        "src/games/Zombie_Survival/src/bot.py"
+      ]
+    },
+    {
+      "type": "DRY Violation",
+      "severity": "MAJOR",
+      "description": "Code block duplicated in 3 locations",
+      "files": [
+        "src/games/Duum/src/bot.py",
+        "src/games/Force_Field/src/bot.py",
+        "src/games/Zombie_Survival/src/bot.py"
+      ]
+    },
+    {
+      "type": "DRY Violation",
+      "severity": "MAJOR",
+      "description": "Code block duplicated in 3 locations",
+      "files": [
+        "src/games/Duum/src/bot.py",
+        "src/games/Force_Field/src/bot.py",
+        "src/games/Zombie_Survival/src/bot.py"
+      ]
+    },
+    {
+      "type": "DRY Violation",
+      "severity": "MAJOR",
+      "description": "Code block duplicated in 3 locations",
+      "files": [
+        "src/games/Duum/src/bot.py",
+        "src/games/Force_Field/src/bot.py",
+        "src/games/Zombie_Survival/src/bot.py"
+      ]
+    },
+    {
+      "type": "DRY Violation",
+      "severity": "MAJOR",
+      "description": "Code block duplicated in 3 locations",
+      "files": [
+        "src/games/Duum/src/bot.py",
+        "src/games/Force_Field/src/bot.py",
+        "src/games/Zombie_Survival/src/bot.py"
+      ]
+    },
+    {
+      "type": "DRY Violation",
+      "severity": "MAJOR",
+      "description": "Code block duplicated in 3 locations",
+      "files": [
+        "src/games/Duum/src/bot.py",
+        "src/games/Force_Field/src/bot.py",
+        "src/games/Zombie_Survival/src/bot.py"
+      ]
+    },
+    {
+      "type": "DRY Violation",
+      "severity": "MAJOR",
+      "description": "Code block duplicated in 3 locations",
+      "files": [
+        "src/games/Duum/src/bot.py",
+        "src/games/Force_Field/src/bot.py",
+        "src/games/Zombie_Survival/src/bot.py"
+      ]
+    },
+    {
+      "type": "DRY Violation",
+      "severity": "MAJOR",
+      "description": "Code block duplicated in 3 locations",
+      "files": [
+        "src/games/Duum/src/bot.py",
+        "src/games/Force_Field/src/bot.py",
+        "src/games/Zombie_Survival/src/bot.py"
+      ]
+    },
+    {
+      "type": "DRY Violation",
+      "severity": "MAJOR",
+      "description": "Code block duplicated in 3 locations",
+      "files": [
+        "src/games/Duum/src/bot.py",
+        "src/games/Force_Field/src/bot.py",
+        "src/games/Zombie_Survival/src/bot.py"
+      ]
+    },
+    {
+      "type": "DRY Violation",
+      "severity": "MAJOR",
+      "description": "Code block duplicated in 3 locations",
+      "files": [
+        "src/games/Duum/src/bot.py",
+        "src/games/Force_Field/src/bot.py",
+        "src/games/Zombie_Survival/src/bot.py"
+      ]
+    },
+    {
+      "type": "DRY Violation",
+      "severity": "MAJOR",
+      "description": "Code block duplicated in 3 locations",
+      "files": [
+        "src/games/Duum/src/bot.py",
+        "src/games/Force_Field/src/bot.py",
+        "src/games/Zombie_Survival/src/bot.py"
+      ]
+    },
+    {
+      "type": "DRY Violation",
+      "severity": "MAJOR",
+      "description": "Code block duplicated in 3 locations",
+      "files": [
+        "src/games/Duum/src/bot.py",
+        "src/games/Force_Field/src/bot.py",
+        "src/games/Zombie_Survival/src/bot.py"
+      ]
+    },
+    {
+      "type": "DRY Violation",
+      "severity": "MAJOR",
+      "description": "Code block duplicated in 3 locations",
+      "files": [
+        "src/games/Duum/src/bot.py",
+        "src/games/Force_Field/src/bot.py",
+        "src/games/Zombie_Survival/src/bot.py"
+      ]
+    },
+    {
+      "type": "DRY Violation",
+      "severity": "MAJOR",
+      "description": "Code block duplicated in 3 locations",
+      "files": [
+        "src/games/Duum/src/bot.py",
+        "src/games/Force_Field/src/bot.py",
+        "src/games/Zombie_Survival/src/bot.py"
+      ]
+    },
+    {
+      "type": "DRY Violation",
+      "severity": "MAJOR",
+      "description": "Code block duplicated in 3 locations",
+      "files": [
+        "src/games/Duum/src/bot.py",
+        "src/games/Force_Field/src/bot.py",
+        "src/games/Zombie_Survival/src/bot.py"
+      ]
+    },
+    {
+      "type": "DRY Violation",
+      "severity": "MAJOR",
+      "description": "Code block duplicated in 3 locations",
+      "files": [
+        "src/games/Duum/src/bot.py",
+        "src/games/Force_Field/src/bot.py",
+        "src/games/Zombie_Survival/src/bot.py"
+      ]
+    },
+    {
+      "type": "DRY Violation",
+      "severity": "MAJOR",
+      "description": "Code block duplicated in 3 locations",
+      "files": [
+        "src/games/Duum/src/bot.py",
+        "src/games/Force_Field/src/bot.py",
+        "src/games/Zombie_Survival/src/bot.py"
+      ]
+    },
+    {
+      "type": "Orthogonality / God Function",
+      "severity": "MAJOR",
+      "description": "Function `generate_report` is large (104 lines)",
+      "files": [
+        "scripts/analyze_completist_data.py"
+      ]
+    },
+    {
+      "type": "Orthogonality / God Function",
+      "severity": "MAJOR",
+      "description": "Function `process_assessment_findings` is large (187 lines)",
+      "files": [
+        "scripts/create_issues_from_assessment.py"
+      ]
+    },
+    {
+      "type": "Orthogonality / God Function",
+      "severity": "MAJOR",
+      "description": "Function `generate_summary` is large (157 lines)",
+      "files": [
+        "scripts/generate_assessment_summary.py"
+      ]
+    },
+    {
+      "type": "Orthogonality / God Function",
+      "severity": "CRITICAL",
+      "description": "Function `run_assessment` is too large (316 lines)",
+      "files": [
+        "scripts/run_assessment.py"
+      ]
+    },
+    {
+      "type": "Orthogonality / God Function",
+      "severity": "CRITICAL",
+      "description": "Function `update` is too large (231 lines)",
+      "files": [
+        "src/games/Duum/src/bot.py"
+      ]
+    },
+    {
+      "type": "Orthogonality / God Function",
+      "severity": "MAJOR",
+      "description": "Function `__init__` is large (116 lines)",
+      "files": [
+        "src/games/Duum/src/game.py"
+      ]
+    },
+    {
+      "type": "Orthogonality / God Function",
+      "severity": "MAJOR",
+      "description": "Function `start_level` is large (167 lines)",
+      "files": [
+        "src/games/Duum/src/game.py"
+      ]
+    },
+    {
+      "type": "Orthogonality / God Function",
+      "severity": "MAJOR",
+      "description": "Function `handle_game_events` is large (137 lines)",
+      "files": [
+        "src/games/Duum/src/game.py"
+      ]
+    },
+    {
+      "type": "Orthogonality / God Function",
+      "severity": "CRITICAL",
+      "description": "Function `check_shot_hit` is too large (228 lines)",
+      "files": [
+        "src/games/Duum/src/game.py"
+      ]
+    },
+    {
+      "type": "Orthogonality / God Function",
+      "severity": "CRITICAL",
+      "description": "Function `update_game` is too large (291 lines)",
+      "files": [
+        "src/games/Duum/src/game.py"
+      ]
+    },
+    {
+      "type": "Orthogonality / God Function",
+      "severity": "MAJOR",
+      "description": "Function `render_hud` is large (198 lines)",
+      "files": [
+        "src/games/Duum/src/ui_renderer.py"
+      ]
+    },
+    {
+      "type": "Orthogonality / God Function",
+      "severity": "MAJOR",
+      "description": "Function `_render_intro_slide` is large (109 lines)",
+      "files": [
+        "src/games/Duum/src/ui_renderer.py"
+      ]
+    },
+    {
+      "type": "Orthogonality / God Function",
+      "severity": "MAJOR",
+      "description": "Function `__init__` is large (121 lines)",
+      "files": [
+        "src/games/Force_Field/src/game.py"
+      ]
+    },
+    {
+      "type": "Orthogonality / God Function",
+      "severity": "MAJOR",
+      "description": "Function `start_level` is large (189 lines)",
+      "files": [
+        "src/games/Force_Field/src/game.py"
+      ]
+    },
+    {
+      "type": "Orthogonality / God Function",
+      "severity": "CRITICAL",
+      "description": "Function `update_game` is too large (334 lines)",
+      "files": [
+        "src/games/Force_Field/src/game.py"
+      ]
+    },
+    {
+      "type": "Orthogonality / God Function",
+      "severity": "MAJOR",
+      "description": "Function `render_game` is large (105 lines)",
+      "files": [
+        "src/games/Force_Field/src/renderer.py"
+      ]
+    },
+    {
+      "type": "Orthogonality / God Function",
+      "severity": "MAJOR",
+      "description": "Function `_render_portal` is large (105 lines)",
+      "files": [
+        "src/games/Force_Field/src/renderer.py"
+      ]
+    },
+    {
+      "type": "Orthogonality / God Function",
+      "severity": "MAJOR",
+      "description": "Function `render_hud` is large (107 lines)",
+      "files": [
+        "src/games/Force_Field/src/ui_renderer.py"
+      ]
+    },
+    {
+      "type": "Orthogonality / God Function",
+      "severity": "MAJOR",
+      "description": "Function `_render_pause_menu` is large (107 lines)",
+      "files": [
+        "src/games/Force_Field/src/ui_renderer.py"
+      ]
+    },
+    {
+      "type": "Orthogonality / God Function",
+      "severity": "MAJOR",
+      "description": "Function `_render_intro_slide` is large (109 lines)",
+      "files": [
+        "src/games/Force_Field/src/ui_renderer.py"
+      ]
+    },
+    {
+      "type": "Orthogonality / God Function",
+      "severity": "MAJOR",
+      "description": "Function `_render_rocket_launcher` is large (145 lines)",
+      "files": [
+        "src/games/Force_Field/src/weapon_renderer.py"
+      ]
+    },
+    {
+      "type": "Orthogonality / God Function",
+      "severity": "MAJOR",
+      "description": "Function `run` is large (101 lines)",
+      "files": [
+        "src/games/Tetris/tetris.py"
+      ]
+    },
+    {
+      "type": "Orthogonality / God Function",
+      "severity": "CRITICAL",
+      "description": "Function `update` is too large (243 lines)",
+      "files": [
+        "src/games/Zombie_Survival/src/bot.py"
+      ]
+    },
+    {
+      "type": "Orthogonality / God Function",
+      "severity": "MAJOR",
+      "description": "Function `start_level` is large (170 lines)",
+      "files": [
+        "src/games/Zombie_Survival/src/game.py"
+      ]
+    },
+    {
+      "type": "Orthogonality / God Function",
+      "severity": "MAJOR",
+      "description": "Function `handle_game_events` is large (137 lines)",
+      "files": [
+        "src/games/Zombie_Survival/src/game.py"
+      ]
+    },
+    {
+      "type": "Orthogonality / God Function",
+      "severity": "MAJOR",
+      "description": "Function `check_shot_hit` is large (160 lines)",
+      "files": [
+        "src/games/Zombie_Survival/src/game.py"
+      ]
+    },
+    {
+      "type": "Orthogonality / God Function",
+      "severity": "CRITICAL",
+      "description": "Function `update_game` is too large (285 lines)",
+      "files": [
+        "src/games/Zombie_Survival/src/game.py"
+      ]
+    },
+    {
+      "type": "Orthogonality / God Function",
+      "severity": "MAJOR",
+      "description": "Function `render_hud` is large (195 lines)",
+      "files": [
+        "src/games/Zombie_Survival/src/ui_renderer.py"
+      ]
+    },
+    {
+      "type": "Orthogonality / God Function",
+      "severity": "MAJOR",
+      "description": "Function `_render_intro_slide` is large (109 lines)",
+      "files": [
+        "src/games/Zombie_Survival/src/ui_renderer.py"
+      ]
+    },
+    {
+      "type": "Orthogonality / God Function",
+      "severity": "MAJOR",
+      "description": "Function `render_sprite` is large (102 lines)",
+      "files": [
+        "src/games/shared/bot_renderer.py"
+      ]
+    },
+    {
+      "type": "Orthogonality / God Function",
+      "severity": "MAJOR",
+      "description": "Function `_render_walls_vectorized` is large (188 lines)",
+      "files": [
+        "src/games/shared/raycaster.py"
+      ]
+    },
+    {
+      "type": "Orthogonality / God Function",
+      "severity": "CRITICAL",
+      "description": "Function `_draw_single_sprite` is too large (232 lines)",
+      "files": [
+        "src/games/shared/raycaster.py"
+      ]
+    },
+    {
+      "type": "Orthogonality / God Function",
+      "severity": "MAJOR",
+      "description": "Function `_draw_single_projectile` is large (128 lines)",
+      "files": [
+        "src/games/shared/raycaster.py"
+      ]
+    },
+    {
+      "type": "Orthogonality / God Function",
+      "severity": "MAJOR",
+      "description": "Function `render` is large (128 lines)",
+      "files": [
+        "src/games/shared/renderers/cyber_demon_renderer.py"
+      ]
+    },
+    {
+      "type": "Orthogonality / God Function",
+      "severity": "MAJOR",
+      "description": "Function `render` is large (148 lines)",
+      "files": [
+        "src/games/shared/renderers/monster_renderer.py"
+      ]
+    },
+    {
+      "type": "Error Handling",
+      "severity": "MAJOR",
+      "description": "Found 4 broad `except Exception` clauses",
+      "files": [
+        "scripts/pragmatic_programmer_review.py"
+      ]
+    },
+    {
+      "type": "Error Handling",
+      "severity": "MAJOR",
+      "description": "Found 2 broad `except Exception` clauses",
+      "files": [
+        "scripts/run_assessment.py"
+      ]
+    },
+    {
+      "type": "Error Handling",
+      "severity": "MAJOR",
+      "description": "Found 2 broad `except Exception` clauses",
+      "files": [
+        "scripts/shared/assessment_utils.py"
+      ]
+    },
+    {
+      "type": "Error Handling",
+      "severity": "CRITICAL",
+      "description": "Found 6 broad `except Exception` clauses",
+      "files": [
+        "src/games/Duum/src/game.py"
+      ]
+    },
+    {
+      "type": "Error Handling",
+      "severity": "MAJOR",
+      "description": "Found 4 broad `except Exception` clauses",
+      "files": [
+        "src/games/Force_Field/src/combat_system.py"
+      ]
+    },
+    {
+      "type": "Error Handling",
+      "severity": "MAJOR",
+      "description": "Found 2 broad `except Exception` clauses",
+      "files": [
+        "src/games/Force_Field/src/game.py"
+      ]
+    },
+    {
+      "type": "Error Handling",
+      "severity": "MAJOR",
+      "description": "Found 1 broad `except Exception` clauses",
+      "files": [
+        "src/games/Force_Field/src/ui_renderer.py"
+      ]
+    },
+    {
+      "type": "Error Handling",
+      "severity": "MAJOR",
+      "description": "Found 1 broad `except Exception` clauses",
+      "files": [
+        "src/games/Wizard_of_Wor/wizard_of_wor/create_asset.py"
+      ]
+    },
+    {
+      "type": "Error Handling",
+      "severity": "CRITICAL",
+      "description": "Found 6 broad `except Exception` clauses",
+      "files": [
+        "src/games/Zombie_Survival/src/game.py"
+      ]
+    },
+    {
+      "type": "Error Handling",
+      "severity": "MAJOR",
+      "description": "Found 1 broad `except Exception` clauses",
+      "files": [
+        "src/games/shared/sound_manager_base.py"
+      ]
+    },
+    {
+      "type": "Error Handling",
+      "severity": "MAJOR",
+      "description": "Found 2 broad `except Exception` clauses",
+      "files": [
+        "src/games/shared/ui_renderer_base.py"
+      ]
+    },
+    {
+      "type": "Code Quality / Magic Numbers",
+      "severity": "MAJOR",
+      "description": "High usage of numeric literals (22 occurrences)",
+      "files": [
+        "constants_file.py"
+      ]
+    },
+    {
+      "type": "Code Quality / Magic Numbers",
+      "severity": "MAJOR",
+      "description": "High usage of numeric literals (48 occurrences)",
+      "files": [
+        "game_launcher.py"
+      ]
+    },
+    {
+      "type": "Code Quality / Magic Numbers",
+      "severity": "MAJOR",
+      "description": "High usage of numeric literals (82 occurrences)",
+      "files": [
+        "scripts/setup/generate_high_quality_sounds.py"
+      ]
+    },
+    {
+      "type": "Code Quality / Magic Numbers",
+      "severity": "MAJOR",
+      "description": "High usage of numeric literals (257 occurrences)",
+      "files": [
+        "src/games/Duum/src/constants.py"
+      ]
+    },
+    {
+      "type": "Code Quality / Magic Numbers",
+      "severity": "MAJOR",
+      "description": "High usage of numeric literals (152 occurrences)",
+      "files": [
+        "src/games/Duum/src/game.py"
+      ]
+    },
+    {
+      "type": "Code Quality / Magic Numbers",
+      "severity": "MAJOR",
+      "description": "High usage of numeric literals (22 occurrences)",
+      "files": [
+        "src/games/Duum/src/particle_system.py"
+      ]
+    },
+    {
+      "type": "Code Quality / Magic Numbers",
+      "severity": "MAJOR",
+      "description": "High usage of numeric literals (27 occurrences)",
+      "files": [
+        "src/games/Duum/src/sound.py"
+      ]
+    },
+    {
+      "type": "Code Quality / Magic Numbers",
+      "severity": "MAJOR",
+      "description": "High usage of numeric literals (143 occurrences)",
+      "files": [
+        "src/games/Duum/src/ui_renderer.py"
+      ]
+    },
+    {
+      "type": "Code Quality / Magic Numbers",
+      "severity": "MAJOR",
+      "description": "High usage of numeric literals (259 occurrences)",
+      "files": [
+        "src/games/Duum/src/weapon_renderer.py"
+      ]
+    },
+    {
+      "type": "Code Quality / Magic Numbers",
+      "severity": "MAJOR",
+      "description": "High usage of numeric literals (38 occurrences)",
+      "files": [
+        "src/games/Duum/tests/test_game_logic.py"
+      ]
+    },
+    {
+      "type": "Code Quality / Magic Numbers",
+      "severity": "MAJOR",
+      "description": "High usage of numeric literals (26 occurrences)",
+      "files": [
+        "src/games/Duum/tests/test_utils.py"
+      ]
+    },
+    {
+      "type": "Code Quality / Magic Numbers",
+      "severity": "MAJOR",
+      "description": "High usage of numeric literals (21 occurrences)",
+      "files": [
+        "src/games/Force_Field/src/bot.py"
+      ]
+    },
+    {
+      "type": "Code Quality / Magic Numbers",
+      "severity": "MAJOR",
+      "description": "High usage of numeric literals (100 occurrences)",
+      "files": [
+        "src/games/Force_Field/src/combat_system.py"
+      ]
+    },
+    {
+      "type": "Code Quality / Magic Numbers",
+      "severity": "MAJOR",
+      "description": "High usage of numeric literals (335 occurrences)",
+      "files": [
+        "src/games/Force_Field/src/constants.py"
+      ]
+    },
+    {
+      "type": "Code Quality / Magic Numbers",
+      "severity": "MAJOR",
+      "description": "High usage of numeric literals (104 occurrences)",
+      "files": [
+        "src/games/Force_Field/src/game.py"
+      ]
+    },
+    {
+      "type": "Code Quality / Magic Numbers",
+      "severity": "MAJOR",
+      "description": "High usage of numeric literals (21 occurrences)",
+      "files": [
+        "src/games/Force_Field/src/game_input.py"
+      ]
+    },
+    {
+      "type": "Code Quality / Magic Numbers",
+      "severity": "MAJOR",
+      "description": "High usage of numeric literals (42 occurrences)",
+      "files": [
+        "src/games/Force_Field/src/particle_system.py"
+      ]
+    },
+    {
+      "type": "Code Quality / Magic Numbers",
+      "severity": "MAJOR",
+      "description": "High usage of numeric literals (44 occurrences)",
+      "files": [
+        "src/games/Force_Field/src/renderer.py"
+      ]
+    },
+    {
+      "type": "Code Quality / Magic Numbers",
+      "severity": "MAJOR",
+      "description": "High usage of numeric literals (28 occurrences)",
+      "files": [
+        "src/games/Force_Field/src/sound.py"
+      ]
+    },
+    {
+      "type": "Code Quality / Magic Numbers",
+      "severity": "MAJOR",
+      "description": "High usage of numeric literals (148 occurrences)",
+      "files": [
+        "src/games/Force_Field/src/ui_renderer.py"
+      ]
+    },
+    {
+      "type": "Code Quality / Magic Numbers",
+      "severity": "MAJOR",
+      "description": "High usage of numeric literals (492 occurrences)",
+      "files": [
+        "src/games/Force_Field/src/weapon_renderer.py"
+      ]
+    },
+    {
+      "type": "Code Quality / Magic Numbers",
+      "severity": "MAJOR",
+      "description": "High usage of numeric literals (26 occurrences)",
+      "files": [
+        "src/games/Force_Field/tests/test_utils.py"
+      ]
+    },
+    {
+      "type": "Code Quality / Magic Numbers",
+      "severity": "MAJOR",
+      "description": "High usage of numeric literals (38 occurrences)",
+      "files": [
+        "src/games/Peanut_Butter_Panic/peanut_butter_panic/core.py"
+      ]
+    },
+    {
+      "type": "Code Quality / Magic Numbers",
+      "severity": "MAJOR",
+      "description": "High usage of numeric literals (38 occurrences)",
+      "files": [
+        "src/games/Peanut_Butter_Panic/peanut_butter_panic/game.py"
+      ]
+    },
+    {
+      "type": "Code Quality / Magic Numbers",
+      "severity": "MAJOR",
+      "description": "High usage of numeric literals (39 occurrences)",
+      "files": [
+        "src/games/Tetris/src/constants.py"
+      ]
+    },
+    {
+      "type": "Code Quality / Magic Numbers",
+      "severity": "MAJOR",
+      "description": "High usage of numeric literals (86 occurrences)",
+      "files": [
+        "src/games/Tetris/src/renderer.py"
+      ]
+    },
+    {
+      "type": "Code Quality / Magic Numbers",
+      "severity": "MAJOR",
+      "description": "High usage of numeric literals (22 occurrences)",
+      "files": [
+        "src/games/Tetris/tetris.py"
+      ]
+    },
+    {
+      "type": "Code Quality / Magic Numbers",
+      "severity": "MAJOR",
+      "description": "High usage of numeric literals (38 occurrences)",
+      "files": [
+        "src/games/Wizard_of_Wor/tests/test_components.py"
+      ]
+    },
+    {
+      "type": "Code Quality / Magic Numbers",
+      "severity": "MAJOR",
+      "description": "High usage of numeric literals (61 occurrences)",
+      "files": [
+        "src/games/Wizard_of_Wor/wizard_of_wor/constants.py"
+      ]
+    },
+    {
+      "type": "Code Quality / Magic Numbers",
+      "severity": "MAJOR",
+      "description": "High usage of numeric literals (68 occurrences)",
+      "files": [
+        "src/games/Wizard_of_Wor/wizard_of_wor/game.py"
+      ]
+    },
+    {
+      "type": "Code Quality / Magic Numbers",
+      "severity": "MAJOR",
+      "description": "High usage of numeric literals (264 occurrences)",
+      "files": [
+        "src/games/Zombie_Survival/src/constants.py"
+      ]
+    },
+    {
+      "type": "Code Quality / Magic Numbers",
+      "severity": "MAJOR",
+      "description": "High usage of numeric literals (163 occurrences)",
+      "files": [
+        "src/games/Zombie_Survival/src/game.py"
+      ]
+    },
+    {
+      "type": "Code Quality / Magic Numbers",
+      "severity": "MAJOR",
+      "description": "High usage of numeric literals (27 occurrences)",
+      "files": [
+        "src/games/Zombie_Survival/src/sound.py"
+      ]
+    },
+    {
+      "type": "Code Quality / Magic Numbers",
+      "severity": "MAJOR",
+      "description": "High usage of numeric literals (139 occurrences)",
+      "files": [
+        "src/games/Zombie_Survival/src/ui_renderer.py"
+      ]
+    },
+    {
+      "type": "Code Quality / Magic Numbers",
+      "severity": "MAJOR",
+      "description": "High usage of numeric literals (260 occurrences)",
+      "files": [
+        "src/games/Zombie_Survival/src/weapon_renderer.py"
+      ]
+    },
+    {
+      "type": "Code Quality / Magic Numbers",
+      "severity": "MAJOR",
+      "description": "High usage of numeric literals (26 occurrences)",
+      "files": [
+        "src/games/Zombie_Survival/tests/test_utils.py"
+      ]
+    },
+    {
+      "type": "Code Quality / Magic Numbers",
+      "severity": "MAJOR",
+      "description": "High usage of numeric literals (104 occurrences)",
+      "files": [
+        "src/games/shared/raycaster.py"
+      ]
+    },
+    {
+      "type": "Code Quality / Magic Numbers",
+      "severity": "MAJOR",
+      "description": "High usage of numeric literals (43 occurrences)",
+      "files": [
+        "src/games/shared/renderers/cyber_demon_renderer.py"
+      ]
+    },
+    {
+      "type": "Code Quality / Magic Numbers",
+      "severity": "MAJOR",
+      "description": "High usage of numeric literals (38 occurrences)",
+      "files": [
+        "src/games/shared/renderers/monster_renderer.py"
+      ]
+    },
+    {
+      "type": "Code Quality / Magic Numbers",
+      "severity": "MAJOR",
+      "description": "High usage of numeric literals (62 occurrences)",
+      "files": [
+        "src/games/shared/texture_generator.py"
+      ]
+    },
+    {
+      "type": "Code Quality / Magic Numbers",
+      "severity": "MAJOR",
+      "description": "High usage of numeric literals (21 occurrences)",
+      "files": [
+        "src/games/shared/ui.py"
+      ]
+    },
+    {
+      "type": "Code Quality / Magic Numbers",
+      "severity": "MAJOR",
+      "description": "High usage of numeric literals (103 occurrences)",
+      "files": [
+        "tools/generate_icons.py"
+      ]
+    }
+  ]
+}
