@@ -1,15 +1,5 @@
 ./constants_file.py:37:TEMPERATURE_C: float = 20.0  # [°C] Standard temperature
 ./scripts/analyze_completist_data.py:103:    fixme_markers = ["FIX" + "ME", "XXX", "HACK", "TEMP"]
-./scripts/analyze_completist_data.py:111:            return {"file": filepath, "line": lineno, "text": content, "type": "TODO"}
-./scripts/analyze_completist_data.py:125:        if marker_item["type"] == "TODO":
-./scripts/analyze_completist_data.py:200:        "FIXME": 2,
-./scripts/analyze_completist_data.py:201:        "TODO": 3,
-./scripts/analyze_completist_data.py:274:    chart.append(f'    "Feature Requests (TODO)" : {len(todos)}')
-./scripts/analyze_completist_data.py:275:    chart.append(f'    "Technical Debt (FIXME)" : {len(fixmes)}')
-./scripts/analyze_completist_data.py:320:        f"- **Feature Gaps (TODO)**: {len(todos)}",
-./scripts/pragmatic_programmer_review.py:207:            if "TODO" in content:
-./scripts/pragmatic_programmer_review.py:217:                "title": f"High TODO count ({len(todos)})",
-./scripts/pragmatic_programmer_review.py:220:                "recommendation": "Review TODOs",
 ./scripts/shared/quality_checks_common.py:10:    (re.compile(r"\bTODO\b"), "TODO placeholder found"),
 ./scripts/shared/quality_checks_common.py:11:    (re.compile(r"\bFIXME\b"), "FIXME placeholder found"),
 ./src/games/vendor/three/three.module.js:3106:		// We're going to add .setXXX() methods for setting properties later.
