@@ -255,7 +255,7 @@ def generate_markdown_report(issues: list[dict[str, Any]], output_path: Path):
         "It highlights critical quality issues requiring immediate attention.",
         "",
         "## Findings",
-        ""
+        "",
     ]
 
     if not issues:
@@ -267,7 +267,7 @@ def generate_markdown_report(issues: list[dict[str, Any]], output_path: Path):
             md.append(f"- **Description**: {issue['description']}")
             if issue.get("files"):
                 md.append(f"- **Files**: {', '.join(issue['files'][:5])}")
-                if len(issue['files']) > 5:
+                if len(issue["files"]) > 5:
                     md.append(f"  ...and {len(issue['files']) - 5} more")
             md.append("")
 
@@ -302,7 +302,9 @@ def main():
 
     # Save JSON
     with open(OUTPUT_JSON_PATH, "w", encoding="utf-8") as f:
-        json.dump({"timestamp": datetime.now().isoformat(), "issues": all_issues}, f, indent=2)
+        json.dump(
+            {"timestamp": datetime.now().isoformat(), "issues": all_issues}, f, indent=2
+        )
 
     generate_markdown_report(all_issues, OUTPUT_MD_PATH)
 
