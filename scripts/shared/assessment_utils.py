@@ -56,7 +56,7 @@ def extract_functions(content: str) -> list[dict[str, Any]]:
                         "args": len(node.args.args),
                         "body_lines": (
                             node.end_lineno - node.lineno + 1
-                            if hasattr(node, "end_lineno")
+                            if node.end_lineno is not None
                             else 0
                         ),
                         "has_docstring": (ast.get_docstring(node) is not None),

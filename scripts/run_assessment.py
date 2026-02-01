@@ -11,6 +11,7 @@ import re
 import sys
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 from scripts.shared.logging_config import setup_script_logging
 from scripts.shared.subprocess_utils import run_black_check, run_ruff_check
@@ -39,7 +40,7 @@ ASSESSMENTS = {
 
 def find_python_files() -> list[Path]:
     """Find all Python files in the repository."""
-    python_files = []
+    python_files: list[Path] = []
     for pattern in ["**/*.py"]:
         python_files.extend(Path(".").glob(pattern))
     # Exclude common non-source directories
@@ -84,7 +85,7 @@ def run_black_check_wrapper() -> dict:
 def count_test_files() -> int:
     """Count test files in the repository."""
     test_patterns = ["**/test_*.py", "**/*_test.py", "**/tests/*.py"]
-    test_files = set()
+    test_files: set[Path] = set()
     for pattern in test_patterns:
         test_files.update(Path(".").glob(pattern))
     return len(test_files)
@@ -135,7 +136,7 @@ def run_assessment(assessment_id: str, output_path: Path) -> int:
 
     # Gather metrics based on assessment type
     findings = []
-    score = 10  # Start with perfect score
+    score: Any = 10  # Start with perfect score
 
     python_files = find_python_files()
     file_count = len(python_files)
