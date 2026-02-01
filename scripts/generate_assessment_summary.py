@@ -13,7 +13,7 @@ import re
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from scripts.shared.logging_config import setup_script_logging
 
@@ -135,7 +135,7 @@ def generate_summary(
 
     for assessment_id, score in scores.items():
         if assessment_id in categories:
-            weight = categories[assessment_id]["weight"]
+            weight = float(cast(Any, categories[assessment_id]["weight"]))
             total_weighted_score += score * weight
             total_weight += weight
 
@@ -169,8 +169,8 @@ Repository assessment completed across all {len(scores)} categories.
             cat_info = categories[aid]
             score = scores[aid]
             name = cat_info["name"]
-            weight = cat_info["weight"]
-            md_content += f"| **{aid}** | {name} | {score:.1f} | {weight}% |\n"
+            cat_weight = cat_info["weight"]
+            md_content += f"| **{aid}** | {name} | {score:.1f} | {cat_weight}% |\n"
 
     md_content += f"""
 ## Critical Issues

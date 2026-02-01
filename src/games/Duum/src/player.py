@@ -15,6 +15,9 @@ if TYPE_CHECKING:
 class Player(PlayerBase):
     """Player with position, rotation, and shooting capabilities"""
 
+    # Explicitly re-annotate inherited attributes for mypy
+    health: int
+
     def __init__(self, x: float, y: float, angle: float):
         """Initialize player"""
         super().__init__(x, y, angle, C.WEAPONS, C)
