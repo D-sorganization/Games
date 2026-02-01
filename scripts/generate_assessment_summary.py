@@ -170,7 +170,9 @@ Repository assessment completed across all {len(scores)} categories.
             final_cat_score = float(cast(Any, scores[aid]))
             name = cat_info["name"]
             cat_weight = cat_info["weight"]
-            md_content += f"| **{aid}** | {name} | {final_cat_score:.1f} | {cat_weight}% |\n"
+            md_content += (
+                f"| **{aid}** | {name} | {final_cat_score:.1f} | {cat_weight}% |\n"
+            )
 
     md_content += f"""
 ## Critical Issues
