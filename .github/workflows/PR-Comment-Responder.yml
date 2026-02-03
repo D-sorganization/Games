@@ -23,7 +23,12 @@ permissions:
 jobs:
   respond-to-comments:
     # Run on PR comments (from issue_comment), review comments (from pull_request_review_comment), or manual dispatch
-    if: github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request_review_comment' || github.event.issue.pull_request != null
+    # Skip if the comment author is a bot to prevent feedback loops
+    if: |
+      (github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request_review_comment' || github.event.issue.pull_request != null)
+      && !contains(github.event.comment.user.login, '[bot]')
+      && github.event.comment.user.login != 'github-actions'
+      && github.event.comment.user.login != 'jules'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -69,9 +74,59 @@ jobs:
           python3 << 'PYEOF'
           import json
           import os
+          import re
 
           with open('.pr_details.json', 'r') as f:
               pr = json.load(f)
+
+          # Bot usernames to ignore - these are informational, not actionable
+          BOT_USERS = [
+              'github-actions[bot]',
+              'github-actions',
+              'jules[bot]',
+              'jules',
+              'dependabot[bot]',
+              'dependabot',
+              'renovate[bot]',
+              'codecov[bot]',
+          ]
+
+          # Patterns that indicate informational/welcome messages (not actionable)
+          INFORMATIONAL_PATTERNS = [
+              r'reporting for duty',
+              r'welcome.*message',
+              r'thank you for',
+              r'thanks for (your|the|submitting)',
+              r'i\'m.*bot',
+              r'automated (message|comment|response)',
+              r'this is an automated',
+              r'label.*applied',
+              r'size.*label',
+          ]
+
+          # Stricter actionable patterns - require explicit request phrases
+          ACTIONABLE_PATTERNS = [
+              r'please\s+(fix|change|update|add|remove|rename|refactor)',
+              r'(could|can)\s+you\s+(please\s+)?(fix|change|update|add|remove)',
+              r'(should|needs? to|must)\s+(be\s+)?(fix|chang|updat|remov)',
+              r'this\s+(needs?|should|must)',
+              r'@\w+\s+please',  # Direct mention with please
+          ]
+
+          def is_from_bot(comment):
+              """Check if comment is from a bot user."""
+              author = comment.get('author', {}).get('login', '')
+              return author.lower() in [b.lower() for b in BOT_USERS]
+
+          def is_informational(body):
+              """Check if comment is just informational (not actionable)."""
+              body_lower = body.lower()
+              return any(re.search(pattern, body_lower) for pattern in INFORMATIONAL_PATTERNS)
+
+          def is_actionable(body):
+              """Check if comment contains an actionable request."""
+              body_lower = body.lower()
+              return any(re.search(pattern, body_lower) for pattern in ACTIONABLE_PATTERNS)
 
           # Collect all comments that might need response
           actionable_comments = []
@@ -79,31 +134,43 @@ jobs:
           # Check review comments (inline code comments)
           # They are nested within reviews in the new structure
           for review in pr.get('reviews', []):
+              if is_from_bot(review):
+                  continue
               for comment in review.get('comments', []):
-                  body = comment.get('body', '').lower()
-                  # Look for actionable patterns
-                  if any(word in body for word in ['please', 'should', 'could you', 'can you', 'fix', 'change', 'update', 'add', 'remove', '?']):
+                  if is_from_bot(comment):
+                      continue
+                  body = comment.get('body', '')
+                  if is_informational(body):
+                      print(f"Skipping informational review comment: {body[:100]}...")
+                      continue
+                  if is_actionable(body):
                       actionable_comments.append({
                           'type': 'review',
                           'path': comment.get('path', ''),
                           'line': comment.get('line', 0),
-                          'body': comment.get('body', '')
+                          'body': body
                       })
 
           # Check PR comments
           for comment in pr.get('comments', []):
-              body = comment.get('body', '').lower()
-              if any(word in body for word in ['please', 'should', 'could you', 'can you', 'fix', 'change', 'update', 'add', 'remove', '?']):
+              if is_from_bot(comment):
+                  print(f"Skipping bot comment from: {comment.get('author', {}).get('login', 'unknown')}")
+                  continue
+              body = comment.get('body', '')
+              if is_informational(body):
+                  print(f"Skipping informational PR comment: {body[:100]}...")
+                  continue
+              if is_actionable(body):
                   actionable_comments.append({
                       'type': 'pr',
-                      'body': comment.get('body', '')
+                      'body': body
                   })
 
           with open('.actionable_comments.json', 'w') as f:
               json.dump(actionable_comments, f, indent=2)
 
           count = len(actionable_comments)
-          print(f"Found {count} actionable comments")
+          print(f"Found {count} actionable comments (filtered out bot/informational messages)")
 
           with open(os.environ.get('GITHUB_OUTPUT', '/dev/null'), 'a') as f:
               f.write(f"count={count}\n")
@@ -178,19 +245,23 @@ jobs:
           PROMPT_EOF
           )
           
-          echo "Creating Jules session..."
+          # Get the PR branch name for pushing changes to the existing PR
+          PR_BRANCH="${{ steps.pr.outputs.branch }}"
+
+          echo "Creating Jules session to push changes to PR branch: $PR_BRANCH"
           REQUEST_JSON=$(jq -n \
             --arg prompt "$PROMPT" \
             --arg source "$SOURCE_ID" \
+            --arg branch "$PR_BRANCH" \
             '{
               prompt: $prompt,
               sourceContext: {
                 source: $source,
                 githubRepoContext: {
-                  startingBranch: "main"
+                  startingBranch: $branch
                 }
               },
-              automationMode: "AUTO_CREATE_PR"
+              automationMode: "PUSH_TO_BRANCH"
             }')
           
           echo "Request: $REQUEST_JSON"
