@@ -9,7 +9,7 @@ on:
         default: 'false'
         type: boolean
   schedule:
-    - cron: "0 8 * * 2"  # Monday at 5 AM PST (13 UTC)
+    - cron: "0 8 * * 2"  # Weekly on Tuesday at 8 AM UTC (midnight PST)
 
 concurrency:
   group: jules-consolidator
