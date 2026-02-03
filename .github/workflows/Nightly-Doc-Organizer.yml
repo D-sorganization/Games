@@ -1,8 +1,8 @@
-name: Nightly Documentation Organizer
+name: Weekly Documentation Organizer
 
 on:
   schedule:
-    - cron: "0 8 * * 2"  # Daily at 3 AM PST (11 UTC)
+    - cron: "0 8 * * 2"  # Weekly on Tuesday at 8 AM UTC (midnight PST)
   workflow_dispatch:
 
 permissions:
