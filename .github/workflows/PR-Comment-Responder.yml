@@ -330,6 +330,8 @@ jobs:
 
           Co-Authored-By: Claude <noreply@anthropic.com>"
 
+            # Pull latest changes to avoid conflicts (race condition with Jules/other bots)
+            git pull --rebase origin ${{ steps.pr.outputs.branch }}
             git push origin ${{ steps.pr.outputs.branch }}
 
             gh pr comment ${{ steps.pr.outputs.pr_number }} --body "I've addressed the review comments. Please take another look!"
