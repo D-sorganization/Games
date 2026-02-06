@@ -16,7 +16,7 @@ import os
 import re
 from collections.abc import Callable, Mapping
 from datetime import datetime
-from typing import Any, NotRequired, TypedDict, cast
+from typing import Any, TypedDict, cast
 
 # Constants and Configuration
 DATA_DIR = ".jules/completist_data"
@@ -45,12 +45,15 @@ EXCLUDED_PATHS = [
 logger = logging.getLogger(__name__)
 
 
-class Finding(TypedDict):
+class _FindingOptional(TypedDict, total=False):
+    text: str
+    name: str
+
+
+class Finding(_FindingOptional):
     file: str
     line: str
     type: str
-    text: NotRequired[str]
-    name: NotRequired[str]
 
 
 def is_excluded(filepath: str) -> bool:
@@ -108,21 +111,21 @@ def analyze_todos() -> tuple[list[Finding], list[Finding]]:
             return None
 
         if re.search(r"\b" + todo_str + r"\b", content):
-            return {
-                "file": filepath,
-                "line": lineno,
-                "text": content,
-                "type": "TO" + "DO",
-            }
+            return Finding(
+                file=filepath,
+                line=lineno,
+                text=content,
+                type="TO" + "DO",
+            )
 
         for m_marker in fixme_markers:
             if re.search(r"\b" + m_marker + r"\b", content):
-                return {
-                    "file": filepath,
-                    "line": lineno,
-                    "text": content,
-                    "type": m_marker,
-                }
+                return Finding(
+                    file=filepath,
+                    line=lineno,
+                    text=content,
+                    type=m_marker,
+                )
         return None
 
     all_markers = _scan_completist_file("MARKERS", _parser)
@@ -143,7 +146,7 @@ def analyze_stubs() -> list[Finding]:
         if len(parts) < 2 or ":" not in parts[0]:
             return None
         filepath, lineno = parts[0].rsplit(":", 1)
-        return {"file": filepath, "line": lineno, "name": parts[1], "type": "Stub"}
+        return Finding(file=filepath, line=lineno, name=parts[1], type="Stub")
 
     return _scan_completist_file("STUBS", _parser)
 
@@ -156,7 +159,7 @@ def analyze_docs() -> list[Finding]:
         if len(parts) < 2 or ":" not in parts[0]:
             return None
         filepath, lineno = parts[0].rsplit(":", 1)
-        return {"file": filepath, "line": lineno, "name": parts[1], "type": "DocGap"}
+        return Finding(file=filepath, line=lineno, name=parts[1], type="DocGap")
 
     return _scan_completist_file("DOCS", _parser)
 
@@ -168,7 +171,7 @@ def analyze_not_implemented() -> list[Finding]:
     def _parser(line: str) -> Finding | None:
         f_path, l_no, c_txt = _parse_grep_line(line)
         if f_path and l_no and c_txt and ni_str in c_txt:
-            return {"file": f_path, "line": l_no, "text": c_txt, "type": ni_str}
+            return Finding(file=f_path, line=l_no, text=c_txt, type=ni_str)
         return None
 
     return _scan_completist_file("NOT_IMPL", _parser)
@@ -180,7 +183,7 @@ def analyze_abstract_methods() -> list[Finding]:
     def _parser(line: str) -> Finding | None:
         f_path, l_no, c_txt = _parse_grep_line(line)
         if f_path and l_no and c_txt and "@abstractmethod" in c_txt:
-            return {"file": f_path, "line": l_no, "text": c_txt, "type": "Abstract"}
+            return Finding(file=f_path, line=l_no, text=c_txt, type="Abstract")
         return None
 
     return _scan_completist_file("ABSTRACT", _parser)
