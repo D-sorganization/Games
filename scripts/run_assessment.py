@@ -135,9 +135,10 @@ def run_assessment(assessment_id: str, output_path: Path) -> int:
 
     # Gather metrics based on assessment type
     findings = []
-    score = 10  # Start with perfect score
+    score: int | None = 10  # Start with perfect score
+    assert score is not None
 
-    python_files = find_python_files()
+    python_files: list[Path] = find_python_files()
     file_count = len(python_files)
 
     if assessment_id == "A":  # Code Structure
