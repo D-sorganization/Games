@@ -29,7 +29,8 @@ def main():
         score = details.get("score", 10)
         if score < 5:
             issues.append(
-                f"- Category {cat_id} ({details.get('name')}) score {score} < 5. Label: jules:assessment,needs-attention"
+                f"- Category {cat_id} ({details.get('name')}) "
+                f"score {score} < 5. Label: jules:assessment,needs-attention"
             )
 
     with open(output_path, "w") as f:
@@ -38,7 +39,8 @@ def main():
             f.write("\n".join(issues))
             f.write("\n")
             print(
-                f"Found {len(issues)} categories with score < 5. Report saved to {output_path}"
+                f"Found {len(issues)} categories with score < 5. "
+                f"Report saved to {output_path}"
             )
         else:
             f.write("No categories scored below 5. No issues to create.\n")
