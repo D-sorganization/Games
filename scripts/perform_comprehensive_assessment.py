@@ -70,11 +70,15 @@ def run_assessment_a():
     exec_summary = """
 ## Executive Summary
 
-- **Architecture**: The repository uses a unified launcher (`game_launcher.py`) with a `src/games/` directory structure.
+- **Architecture**: The repository uses a unified launcher (`game_launcher.py`) with a
+  `src/games/` directory structure.
 - **Implementation**: Most games follow a standard structure but vary in completeness.
-- **Consistency**: High variance in game implementation details (some use `game.py`, others `main.py`).
-- **Integration**: The launcher dynamically loads games from `src/games/` based on `game_manifest.json`.
-- **Risk**: Dependency on `pygame` for all games creates a single point of failure for dependencies.
+- **Consistency**: High variance in game implementation details (some use `game.py`,
+  others `main.py`).
+- **Integration**: The launcher dynamically loads games from `src/games/` based on
+  `game_manifest.json`.
+- **Risk**: Dependency on `pygame` for all games creates a single point of failure for
+  dependencies.
     """
 
     # 2. Scorecard
@@ -98,8 +102,10 @@ def run_assessment_a():
 
 | ID    | Severity | Category     | Location | Symptom | Root Cause | Fix | Effort |
 | ----- | -------- | --------     | -------- | ------- | ---------- | --- | ------ |
-| A-001 | Major    | Consistency  | `src/games` | Varied entry points | Lack of standard interface | Define `Game` interface | M |
-| A-002 | Minor    | Architecture | `game_launcher.py` | Hardcoded assets path | No config file | Use config | S |
+| A-001 | Major    | Consistency  | `src/games` | Varied entry points | Lack of standard
+  interface | Define `Game` interface | M |
+| A-002 | Minor    | Architecture | `game_launcher.py` | Hardcoded assets path | No
+  config file | Use config | S |
     """
 
     # 4. Implementation Completeness Audit
@@ -161,7 +167,11 @@ if __name__ == "__main__":
 ```
     """
 
-    content = f"# Assessment A: Architecture & Implementation Review\n\n{exec_summary}\n{scorecard}\n{findings}\n{audit_section}\n{refactoring}\n{diffs}"
+    content = (
+        f"# Assessment A: Architecture & Implementation Review\n\n"
+        f"{exec_summary}\n{scorecard}\n{findings}\n{audit_section}\n"
+        f"{refactoring}\n{diffs}"
+    )
     write_report("A", "Architecture", content)
 
 
@@ -209,9 +219,11 @@ def run_assessment_b():
 
 | Category                | Score | Evidence | Remediation |
 | ----------------------- | ----- | -------- | ----------- |
-| Ruff Compliance         | {score_ruff}/10 | {ruff_violations} violations | Fix lint errors |
+| Ruff Compliance         | {score_ruff}/10 | {ruff_violations} violations | Fix lint
+  errors |
 | MyPy Compliance         | {score_mypy}/10 | {mypy_errors} errors | Add type hints |
-| Black Formatting        | {score_black}/10 | {black_issues} files to format | Run `black .` |
+| Black Formatting        | {score_black}/10 | {black_issues} files to format | Run
+  `black .` |
 | AGENTS.md Compliance    | {score_agents}/10 | Checked manually | Adhere to standards |
 | Security Posture        | {score_security}/10 | Basic scan pass | Regular audits |
 | Repository Organization | {score_repo}/10 | Good structure | Maintain consistency |
@@ -224,8 +236,10 @@ def run_assessment_b():
 
 | ID    | Severity | Category | Location | Symptom | Root Cause | Fix | Effort |
 | ----- | -------- | -------- | -------- | ------- | ---------- | --- | ------ |
-| B-001 | Major    | Linting  | Multiple | Ruff violations | Legacy code | Run ruff --fix | M |
-| B-002 | Major    | Typing   | Multiple | MyPy errors | Missing types | Add type hints | L |
+| B-001 | Major    | Linting  | Multiple | Ruff violations | Legacy code | Run
+  ruff --fix | M |
+| B-002 | Major    | Typing   | Multiple | MyPy errors | Missing types | Add type
+  hints | L |
     """
 
     # 4. Linting Violation Inventory
@@ -256,7 +270,8 @@ def run_assessment_b():
     agents_compliance = """
 ## AGENTS.md Compliance Report
 
-- **Print Statements**: detected usage of `print()` in some files. Recommendation: Use `logging`.
+- **Print Statements**: detected usage of `print()` in some files. Recommendation: Use
+  `logging`.
 - **Wildcard Imports**: detected `from x import *`. Recommendation: Explicit imports.
 - **Type Hints**: Missing in legacy modules. Recommendation: Add types.
     """
@@ -291,7 +306,11 @@ logger.info(f"Game started: {game_name}")
 ```
     """
 
-    content = f"# Assessment B: Hygiene, Security & Quality Review\n\n{exec_summary}\n{scorecard}\n{findings}\n{linting}\n{security}\n{agents_compliance}\n{refactoring}\n{diffs}"
+    content = (
+        f"# Assessment B: Hygiene, Security & Quality Review\n\n"
+        f"{exec_summary}\n{scorecard}\n{findings}\n{linting}\n{security}\n"
+        f"{agents_compliance}\n{refactoring}\n{diffs}"
+    )
     write_report("B", "Hygiene", content)
 
 
@@ -330,8 +349,10 @@ def run_assessment_c():
 
 | ID    | Severity | Category | Location | Symptom | Root Cause | Fix | Effort |
 | ----- | -------- | -------- | -------- | ------- | ---------- | --- | ------ |
-| C-001 | Major    | Documentation | Root | Missing Integration Docs | Oversight | Create doc | M |
-| C-002 | Minor    | README | Games | Missing game READMEs | Inconsistency | Add READMEs | S |
+| C-001 | Major    | Documentation | Root | Missing Integration Docs | Oversight |
+  Create doc | M |
+| C-002 | Minor    | README | Games | Missing game READMEs | Inconsistency | Add
+  READMEs | S |
     """
 
     # 4. Documentation Inventory
@@ -341,8 +362,10 @@ def run_assessment_c():
         for game_dir in games_dir.iterdir():
             if game_dir.is_dir():
                 has_readme = (game_dir / "README.md").exists()
+                status = '✅' if has_readme else '❌'
+                overall = 'Partial' if has_readme else 'Missing'
                 inventory_rows.append(
-                    f"| {game_dir.name} | {'✅' if has_readme else '❌'} | Partial | N/A | N/A | {'Partial' if has_readme else 'Missing'} |"
+                    f"| {game_dir.name} | {status} | Partial | N/A | N/A | {overall} |"
                 )
 
     inventory_table = "\n".join(inventory_rows)
@@ -411,7 +434,11 @@ import sys
 ```
     """
 
-    content = f"# Assessment C: Documentation & Integration Review\n\n{exec_summary}\n{scorecard}\n{findings}\n{inventory}\n{docstring_analysis}\n{user_journey}\n{refactoring}\n{diffs}"
+    content = (
+        f"# Assessment C: Documentation & Integration Review\n\n"
+        f"{exec_summary}\n{scorecard}\n{findings}\n{inventory}\n"
+        f"{docstring_analysis}\n{user_journey}\n{refactoring}\n{diffs}"
+    )
     write_report("C", "Documentation", content)
 
 
@@ -480,7 +507,10 @@ def run_assessment_d():
 | **Overall UX Score**  | **6.4**      | - | - |
     """
 
-    content = f"# Assessment D: User Experience & Developer Journey\n\n{metrics}\n{heatmap}\n{journey}\n{roadmap}\n{scorecard}"
+    content = (
+        f"# Assessment D: User Experience & Developer Journey\n\n"
+        f"{metrics}\n{heatmap}\n{journey}\n{roadmap}\n{scorecard}"
+    )
     write_report("D", "UX", content)
 
 
@@ -677,7 +707,10 @@ def run_assessment_j():
 **6 weeks:** Add theme support.
     """
 
-    content = f"# Assessment J: Extensibility & Plugin Architecture\n\n{assessment}\n{roadmap}"
+    content = (
+        f"# Assessment J: Extensibility & Plugin Architecture\n\n"
+        f"{assessment}\n{roadmap}"
+    )
     write_report("J", "Extensibility", content)
 
 
@@ -848,11 +881,11 @@ def generate_comprehensive_report():
     recommendations = """
 ## Top 10 Unified Recommendations
 
-1. **Fix Critical Bugs**: Address the broken games identified in Assessment A.
-2. **Improve Documentation**: Add READMEs to all games and a "Getting Started" guide (Assessment C).
+1. **Fix Critical Bugs**: Address broken games identified in Assessment A.
+2. **Improve Documentation**: Add READMEs to all games and a "Getting Started" guide.
 3. **Enforce Hygiene**: Fix Ruff and MyPy violations (Assessment B).
 4. **Expand Testing**: Add unit tests for core game logic (Assessment G).
-5. **Standardize Architecture**: Refactor games to share a common base class (Assessment A).
+5. **Standardize Architecture**: Refactor games to share a common base class.
 6. **Enhance Security**: Audit pickle usage and add secrets scanning (Assessment I).
 7. **Automate CI/CD**: Fix failing tests in CI and add deployment steps (Assessment O).
 8. **User Experience**: Improve error messages and installation process (Assessment D).
@@ -884,7 +917,14 @@ def generate_comprehensive_report():
 | **Average** | **6.1/10** |
     """
 
-    content = f"# Comprehensive Assessment Report\n\n**Date**: {datetime.now().strftime('%Y-%m-%d')}\n\n{scorecard}\n\n{recommendations}\n\n## Pragmatic Programmer Review Summary\n\n{pragmatic_content[:500]}...\n(See full report for details)\n\n## Completist Audit Summary\n\n{completist_content[:500]}...\n(See full report for details)"
+    content = (
+        f"# Comprehensive Assessment Report\n\n"
+        f"**Date**: {datetime.now().strftime('%Y-%m-%d')}\n\n"
+        f"{scorecard}\n\n{recommendations}\n\n"
+        f"## Pragmatic Programmer Review Summary\n\n{pragmatic_content[:500]}...\n"
+        f"(See full report for details)\n\n## Completist Audit Summary\n\n"
+        f"{completist_content[:500]}...\n(See full report for details)"
+    )
 
     with open(ASSESSMENT_DIR / "Comprehensive_Assessment.md", "w") as f:
         f.write(content)
