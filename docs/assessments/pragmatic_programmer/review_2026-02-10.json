@@ -1,0 +1,602 @@
+{
+  "timestamp": "2026-02-10T08:10:59.745633",
+  "repository": "Games",
+  "files_analyzed": 155,
+  "issues": [
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/game_launcher.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/scripts/analyze_completist_data.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/scripts/generate_assessment_summary.py",
+        "/home/runner/work/Games/Games/scripts/shared/assessment_utils.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/scripts/generate_assessment_summary.py",
+        "/home/runner/work/Games/Games/scripts/shared/assessment_utils.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/scripts/generate_assessment_summary.py",
+        "/home/runner/work/Games/Games/scripts/shared/assessment_utils.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/scripts/generate_assessment_summary.py",
+        "/home/runner/work/Games/Games/scripts/shared/assessment_utils.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/scripts/generate_assessment_summary.py",
+        "/home/runner/work/Games/Games/scripts/shared/assessment_utils.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/scripts/generate_assessment_summary.py",
+        "/home/runner/work/Games/Games/scripts/shared/assessment_utils.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/scripts/generate_assessment_summary.py",
+        "/home/runner/work/Games/Games/scripts/shared/assessment_utils.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/scripts/generate_assessment_summary.py",
+        "/home/runner/work/Games/Games/scripts/shared/assessment_utils.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/scripts/generate_assessment_summary.py",
+        "/home/runner/work/Games/Games/scripts/shared/assessment_utils.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/scripts/generate_assessment_summary.py",
+        "/home/runner/work/Games/Games/scripts/shared/assessment_utils.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/scripts/generate_assessment_summary.py",
+        "/home/runner/work/Games/Games/scripts/shared/assessment_utils.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/scripts/generate_assessment_summary.py",
+        "/home/runner/work/Games/Games/scripts/shared/assessment_utils.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/scripts/generate_assessment_summary.py",
+        "/home/runner/work/Games/Games/scripts/shared/assessment_utils.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/scripts/generate_assessment_summary.py",
+        "/home/runner/work/Games/Games/scripts/shared/assessment_utils.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/scripts/generate_assessment_summary.py",
+        "/home/runner/work/Games/Games/scripts/shared/assessment_utils.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/scripts/generate_assessment_summary.py",
+        "/home/runner/work/Games/Games/scripts/shared/assessment_utils.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/scripts/generate_assessment_summary.py",
+        "/home/runner/work/Games/Games/scripts/shared/assessment_utils.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/scripts/generate_assessment_summary.py",
+        "/home/runner/work/Games/Games/scripts/shared/assessment_utils.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/scripts/generate_assessment_summary.py",
+        "/home/runner/work/Games/Games/scripts/shared/assessment_utils.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/scripts/generate_assessment_summary.py",
+        "/home/runner/work/Games/Games/scripts/shared/assessment_utils.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/scripts/generate_assessment_summary.py",
+        "/home/runner/work/Games/Games/scripts/shared/assessment_utils.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/scripts/generate_assessment_summary.py",
+        "/home/runner/work/Games/Games/scripts/shared/assessment_utils.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/scripts/pragmatic_programmer_review.py",
+        "/home/runner/work/Games/Games/scripts/shared/assessment_utils.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/scripts/pragmatic_programmer_review.py",
+        "/home/runner/work/Games/Games/scripts/shared/assessment_utils.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/scripts/pragmatic_programmer_review.py",
+        "/home/runner/work/Games/Games/scripts/shared/assessment_utils.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/scripts/pragmatic_programmer_review.py",
+        "/home/runner/work/Games/Games/scripts/shared/assessment_utils.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/scripts/pragmatic_programmer_review.py",
+        "/home/runner/work/Games/Games/scripts/shared/assessment_utils.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/scripts/pragmatic_programmer_review.py",
+        "/home/runner/work/Games/Games/scripts/shared/assessment_utils.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/scripts/pragmatic_programmer_review.py",
+        "/home/runner/work/Games/Games/scripts/shared/assessment_utils.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/scripts/pragmatic_programmer_review.py",
+        "/home/runner/work/Games/Games/scripts/shared/assessment_utils.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/scripts/pragmatic_programmer_review.py",
+        "/home/runner/work/Games/Games/scripts/shared/assessment_utils.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/scripts/pragmatic_programmer_review.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/scripts/pragmatic_programmer_review.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 4 locations",
+      "files": [
+        "/home/runner/work/Games/Games/scripts/mypy_autofix_agent.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 4 locations",
+      "files": [
+        "/home/runner/work/Games/Games/scripts/mypy_autofix_agent.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/scripts/mypy_autofix_agent.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/scripts/mypy_autofix_agent.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/scripts/mypy_autofix_agent.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/scripts/mypy_autofix_agent.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/scripts/mypy_autofix_agent.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/scripts/mypy_autofix_agent.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/scripts/mypy_autofix_agent.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/scripts/quality_check.py",
+        "/home/runner/work/Games/Games/tools/code_quality_check.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/scripts/quality_check.py",
+        "/home/runner/work/Games/Games/tools/code_quality_check.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/scripts/setup/generate_high_quality_sounds.py",
+        "/home/runner/work/Games/Games/scripts/setup/generate_sounds.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/scripts/setup/generate_high_quality_sounds.py",
+        "/home/runner/work/Games/Games/scripts/setup/generate_sounds.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/scripts/setup/generate_high_quality_sounds.py",
+        "/home/runner/work/Games/Games/scripts/setup/generate_sounds.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/scripts/setup/generate_high_quality_sounds.py",
+        "/home/runner/work/Games/Games/scripts/setup/generate_sounds.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "ORTHOGONALITY",
+      "severity": "MAJOR",
+      "title": "God function: __init__",
+      "description": "Length 62 > 50 lines",
+      "files": [
+        "/home/runner/work/Games/Games/src/games/Force_Field/src/game.py"
+      ],
+      "recommendation": "Split function"
+    },
+    {
+      "principle": "ORTHOGONALITY",
+      "severity": "MAJOR",
+      "title": "God function: __init__",
+      "description": "Length 56 > 50 lines",
+      "files": [
+        "/home/runner/work/Games/Games/src/games/Zombie_Survival/src/game.py"
+      ],
+      "recommendation": "Split function"
+    },
+    {
+      "principle": "ORTHOGONALITY",
+      "severity": "MAJOR",
+      "title": "God function: render_hud",
+      "description": "Length 82 > 50 lines",
+      "files": [
+        "/home/runner/work/Games/Games/src/games/Zombie_Survival/src/ui_renderer.py"
+      ],
+      "recommendation": "Split function"
+    },
+    {
+      "principle": "ORTHOGONALITY",
+      "severity": "MAJOR",
+      "title": "God function: __init__",
+      "description": "Length 60 > 50 lines",
+      "files": [
+        "/home/runner/work/Games/Games/src/games/Duum/src/game.py"
+      ],
+      "recommendation": "Split function"
+    },
+    {
+      "principle": "ORTHOGONALITY",
+      "severity": "MAJOR",
+      "title": "God function: render_hud",
+      "description": "Length 83 > 50 lines",
+      "files": [
+        "/home/runner/work/Games/Games/src/games/Duum/src/ui_renderer.py"
+      ],
+      "recommendation": "Split function"
+    },
+    {
+      "principle": "TESTING",
+      "severity": "MAJOR",
+      "title": "Low Test Coverage",
+      "description": "Test/Src ratio 0.14 < 0.2",
+      "files": [],
+      "recommendation": "Add more tests"
+    }
+  ]
+}
