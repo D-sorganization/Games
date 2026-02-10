@@ -362,8 +362,8 @@ def run_assessment_c():
         for game_dir in games_dir.iterdir():
             if game_dir.is_dir():
                 has_readme = (game_dir / "README.md").exists()
-                status = '✅' if has_readme else '❌'
-                overall = 'Partial' if has_readme else 'Missing'
+                status = "✅" if has_readme else "❌"
+                overall = "Partial" if has_readme else "Missing"
                 inventory_rows.append(
                     f"| {game_dir.name} | {status} | Partial | N/A | N/A | {overall} |"
                 )
