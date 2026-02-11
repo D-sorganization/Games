@@ -16,7 +16,8 @@ Safeguards:
 - Tracks all changes for auditability
 
 Usage:
-    python scripts/mypy_autofix_agent.py [--max-fixes N] [--max-files N] [--dry-run] [--verbose]
+    python scripts/mypy_autofix_agent.py \
+        [--max-fixes N] [--max-files N] [--dry-run] [--verbose]
 """
 
 from __future__ import annotations
@@ -315,10 +316,13 @@ def fix_union_attr(lines: list[str], error: MypyError) -> Fix | None:
     assert_line = f"{indent}assert isinstance({var_name}, {target_type})\n"
     lines.insert(idx, assert_line)
 
+    narrowing_desc = (
+        f"Add isinstance({var_name}, {target_type})" " narrowing for union-attr"
+    )
     return Fix(
         file=error.file,
         line=error.line,
-        description=f"Add isinstance({var_name}, {target_type}) narrowing for union-attr",
+        description=narrowing_desc,
         strategy="real-fix",
         original_code=line.strip(),
     )
@@ -579,12 +583,18 @@ def run_agent(
                 )
                 if verbose:
                     print(
-                        f"  FIX: {fix.file}:{fix.line} [{fix.strategy}] {fix.description}"
+                        f"  FIX: {fix.file}:{fix.line}"
+                        f" [{fix.strategy}]"
+                        f" {fix.description}"
                     )
             else:
-                report.skipped_reasons.append(
-                    f"No fix available: {error.file}:{error.line} [{error.code}] {error.message[:60]}"
+                skip_msg = (
+                    f"No fix available:"
+                    f" {error.file}:{error.line}"
+                    f" [{error.code}]"
+                    f" {error.message[:60]}"
                 )
+                report.skipped_reasons.append(skip_msg)
 
         if file_changed:
             if not dry_run:
