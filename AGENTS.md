@@ -113,6 +113,98 @@ def calculate_distance(x1: float, y1: float, x2: float, y2: float) -> float:
     return math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
 ```
 
+### 5. Code Design Principles (MANDATORY)
+
+All code produced must adhere to the following design principles. These are evaluated during periodic assessments (see `docs/assessments/`).
+
+#### 5a. DRY — Don't Repeat Yourself
+
+- ❌ **DO NOT** duplicate logic across modules, functions, or files.
+- ✅ **Extract** shared logic into utility functions, base classes, or shared libraries.
+- **Threshold:** Any logic block >5 lines appearing in 2+ locations MUST be refactored.
+
+#### 5b. Design by Contract (DbC)
+
+- ✅ **Validate** function inputs at API boundaries with explicit precondition checks.
+- ✅ **Use** `assert` statements for internal invariants during development.
+- ✅ **Document** preconditions, postconditions, and invariants in docstrings.
+
+#### 5c. Orthogonality & Decoupling
+
+- ❌ **DO NOT** create circular imports or tightly coupled modules.
+- ❌ **DO NOT** mix UI logic with business/calculation logic.
+- ✅ **Ensure** changing one module does not require changes in unrelated modules.
+
+#### 5d. No Monolithic Files
+
+- ❌ **DO NOT** create files exceeding **400 lines**. Files >800 lines are critical violations.
+- ✅ **Split** large files by responsibility into focused modules.
+
+#### 5e. Reversibility
+
+- ❌ **DO NOT** hard-code file paths, database endpoints, or API URLs.
+- ✅ **Externalize** all configuration to `.env`, config files, or CLI arguments.
+
+#### 5f. Reusability
+
+- ✅ **Write** functions that are generic enough to be used in other contexts.
+- ❌ **DO NOT** embed project-specific assumptions in utility functions.
+
+#### 5g. Function Length & Signature Quality
+
+- ❌ **DO NOT** write functions longer than **50 lines**. Target ≤20 lines.
+- ❌ **DO NOT** use more than **4 parameters**. Target ≤3.
+- ✅ **Each function** must have a **single, clear purpose**.
+
+#### 5h. Law of Demeter
+
+- ❌ **DO NOT** chain attribute access beyond 2 levels (e.g., `obj.a.b.c`).
+- ✅ **Use** wrapper/delegate methods to encapsulate internal structure.
+
+#### 5i. No God Functions
+
+- ❌ **DO NOT** create functions that handle >2 distinct responsibilities.
+- ❌ **Any function >80 lines** is almost certainly a God Function.
+- ✅ **Extract** each responsibility into its own well-named function.
+
+#### 5j. No Magic Numbers
+
+- ❌ **DO NOT** use unexplained numeric or string literals in logic.
+- ✅ **Extract** all constants to named module-level variables.
+
+#### 5k. Function & Variable Name Quality
+
+- ✅ **Use** descriptive, intention-revealing names.
+- ❌ **DO NOT** use single-letter variable names outside of loop counters.
+- ❌ **DO NOT** use ambiguous names like `process()`, `handle()`, `do_stuff()`.
+
+#### 5l. Comment Quality
+
+- ❌ **DO NOT** write comments that restate the code.
+- ✅ **Comments** must explain **WHY**, not **WHAT**.
+- ✅ **Every** public function/class MUST have a Google/NumPy-style docstring.
+- ✅ **Remove** commented-out code — use version control instead.
+
+#### 5m. No Deprecated/Outdated Code
+
+- ❌ **DO NOT** leave `sys.path` hacks in production code.
+- ✅ **Remove** dead code, unused imports, and compatibility shims.
+
+#### 5n. Standardized Project Structure
+
+- All repositories must follow the organizational standard layout with `src/`, `tests/`, `docs/assessments/`, and `docs/development/` directories.
+
+---
+
+### 6. Calculation & Performance Standards
+
+For repositories with numerical/scientific code:
+
+- ❌ **DO NOT** use Python `for` loops to iterate over NumPy arrays — use vectorized operations.
+- ✅ **Precompute** loop-invariant values outside of loops.
+- ✅ **Use** `@functools.lru_cache` for expensive repeated computations.
+- ✅ **Profile** before optimizing — use `cProfile` or `%timeit`.
+
 ---
 
 ## 🔢 MATLAB Coding Standards
@@ -236,17 +328,17 @@ This section defines the active agents within the Jules "Control Tower" Architec
 
 ### Overview: Overnight Automation Schedule (PST)
 
-| Time (PST) | Agent | Purpose |
-|------------|-------|---------|
-| 12:00 AM | Assessment Generator | Generate code quality assessment reports |
-| 12:30 AM | Code Quality Reviewer | Review and fix code quality issues |
-| 1:00 AM | Completist | Find and fix incomplete implementations |
-| 1:30 AM | Documentation Auditor | Update and improve documentation |
-| 2:30 AM | Sentinel | Security scanning and vulnerability fixes |
-| 3:00 AM | Auto-Refactor | Apply DRY/orthogonality improvements |
-| 3:30 AM | Issue Resolver | Work on open GitHub issues |
-| 4:00 AM | PR Compiler | Consolidate multiple PRs into one |
-| 5:00 AM | Auto-Rebase | Rebase PRs onto main, resolve conflicts |
+| Time (PST) | Agent                 | Purpose                                   |
+| ---------- | --------------------- | ----------------------------------------- |
+| 12:00 AM   | Assessment Generator  | Generate code quality assessment reports  |
+| 12:30 AM   | Code Quality Reviewer | Review and fix code quality issues        |
+| 1:00 AM    | Completist            | Find and fix incomplete implementations   |
+| 1:30 AM    | Documentation Auditor | Update and improve documentation          |
+| 2:30 AM    | Sentinel              | Security scanning and vulnerability fixes |
+| 3:00 AM    | Auto-Refactor         | Apply DRY/orthogonality improvements      |
+| 3:30 AM    | Issue Resolver        | Work on open GitHub issues                |
+| 4:00 AM    | PR Compiler           | Consolidate multiple PRs into one         |
+| 5:00 AM    | Auto-Rebase           | Rebase PRs onto main, resolve conflicts   |
 
 ---
 
@@ -265,8 +357,8 @@ This section defines the active agents within the Jules "Control Tower" Architec
 
 **Role:** Quality Assessment Reporter
 **Workflow:** `.github/workflows/Jules-Assessment-Generator.yml`
-**Schedule:** Midnight PST (0 8 ** * UTC)
-**Capabilities:**
+**Schedule:** Midnight PST (0 8 ** \* UTC)
+**Capabilities:\*\*
 
 - **Read:** Entire codebase for quality analysis
 - **Write:** Assessment reports to `docs/assessments/`
@@ -276,8 +368,8 @@ This section defines the active agents within the Jules "Control Tower" Architec
 
 **Role:** Code Quality Enforcer
 **Workflow:** `.github/workflows/Jules-Code-Quality-Reviewer.yml`
-**Schedule:** 12:30 AM PST (30 8 ** * UTC)
-**Capabilities:**
+**Schedule:** 12:30 AM PST (30 8 ** \* UTC)
+**Capabilities:\*\*
 
 - **Read:** Linting results, type check outputs
 - **Write:** Fixes for style, formatting, and minor code issues
@@ -287,8 +379,8 @@ This section defines the active agents within the Jules "Control Tower" Architec
 
 **Role:** Incomplete Implementation Hunter
 **Workflow:** `.github/workflows/Jules-Completist.yml`
-**Schedule:** 1:00 AM PST (0 9 ** * UTC)
-**Capabilities:**
+**Schedule:** 1:00 AM PST (0 9 ** \* UTC)
+**Capabilities:\*\*
 
 - **Read:** Codebase for TODO, FIXME, NotImplementedError, pass statements
 - **Write:** Implementations for incomplete code
@@ -298,8 +390,8 @@ This section defines the active agents within the Jules "Control Tower" Architec
 
 **Role:** Documentation Maintainer
 **Workflow:** `.github/workflows/Jules-Documentation-Auditor.yml`
-**Schedule:** 1:30 AM PST (30 9 ** * UTC)
-**Capabilities:**
+**Schedule:** 1:30 AM PST (30 9 ** \* UTC)
+**Capabilities:\*\*
 
 - **Read:** Code and existing documentation
 - **Write:** Updates to `docs/`, README files, docstrings
@@ -309,8 +401,8 @@ This section defines the active agents within the Jules "Control Tower" Architec
 
 **Role:** Security Scanner
 **Workflow:** `.github/workflows/Jules-Sentinel.yml`
-**Schedule:** 2:30 AM PST (30 10 ** * UTC)
-**Capabilities:**
+**Schedule:** 2:30 AM PST (30 10 ** \* UTC)
+**Capabilities:\*\*
 
 - **Read:** Codebase for security vulnerabilities (OWASP Top 10)
 - **Write:** Security fixes, dependency updates
@@ -320,8 +412,8 @@ This section defines the active agents within the Jules "Control Tower" Architec
 
 **Role:** Code Improvement Specialist
 **Workflow:** `.github/workflows/Jules-Auto-Refactor.yml`
-**Schedule:** 3:00 AM PST (0 11 ** * UTC)
-**Capabilities:**
+**Schedule:** 3:00 AM PST (0 11 ** \* UTC)
+**Capabilities:\*\*
 
 - **Read:** Codebase for DRY violations, code smells
 - **Write:** Refactoring improvements
@@ -331,8 +423,8 @@ This section defines the active agents within the Jules "Control Tower" Architec
 
 **Role:** GitHub Issue Worker
 **Workflow:** `.github/workflows/Jules-Issue-Resolver.yml`
-**Schedule:** 3:30 AM PST (30 11 ** * UTC)
-**Capabilities:**
+**Schedule:** 3:30 AM PST (30 11 ** \* UTC)
+**Capabilities:\*\*
 
 - **Read:** Open GitHub issues with appropriate labels
 - **Write:** Code fixes, closes issues via PR
@@ -342,8 +434,8 @@ This section defines the active agents within the Jules "Control Tower" Architec
 
 **Role:** Pull Request Merger
 **Workflow:** `.github/workflows/Jules-PR-Compiler.yml`
-**Schedule:** 4:00 AM PST (0 12 ** * UTC)
-**Capabilities:**
+**Schedule:** 4:00 AM PST (0 12 ** \* UTC)
+**Capabilities:\*\*
 
 - **Read:** All open PRs from automation
 - **Write:** Consolidated PRs combining multiple changes
@@ -353,8 +445,8 @@ This section defines the active agents within the Jules "Control Tower" Architec
 
 **Role:** Merge Conflict Resolver
 **Workflow:** `.github/workflows/Jules-Auto-Rebase.yml`
-**Schedule:** 5:00 AM PST (0 13 ** * UTC)
-**Capabilities:**
+**Schedule:** 5:00 AM PST (0 13 ** \* UTC)
+**Capabilities:\*\*
 
 - **Read:** PR branches, main branch
 - **Write:** Rebased branches, conflict resolutions
