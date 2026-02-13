@@ -509,80 +509,39 @@ class Raycaster:
         flash_intensity: float,
     ) -> None:
         """Render walls using computed arrays."""
-        # Theme Setup
-        if self._cached_level == level:
-            wall_colors = self._cached_wall_colors
-        else:
-            # 0. Setup themes
-            level_themes = self.config.LEVEL_THEMES or []
-            theme_idx = (level - 1) % len(level_themes) if level_themes else 0
-            theme = level_themes[theme_idx] if level_themes else None
-            wall_colors = (
-                theme["walls"] if theme else {}
-            )  # Ensure wall_colors is a dict
-            self._cached_level = level
-            self._cached_wall_colors = wall_colors
+        wall_colors = self._resolve_wall_theme(level)
 
-        # Fisheye correction
-        # corrected_dists = distances * np.cos(player.angle - ray_angles)
-        # fisheye_factors already contains cos(deltas) which equals
-        # cos(player.angle - ray_angles)
-        corrected_dists = distances * fisheye_factors
-        safe_dists = np.maximum(0.01, corrected_dists)
-
-        # Calculate heights
-        wall_heights = np.minimum(
-            self.config.SCREEN_HEIGHT * 4, (self.config.SCREEN_HEIGHT / safe_dists)
-        )
-        wall_tops = (
-            (self.config.SCREEN_HEIGHT - wall_heights) // 2
-            + player.pitch
-            + view_offset_y
-        ).astype(np.int32)
-        wall_heights_int = wall_heights.astype(np.int32)
-
-        # Shading
-        shades = np.maximum(0.2, 1.0 - distances / 50.0)
-
-        # Fog
-        fog_factors = np.clip(
-            (distances - self.config.MAX_DEPTH * self.config.FOG_START)
-            / (self.config.MAX_DEPTH * (1 - self.config.FOG_START)),
-            0.0,
-            1.0,
+        # Pre-compute geometry and shading arrays
+        (
+            wall_heights_int_list,
+            wall_tops_list,
+            shades_list,
+            fog_factors_list,
+        ) = self._prepare_wall_render_data(
+            distances, player, fisheye_factors, view_offset_y
         )
 
         use_textures = self.use_textures and len(self.textures) > 0
 
         # Pre-fetch texture strips
-        # Map integer wall types to texture strip lists
-        wall_strips = {}
+        wall_strips: dict[int, list[pygame.Surface]] = {}
         for wt in wall_colors.keys():
             tname = self.texture_map.get(wt, "brick")
             if tname in self.texture_strips:
                 wall_strips[wt] = self.texture_strips[tname]
 
         view_surface = self.view_surface
-        shading_surfaces = self.shading_surfaces
-        fog_surfaces = self.fog_surfaces
-
-        # Batched Blit List
         blits_sequence: list[
             tuple[pygame.Surface, tuple[int, int]]
             | tuple[pygame.Surface, tuple[int, int], tuple[int, int, int, int]]
         ] = []
 
         # Optimization: Convert numpy arrays to lists for faster iteration
-        # Accessing numpy elements in a loop is significantly slower than list access
         distances_list = distances.tolist()
         wall_types_list = wall_types.tolist()
         wall_x_hits_list = wall_x_hits.tolist()
-        wall_heights_int_list = wall_heights_int.tolist()
-        wall_tops_list = wall_tops.tolist()
-        shades_list = shades.tolist()
-        fog_factors_list = fog_factors.tolist()
 
-        # Loop
+        # Per-ray loop
         for i in range(self.num_rays):
             dist = distances_list[i]
             if dist >= self.config.MAX_DEPTH:
@@ -595,95 +554,166 @@ class Raycaster:
             h = wall_heights_int_list[i]
             top = wall_tops_list[i]
 
-            # Texture rendering
             if use_textures and wt in wall_strips:
-                strips = wall_strips[wt]
-                tex_w = len(strips)
-
-                # Calculate texture X
-                tex_x = int(wall_x_hits_list[i] * tex_w)
-                tex_x = int(np.clip(tex_x, 0, tex_w - 1))
-
-                # Only render if height is reasonable
-                if h < 8000:
-                    tname = self.texture_map.get(wt, "brick")
-                    # Ensure height is int for cache hit
-                    scaled_strip = self._get_cached_strip(tname, tex_x, int(h))
-
-                    if scaled_strip:
-                        blits_sequence.append((scaled_strip, (i, top)))
-
-                        # Shading (Darken)
-                        shade = shades_list[i]
-                        if shade < 1.0:
-                            alpha = int(255 * (1.0 - shade))
-                            if alpha > 255:
-                                alpha = 255
-                            elif alpha < 0:
-                                alpha = 0
-
-                            if alpha > 0:
-                                blits_sequence.append(
-                                    (
-                                        shading_surfaces[alpha],
-                                        (i, top),
-                                        (0, 0, 1, h),
-                                    )
-                                )
-
-                        # Fog
-                        fog = fog_factors_list[i]
-                        if fog > 0:
-                            fog_alpha = int(255 * fog)
-                            if fog_alpha > 255:
-                                fog_alpha = 255
-                            elif fog_alpha < 0:
-                                fog_alpha = 0
-
-                            if fog_alpha > 0:
-                                blits_sequence.append(
-                                    (
-                                        fog_surfaces[fog_alpha],
-                                        (i, top),
-                                        (0, 0, 1, h),
-                                    )
-                                )
-                    else:
-                        # Fallback if cache failed
-                        col = wall_colors.get(wt, self.config.GRAY)
-                        pygame.draw.rect(view_surface, col, (i, top, 1, h))
-                else:
-                    # Solid color fallback for massive closeness
-                    col = wall_colors.get(wt, self.config.GRAY)
-                    shade = shades_list[i]
-                    col = (
-                        int(col[0] * shade),
-                        int(col[1] * shade),
-                        int(col[2] * shade),
-                    )
-                    pygame.draw.rect(view_surface, col, (i, top, 1, h))
+                self._render_textured_wall(
+                    i,
+                    wt,
+                    h,
+                    top,
+                    wall_x_hits_list[i],
+                    shades_list[i],
+                    fog_factors_list[i],
+                    wall_strips,
+                    wall_colors,
+                    view_surface,
+                    blits_sequence,
+                )
             else:
-                # Solid Color Fallback
-                col = wall_colors.get(wt, self.config.GRAY)
-                shade = shades_list[i]
-                fog = fog_factors_list[i]
-
-                # Mix color
-                r = col[0] * shade
-                g = col[1] * shade
-                b = col[2] * shade
-
-                fr = r * (1 - fog) + self.config.FOG_COLOR[0] * fog
-                fg = g * (1 - fog) + self.config.FOG_COLOR[1] * fog
-                fb = b * (1 - fog) + self.config.FOG_COLOR[2] * fog
-
-                final_col = (int(fr), int(fg), int(fb))
-
-                pygame.draw.rect(view_surface, final_col, (i, top, 1, h))
+                self._render_solid_wall(
+                    i,
+                    wt,
+                    h,
+                    top,
+                    shades_list[i],
+                    fog_factors_list[i],
+                    wall_colors,
+                    view_surface,
+                )
 
         # Perform batched blits
         if blits_sequence:
             view_surface.blits(blits_sequence, doreturn=False)
+
+    def _resolve_wall_theme(self, level: int) -> dict[int, tuple[int, int, int]]:
+        """Resolve wall colour theme for the current level."""
+        if self._cached_level == level:
+            return self._cached_wall_colors  # type: ignore[return-value]
+
+        level_themes = self.config.LEVEL_THEMES or []
+        theme_idx = (level - 1) % len(level_themes) if level_themes else 0
+        theme = level_themes[theme_idx] if level_themes else None
+        wall_colors: dict[int, tuple[int, int, int]] = theme["walls"] if theme else {}
+        self._cached_level = level
+        self._cached_wall_colors = wall_colors
+        return wall_colors
+
+    def _prepare_wall_render_data(
+        self,
+        distances: np.ndarray[Any, Any],
+        player: Player,
+        fisheye_factors: np.ndarray[Any, Any],
+        view_offset_y: float,
+    ) -> tuple[list[int], list[int], list[float], list[float]]:
+        """Compute wall heights, tops, shading and fog from distances.
+
+        Returns:
+            (wall_heights_int_list, wall_tops_list, shades_list, fog_factors_list)
+        """
+        corrected_dists = distances * fisheye_factors
+        safe_dists = np.maximum(0.01, corrected_dists)
+
+        wall_heights = np.minimum(
+            self.config.SCREEN_HEIGHT * 4, (self.config.SCREEN_HEIGHT / safe_dists)
+        )
+        wall_tops = (
+            (self.config.SCREEN_HEIGHT - wall_heights) // 2
+            + player.pitch
+            + view_offset_y
+        ).astype(np.int32)
+        wall_heights_int = wall_heights.astype(np.int32)
+
+        shades = np.maximum(0.2, 1.0 - distances / 50.0)
+
+        fog_factors = np.clip(
+            (distances - self.config.MAX_DEPTH * self.config.FOG_START)
+            / (self.config.MAX_DEPTH * (1 - self.config.FOG_START)),
+            0.0,
+            1.0,
+        )
+
+        return (
+            wall_heights_int.tolist(),
+            wall_tops.tolist(),
+            shades.tolist(),
+            fog_factors.tolist(),
+        )
+
+    def _render_textured_wall(  # noqa: PLR0913
+        self,
+        i: int,
+        wt: int,
+        h: int,
+        top: int,
+        wall_x_hit: float,
+        shade: float,
+        fog: float,
+        wall_strips: dict[int, list[pygame.Surface]],
+        wall_colors: dict[int, tuple[int, int, int]],
+        view_surface: pygame.Surface,
+        blits_sequence: list[Any],
+    ) -> None:
+        """Render a single textured wall column with shading and fog."""
+        strips = wall_strips[wt]
+        tex_w = len(strips)
+        tex_x = int(np.clip(int(wall_x_hit * tex_w), 0, tex_w - 1))
+
+        if h >= 8000:
+            # Solid colour fallback for extreme close-up
+            col = wall_colors.get(wt, self.config.GRAY)
+            col = (int(col[0] * shade), int(col[1] * shade), int(col[2] * shade))
+            pygame.draw.rect(view_surface, col, (i, top, 1, h))
+            return
+
+        tname = self.texture_map.get(wt, "brick")
+        scaled_strip = self._get_cached_strip(tname, tex_x, int(h))
+
+        if not scaled_strip:
+            col = wall_colors.get(wt, self.config.GRAY)
+            pygame.draw.rect(view_surface, col, (i, top, 1, h))
+            return
+
+        blits_sequence.append((scaled_strip, (i, top)))
+
+        # Shading overlay
+        if shade < 1.0:
+            alpha = max(0, min(255, int(255 * (1.0 - shade))))
+            if alpha > 0:
+                blits_sequence.append(
+                    (self.shading_surfaces[alpha], (i, top), (0, 0, 1, h))
+                )
+
+        # Fog overlay
+        if fog > 0:
+            fog_alpha = max(0, min(255, int(255 * fog)))
+            if fog_alpha > 0:
+                blits_sequence.append(
+                    (self.fog_surfaces[fog_alpha], (i, top), (0, 0, 1, h))
+                )
+
+    def _render_solid_wall(
+        self,
+        i: int,
+        wt: int,
+        h: int,
+        top: int,
+        shade: float,
+        fog: float,
+        wall_colors: dict[int, tuple[int, int, int]],
+        view_surface: pygame.Surface,
+    ) -> None:
+        """Render a single wall column as a solid shaded/fogged colour."""
+        col = wall_colors.get(wt, self.config.GRAY)
+
+        r = col[0] * shade
+        g = col[1] * shade
+        b = col[2] * shade
+
+        fr = r * (1 - fog) + self.config.FOG_COLOR[0] * fog
+        fg = g * (1 - fog) + self.config.FOG_COLOR[1] * fog
+        fb = b * (1 - fog) + self.config.FOG_COLOR[2] * fog
+
+        final_col = (int(fr), int(fg), int(fb))
+        pygame.draw.rect(view_surface, final_col, (i, top, 1, h))
 
     def _render_sprites(
         self,
@@ -826,7 +856,7 @@ class Raycaster:
         except (ValueError, pygame.error):
             pass
 
-    def _draw_single_sprite(
+    def _draw_single_sprite(  # noqa: PLR0913
         self,
         player: Player,
         bot: Bot,
@@ -861,23 +891,63 @@ class Raycaster:
             + view_offset_y
         )
 
+        if sprite_ray_x + sprite_ray_width < 0 or sprite_ray_x >= self.num_rays:
+            return
+
+        # Obtain cached (or freshly rendered) sprite surface
+        sprite_surface, cache_key, distance_shade = self._get_or_create_sprite_surface(
+            bot, sprite_size, dist, flash_intensity
+        )
+
+        start_r = int(max(0, sprite_ray_x))
+        end_r = int(min(self.num_rays, sprite_ray_x + sprite_ray_width))
+        if start_r >= end_r:
+            return
+
+        target_width = int(sprite_ray_width)
+        target_height = int(sprite_size)
+        if target_width <= 0 or target_height <= 0:
+            return
+
+        visible_runs, total_visible_pixels = self._collect_visible_runs(
+            start_r, end_r, dist
+        )
+        if not visible_runs:
+            return
+
+        self._blit_sprite_runs(
+            sprite_surface,
+            cache_key,
+            visible_runs,
+            total_visible_pixels,
+            target_width,
+            target_height,
+            sprite_ray_x,
+            sprite_ray_width,
+            sprite_y,
+            sprite_size,
+        )
+
+    def _get_or_create_sprite_surface(
+        self,
+        bot: Bot,
+        sprite_size: float,
+        dist: float,
+        flash_intensity: float,
+    ) -> tuple[pygame.Surface, str, float]:
+        """Get or create a cached sprite surface for the given bot.
+
+        Returns:
+            (sprite_surface, cache_key, distance_shade)
+        """
         visual_scale = self.VISUAL_SCALE
-
-        if sprite_ray_x + sprite_ray_width < 0:
-            return
-        if sprite_ray_x >= self.num_rays:
-            return
-
         cache_display_size = min(sprite_size, 800)
-        cached_size = int(round(cache_display_size / 10.0) * 10.0)
-        cached_size = max(cached_size, 10)
+        cached_size = max(int(round(cache_display_size / 10.0) * 10.0), 10)
 
-        # Calculate shade level (0-20)
-        distance_shade = max(0.2, 1.0 - dist / 50.0)  # Match wall shading intensity
+        distance_shade = max(0.2, 1.0 - dist / 50.0)
         if flash_intensity > 0:
             flash_factor = flash_intensity * max(0.0, 1.0 - dist / 15.0)
-            distance_shade += flash_factor
-            distance_shade = min(1.0, distance_shade)
+            distance_shade = min(1.0, distance_shade + flash_factor)
 
         shade_level = int(distance_shade * 20)
 
@@ -886,81 +956,79 @@ class Raycaster:
             f"{int(bot.walk_animation * 5)}_{int(bot.shoot_animation * 5)}_"
             f"{bot.dead}_{int(bot.death_timer // 5)}_{cached_size}_{shade_level}"
         )
-
         if bot.frozen:
             cache_key += "_frozen"
 
         if cache_key in self.sprite_cache:
-            sprite_surface = self.sprite_cache[cache_key]
-        else:
-            # Create base surface with visual padding
-            # Size is visually scaled to allow glows/effects outside logical bounds
-            surf_size = int(cached_size * visual_scale)
-            padding = (surf_size - cached_size) // 2
+            return self.sprite_cache[cache_key], cache_key, distance_shade
 
-            sprite_surface = pygame.Surface((surf_size, surf_size), pygame.SRCALPHA)
-            BotRenderer.render_sprite(
-                sprite_surface, bot, padding, padding, cached_size, self.config
-            )
+        surf_size = int(cached_size * visual_scale)
+        padding = (surf_size - cached_size) // 2
 
-            # Apply shading cache
-            shade_val = int(255 * distance_shade)
-            shade_color = (shade_val, shade_val, shade_val)
+        sprite_surface = pygame.Surface((surf_size, surf_size), pygame.SRCALPHA)
+        BotRenderer.render_sprite(
+            sprite_surface, bot, padding, padding, cached_size, self.config
+        )
 
-            if shade_color != (255, 255, 255):
-                sprite_surface.fill(shade_color, special_flags=pygame.BLEND_MULT)
+        shade_val = int(255 * distance_shade)
+        shade_color = (shade_val, shade_val, shade_val)
+        if shade_color != (255, 255, 255):
+            sprite_surface.fill(shade_color, special_flags=pygame.BLEND_MULT)
 
-            if bot.frozen:
-                # Apply blue tint for frozen effect
-                sprite_surface.fill((150, 200, 255), special_flags=pygame.BLEND_MULT)
+        if bot.frozen:
+            sprite_surface.fill((150, 200, 255), special_flags=pygame.BLEND_MULT)
 
-            if len(self.sprite_cache) > 400:
-                # Evict oldest efficiently
-                keys_to_remove = list(itertools.islice(self.sprite_cache, 40))
-                for k in keys_to_remove:
-                    del self.sprite_cache[k]
-            self.sprite_cache[cache_key] = sprite_surface
+        if len(self.sprite_cache) > 400:
+            keys_to_remove = list(itertools.islice(self.sprite_cache, 40))
+            for k in keys_to_remove:
+                del self.sprite_cache[k]
+        self.sprite_cache[cache_key] = sprite_surface
+        return sprite_surface, cache_key, distance_shade
 
-        start_r = int(max(0, sprite_ray_x))
-        end_r = int(min(self.num_rays, sprite_ray_x + sprite_ray_width))
+    def _collect_visible_runs(
+        self,
+        start_r: int,
+        end_r: int,
+        dist: float,
+    ) -> tuple[list[tuple[int, int]], int]:
+        """Scan z-buffer for visible column runs of a sprite.
 
-        if start_r >= end_r:
-            return
-
-        # Optimization: Pre-calculate target size
-        target_width = int(sprite_ray_width)
-        target_height = int(sprite_size)
-
-        if target_width <= 0 or target_height <= 0:
-            return
-
-        # Collect visible runs first to decide on scaling strategy
-        visible_runs = []
-        r = start_r
+        Returns:
+            (visible_runs, total_visible_pixels)
+        """
+        visible_runs: list[tuple[int, int]] = []
         total_visible_pixels = 0
-
-        # Local lookup for speed
         z_buffer = self.z_buffer
+        r = start_r
 
         while r < end_r:
-            # Skip occluded rays
             if dist > z_buffer[r]:
                 r += 1
                 continue
-
-            # Found start of visible run
             run_start = r
             r += 1
             while r < end_r and dist <= z_buffer[r]:
                 r += 1
-
             visible_runs.append((run_start, r))
             total_visible_pixels += r - run_start
 
-        if not visible_runs:
-            return
+        return visible_runs, total_visible_pixels
 
-        # Scale whole strategy (most common)
+    def _blit_sprite_runs(  # noqa: PLR0913
+        self,
+        sprite_surface: pygame.Surface,
+        cache_key: str,
+        visible_runs: list[tuple[int, int]],
+        total_visible_pixels: int,
+        target_width: int,
+        target_height: int,
+        sprite_ray_x: float,
+        sprite_ray_width: float,
+        sprite_y: float,
+        sprite_size: float,
+    ) -> None:
+        """Blit visible sprite runs using whole-scale or strip-scale strategy."""
+        visual_scale = self.VISUAL_SCALE
         scale_whole = True
         if (
             total_visible_pixels < target_width * self.STRIP_VISIBILITY_THRESHOLD
@@ -969,95 +1037,123 @@ class Raycaster:
             scale_whole = False
 
         if scale_whole:
-            # Scale to visual size (includes padding)
-            # Bucketing logic to reduce unique scale calls:
-            # Snap to nearest 8 pixels for width
-            bucket_step = 8
-            raw_final_w = int(target_width * visual_scale)
-            final_w = max(bucket_step, (raw_final_w // bucket_step) * bucket_step)
-
-            # Maintain aspect ratio for height
-            aspect_ratio = sprite_surface.get_height() / sprite_surface.get_width()
-            final_h = int(final_w * aspect_ratio)
-
-            scaled_cache_key = (cache_key, final_w, final_h)
-            if scaled_cache_key in self._scaled_sprite_cache:
-                scaled_sprite = self._scaled_sprite_cache[scaled_cache_key]
-            else:
-                try:
-                    scaled_sprite = pygame.transform.scale(
-                        sprite_surface, (final_w, final_h)
-                    )
-
-                    # Cache management
-                    if len(self._scaled_sprite_cache) > 200:
-                        # Evict oldest (simple dict iteration is insertion order)
-                        # We remove a chunk to avoid frequent maintenance
-                        scaled_keys_to_remove = list(
-                            itertools.islice(self._scaled_sprite_cache, 20)
-                        )
-                        for scaled_k in scaled_keys_to_remove:
-                            del self._scaled_sprite_cache[scaled_k]
-
-                    self._scaled_sprite_cache[scaled_cache_key] = scaled_sprite
-                except (ValueError, pygame.error):
-                    return
-
-            for run_start, run_end in visible_runs:
-                # Calculate x offset in the scaled sprite
-                x_offset = int(run_start - sprite_ray_x)
-                width = run_end - run_start
-
-                # Clamp
-                if x_offset < 0:
-                    width += x_offset
-                    x_offset = 0
-
-                if x_offset + width > target_width:
-                    width = target_width - x_offset
-
-                if width > 0:
-                    padding_x = (final_w - target_width) // 2
-                    src_x = int(padding_x + (run_start - sprite_ray_x))
-
-                    area = pygame.Rect(src_x, 0, width, final_h)
-                    logical_top_edge_y = (final_h - target_height) // 2
-                    dst_y = int(sprite_y - logical_top_edge_y)
-
-                    pos = (run_start, dst_y)
-                    self.view_surface.blit(scaled_sprite, pos, area)
+            self._blit_whole_scaled(
+                sprite_surface,
+                cache_key,
+                visible_runs,
+                target_width,
+                target_height,
+                sprite_ray_x,
+                sprite_y,
+                visual_scale,
+            )
         else:
-            # Fallback: Strip scaling
-            for run_start, run_end in visible_runs:
-                run_width = run_end - run_start
+            self._blit_strip_scaled(
+                sprite_surface,
+                visible_runs,
+                target_width,
+                target_height,
+                sprite_ray_x,
+                sprite_ray_width,
+                sprite_y,
+                visual_scale,
+            )
 
-                tex_width = sprite_surface.get_width()
-                tex_height = sprite_surface.get_height()
+    def _blit_whole_scaled(  # noqa: PLR0913
+        self,
+        sprite_surface: pygame.Surface,
+        cache_key: str,
+        visible_runs: list[tuple[int, int]],
+        target_width: int,
+        target_height: int,
+        sprite_ray_x: float,
+        sprite_y: float,
+        visual_scale: float,
+    ) -> None:
+        """Blit visible runs using a whole-surface scale strategy."""
+        bucket_step = 8
+        raw_final_w = int(target_width * visual_scale)
+        final_w = max(bucket_step, (raw_final_w // bucket_step) * bucket_step)
 
-                logical_tex_width = tex_width / visual_scale
-                tex_scale = logical_tex_width / sprite_ray_width
+        aspect_ratio = sprite_surface.get_height() / sprite_surface.get_width()
+        final_h = int(final_w * aspect_ratio)
 
-                tex_padding = (tex_width - logical_tex_width) / 2
-
-                tex_x_start = int(tex_padding + (run_start - sprite_ray_x) * tex_scale)
-                tex_x_end = int(tex_padding + (run_end - sprite_ray_x) * tex_scale)
-
-                tex_x_start = max(0, min(tex_width, tex_x_start))
-                tex_x_end = max(0, min(tex_width, tex_x_end))
-
-                w = tex_x_end - tex_x_start
-                if w <= 0:
-                    continue
-
-                area = pygame.Rect(tex_x_start, 0, w, tex_height)
-                try:
-                    slice_surf = sprite_surface.subsurface(area)
-                    scaled_slice = pygame.transform.scale(
-                        slice_surf, (run_width, target_height)
+        scaled_cache_key = (cache_key, final_w, final_h)
+        if scaled_cache_key in self._scaled_sprite_cache:
+            scaled_sprite = self._scaled_sprite_cache[scaled_cache_key]
+        else:
+            try:
+                scaled_sprite = pygame.transform.scale(
+                    sprite_surface, (final_w, final_h)
+                )
+                if len(self._scaled_sprite_cache) > 200:
+                    scaled_keys_to_remove = list(
+                        itertools.islice(self._scaled_sprite_cache, 20)
                     )
-                    self.view_surface.blit(scaled_slice, (run_start, int(sprite_y)))
-                except (ValueError, pygame.error):
-                    continue
+                    for scaled_k in scaled_keys_to_remove:
+                        del self._scaled_sprite_cache[scaled_k]
+                self._scaled_sprite_cache[scaled_cache_key] = scaled_sprite
+            except (ValueError, pygame.error):
+                return
+
+        for run_start, run_end in visible_runs:
+            x_offset = int(run_start - sprite_ray_x)
+            width = run_end - run_start
+
+            if x_offset < 0:
+                width += x_offset
+                x_offset = 0
+            if x_offset + width > target_width:
+                width = target_width - x_offset
+
+            if width > 0:
+                padding_x = (final_w - target_width) // 2
+                src_x = int(padding_x + (run_start - sprite_ray_x))
+                area = pygame.Rect(src_x, 0, width, final_h)
+                logical_top_edge_y = (final_h - target_height) // 2
+                dst_y = int(sprite_y - logical_top_edge_y)
+                self.view_surface.blit(scaled_sprite, (run_start, dst_y), area)
+
+    def _blit_strip_scaled(  # noqa: PLR0913
+        self,
+        sprite_surface: pygame.Surface,
+        visible_runs: list[tuple[int, int]],
+        target_width: int,
+        target_height: int,
+        sprite_ray_x: float,
+        sprite_ray_width: float,
+        sprite_y: float,
+        visual_scale: float,
+    ) -> None:
+        """Blit visible runs using per-strip scaling (fallback for large sprites)."""
+        tex_width = sprite_surface.get_width()
+        tex_height = sprite_surface.get_height()
+        logical_tex_width = tex_width / visual_scale
+        tex_scale = logical_tex_width / sprite_ray_width
+        tex_padding = (tex_width - logical_tex_width) / 2
+
+        for run_start, run_end in visible_runs:
+            run_width = run_end - run_start
+
+            tex_x_start = int(tex_padding + (run_start - sprite_ray_x) * tex_scale)
+            tex_x_end = int(tex_padding + (run_end - sprite_ray_x) * tex_scale)
+
+            tex_x_start = max(0, min(tex_width, tex_x_start))
+            tex_x_end = max(0, min(tex_width, tex_x_end))
+
+            w = tex_x_end - tex_x_start
+            if w <= 0:
+                continue
+
+            area = pygame.Rect(tex_x_start, 0, w, tex_height)
+            try:
+                slice_surf = sprite_surface.subsurface(area)
+                scaled_slice = pygame.transform.scale(
+                    slice_surf, (run_width, target_height)
+                )
+                self.view_surface.blit(scaled_slice, (run_start, int(sprite_y)))
+            except (ValueError, pygame.error):
+                continue
 
     def _draw_single_projectile(
         self,
@@ -1103,90 +1199,42 @@ class Raycaster:
                 int(ray_x), int(sprite_y), int(sprite_scale), int(sprite_scale)
             )
             if rect.width > 0 and rect.height > 0:
-                color = proj.color
                 pygame.draw.circle(
-                    self.view_surface, color, rect.center, rect.width // 2
+                    self.view_surface, proj.color, rect.center, rect.width // 2
                 )
-
-                if proj.weapon_type == "plasma":
-                    pygame.draw.circle(
-                        self.view_surface,
-                        (255, 255, 255),
-                        rect.center,
-                        rect.width // 4,
-                    )
-                elif proj.weapon_type == "rocket":
-                    pygame.draw.circle(
-                        self.view_surface,
-                        (255, 100, 0),
-                        rect.center,
-                        rect.width // 3,
-                    )
-                elif proj.weapon_type == "bfg":
-                    pygame.draw.circle(
-                        self.view_surface,
-                        (200, 255, 200),
-                        rect.center,
-                        rect.width // 3,
-                    )
-                elif proj.weapon_type == "bomb":
-                    pygame.draw.circle(
-                        self.view_surface,
-                        (255, 0, 0),
-                        (rect.centerx, rect.top),
-                        2,
-                    )
-                elif proj.weapon_type == "flamethrower":
-                    # Dynamic flame effect
-                    flame_color = (
-                        255,
-                        random.randint(100, 200),
-                        0,
-                    )
-                    # Draw multiple circles for fluffy fire
-                    pygame.draw.circle(
-                        self.view_surface,
-                        flame_color,
-                        rect.center,
-                        rect.width // 2,
-                    )
-                    pygame.draw.circle(
-                        self.view_surface,
-                        (255, 50, 0),
-                        (rect.centerx, rect.centery),
-                        rect.width // 3,
-                    )
-                elif proj.weapon_type == "pulse":
-                    # Pulse Rifle projectile: Blue/White energy ball
-                    pygame.draw.circle(
-                        self.view_surface,
-                        (200, 200, 255),
-                        rect.center,
-                        rect.width // 2,
-                    )
-                    pygame.draw.circle(
-                        self.view_surface,
-                        (100, 100, 255),
-                        rect.center,
-                        rect.width // 3,
-                    )
-                elif proj.weapon_type == "freezer":
-                    # Freezer projectile: Cyan energy ball
-                    pygame.draw.circle(
-                        self.view_surface,
-                        (200, 255, 255),
-                        rect.center,
-                        rect.width // 2,
-                    )
-                    pygame.draw.circle(
-                        self.view_surface,
-                        (150, 200, 255),
-                        rect.center,
-                        rect.width // 3,
-                    )
-
+                self._draw_projectile_effect(proj, rect)
         except (ValueError, pygame.error):
             pass
+
+    def _draw_projectile_effect(
+        self,
+        proj: Projectile,
+        rect: pygame.Rect,
+    ) -> None:
+        """Draw weapon-type-specific visual effects for a projectile."""
+        surface = self.view_surface
+        weapon = proj.weapon_type
+
+        if weapon == "plasma":
+            pygame.draw.circle(surface, (255, 255, 255), rect.center, rect.width // 4)
+        elif weapon == "rocket":
+            pygame.draw.circle(surface, (255, 100, 0), rect.center, rect.width // 3)
+        elif weapon == "bfg":
+            pygame.draw.circle(surface, (200, 255, 200), rect.center, rect.width // 3)
+        elif weapon == "bomb":
+            pygame.draw.circle(surface, (255, 0, 0), (rect.centerx, rect.top), 2)
+        elif weapon == "flamethrower":
+            flame_color = (255, random.randint(100, 200), 0)
+            pygame.draw.circle(surface, flame_color, rect.center, rect.width // 2)
+            pygame.draw.circle(
+                surface, (255, 50, 0), (rect.centerx, rect.centery), rect.width // 3
+            )
+        elif weapon == "pulse":
+            pygame.draw.circle(surface, (200, 200, 255), rect.center, rect.width // 2)
+            pygame.draw.circle(surface, (100, 100, 255), rect.center, rect.width // 3)
+        elif weapon == "freezer":
+            pygame.draw.circle(surface, (200, 255, 255), rect.center, rect.width // 2)
+            pygame.draw.circle(surface, (150, 200, 255), rect.center, rect.width // 3)
 
     def _generate_background_surface(self, level: int) -> None:
         """Pre-generate a high quality background surface for the level theme."""
