@@ -5,6 +5,8 @@ from __future__ import annotations
 import math
 from typing import TYPE_CHECKING
 
+from games.shared.contracts import validate_non_negative, validate_positive
+
 if TYPE_CHECKING:
     from .interfaces import Map
 
@@ -43,6 +45,8 @@ class ProjectileBase:
             vz: Initial vertical velocity
             gravity: Gravity acceleration
         """
+        validate_non_negative(damage, "damage")
+        validate_positive(speed, "speed")
         self.x = x
         self.y = y
         self.angle = angle

@@ -326,3 +326,211 @@ class TestPlayerBomb:
         player.bomb_cooldown = 100
         result = player.activate_bomb()
         assert result is False
+
+    def test_activate_bomb_sets_shield(self, player: PlayerBase) -> None:
+        """Bomb activation should also set shield active."""
+        player.bombs = 1
+        player.bomb_cooldown = 0
+        player.activate_bomb()
+        assert player.shield_active is True
+
+
+class TestPlayerPlasma:
+    """Tests for plasma weapon heat mechanics."""
+
+    @staticmethod
+    def _plasma_player() -> PlayerBase:
+        """Create a player with a plasma weapon."""
+        weapons = {
+            "plasma": {
+                "name": "Plasma",
+                "damage": 30,
+                "range": 20,
+                "ammo": 999,
+                "cooldown": 5,
+                "clip_size": 999,
+                "reload_time": 0,
+                "key": "4",
+                "heat_per_shot": 0.15,
+                "max_heat": 1.0,
+                "cooling_rate": 0.02,
+                "overheat_penalty": 120,
+            },
+            "pistol": {
+                "name": "Pistol",
+                "damage": 25,
+                "range": 15,
+                "ammo": 999,
+                "cooldown": 10,
+                "clip_size": 12,
+                "reload_time": 60,
+                "key": "1",
+            },
+        }
+        c = make_constants(WEAPONS=weapons)
+        p = PlayerBase(5.0, 5.0, 0.0, c.WEAPONS, c)
+        p.switch_weapon("plasma")
+        return p
+
+    def test_plasma_shoot_adds_heat(self) -> None:
+        """Shooting plasma should add heat."""
+        p = self._plasma_player()
+        p.shoot()
+        assert p.weapon_state["plasma"]["heat"] == pytest.approx(0.15)
+
+    def test_plasma_overheat(self) -> None:
+        """Plasma should overheat when heat reaches max_heat."""
+        p = self._plasma_player()
+        # Fire enough to reach max_heat (1.0 / 0.15 ≈ 7 shots)
+        for _ in range(7):
+            p.shoot()
+            p.shoot_timer = 0  # Reset cooldown for next shot
+        assert p.weapon_state["plasma"]["heat"] >= 1.0
+        assert p.weapon_state["plasma"]["overheated"] is True
+
+    def test_plasma_blocks_shoot_when_overheated(self) -> None:
+        """Cannot shoot plasma when overheated."""
+        p = self._plasma_player()
+        p.weapon_state["plasma"]["overheated"] = True
+        result = p.shoot()
+        assert result is False
+
+    def test_plasma_reload_skips(self) -> None:
+        """Plasma weapons should skip reload."""
+        p = self._plasma_player()
+        p.reload()
+        assert p.weapon_state["plasma"]["reloading"] is False
+
+    def test_plasma_cooling_on_update(self) -> None:
+        """Plasma heat should cool during weapon state update."""
+        p = self._plasma_player()
+        p.weapon_state["plasma"]["heat"] = 0.5
+        p.update_weapon_state()
+        assert p.weapon_state["plasma"]["heat"] < 0.5
+
+    def test_plasma_overheat_recovery(self) -> None:
+        """Overheated plasma should recover after penalty timer."""
+        p = self._plasma_player()
+        p.weapon_state["plasma"]["overheated"] = True
+        p.weapon_state["plasma"]["overheat_timer"] = 1
+        p.weapon_state["plasma"]["heat"] = 0.5
+        p.update_weapon_state()
+        assert p.weapon_state["plasma"]["overheated"] is False
+        assert p.weapon_state["plasma"]["heat"] == pytest.approx(0.0)
+
+
+class TestPlayerMinigun:
+    """Tests for minigun spinup mechanics."""
+
+    @staticmethod
+    def _minigun_player() -> PlayerBase:
+        """Create a player with a minigun weapon."""
+        weapons = {
+            "minigun": {
+                "name": "Minigun",
+                "damage": 10,
+                "range": 20,
+                "ammo": 999,
+                "cooldown": 3,
+                "clip_size": 200,
+                "reload_time": 180,
+                "key": "5",
+                "spin_up_time": 30,
+            },
+            "pistol": {
+                "name": "Pistol",
+                "damage": 25,
+                "range": 15,
+                "ammo": 999,
+                "cooldown": 10,
+                "clip_size": 12,
+                "reload_time": 60,
+                "key": "1",
+            },
+        }
+        c = make_constants(WEAPONS=weapons)
+        p = PlayerBase(5.0, 5.0, 0.0, c.WEAPONS, c)
+        p.switch_weapon("minigun")
+        return p
+
+    def test_minigun_spinup_blocks_first_shot(self) -> None:
+        """Minigun should need spinup before firing."""
+        p = self._minigun_player()
+        result = p.shoot()
+        assert result is False
+        assert p.weapon_state["minigun"]["spin_timer"] > 0
+
+    def test_minigun_fires_after_spinup(self) -> None:
+        """Minigun should fire once fully spun up."""
+        p = self._minigun_player()
+        p.weapon_state["minigun"]["spin_timer"] = 30
+        result = p.shoot()
+        assert result is True
+
+    def test_minigun_spin_timer_decays(self) -> None:
+        """Minigun spin timer should decay when not shooting."""
+        p = self._minigun_player()
+        p.weapon_state["minigun"]["spin_timer"] = 10
+        p.shoot_timer = 0
+        p.update_timers()
+        assert p.weapon_state["minigun"]["spin_timer"] < 10
+
+
+class TestPlayerSecondaryFire:
+    """Tests for secondary fire and can_secondary_fire."""
+
+    def test_can_secondary_fire_ready(self, player: PlayerBase) -> None:
+        """Should be ready when cooldown is zero."""
+        player.secondary_cooldown = 0
+        assert player.can_secondary_fire() is True
+
+    def test_can_secondary_fire_on_cooldown(self, player: PlayerBase) -> None:
+        """Should not be ready when cooldown is active."""
+        player.secondary_cooldown = 30
+        assert player.can_secondary_fire() is False
+
+    def test_fire_secondary_success(self, player: PlayerBase) -> None:
+        """Secondary fire should succeed and set cooldown."""
+        player.secondary_cooldown = 0
+        result = player.fire_secondary()
+        assert result is True
+        assert player.secondary_cooldown > 0
+
+    def test_fire_secondary_fails_on_cooldown(self, player: PlayerBase) -> None:
+        """Secondary fire should fail when on cooldown."""
+        player.secondary_cooldown = 30
+        result = player.fire_secondary()
+        assert result is False
+
+
+class TestPlayerTimersAdvanced:
+    """Advanced timer and weapon state update tests."""
+
+    def test_shield_auto_depletes(self, player: PlayerBase) -> None:
+        """Shield should deactivate when timer reaches zero."""
+        player.shield_active = True
+        player.shield_timer = 0
+        player.update_timers()
+        assert player.shield_active is False
+        assert player.shield_recharge_delay > 0
+
+    def test_shield_regenerates_when_idle(self, player: PlayerBase) -> None:
+        """Shield timer should regenerate when not active and no delay."""
+        player.shield_active = False
+        player.shield_recharge_delay = 0
+        player.shield_timer = 100
+        player.update_timers()
+        assert player.shield_timer > 100
+
+    def test_weapon_auto_reload_on_empty_in_update(self, player: PlayerBase) -> None:
+        """Weapon state update should trigger auto-reload for empty clip."""
+        player.switch_weapon("pistol")
+        player.weapon_state["pistol"]["clip"] = 0
+        player.update_weapon_state()
+        assert player.weapon_state["pistol"]["reloading"] is True
+
+    def test_secondary_cooldown_ticks_down(self, player: PlayerBase) -> None:
+        """Secondary cooldown should decrease each timer tick."""
+        player.secondary_cooldown = 5
+        player.update_timers()
+        assert player.secondary_cooldown == 4
