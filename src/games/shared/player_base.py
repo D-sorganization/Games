@@ -5,6 +5,8 @@ from __future__ import annotations
 import math
 from typing import TYPE_CHECKING, Any
 
+from games.shared.contracts import validate_non_negative, validate_not_none
+
 if TYPE_CHECKING:
     from typing import Protocol
 
@@ -35,6 +37,8 @@ class PlayerBase:
             weapons_config: Dictionary of weapon configurations
             constants: Game constants module
         """
+        validate_not_none(weapons_config, "weapons_config")
+        validate_not_none(constants, "constants")
         self.C = constants
 
         # Position and orientation
@@ -45,6 +49,7 @@ class PlayerBase:
         self.z = 0.5  # Camera height
 
         # Health
+        validate_non_negative(100, "initial_health")
         self.health = 100
         self.max_health = 100
 
@@ -111,7 +116,15 @@ class PlayerBase:
         self.pitch = max(-pitch_limit, min(pitch_limit, self.pitch))
 
     def switch_weapon(self, weapon: str) -> None:
-        """Switch to a different weapon."""
+        """Switch to a different weapon.
+
+        Args:
+            weapon: Name of the weapon to switch to.
+
+        Raises:
+            ContractViolation: If weapon is not in the weapons config.
+        """
+        validate_not_none(weapon, "weapon")
         weapons = getattr(self.C, "WEAPONS", {})
         if weapon in weapons:
             if self.current_weapon in self.weapon_state:
