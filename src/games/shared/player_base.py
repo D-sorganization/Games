@@ -159,7 +159,13 @@ class PlayerBase:
             w_state["reload_timer"] = w_data.get("reload_time", 60)
 
     def shoot(self) -> bool:
-        """Initiate shooting, return True if shot was fired."""
+        """Initiate shooting, return True if shot was fired.
+
+        Raises:
+            ContractViolation: If player is not alive.
+        """
+        if not self.alive:
+            return False
         weapons = getattr(self.C, "WEAPONS", {})
         weapon_data = weapons[self.current_weapon]
         w_state = self.weapon_state[self.current_weapon]
