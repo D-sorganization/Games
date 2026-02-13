@@ -103,7 +103,7 @@ PRE-COMMIT (runs on every commit, <15 seconds):
   - ruff (lint + auto-fix)
   - black (format)
   - no-wildcard-imports
-  - quality-check (no TODOs/FIXMEs)
+  - quality-check (no placeholder annotations)
   - no-debug-statements
   - no-print-in-src
   - prettier (yaml/json/md)
