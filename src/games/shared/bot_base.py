@@ -5,6 +5,8 @@ from __future__ import annotations
 import random
 from typing import Any
 
+from games.shared.contracts import validate_not_none, validate_positive
+
 
 class BotBase:
     """Base class for enemy bots with common state management."""
@@ -37,6 +39,10 @@ class BotBase:
             difficulty: Difficulty level (EASY, NORMAL, HARD, NIGHTMARE)
         """
         # Position
+        validate_not_none(enemy_types, "enemy_types")
+        validate_not_none(difficulties, "difficulties")
+        validate_positive(base_bot_health, "base_bot_health")
+        validate_positive(base_bot_damage, "base_bot_damage")
         self.x = x
         self.y = y
         self.z = 0.0
