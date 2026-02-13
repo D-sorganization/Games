@@ -5,6 +5,8 @@ from __future__ import annotations
 import math
 import random
 
+from games.shared.contracts import validate_positive
+
 
 class MapBase:
     """Base class for game maps with walls and buildings using cellular automata."""
@@ -16,6 +18,7 @@ class MapBase:
             size: Map size (grid dimensions)
             generate: Whether to generate the map immediately (default: True)
         """
+        validate_positive(size, "map_size")
         self.size = size
         self.grid = [[0 for _ in range(size)] for _ in range(size)]
         if generate:
