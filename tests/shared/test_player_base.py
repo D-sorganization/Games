@@ -534,3 +534,9 @@ class TestPlayerTimersAdvanced:
         player.secondary_cooldown = 5
         player.update_timers()
         assert player.secondary_cooldown == 4
+
+    def test_shoot_rejects_dead_player(self, player: PlayerBase) -> None:
+        """Dead player should not be able to shoot."""
+        player.alive = False
+        result = player.shoot()
+        assert result is False

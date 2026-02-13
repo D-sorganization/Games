@@ -2,6 +2,8 @@ import math
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any
 
+from games.shared.contracts import validate_not_none, validate_positive
+
 if TYPE_CHECKING:
     from .interfaces import Map
 
@@ -19,6 +21,8 @@ def cast_ray_dda(
         (distance, wall_type, hit_x, hit_y, side, map_x, map_y)
         side: 0 for vertical wall (x-side), 1 for horizontal wall (y-side)
     """
+    validate_not_none(game_map, "game_map")
+    validate_positive(max_dist, "max_dist")
     ray_dir_x = math.cos(angle)
     ray_dir_y = math.sin(angle)
 
@@ -101,6 +105,7 @@ def has_line_of_sight(
     x1: float, y1: float, x2: float, y2: float, game_map: "Map"
 ) -> bool:
     """Check if there is a clear line of sight between two points."""
+    validate_not_none(game_map, "game_map")
     dx = x2 - x1
     dy = y2 - y1
     dist = math.sqrt(dx * dx + dy * dy)
@@ -126,6 +131,9 @@ def try_move_entity(
     radius: float = 0.5,
 ) -> None:
     """Try to move entity by dx, dy checking walls and obstacles."""
+    validate_not_none(entity, "entity")
+    validate_not_none(game_map, "game_map")
+    validate_positive(radius, "radius")
     col_sq = radius * radius
 
     # Try X movement

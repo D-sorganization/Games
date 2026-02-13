@@ -184,3 +184,51 @@ class TestTryMoveEntity:
         try_move_entity(entity, -1.0, 1.0, open_map, [])
         assert entity.x == pytest.approx(1.5)
         assert entity.y == pytest.approx(6.0)
+
+
+class TestUtilsContracts:
+    """Tests for contract validation on utility functions."""
+
+    def test_cast_ray_rejects_none_map(self) -> None:
+        """cast_ray_dda should reject None game_map."""
+        from games.shared.contracts import ContractViolation
+
+        with pytest.raises(ContractViolation, match="game_map"):
+            cast_ray_dda(5.0, 5.0, 0.0, None, max_dist=10.0)  # type: ignore[arg-type]
+
+    def test_cast_ray_rejects_zero_max_dist(self, open_map: MockMap) -> None:
+        """cast_ray_dda should reject zero max_dist."""
+        from games.shared.contracts import ContractViolation
+
+        with pytest.raises(ContractViolation, match="max_dist"):
+            cast_ray_dda(5.0, 5.0, 0.0, open_map, max_dist=0.0)
+
+    def test_has_line_of_sight_rejects_none_map(self) -> None:
+        """has_line_of_sight should reject None game_map."""
+        from games.shared.contracts import ContractViolation
+
+        with pytest.raises(ContractViolation, match="game_map"):
+            has_line_of_sight(1.0, 1.0, 5.0, 5.0, None)  # type: ignore[arg-type]
+
+    def test_try_move_rejects_none_entity(self, open_map: MockMap) -> None:
+        """try_move_entity should reject None entity."""
+        from games.shared.contracts import ContractViolation
+
+        with pytest.raises(ContractViolation, match="entity"):
+            try_move_entity(None, 1.0, 0.0, open_map, [])  # type: ignore[arg-type]
+
+    def test_try_move_rejects_none_map(self) -> None:
+        """try_move_entity should reject None game_map."""
+        from games.shared.contracts import ContractViolation
+
+        entity = MockEntity(5.0, 5.0)
+        with pytest.raises(ContractViolation, match="game_map"):
+            try_move_entity(entity, 1.0, 0.0, None, [])  # type: ignore[arg-type]
+
+    def test_try_move_rejects_zero_radius(self, open_map: MockMap) -> None:
+        """try_move_entity should reject zero radius."""
+        from games.shared.contracts import ContractViolation
+
+        entity = MockEntity(5.0, 5.0)
+        with pytest.raises(ContractViolation, match="radius"):
+            try_move_entity(entity, 1.0, 0.0, open_map, [], radius=0.0)
