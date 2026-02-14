@@ -40,22 +40,78 @@ public:
         }
     }
 
+    enum class AnimState {
+        Idle,
+        Walk,
+        Panic
+    };
+
     /**
      * @brief Update animation and world matrices.
      */
-    void update(float dt) {
+    void update(float dt, AnimState state = AnimState::Idle) {
         if (!rig_) return;
 
         anim_time_ += dt;
         
-        // Simple animation
-        set_joint("left_shoulder", std::sin(anim_time_ * 2.0f) * 0.2f);
-        set_joint("right_shoulder", -std::sin(anim_time_ * 2.0f) * 0.2f);
+        // Reset all joints to 0 first (bind pose)
+        for (auto& s : states_) s.joint_angle = 0.0f;
+
+        switch (state) {
+            case AnimState::Idle:
+                animate_idle(anim_time_);
+                break;
+            case AnimState::Walk:
+                animate_walk(anim_time_);
+                break;
+            case AnimState::Panic:
+                animate_panic(anim_time_);
+                break;
+        }
         
         // Recalculate matrices starting from root
         if (rig_->root_index >= 0) {
             update_recursive(rig_->root_index, transform.to_matrix());
         }
+    }
+
+private:
+    void animate_idle(float t) {
+        // Breathing
+        float breath = std::sin(t * 1.5f);
+        set_joint("spine_1", breath * 0.05f); 
+        
+        // Arms sway
+        float sway = std::sin(t * 1.0f + 0.5f);
+        set_joint("left_shoulder", sway * 0.05f + 0.1f);  // Slight abduction
+        set_joint("right_shoulder", -sway * 0.05f - 0.1f);
+    }
+
+    void animate_walk(float t) {
+        float speed = 4.0f;
+        float leg_swing = std::sin(t * speed);
+        float knee_bend = std::abs(std::sin(t * speed + 1.57f)); // Peak on pass
+        
+        // Legs
+        set_joint("left_hip", leg_swing * 0.5f);
+        set_joint("right_hip", -leg_swing * 0.5f);
+        set_joint("left_knee", (leg_swing > 0 ? leg_swing : 0) * 0.8f); 
+        set_joint("right_knee", (leg_swing < 0 ? -leg_swing : 0) * 0.8f);
+
+        // Arms (opposite to legs)
+        set_joint("left_shoulder", -leg_swing * 0.4f);
+        set_joint("right_shoulder", leg_swing * 0.4f);
+    }
+
+    void animate_panic(float t) {
+        float crazy = std::sin(t * 15.0f);
+        float crazy2 = std::cos(t * 12.0f);
+        
+        set_joint("left_shoulder", crazy * 1.5f - 1.5f); // Wave up high
+        set_joint("right_shoulder", crazy2 * 1.5f + 1.5f);
+        set_joint("left_elbow", crazy2 * 1.0f);
+        set_joint("right_elbow", crazy * 1.0f);
+        set_joint("head", crazy * 0.2f);
     }
 
     void draw(renderer::Shader& shader) {
