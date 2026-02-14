@@ -1,0 +1,75 @@
+#pragma once
+
+#include "../loader/HumanoidEnemy.h"
+#include "../renderer/Shader.h"
+#include "../math/Vec3.h"
+
+namespace qe {
+namespace game {
+
+enum class EnemyState {
+    Idle,
+    Watch,
+    Panic, // Goalkeeper logic or run away
+    Celebrate
+};
+
+class Enemy {
+public:
+    EnemyState state = EnemyState::Idle;
+    loader::HumanoidEnemy humanoid;
+    math::Vec3 velocity = {0,0,0};
+    float speed = 2.0f;
+    float state_timer = 0.0f;
+
+    Enemy(std::shared_ptr<loader::HumanoidRig> rig) {
+        humanoid.set_rig(rig);
+    }
+
+    void update(float dt, const math::Vec3& player_pos) {
+        state_timer += dt;
+        humanoid.update(dt); // Animation
+
+        switch(state) {
+            case EnemyState::Idle:
+                // Periodically look around?
+                if (state_timer > 3.0f) {
+                    state = EnemyState::Watch;
+                    state_timer = 0;
+                }
+                break;
+            case EnemyState::Watch: {
+                // Look at player/ball
+                auto dir = (player_pos - humanoid.transform.position()).normalized();
+                float target_yaw = std::atan2(dir.x, -dir.z); // Z-forward convention? Check.
+                // Assuming model faces +Z or -Z, let's assume +Z for now
+                // Wait, in main.cpp: atan2(dir.x, -dir.z) implies looking at -Z?
+                // Standard convention is usually -Z forward for GL.
+                // If model faces +Z, rotate 180 (add PI).
+                // Let's just set the rotation directly or lerp
+                humanoid.transform.set_rotation(
+                    math::Quaternion::from_euler(0, target_yaw + 3.14159f, 0)
+                );
+                
+                if (state_timer > 5.0f) {
+                    state = EnemyState::Idle;
+                    state_timer = 0;
+                }
+                break;
+            }
+            case EnemyState::Panic:
+                // Run away/towards?
+                break;
+            case EnemyState::Celebrate:
+                // Dance?
+                break;
+        }
+    }
+
+    void draw(renderer::Shader& shader) {
+        humanoid.draw(shader);
+    }
+};
+
+} // namespace game
+} // namespace qe
