@@ -39,6 +39,7 @@ logs/
 
 # Build Artifacts
 build/
+build_cpp/
 dist/
 *.toc
 build/
