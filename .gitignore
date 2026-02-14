@@ -59,3 +59,4 @@ ruff_output_ff_2.txt
 
 # Enforce NPM
 pnpm-lock.yaml
+src/games/QuatGolf/assets/enemies/
