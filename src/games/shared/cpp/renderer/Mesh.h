@@ -81,6 +81,12 @@ public:
         gl::glBindVertexArray(0);
     }
 
+    void draw_instanced(GLsizei instance_count) const {
+        gl::glBindVertexArray(vao);
+        gl::glDrawElementsInstanced(GL_TRIANGLES, index_count, GL_UNSIGNED_INT, nullptr, instance_count);
+        gl::glBindVertexArray(0);
+    }
+
     void destroy() {
         if (ebo) { gl::glDeleteBuffers(1, &ebo); ebo = 0; }
         if (vbo) { gl::glDeleteBuffers(1, &vbo); vbo = 0; }

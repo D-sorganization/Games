@@ -636,7 +636,7 @@ void render_world(App& app) {
     app.enemy_manager.draw(app.world_shader);
 
     // Particles
-    app.particle_system.draw(app.world_shader);
+    app.particle_system.draw(view_proj);
 
     // Terrain
     app.world_shader.set_mat4("uModel", Mat4::identity());
