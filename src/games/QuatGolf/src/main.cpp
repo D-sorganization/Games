@@ -26,6 +26,8 @@
 #include "renderer/GLLoader.h"
 #include "renderer/Mesh.h"
 #include "renderer/Shader.h"
+#include "loader/HumanoidEnemy.h"
+#include "loader/HumanoidRig.h"
 #include "renderer/Texture.h"
 
 #include <SDL.h>
@@ -60,6 +62,10 @@ struct App {
     qe::renderer::Mesh power_bar_bg;
     qe::renderer::Mesh power_bar_fill;
     qe::renderer::Mesh aim_line;
+
+    // Entities
+    std::shared_ptr<qe::loader::HumanoidRig> grunt_rig;
+    qe::game::HumanoidEnemy enemy;
 
     // Ball state
     qg::physics::BallPhysics physics;
@@ -266,6 +272,18 @@ void init_assets(App& app) {
 
     build_power_bar(app);
     build_aim_line(app);
+
+    // Humanoid Enemy (Grunt)
+    // Adjust path based on execution environment; using direct relative to expected execution root
+    app.grunt_rig = qe::loader::HumanoidRig::load("assets/enemies/grunt/humanoid.urdf");
+    if (app.grunt_rig) {
+        app.enemy.set_rig(app.grunt_rig);
+        app.enemy.transform.set_position({2.0f, 0.0f, 2.0f});
+        app.enemy.transform.set_rotation(qe::math::Quaternion::from_euler(0, 3.14159f, 0)); // Face backwards toward tee
+        app.enemy.transform.set_scale({1.0f, 1.0f, 1.0f});
+    } else {
+        std::cerr << "WARNING: Failed to load enemy URDF.\n";
+    }
 }
 
 void build_power_bar(App& app) {
@@ -444,6 +462,10 @@ void handle_events(App& app) {
 void update(App& app, float dt) {
     app.time += dt;
 
+    // Update enemy animation
+    app.enemy.update(dt);
+
+
     // Power meter
     if (app.charging) {
         app.power += dt * 0.8f;  // Full power in ~1.25 seconds
@@ -583,6 +605,9 @@ void render_world(App& app) {
     app.world_shader.set_vec3("uAmbient", Vec3(0.3f, 0.35f, 0.35f));
     app.world_shader.set_vec3("uCameraPos", app.camera.position());
     app.world_shader.set_int("uUseTexture", 0);
+
+    // Enemy
+    app.enemy.draw(app.world_shader);
 
     // Terrain
     app.world_shader.set_mat4("uModel", Mat4::identity());
