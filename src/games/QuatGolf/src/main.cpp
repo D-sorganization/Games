@@ -29,6 +29,7 @@
 #include "game/EnemyManager.h"
 #include "game/ParticleSystem.h"
 #include "audio/AudioSystem.h"
+#include "ai/NavigationSystem.h"
 #include "renderer/Texture.h"
 
 #include <SDL.h>
@@ -69,6 +70,7 @@ struct App {
     qe::game::EnemyManager enemy_manager;
     qe::game::ParticleSystem particle_system;
     qe::audio::AudioSystem audio_system;
+    qe::ai::NavigationSystem nav_system;
 
     // Ball state
     qg::physics::BallPhysics physics;
