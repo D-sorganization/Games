@@ -27,6 +27,7 @@
 #include "renderer/Mesh.h"
 #include "renderer/Shader.h"
 #include "game/EnemyManager.h"
+#include "game/ParticleSystem.h"
 #include "renderer/Texture.h"
 
 #include <SDL.h>
@@ -65,6 +66,7 @@ struct App {
     // Entities
     // Entities
     qe::game::EnemyManager enemy_manager;
+    qe::game::ParticleSystem particle_system;
 
     // Ball state
     qg::physics::BallPhysics physics;
@@ -275,6 +277,7 @@ void init_assets(App& app) {
 
     // Humanoid Enemies
     app.enemy_manager.init();
+    app.particle_system.init();
     
     // Spawn a few sample enemies
     app.enemy_manager.spawn("grunt", {2.0f, 0.0f, 2.0f});
@@ -517,9 +520,15 @@ void update(App& app, float dt) {
                  app.ball.velocity = app.ball.velocity * 0.7f;
                  app.total_score += points;
                  std::cout << "Bonk! Enemy hit. +" << points << " Points (Total: " << app.total_score << ")\n";
+                 
+                 // Spawn particles
+                 app.particle_system.spawn(app.ball.position, 20, {1.0f, 0.8f, 0.2f});
             }
         }
     }
+
+    // Update Particles
+    app.particle_system.update(dt);
 
     // Check if ball in water — penalty
     if (app.ball.in_water) {
@@ -625,6 +634,9 @@ void render_world(App& app) {
 
     // Enemies
     app.enemy_manager.draw(app.world_shader);
+
+    // Particles
+    app.particle_system.draw(app.world_shader);
 
     // Terrain
     app.world_shader.set_mat4("uModel", Mat4::identity());
