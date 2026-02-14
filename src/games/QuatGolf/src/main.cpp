@@ -502,6 +502,22 @@ void update(App& app, float dt) {
     // Ball physics
     app.physics.update(app.ball, app.terrain, dt);
 
+    // Enemy collision
+    if (app.ball.in_flight || app.ball.rolling) {
+        qe::math::Vec3 normal;
+        if (app.enemy_manager.check_collision(app.ball.position, app.physics.constants.radius, normal)) {
+            // Reflect velocity
+            float v_dot_n = app.ball.velocity.dot(normal);
+            // Only reflect if moving towards enemy
+            if (v_dot_n < 0) {
+                 app.ball.velocity = app.ball.velocity - normal * (2.0f * v_dot_n);
+                 // Add some energy loss and maybe randomness
+                 app.ball.velocity = app.ball.velocity * 0.7f;
+                 std::cout << "Bonk! Enemy hit.\n";
+            }
+        }
+    }
+
     // Check if ball in water — penalty
     if (app.ball.in_water) {
         std::cout << "Water hazard! 1 stroke penalty.\n";

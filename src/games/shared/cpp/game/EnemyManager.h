@@ -56,6 +56,21 @@ public:
             e->draw(shader);
         }
     }
+
+    bool check_collision(const math::Vec3& pos, float r, math::Vec3& normal) {
+        float depth;
+        for (auto& e : enemies) {
+            if (e->check_collision(pos, r, normal, depth)) {
+                // Simple reaction: make enemy Panic
+                if (e->state != EnemyState::Panic) {
+                    e->state = EnemyState::Panic;
+                    e->state_timer = 0;
+                }
+                return true;
+            }
+        }
+        return false;
+    }
 };
 
 } // namespace game
