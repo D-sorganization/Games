@@ -72,24 +72,81 @@ public:
         }
     }
 
-    void draw(renderer::Shader& shader) {
-        if (!particle_mesh) return;
+    renderer::Shader instanced_shader;
+    GLuint instance_vbo_model = 0;
+    GLuint instance_vbo_color = 0;
+    bool instancing_initialized = false;
 
-        // Setup common state
-        shader.set_int("uUseTexture", 0);
-
-        for (const auto& p : particles) {
-            math::Mat4 model = math::Mat4::identity();
-            model = math::Mat4::translate(p.position) * math::Mat4::scale(p.scale);
-            
-            // Billboard rotation (face camera)?
-            // For now just world aligned.
-            
-            shader.set_mat4("uModel", model);
-            shader.set_vec3("uColor", p.color); // Needs fragment shader support or use ambient/diffuse uniform trick
-            
-            particle_mesh->draw();
+    void init() {
+        particle_mesh = std::make_shared<renderer::Mesh>(renderer::Mesh::create_cube());
+        // Load instanced shader
+        instanced_shader.load_from_files("shaders/particle_instanced.vert", "shaders/particle_instanced.frag");
+    }
+    
+    void setup_instancing() {
+        if (instancing_initialized || !particle_mesh) return;
+        
+        using namespace renderer::gl;
+        glBindVertexArray(particle_mesh->vao);
+        
+        // Instance Model (4,5,6,7)
+        glGenBuffers(1, &instance_vbo_model);
+        glBindBuffer(GL_ARRAY_BUFFER, instance_vbo_model);
+        // Reserve buffer
+        glBufferData(GL_ARRAY_BUFFER, 2048 * sizeof(math::Mat4), nullptr, GL_STREAM_DRAW);
+        
+        for (int i = 0; i < 4; ++i) {
+            glEnableVertexAttribArray(4 + i);
+            glVertexAttribPointer(4 + i, 4, GL_FLOAT, GL_FALSE, sizeof(math::Mat4), (void*)(i * sizeof(math::Vec4)));
+            glVertexAttribDivisor(4 + i, 1);
         }
+        
+        // Instance Color (8)
+        glGenBuffers(1, &instance_vbo_color);
+        glBindBuffer(GL_ARRAY_BUFFER, instance_vbo_color);
+        glBufferData(GL_ARRAY_BUFFER, 2048 * sizeof(math::Vec3), nullptr, GL_STREAM_DRAW);
+        
+        glEnableVertexAttribArray(8);
+        glVertexAttribPointer(8, 3, GL_FLOAT, GL_FALSE, sizeof(math::Vec3), (void*)0);
+        glVertexAttribDivisor(8, 1);
+        
+        glBindVertexArray(0);
+        instancing_initialized = true;
+    }
+
+    void draw(const math::Mat4& view_proj) {
+         if (!particle_mesh || particles.empty()) return;
+         if (!instancing_initialized) setup_instancing();
+         
+         static std::vector<math::Mat4> models;
+         static std::vector<math::Vec3> colors;
+         models.clear(); 
+         colors.clear();
+         models.reserve(particles.size()); 
+         colors.reserve(particles.size());
+         
+         for (const auto& p : particles) {
+            models.push_back(math::Mat4::translate(p.position) * math::Mat4::scale(p.scale));
+            colors.push_back(p.color);
+         }
+         
+         using namespace renderer::gl;
+         
+         // Orphan buffer if too small? For simplicty just re-upload
+         glBindBuffer(GL_ARRAY_BUFFER, instance_vbo_model);
+         glBufferData(GL_ARRAY_BUFFER, models.size() * sizeof(math::Mat4), models.data(), GL_STREAM_DRAW);
+         
+         glBindBuffer(GL_ARRAY_BUFFER, instance_vbo_color);
+         glBufferData(GL_ARRAY_BUFFER, colors.size() * sizeof(math::Vec3), colors.data(), GL_STREAM_DRAW);
+         
+         instanced_shader.use();
+         instanced_shader.set_mat4("uViewProjection", view_proj);
+         // Default light
+         instanced_shader.set_vec3("uLightDir", {0.5f, 1.0f, 0.3f});
+         instanced_shader.set_vec3("uSunColor", {1.0f, 1.0f, 0.9f});
+         instanced_shader.set_vec3("uAmbient", {0.3f, 0.3f, 0.4f});
+         
+         particle_mesh->draw_instanced(static_cast<GLsizei>(particles.size()));
     }
 };
 
