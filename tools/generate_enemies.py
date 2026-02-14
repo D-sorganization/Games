@@ -31,7 +31,8 @@ def generate_enemy(name, params):
     enemy_dir = os.path.join(OUTPUT_DIR, name)
 
     # export_urdf takes the directory path where it creates the URDF + meshes folder
-    # but based on previous run, it creates a folder with the 'name' inside 'base_name' path?
+    # but based on previous run, it creates a folder with the 'name' inside
+    # 'base_name' path?
     # No, let's look at api.py or experiment.
     # Assuming export_urdf(path) -> creates path/name.urdf and path/meshes/
 
