@@ -28,25 +28,25 @@ public:
 
     void update(float dt, const math::Vec3& player_pos) {
         state_timer += dt;
-        humanoid.update(dt); // Animation
-
+        
+        loader::HumanoidEnemy::AnimState anim = loader::HumanoidEnemy::AnimState::Idle;
+        
+        // Simple state machine
         switch(state) {
             case EnemyState::Idle:
-                // Periodically look around?
+                anim = loader::HumanoidEnemy::AnimState::Idle;
                 if (state_timer > 3.0f) {
                     state = EnemyState::Watch;
                     state_timer = 0;
                 }
                 break;
             case EnemyState::Watch: {
+                anim = loader::HumanoidEnemy::AnimState::Idle; // Or Walk if moving?
                 // Look at player/ball
                 auto dir = (player_pos - humanoid.transform.position()).normalized();
-                float target_yaw = std::atan2(dir.x, -dir.z); // Z-forward convention? Check.
-                // Assuming model faces +Z or -Z, let's assume +Z for now
-                // Wait, in main.cpp: atan2(dir.x, -dir.z) implies looking at -Z?
-                // Standard convention is usually -Z forward for GL.
-                // If model faces +Z, rotate 180 (add PI).
-                // Let's just set the rotation directly or lerp
+                float target_yaw = std::atan2(dir.x, -dir.z); 
+                // Smooth turn
+                // For now, snap
                 humanoid.transform.set_rotation(
                     math::Quaternion::from_euler(0, target_yaw + 3.14159f, 0)
                 );
@@ -58,12 +58,14 @@ public:
                 break;
             }
             case EnemyState::Panic:
-                // Run away/towards?
+                anim = loader::HumanoidEnemy::AnimState::Panic;
                 break;
             case EnemyState::Celebrate:
-                // Dance?
+                anim = loader::HumanoidEnemy::AnimState::Panic; // Celebrate looks like Panic for now
                 break;
         }
+
+        humanoid.update(dt, anim);
     }
 
     void draw(renderer::Shader& shader) {
