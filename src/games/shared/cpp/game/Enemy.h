@@ -69,6 +69,38 @@ public:
     void draw(renderer::Shader& shader) {
         humanoid.draw(shader);
     }
+
+    bool check_collision(const math::Vec3& sphere_pos, float sphere_radius, math::Vec3& out_normal, float& out_depth) {
+        // Simple Cylinder vs Sphere
+        float cy_r = 0.4f;
+        float cy_h = 1.8f;
+        math::Vec3 pos = humanoid.transform.position();
+
+        // 1. Check Y range (vertical overlap)
+        if (sphere_pos.y + sphere_radius < pos.y || sphere_pos.y - sphere_radius > pos.y + cy_h) {
+            return false;
+        }
+
+        // 2. Check XZ distance (horizontal overlap)
+        float dx = sphere_pos.x - pos.x;
+        float dz = sphere_pos.z - pos.z;
+        float dist_sq = dx*dx + dz*dz;
+        float combined_r = cy_r + sphere_radius;
+
+        if (dist_sq > combined_r * combined_r) {
+            return false;
+        }
+
+        // Collision detected
+        // Calculate normal in XZ plane
+        if (dist_sq < 0.0001f) {
+            out_normal = {1, 0, 0}; // Degenerate case
+        } else {
+            out_normal = math::Vec3(dx, 0, dz).normalized();
+        }
+        out_depth = combined_r - std::sqrt(dist_sq);
+        return true;
+    }
 };
 
 } // namespace game
