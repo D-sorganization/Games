@@ -57,7 +57,7 @@ public:
         }
     }
 
-    bool check_collision(const math::Vec3& pos, float r, math::Vec3& normal) {
+    int check_collision(const math::Vec3& pos, float r, math::Vec3& normal) {
         float depth;
         for (auto& e : enemies) {
             if (e->check_collision(pos, r, normal, depth)) {
@@ -65,11 +65,12 @@ public:
                 if (e->state != EnemyState::Panic) {
                     e->state = EnemyState::Panic;
                     e->state_timer = 0;
+                    return 100; // 100 points for first hit
                 }
-                return true;
+                return 10; // 10 points for subsequent hits? Or just 0?
             }
         }
-        return false;
+        return 0;        
     }
 };
 

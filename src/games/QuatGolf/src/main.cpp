@@ -77,6 +77,7 @@ struct App {
     bool  charging = false;
     bool  ball_in_play = false;
     int   stroke_count = 0;
+    int   total_score = 0; // Game score (points)
     std::vector<int> scores;  // Per-hole stroke count
 
     // Visual
@@ -505,7 +506,8 @@ void update(App& app, float dt) {
     // Enemy collision
     if (app.ball.in_flight || app.ball.rolling) {
         qe::math::Vec3 normal;
-        if (app.enemy_manager.check_collision(app.ball.position, app.physics.constants.radius, normal)) {
+        int points = app.enemy_manager.check_collision(app.ball.position, app.physics.constants.radius, normal);
+        if (points > 0) {
             // Reflect velocity
             float v_dot_n = app.ball.velocity.dot(normal);
             // Only reflect if moving towards enemy
@@ -513,7 +515,8 @@ void update(App& app, float dt) {
                  app.ball.velocity = app.ball.velocity - normal * (2.0f * v_dot_n);
                  // Add some energy loss and maybe randomness
                  app.ball.velocity = app.ball.velocity * 0.7f;
-                 std::cout << "Bonk! Enemy hit.\n";
+                 app.total_score += points;
+                 std::cout << "Bonk! Enemy hit. +" << points << " Points (Total: " << app.total_score << ")\n";
             }
         }
     }
@@ -703,6 +706,7 @@ void update_title(App& app) {
     std::ostringstream t;
     t << "QuatGolf | " << static_cast<int>(app.current_fps) << " FPS"
       << " | Hole " << hole.number << " Par " << hole.par
+      << " | Score: " << app.total_score
       << " | " << qg::game::CLUBS[app.selected_club].name
       << " | Strokes: " << app.stroke_count
       << " | " << static_cast<int>(dist_to_pin) << "m to pin"
