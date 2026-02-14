@@ -50,6 +50,25 @@ Enemies act as physical obstacles for the golf ball.
   * Energy loss coefficient: 0.7.
   * Console log: "Bonk! Enemy hit."
 
+## 4. Interaction & Feedback
+
+* **Collision Response**:
+  * **Ball Physics**: The ball reflects off enemies with energy loss (0.7 coefficient).
+  * **Scoring**:
+    * **First Hit**: +100 Points (Triggers Panic).
+    * **Subsequent Hits**: +0 Points (for now).
+    * **Feedback**: Window title updates with total score.
+  * **Visuals**:
+    * **Animation**: Enemy enters `Panic` state (waving arms, shaking head).
+    * **Particles**: A debris burst (instanced cubes) spawns at the impact point.
+
+## 5. Optimization & Performance
+
+* **Flyweight Pattern**: `HumanoidRig` is shared across all enemy instances.
+* **Procedural Animation**: No keyframe data storage; animations are computed on the fly.
+* **GPU Instancing**: The `ParticleSystem` uses `glDrawElementsInstanced` to render thousands of debris particles with a single draw call, utilizing a custom `particle_instanced` shader.
+* **Geometric Collision**: Cylinder-Sphere checks are cheap and sufficient for gameplay.
+
 ### Tuning
 
 Adjust `cy_r` and `cy_h` in `Enemy::check_collision` to change the hit volume.
