@@ -2,9 +2,21 @@ import os
 import sys
 
 # Add Tools repo to Python path
-TOOLS_PYTHON_PATH = r"c:\Users\diete\Repositories\Tools\src\shared\python"
-if TOOLS_PYTHON_PATH not in sys.path:
-    sys.path.append(TOOLS_PYTHON_PATH)
+# Try to find Tools repo relative to this script
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+# Assuming standard layout: Repositories/Games/tools/../../Tools/src/shared/python
+TOOLS_REL_PATH = os.path.join(SCRIPT_DIR, "..", "..", "Tools", "src", "shared", "python")
+
+if os.path.exists(TOOLS_REL_PATH):
+    sys.path.append(TOOLS_REL_PATH)
+else:
+    # Check env var as fallback
+    if "TOOLS_PYTHON_PATH" in os.environ:
+        sys.path.append(os.environ["TOOLS_PYTHON_PATH"])
+    else:
+        # Fallback for local dev if not found (keep specific path but warn?)
+        # Better to just try standard import and let it fail if not found
+        pass
 
 try:
     from humanoid_character_builder import (
@@ -18,7 +30,8 @@ except ImportError as e:
     print(f"Error importing humanoid_character_builder: {e}")
     sys.exit(1)
 
-OUTPUT_DIR = r"c:\Users\diete\Repositories\Games\src\games\QuatGolf\assets\enemies"
+# Output to src/games/QuatGolf/assets/enemies relative to this script
+OUTPUT_DIR = os.path.join(SCRIPT_DIR, "..", "src", "games", "QuatGolf", "assets", "enemies")
 
 
 def generate_enemy(name, params):
