@@ -197,6 +197,17 @@ public:
         tps_target_ = pos;
     }
 
+    /** Programmatically set yaw and pitch angles (radians). */
+    void set_angles(float yaw, float pitch) noexcept {
+        yaw_angle_ = yaw;
+        accumulated_pitch_ = std::clamp(pitch, -config.max_pitch, config.max_pitch);
+        rebuild_fps_orientation();
+        current_orientation_ = target_orientation_;
+    }
+
+    /** Set field of view (radians). */
+    void set_fov(float fov_radians) noexcept { config.fov_y = fov_radians; }
+
     /** Get the TPS target position (what the camera orbits around). */
     const math::Vec3& tps_target() const noexcept { return tps_target_; }
 
