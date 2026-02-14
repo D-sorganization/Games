@@ -28,6 +28,7 @@
 #include "renderer/Shader.h"
 #include "game/EnemyManager.h"
 #include "game/ParticleSystem.h"
+#include "audio/AudioSystem.h"
 #include "renderer/Texture.h"
 
 #include <SDL.h>
@@ -67,6 +68,7 @@ struct App {
     // Entities
     qe::game::EnemyManager enemy_manager;
     qe::game::ParticleSystem particle_system;
+    qe::audio::AudioSystem audio_system;
 
     // Ball state
     qg::physics::BallPhysics physics;
@@ -520,6 +522,11 @@ void update(App& app, float dt) {
                  app.ball.velocity = app.ball.velocity * 0.7f;
                  app.total_score += points;
                  std::cout << "Bonk! Enemy hit. +" << points << " Points (Total: " << app.total_score << ")\n";
+                 
+                 // Play sound
+                 // app.audio_system.play("hit"); 
+                 // Synthetic fallback
+                 app.audio_system.play_synthetic(440.0f + (points > 10 ? 220.0f : 0.0f), 0.1f);
                  
                  // Spawn particles
                  app.particle_system.spawn(app.ball.position, 20, {1.0f, 0.8f, 0.2f});
