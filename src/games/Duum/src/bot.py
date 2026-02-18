@@ -4,6 +4,7 @@ import math
 import random
 from typing import TYPE_CHECKING
 
+from games.shared.constants import DEATH_ANIMATION_FRAMES, DISINTEGRATE_FRAMES
 from games.shared.utils import has_line_of_sight
 
 from . import constants as C  # noqa: N812
@@ -171,9 +172,9 @@ class Bot:
     def _update_death_animation(self) -> None:
         """Advance the death / disintegration timers."""
         self.death_timer += 1
-        if self.death_timer > 60:  # Start disintegrating after 1 second
+        if self.death_timer > DEATH_ANIMATION_FRAMES:
             self.disintegrate_timer += 1
-            if self.disintegrate_timer > 100:
+            if self.disintegrate_timer > DISINTEGRATE_FRAMES:
                 self.removed = True
 
     def _update_visual_animations(self) -> None:

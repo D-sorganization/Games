@@ -5,6 +5,8 @@ import math
 import random
 from typing import TYPE_CHECKING
 
+from games.shared.constants import COMBO_TIMER_FRAMES
+
 from . import constants as C
 from .projectile import Projectile
 
@@ -374,7 +376,7 @@ class CombatSystem:
     def _handle_kill(self, bot: Bot) -> None:
         self.game.kills += 1
         self.game.kill_combo_count += 1
-        self.game.kill_combo_timer = 180
+        self.game.kill_combo_timer = COMBO_TIMER_FRAMES
         self.game.last_death_pos = (bot.x, bot.y)
         self.game.sound_manager.play_sound("scream")
 

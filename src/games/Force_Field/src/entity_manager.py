@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
+from games.shared.constants import COMBO_TIMER_FRAMES, PICKUP_RADIUS_SQ
 from games.shared.spatial_grid import SpatialGrid
 
 from . import constants as C  # noqa: N812
@@ -103,12 +104,12 @@ class EntityManager:
                         dx = projectile.x - bot.x
                         dy = projectile.y - bot.y
                         dist_sq = dx * dx + dy * dy
-                        if dist_sq < 0.64:
+                        if dist_sq < PICKUP_RADIUS_SQ:
                             if bot.take_damage(projectile.damage):
                                 game.sound_manager.play_sound("scream")
                                 game.kills += 1
                                 game.kill_combo_count += 1
-                                game.kill_combo_timer = 180
+                                game.kill_combo_timer = COMBO_TIMER_FRAMES
                                 game.last_death_pos = (bot.x, bot.y)
 
                             game.particle_system.add_explosion(
