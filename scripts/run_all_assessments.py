@@ -3,9 +3,12 @@
 Run all assessments (A-O) and generate individual reports.
 """
 
+import logging
 import subprocess
 import sys
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 # Mapping of assessment ID to name
 ASSESSMENTS = {
@@ -39,19 +42,20 @@ def main():
         output_file = output_dir / f"Assessment_{assessment_id}_{name}.md"
         cmd = base_cmd + ["--assessment", assessment_id, "--output", str(output_file)]
 
-        print(f"Running Assessment {assessment_id} ({name})...")
+        logger.info("Running Assessment %s (%s)...", assessment_id, name)
         try:
             subprocess.run(cmd, check=True)
         except subprocess.CalledProcessError:
-            print(f"ERROR: Assessment {assessment_id} failed.")
+            logger.error("Assessment %s failed.", assessment_id)
             failed.append(assessment_id)
 
     if failed:
-        print(f"\nFailed assessments: {', '.join(failed)}")
+        logger.error("Failed assessments: %s", ", ".join(failed))
         sys.exit(1)
 
-    print("\nAll assessments completed successfully.")
+    logger.info("All assessments completed successfully.")
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
     main()

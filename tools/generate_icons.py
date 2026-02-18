@@ -1,6 +1,9 @@
+import logging
 from pathlib import Path
 
 import pygame
+
+logger = logging.getLogger(__name__)
 
 # Initialize Pygame
 pygame.init()
@@ -28,7 +31,7 @@ COLORS = {
 def save_icon(surface: pygame.Surface, name: str) -> None:
     path = OUTPUT_DIR / f"{name}.png"
     pygame.image.save(surface, str(path))
-    print(f"Saved {path}")
+    logger.info("Saved %s", path)
 
 
 def create_force_field_icon() -> None:
@@ -160,6 +163,7 @@ def create_zombie_games_icon() -> None:
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
     create_force_field_icon()
     create_doom_icon()
     create_peanut_butter_panic_icon()

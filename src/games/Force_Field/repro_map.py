@@ -1,14 +1,17 @@
+import logging
 import os
 import sys
+
+logger = logging.getLogger(__name__)
 
 # Add current dir to path
 sys.path.insert(0, os.getcwd())
 
-from src.map import Map
+from src.map import Map  # noqa: E402
 
 
 def test_map_size() -> None:
-    print("Testing Map Generation for Small Areas...")
+    logger.info("Testing Map Generation for Small Areas...")
     small_maps = 0
     total = 100
 
@@ -24,11 +27,12 @@ def test_map_size() -> None:
                     walkable += 1
 
         if walkable < 200:
-            print(f"Iter {i}: Map has only {walkable} walkable tiles!")
+            logger.warning("Iter %d: Map has only %d walkable tiles!", i, walkable)
             small_maps += 1
 
-    print(f"Total small maps (<200 tiles) out of {total}: {small_maps}")
+    logger.info("Total small maps (<200 tiles) out of %d: %d", total, small_maps)
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
     test_map_size()
