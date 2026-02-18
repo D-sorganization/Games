@@ -10,7 +10,19 @@ from typing import Any
 import pygame
 
 from games.shared.config import RaycasterConfig
-from games.shared.constants import GameState
+from games.shared.constants import (
+    BEAST_TIMER_MAX,
+    BEAST_TIMER_MIN,
+    COMBO_TIMER_FRAMES,
+    FOG_REVEAL_RADIUS,
+    GROAN_TIMER_DELAY,
+    MINIGUN_BULLETS_PER_SHOT,
+    MINIGUN_SPREAD,
+    PAUSE_HEARTBEAT_DELAY,
+    PICKUP_RADIUS_SQ,
+    PORTAL_RADIUS_SQ,
+    GameState,
+)
 from games.shared.fps_game_base import FPSGameBase
 from games.shared.interfaces import Portal
 from games.shared.raycaster import Raycaster
@@ -552,9 +564,9 @@ class Game(FPSGameBase):
         if weapon == "minigun" and not is_secondary:
             # Minigun rapid fire with multiple projectiles and visual effects
             damage = self.player.get_current_weapon_damage()
-            num_bullets = 3  # Fire multiple bullets per shot for minigun effect
+            num_bullets = MINIGUN_BULLETS_PER_SHOT
             for _ in range(num_bullets):
-                angle_off = random.uniform(-0.15, 0.15)  # Increased spread for minigun
+                angle_off = random.uniform(-MINIGUN_SPREAD, MINIGUN_SPREAD)
                 final_angle = self.player.angle + angle_off
 
                 # Create minigun projectile with tracer effect
@@ -747,7 +759,7 @@ class Game(FPSGameBase):
                 if not closest_bot.alive:
                     self.kills += 1
                     self.kill_combo_count += 1
-                    self.kill_combo_timer = 180
+                    self.kill_combo_timer = COMBO_TIMER_FRAMES
                     self.last_death_pos = (closest_bot.x, closest_bot.y)
                     self.sound_manager.play_sound("scream")
 
@@ -791,7 +803,7 @@ class Game(FPSGameBase):
                     self.sound_manager.play_sound("scream")
                     self.kills += 1
                     self.kill_combo_count += 1
-                    self.kill_combo_timer = 180
+                    self.kill_combo_timer = COMBO_TIMER_FRAMES
                     self.last_death_pos = (bot.x, bot.y)
 
                 if dist < 5.0:
@@ -840,7 +852,7 @@ class Game(FPSGameBase):
                                 self.sound_manager.play_sound("scream")
                             self.kills += 1
                             self.kill_combo_count += 1
-                            self.kill_combo_timer = 180
+                            self.kill_combo_timer = COMBO_TIMER_FRAMES
                             self.last_death_pos = (bot.x, bot.y)
 
                         for _ in range(10):
@@ -936,7 +948,7 @@ class Game(FPSGameBase):
                     self.sound_manager.play_sound("scream")
                     self.kills += 1
                     self.kill_combo_count += 1
-                    self.kill_combo_timer = 180
+                    self.kill_combo_timer = COMBO_TIMER_FRAMES
                     self.last_death_pos = (bot.x, bot.y)
 
     def update_game(self) -> None:
@@ -983,7 +995,7 @@ class Game(FPSGameBase):
             dx = self.portal["x"] - self.player.x
             dy = self.portal["y"] - self.player.y
             dist_sq = dx * dx + dy * dy
-            if dist_sq < 2.25:  # 1.5^2
+            if dist_sq < PORTAL_RADIUS_SQ:
                 paused = self.total_paused_time
                 now = pygame.time.get_ticks()
                 level_time = (now - self.level_start_time - paused) / 1000.0
@@ -1118,7 +1130,7 @@ class Game(FPSGameBase):
                 dx = bot.x - self.player.x
                 dy = bot.y - self.player.y
                 dist_sq = dx * dx + dy * dy
-                if dist_sq < 0.64:  # 0.8^2
+                if dist_sq < PICKUP_RADIUS_SQ:
                     pickup_msg = ""
                     color = C.GREEN
 
@@ -1166,7 +1178,7 @@ class Game(FPSGameBase):
         self.entity_manager.update_projectiles(self.game_map, self.player, self)
 
         cx, cy = int(self.player.x), int(self.player.y)
-        reveal_radius = 5
+        reveal_radius = FOG_REVEAL_RADIUS
         for r_i in range(-reveal_radius, reveal_radius + 1):
             for r_j in range(-reveal_radius, reveal_radius + 1):
                 if r_i * r_i + r_j * r_j <= reveal_radius * reveal_radius:
@@ -1189,7 +1201,7 @@ class Game(FPSGameBase):
             self.beast_timer -= 1
             if self.beast_timer <= 0:
                 self.sound_manager.play_sound("beast")
-                self.beast_timer = random.randint(300, 900)
+                self.beast_timer = random.randint(BEAST_TIMER_MIN, BEAST_TIMER_MAX)
 
         if min_dist < 20:
             beat_delay = int(min(1.5, max(0.4, min_dist / 10.0)) * C.FPS)
@@ -1203,7 +1215,7 @@ class Game(FPSGameBase):
             self.groan_timer -= 1
             if self.groan_timer <= 0:
                 self.sound_manager.play_sound("groan")
-                self.groan_timer = 240
+                self.groan_timer = GROAN_TIMER_DELAY
 
         if self.kill_combo_timer > 0:
             self.kill_combo_timer -= 1
@@ -1452,8 +1464,7 @@ class Game(FPSGameBase):
                     self.handle_game_events()
                     if self.paused:
                         # Pause Menu Audio
-                        # Heartbeat: 70 BPM -> ~0.85s delay -> ~51 frames (at 60FPS)
-                        beat_delay = 51
+                        beat_delay = PAUSE_HEARTBEAT_DELAY
                         self.heartbeat_timer -= 1
                         if self.heartbeat_timer <= 0:
                             self.sound_manager.play_sound("heartbeat")
@@ -1464,7 +1475,7 @@ class Game(FPSGameBase):
                             self.groan_timer -= 1
                             if self.groan_timer <= 0:
                                 self.sound_manager.play_sound("groan")
-                                self.groan_timer = 240
+                                self.groan_timer = GROAN_TIMER_DELAY
                     else:
                         self.update_game()
                     self.renderer.render_game(self)
