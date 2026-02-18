@@ -8,7 +8,12 @@
  *
  * Design by Contract:
  *   - Precondition: file_path points to a valid STL file
+ *   - Precondition: scale > 0
  *   - Postcondition: returned Mesh has valid VAO/VBO/EBO if load succeeded
+ *
+ * Parse/Upload split:
+ *   parse()  — CPU only, returns vertices/indices (testable without GL)
+ *   load()   — parse() + GPU upload (requires GL context)
  *
  * STL Binary Format:
  *   80-byte header (ignored)
@@ -19,271 +24,347 @@
  *      2 bytes: attribute byte count (ignored)
  */
 
-#include "../renderer/Mesh.h"
 #include "../math/Vec3.h"
+#include "../renderer/Mesh.h"
 
+#include <cassert>
 #include <cstdint>
 #include <cstring>
-#include <fstream>
 #include <fstream>
 #include <sstream>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
+
+#ifndef NDEBUG
+#define QE_REQUIRE(cond, msg) assert((cond) && (msg))
+#else
+#define QE_REQUIRE(cond, msg) ((void)0)
+#endif
 
 namespace qe {
 namespace loader {
 
-/** Result of an STL load operation. */
+/** CPU-side parse result (no GL dependency — testable without context). */
+struct STLParseResult {
+  bool success = false;
+  std::vector<renderer::Vertex> vertices;
+  std::vector<unsigned int> indices;
+  math::Vec3 bounds_min;
+  math::Vec3 bounds_max;
+  int triangle_count = 0;
+  std::string error;
+};
+
+/** Full load result (includes GPU mesh). */
 struct STLLoadResult {
-    bool success = false;
-    renderer::Mesh mesh;
-    math::Vec3 bounds_min;
-    math::Vec3 bounds_max;
-    int triangle_count = 0;
-    int vertex_count = 0;
-    std::string error;
+  bool success = false;
+  renderer::Mesh mesh;
+  math::Vec3 bounds_min;
+  math::Vec3 bounds_max;
+  math::Vec3 center_offset; // Offset from origin to mesh center
+  int triangle_count = 0;
+  int vertex_count = 0;
+  std::string error;
 };
 
 /** Hash function for vertex deduplication. */
 struct VertexHash {
-    size_t operator()(const renderer::Vertex& v) const {
-        // Simple spatial hash combining position coordinates
-        auto hash_f = [](float f) -> size_t {
-            uint32_t bits = 0;
-            std::memcpy(&bits, &f, sizeof(float));
-            return std::hash<uint32_t>{}(bits);
-        };
-        size_t h = hash_f(v.position[0]);
-        h ^= hash_f(v.position[1]) + 0x9e3779b9 + (h << 6) + (h >> 2);
-        h ^= hash_f(v.position[2]) + 0x9e3779b9 + (h << 6) + (h >> 2);
-        return h;
-    }
+  size_t operator()(const renderer::Vertex &v) const {
+    auto hash_f = [](float f) -> size_t {
+      uint32_t bits = 0;
+      std::memcpy(&bits, &f, sizeof(float));
+      return std::hash<uint32_t>{}(bits);
+    };
+    size_t h = hash_f(v.position[0]);
+    h ^= hash_f(v.position[1]) + 0x9e3779b9 + (h << 6) + (h >> 2);
+    h ^= hash_f(v.position[2]) + 0x9e3779b9 + (h << 6) + (h >> 2);
+    return h;
+  }
 };
 
 struct VertexEqual {
-    bool operator()(const renderer::Vertex& a, const renderer::Vertex& b) const {
-        return std::abs(a.position[0] - b.position[0]) < 1e-6f &&
-               std::abs(a.position[1] - b.position[1]) < 1e-6f &&
-               std::abs(a.position[2] - b.position[2]) < 1e-6f;
-    }
+  bool operator()(const renderer::Vertex &a, const renderer::Vertex &b) const {
+    return std::abs(a.position[0] - b.position[0]) < 1e-6f &&
+           std::abs(a.position[1] - b.position[1]) < 1e-6f &&
+           std::abs(a.position[2] - b.position[2]) < 1e-6f;
+  }
 };
 
 class STLLoader {
 public:
-    /**
-     * Load an STL file and convert to a renderable Mesh.
-     *
-     * @param file_path  Path to the .stl file.
-     * @param r, g, b    Base color for the mesh (default: grey).
-     * @param scale      Uniform scale factor (default: 1.0).
-     * @return STLLoadResult with mesh data and metadata.
-     */
-    static STLLoadResult load(const std::string& file_path,
-                              float r = 0.6f, float g = 0.6f, float b = 0.6f,
+  /**
+   * Parse an STL file (CPU only, no GL calls).
+   * Usable for unit testing without a GL context.
+   * @pre scale > 0
+   */
+  static STLParseResult parse(const std::string &file_path, float r = 0.6f,
+                              float g = 0.6f, float b = 0.6f,
                               float scale = 1.0f) {
-        STLLoadResult result;
+    QE_REQUIRE(scale > 0.0f, "STLLoader::parse: scale must be positive");
+    STLParseResult result;
 
-        std::ifstream file(file_path, std::ios::binary);
-        if (!file.is_open()) {
-            result.error = "Cannot open STL file: " + file_path;
-            return result;
-        }
-
-        // Detect binary vs ASCII: read first 80 bytes + 4-byte count
-        // ASCII STL starts with "solid"
-        char header[80];
-        file.read(header, 80);
-        if (!file.good()) {
-            result.error = "STL file too short for header";
-            return result;
-        }
-
-        // Check if this is ASCII by looking for "solid" at start
-        // and verifying the file doesn't have binary triangle data
-        std::string header_str(header, 5);
-        if (header_str == "solid") {
-            // Could be ASCII — verify by checking if next content is "facet"
-            file.seekg(0);
-            result = load_ascii(file, r, g, b, scale);
-        } else {
-            result = load_binary(file, r, g, b, scale);
-        }
-
-        file.close();
-        return result;
+    std::ifstream file(file_path, std::ios::binary);
+    if (!file.is_open()) {
+      result.error = "Cannot open STL file: " + file_path;
+      return result;
     }
 
-    /**
-     * Load an STL and center the mesh at origin.
-     * Useful for enemy models that need to rotate around their center.
-     */
-    static STLLoadResult load_centered(const std::string& file_path,
-                                       float r = 0.6f, float g = 0.6f,
-                                       float b = 0.6f, float scale = 1.0f) {
-        auto result = load(file_path, r, g, b, scale);
-        if (!result.success) return result;
-
-        // The mesh is already uploaded — to center it, we'd need to
-        // reload with an offset. For simplicity, store the center offset
-        // and let the caller apply it via the model matrix.
-        return result;
+    if (is_binary_stl(file)) {
+      file.seekg(80); // Skip header, position at triangle count
+      result = parse_binary(file, r, g, b, scale);
+    } else {
+      file.seekg(0);
+      result = parse_ascii(file, r, g, b, scale);
     }
+
+    file.close();
+    return result;
+  }
+
+  /**
+   * Load an STL file and upload to GPU.
+   * @pre scale > 0
+   */
+  static STLLoadResult load(const std::string &file_path, float r = 0.6f,
+                            float g = 0.6f, float b = 0.6f,
+                            float scale = 1.0f) {
+    STLLoadResult result;
+
+    auto parsed = parse(file_path, r, g, b, scale);
+    if (!parsed.success) {
+      result.error = parsed.error;
+      return result;
+    }
+
+    result.bounds_min = parsed.bounds_min;
+    result.bounds_max = parsed.bounds_max;
+    result.triangle_count = parsed.triangle_count;
+    result.vertex_count = static_cast<int>(parsed.vertices.size());
+
+    // Compute center offset
+    result.center_offset = (parsed.bounds_min + parsed.bounds_max) * 0.5f;
+
+    result.mesh.upload(parsed.vertices, parsed.indices);
+    result.success = true;
+    return result;
+  }
+
+  /**
+   * Load an STL and center the mesh at origin.
+   * Vertices are translated so the bounding box center is at (0,0,0).
+   * @pre scale > 0
+   */
+  static STLLoadResult load_centered(const std::string &file_path,
+                                     float r = 0.6f, float g = 0.6f,
+                                     float b = 0.6f, float scale = 1.0f) {
+    STLLoadResult result;
+
+    auto parsed = parse(file_path, r, g, b, scale);
+    if (!parsed.success) {
+      result.error = parsed.error;
+      return result;
+    }
+
+    result.bounds_min = parsed.bounds_min;
+    result.bounds_max = parsed.bounds_max;
+    result.triangle_count = parsed.triangle_count;
+
+    // Compute and apply centering offset
+    math::Vec3 center = (parsed.bounds_min + parsed.bounds_max) * 0.5f;
+    result.center_offset = center;
+
+    for (auto &v : parsed.vertices) {
+      v.position[0] -= center.x;
+      v.position[1] -= center.y;
+      v.position[2] -= center.z;
+    }
+
+    result.vertex_count = static_cast<int>(parsed.vertices.size());
+    result.mesh.upload(parsed.vertices, parsed.indices);
+    result.success = true;
+    return result;
+  }
 
 private:
-    /** Load binary STL format. */
-    static STLLoadResult load_binary(std::ifstream& file,
-                                     float r, float g, float b, float scale) {
-        STLLoadResult result;
+  /**
+   * Detect whether an STL file is binary or ASCII.
+   * Binary STLs (even those with "solid" in the header) are identified
+   * by checking if 84 + tri_count * 50 == file_size.
+   */
+  static bool is_binary_stl(std::ifstream &file) {
+    file.seekg(0, std::ios::end);
+    auto file_size = file.tellg();
+    file.seekg(0);
 
-        // Read triangle count (already past 80-byte header)
-        uint32_t tri_count = 0;
-        file.read(reinterpret_cast<char*>(&tri_count), 4);
-        if (!file.good() || tri_count == 0 || tri_count > 10000000) {
-            result.error = "Invalid binary STL header or triangle count (count=" + std::to_string(tri_count) + ")";
-            return result;
-        }
+    // File too small for binary header + triangle count
+    if (file_size < 84)
+      return false;
 
-        result.triangle_count = static_cast<int>(tri_count);
+    char header[80];
+    file.read(header, 80);
+    if (!file.good())
+      return false;
 
-        std::vector<renderer::Vertex> vertices;
-        std::vector<unsigned int> indices;
-        vertices.reserve(tri_count * 3);
-        indices.reserve(tri_count * 3);
+    uint32_t tri_count = 0;
+    file.read(reinterpret_cast<char *>(&tri_count), 4);
+    if (!file.good())
+      return false;
 
-        // Vertex deduplication map
-        std::unordered_map<renderer::Vertex, unsigned int,
-                           VertexHash, VertexEqual> vertex_map;
+    // Binary STL: exactly 84 (header + count) + 50 * tri_count bytes
+    auto expected_size = static_cast<std::streamoff>(84 + tri_count * 50);
+    if (expected_size == static_cast<std::streamoff>(file_size)) {
+      file.seekg(84); // Position past header + count
+      return true;
+    }
 
-        // Initialize bounds
-        result.bounds_min = {1e30f, 1e30f, 1e30f};
-        result.bounds_max = {-1e30f, -1e30f, -1e30f};
+    // Not binary — reset for ASCII parsing
+    file.seekg(0);
+    return false;
+  }
 
-        for (uint32_t i = 0; i < tri_count; ++i) {
-            float normal[3];
-            float verts[9];  // 3 vertices × 3 floats
-            uint16_t attr;
+  /** Parse binary STL format with vertex deduplication. */
+  static STLParseResult parse_binary(std::ifstream &file, float r, float g,
+                                     float b, float scale) {
+    STLParseResult result;
 
-            file.read(reinterpret_cast<char*>(normal), 12);
-            file.read(reinterpret_cast<char*>(verts), 36);
-            file.read(reinterpret_cast<char*>(&attr), 2);
+    uint32_t tri_count = 0;
+    file.read(reinterpret_cast<char *>(&tri_count), 4);
+    if (!file.good() || tri_count == 0 || tri_count > 10000000) {
+      result.error =
+          "Invalid binary STL triangle count: " + std::to_string(tri_count);
+      return result;
+    }
 
-            if (!file.good()) {
-                result.error = "Unexpected end of STL data at triangle " +
-                               std::to_string(i);
-                return result;
-            }
+    result.triangle_count = static_cast<int>(tri_count);
+    result.vertices.reserve(tri_count * 3);
+    result.indices.reserve(tri_count * 3);
 
-            for (int v = 0; v < 3; ++v) {
-                renderer::Vertex vert{};
-                vert.position[0] = verts[v * 3 + 0] * scale;
-                vert.position[1] = verts[v * 3 + 1] * scale;
-                vert.position[2] = verts[v * 3 + 2] * scale;
-                vert.normal[0] = normal[0];
-                vert.normal[1] = normal[1];
-                vert.normal[2] = normal[2];
-                vert.color[0] = r;
-                vert.color[1] = g;
-                vert.color[2] = b;
-                // Generate UV from position (planar projection)
-                vert.uv[0] = vert.position[0] * 0.5f + 0.5f;
-                vert.uv[1] = vert.position[1] * 0.5f + 0.5f;
+    std::unordered_map<renderer::Vertex, unsigned int, VertexHash, VertexEqual>
+        vertex_map;
 
-                // Update bounds
-                update_bounds(result, vert);
+    result.bounds_min = {1e30f, 1e30f, 1e30f};
+    result.bounds_max = {-1e30f, -1e30f, -1e30f};
 
-                // Deduplicate vertices
-                auto it = vertex_map.find(vert);
-                if (it != vertex_map.end()) {
-                    indices.push_back(it->second);
-                } else {
-                    auto idx = static_cast<unsigned int>(vertices.size());
-                    vertex_map[vert] = idx;
-                    vertices.push_back(vert);
-                    indices.push_back(idx);
-                }
-            }
-        }
+    for (uint32_t i = 0; i < tri_count; ++i) {
+      float normal[3];
+      float verts[9];
+      uint16_t attr;
 
-        result.vertex_count = static_cast<int>(vertices.size());
-        result.mesh.upload(vertices, indices);
-        result.success = true;
+      file.read(reinterpret_cast<char *>(normal), 12);
+      file.read(reinterpret_cast<char *>(verts), 36);
+      file.read(reinterpret_cast<char *>(&attr), 2);
 
+      if (!file.good()) {
+        result.error =
+            "Unexpected end of STL data at triangle " + std::to_string(i);
         return result;
+      }
+
+      for (int v = 0; v < 3; ++v) {
+        renderer::Vertex vert{};
+        vert.position[0] = verts[v * 3 + 0] * scale;
+        vert.position[1] = verts[v * 3 + 1] * scale;
+        vert.position[2] = verts[v * 3 + 2] * scale;
+        vert.normal[0] = normal[0];
+        vert.normal[1] = normal[1];
+        vert.normal[2] = normal[2];
+        vert.color[0] = r;
+        vert.color[1] = g;
+        vert.color[2] = b;
+        vert.uv[0] = vert.position[0] * 0.5f + 0.5f;
+        vert.uv[1] = vert.position[1] * 0.5f + 0.5f;
+
+        update_bounds(result, vert);
+        deduplicate_vertex(result, vertex_map, vert);
+      }
     }
 
-    /** Load ASCII STL format. */
-    static STLLoadResult load_ascii(std::ifstream& file,
-                                    float r, float g, float b, float scale) {
-        STLLoadResult result;
+    result.success = true;
+    return result;
+  }
 
-        std::vector<renderer::Vertex> vertices;
-        std::vector<unsigned int> indices;
-        unsigned int idx = 0;
+  /** Parse ASCII STL format with vertex deduplication. */
+  static STLParseResult parse_ascii(std::ifstream &file, float r, float g,
+                                    float b, float scale) {
+    STLParseResult result;
 
-        result.bounds_min = {1e30f, 1e30f, 1e30f};
-        result.bounds_max = {-1e30f, -1e30f, -1e30f};
+    std::unordered_map<renderer::Vertex, unsigned int, VertexHash, VertexEqual>
+        vertex_map;
 
-        std::string line;
-        float nx = 0, ny = 0, nz = 0;
+    result.bounds_min = {1e30f, 1e30f, 1e30f};
+    result.bounds_max = {-1e30f, -1e30f, -1e30f};
 
-        while (std::getline(file, line)) {
-            std::istringstream iss(line);
-            std::string keyword;
-            iss >> keyword;
+    std::string line;
+    float nx = 0, ny = 0, nz = 0;
 
-            if (keyword == "facet") {
-                std::string normal_str;
-                iss >> normal_str >> nx >> ny >> nz;
-                result.triangle_count++;
-            } else if (keyword == "vertex") {
-                float vx, vy, vz;
-                iss >> vx >> vy >> vz;
+    while (std::getline(file, line)) {
+      std::istringstream iss(line);
+      std::string keyword;
+      iss >> keyword;
 
-                renderer::Vertex vert{};
-                vert.position[0] = vx * scale;
-                vert.position[1] = vy * scale;
-                vert.position[2] = vz * scale;
-                vert.normal[0] = nx;
-                vert.normal[1] = ny;
-                vert.normal[2] = nz;
-                vert.color[0] = r;
-                vert.color[1] = g;
-                vert.color[2] = b;
-                vert.uv[0] = vert.position[0] * 0.5f + 0.5f;
-                vert.uv[1] = vert.position[1] * 0.5f + 0.5f;
+      if (keyword == "facet") {
+        std::string normal_str;
+        iss >> normal_str >> nx >> ny >> nz;
+        result.triangle_count++;
+      } else if (keyword == "vertex") {
+        float vx, vy, vz;
+        iss >> vx >> vy >> vz;
 
-                update_bounds(result, vert);
-                vertices.push_back(vert);
-                indices.push_back(idx++);
-            }
-        }
+        renderer::Vertex vert{};
+        vert.position[0] = vx * scale;
+        vert.position[1] = vy * scale;
+        vert.position[2] = vz * scale;
+        vert.normal[0] = nx;
+        vert.normal[1] = ny;
+        vert.normal[2] = nz;
+        vert.color[0] = r;
+        vert.color[1] = g;
+        vert.color[2] = b;
+        vert.uv[0] = vert.position[0] * 0.5f + 0.5f;
+        vert.uv[1] = vert.position[1] * 0.5f + 0.5f;
 
-        if (vertices.empty()) {
-            result.error = "No vertices found in ASCII STL";
-            return result;
-        }
-
-        result.vertex_count = static_cast<int>(vertices.size());
-        result.mesh.upload(vertices, indices);
-        result.success = true;
-
-        return result;
+        update_bounds(result, vert);
+        // DRY: ASCII path now uses same dedup as binary
+        deduplicate_vertex(result, vertex_map, vert);
+      }
     }
 
-    static void update_bounds(STLLoadResult& result,
-                              const renderer::Vertex& v) {
-        for (int i = 0; i < 3; ++i) {
-            float* bmin = (i == 0) ? &result.bounds_min.x :
-                          (i == 1) ? &result.bounds_min.y :
-                                     &result.bounds_min.z;
-            float* bmax = (i == 0) ? &result.bounds_max.x :
-                          (i == 1) ? &result.bounds_max.y :
-                                     &result.bounds_max.z;
-            if (v.position[i] < *bmin) *bmin = v.position[i];
-            if (v.position[i] > *bmax) *bmax = v.position[i];
-        }
+    if (result.vertices.empty()) {
+      result.error = "No vertices found in ASCII STL";
+      return result;
     }
+
+    result.success = true;
+    return result;
+  }
+
+  /** DRY: shared vertex deduplication for both ASCII and binary paths. */
+  static void
+  deduplicate_vertex(STLParseResult &result,
+                     std::unordered_map<renderer::Vertex, unsigned int,
+                                        VertexHash, VertexEqual> &vertex_map,
+                     const renderer::Vertex &vert) {
+    auto it = vertex_map.find(vert);
+    if (it != vertex_map.end()) {
+      result.indices.push_back(it->second);
+    } else {
+      auto idx = static_cast<unsigned int>(result.vertices.size());
+      vertex_map[vert] = idx;
+      result.vertices.push_back(vert);
+      result.indices.push_back(idx);
+    }
+  }
+
+  static void update_bounds(STLParseResult &result, const renderer::Vertex &v) {
+    for (int i = 0; i < 3; ++i) {
+      if (v.position[i] < (&result.bounds_min.x)[i])
+        (&result.bounds_min.x)[i] = v.position[i];
+      if (v.position[i] > (&result.bounds_max.x)[i])
+        (&result.bounds_max.x)[i] = v.position[i];
+    }
+  }
 };
 
 } // namespace loader
