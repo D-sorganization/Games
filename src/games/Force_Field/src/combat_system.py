@@ -405,6 +405,7 @@ class CombatSystem:
         self.game.kill_combo_timer = COMBO_TIMER_FRAMES
         self.game.last_death_pos = (bot.x, bot.y)
         self.game.sound_manager.play_sound("scream")
+        self.game.event_bus.emit("bot_killed", x=bot.x, y=bot.y)
 
     def explode_bomb(self, projectile: Projectile) -> None:
         """Handle bomb explosion logic"""

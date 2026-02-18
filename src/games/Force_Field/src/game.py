@@ -18,6 +18,7 @@ from games.shared.constants import (
     PORTAL_RADIUS_SQ,
     GameState,
 )
+from games.shared.event_bus import EventBus
 from games.shared.fps_game_base import FPSGameBase
 from games.shared.interfaces import Portal
 
@@ -135,6 +136,10 @@ class Game(FPSGameBase):
         )
         self.sound_manager.start_music()
 
+        # Event Bus — lightweight pub/sub for decoupling subsystems
+        self.event_bus = EventBus()
+        self._wire_event_bus()
+
         # Input
         self.joystick = None
         if pygame.joystick.get_count() > 0:
@@ -178,6 +183,13 @@ class Game(FPSGameBase):
             GRAY=C.GRAY,
             WHITE=C.WHITE,
             YELLOW=C.YELLOW,
+        )
+
+    def _wire_event_bus(self) -> None:
+        """Subscribe subsystems to game events via the event bus."""
+        self.event_bus.subscribe(
+            "bot_killed",
+            lambda **kw: self.sound_manager.play_sound("scream"),
         )
 
     def start_game(self) -> None:
@@ -370,6 +382,7 @@ class Game(FPSGameBase):
                         self.kill_combo_count += 1
                         self.kill_combo_timer = COMBO_TIMER_FRAMES
                         self.last_death_pos = (bot.x, bot.y)
+                        self.event_bus.emit("bot_killed", x=bot.x, y=bot.y)
 
                     hits += 1
 
