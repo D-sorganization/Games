@@ -77,6 +77,7 @@ WEAPONS: dict[str, WeaponData] = {
         "reload_time": 60,  # 1 second
         "key": "1",
         "automatic": True,  # Semi-auto, but felt "broken" if clicks missed.
+        "fire_mode": "hitscan",
     },
     "rifle": {
         "name": "Rifle",
@@ -88,6 +89,7 @@ WEAPONS: dict[str, WeaponData] = {
         "clip_size": 15,  # Reduced clip size (was 30)
         "reload_time": 120,  # 2 seconds
         "key": "2",
+        "fire_mode": "hitscan",
     },
     "shotgun": {
         "name": "Shotgun",
@@ -101,6 +103,7 @@ WEAPONS: dict[str, WeaponData] = {
         "spread": 0.15,
         "key": "3",
         "automatic": True,
+        "fire_mode": "spread",
     },
     "minigun": {
         "name": "Minigun",
@@ -113,6 +116,7 @@ WEAPONS: dict[str, WeaponData] = {
         "reload_time": 150,
         "key": "7",
         "spin_up_time": 30,
+        "fire_mode": "burst",
     },
     "plasma": {
         "name": "Plasma",
@@ -129,6 +133,7 @@ WEAPONS: dict[str, WeaponData] = {
         "projectile_speed": 0.5,
         "projectile_color": (0, 191, 255),
         "key": "5",
+        "fire_mode": "projectile",
     },
     "pulse": {
         "name": "Pulse Rifle",
@@ -142,6 +147,7 @@ WEAPONS: dict[str, WeaponData] = {
         "projectile_speed": 0.6,
         "projectile_color": (100, 100, 255),
         "key": "0",  # Auto-assigned usually
+        "fire_mode": "projectile",
     },
     "laser": {
         "name": "Laser",
@@ -155,6 +161,7 @@ WEAPONS: dict[str, WeaponData] = {
         "key": "4",
         "beam_color": (255, 0, 0),  # Red laser
         "beam_width": 15,  # Thicker beam (STAR WARS style)
+        "fire_mode": "beam",
     },
     "rocket": {
         "name": "Rocket Launcher",
@@ -168,6 +175,7 @@ WEAPONS: dict[str, WeaponData] = {
         "projectile_speed": 0.3,
         "projectile_color": (255, 100, 0),
         "aoe_radius": 6.0,
+        "fire_mode": "projectile",
     },
     "bfg": {
         "name": "BFG 9000",
@@ -181,6 +189,7 @@ WEAPONS: dict[str, WeaponData] = {
         "projectile_speed": 0.2,
         "projectile_color": (0, 255, 0),
         "aoe_radius": 15.0,
+        "fire_mode": "projectile",
     },
     "flamethrower": {
         "name": "Flamethrower",
@@ -194,6 +203,7 @@ WEAPONS: dict[str, WeaponData] = {
         "key": "9",
         "projectile_speed": 0.35,
         "projectile_color": (255, 140, 0),
+        "fire_mode": "projectile",
     },
     "freezer": {
         "name": "Freezer",
@@ -207,6 +217,7 @@ WEAPONS: dict[str, WeaponData] = {
         "key": "-",
         "projectile_speed": 0.4,
         "projectile_color": (200, 255, 255),
+        "fire_mode": "projectile",
     },
 }
 

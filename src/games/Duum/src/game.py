@@ -29,7 +29,7 @@ from games.shared.raycaster import Raycaster
 from games.shared.sound_manager_base import SoundManagerBase
 
 from . import constants as C  # noqa: N812
-from .bot import Bot
+from .combat_manager import DuumCombatManager
 from .custom_types import DamageText, Portal
 from .entity_manager import EntityManager
 from .input_manager import InputManager
@@ -39,6 +39,7 @@ from .player import Player
 from .projectile import Projectile
 from .renderer import GameRenderer
 from .sound import SoundManager
+from .spawn_manager import DuumSpawnManager
 from .ui_renderer import UIRenderer
 
 logger = logging.getLogger(__name__)
@@ -126,6 +127,10 @@ class Game(FPSGameBase):
         self.god_mode = False
 
         self.game_over_timer = 0
+
+        # Managers (decomposed from Game god object)
+        self.combat_manager = DuumCombatManager(self)
+        self.spawn_manager = DuumSpawnManager(self)
 
         # Audio
         self.sound_manager = (
@@ -254,119 +259,9 @@ class Game(FPSGameBase):
         # Propagate God Mode state
         self.player.god_mode = self.god_mode
 
-        # Bots spawn in random locations, but respect safety radius
+        # Delegate spawning to SpawnManager
         self.entity_manager.reset()
-
-        num_enemies = int(
-            min(
-                50,
-                5
-                + self.level
-                * 2
-                * C.DIFFICULTIES[self.selected_difficulty]["score_mult"],
-            )
-        )
-
-        for _ in range(num_enemies):
-            # Try to place bot
-            for _ in range(20):
-                bx = random.randint(2, self.game_map.size - 2)
-                by = random.randint(2, self.game_map.size - 2)
-
-                # Distance check (Increased safety but ensuring spawns)
-                dist_sq = (bx - player_pos[0]) ** 2 + (by - player_pos[1]) ** 2
-                if dist_sq < 225.0:  # 15^2, safe zone radius
-                    continue
-
-                if not self.game_map.is_wall(bx, by):
-                    # Add bot
-                    enemy_type = random.choice(list(C.ENEMY_TYPES.keys()))
-                    while enemy_type in [
-                        "boss",
-                        "demon",
-                        "ball",
-                        "beast",
-                        "pickup_rifle",
-                        "pickup_shotgun",
-                        "pickup_plasma",
-                        "health_pack",
-                        "ammo_box",
-                        "bomb_item",
-                        "pickup_rocket",
-                        "pickup_minigun",
-                    ]:
-                        enemy_type = random.choice(list(C.ENEMY_TYPES.keys()))
-
-                    self.entity_manager.add_bot(
-                        Bot(
-                            bx + 0.5,
-                            by + 0.5,
-                            self.level,
-                            enemy_type,
-                            difficulty=self.selected_difficulty,
-                        )
-                    )
-                    break
-
-        # Spawn Boss & Fast Enemy (Demon)
-        boss_options = ["ball", "beast"]
-        boss_type = random.choice(boss_options)
-
-        upper_bound = max(2, self.game_map.size - 3)
-        for _ in range(50):
-            cx = random.randint(2, upper_bound)
-            cy = random.randint(2, upper_bound)
-            if (
-                not self.game_map.is_wall(cx, cy)
-                and (cx - player_pos[0]) ** 2 + (cy - player_pos[1]) ** 2 > 225  # 15^2
-            ):
-                self.entity_manager.add_bot(
-                    Bot(
-                        cx + 0.5,
-                        cy + 0.5,
-                        self.level,
-                        enemy_type=boss_type,
-                        difficulty=self.selected_difficulty,
-                    )
-                )
-                break
-
-        # Spawn Pickups
-        possible_weapons = [
-            "pickup_rifle",
-            "pickup_shotgun",
-            "pickup_plasma",
-            "pickup_plasma",
-            "pickup_minigun",
-            "pickup_rocket",
-        ]
-        for w_pickup in possible_weapons:
-            if random.random() < 0.4:  # 40% chance per level
-                rx = random.randint(5, self.game_map.size - 5)
-                ry = random.randint(5, self.game_map.size - 5)
-                if not self.game_map.is_wall(rx, ry):
-                    self.entity_manager.add_bot(
-                        Bot(rx + 0.5, ry + 0.5, self.level, w_pickup)
-                    )
-
-        # Ammo / Bombs
-        for _ in range(8):
-            rx = random.randint(5, self.game_map.size - 5)
-            ry = random.randint(5, self.game_map.size - 5)
-            if not self.game_map.is_wall(rx, ry):
-                choice = random.random()
-                if choice < 0.2:
-                    self.entity_manager.add_bot(
-                        Bot(rx + 0.5, ry + 0.5, self.level, "bomb_item")
-                    )
-                elif choice < 0.7:
-                    self.entity_manager.add_bot(
-                        Bot(rx + 0.5, ry + 0.5, self.level, "ammo_box")
-                    )
-                else:
-                    self.entity_manager.add_bot(
-                        Bot(rx + 0.5, ry + 0.5, self.level, "health_pack")
-                    )
+        self.spawn_manager.spawn_all(player_pos)
 
         # Start Music
         music_tracks = [
@@ -589,94 +484,89 @@ class Game(FPSGameBase):
         except OSError:
             logger.exception("Save failed")
 
+    _FIRE_DISPATCH: dict[str, str] = {
+        "hitscan": "_fire_hitscan",
+        "projectile": "_fire_projectile",
+        "spread": "_fire_spread",
+        "beam": "_fire_beam",
+        "burst": "_fire_burst",
+    }
+
     def fire_weapon(self, is_secondary: bool = False) -> None:
-        """Handle weapon firing (Hitscan or Projectile)"""
+        """Handle weapon firing via data-driven dispatch."""
         assert self.player is not None
-        weapon = self.player.current_weapon
+        weapon_name = self.player.current_weapon
+        weapon_data = C.WEAPONS[weapon_name]
 
         # Sound
-        sound_name = f"shoot_{weapon}"
-        self.sound_manager.play_sound(sound_name)
+        self.sound_manager.play_sound(f"shoot_{weapon_name}")
 
         # Muzzle Flash Light
         self.flash_intensity = 0.8
 
-        # Visuals & Logic
-        if weapon == "plasma" and not is_secondary:
-            # Spawn Projectile
+        if is_secondary:
+            self.check_shot_hit(is_secondary=True)
+            return
+
+        fire_mode = weapon_data.get("fire_mode", "hitscan")
+        handler = getattr(self, self._FIRE_DISPATCH[fire_mode])
+        handler(weapon_data, weapon_name)
+
+    def _fire_hitscan(self, weapon_data: dict, weapon_name: str) -> None:
+        """Fire a single hitscan ray."""
+        self.check_shot_hit(is_secondary=False)
+
+    def _fire_projectile(self, weapon_data: dict, weapon_name: str) -> None:
+        """Spawn a projectile based on weapon data."""
+        size_map = {"plasma": 0.225, "rocket": 0.3}
+        p = Projectile(
+            self.player.x,
+            self.player.y,
+            self.player.angle,
+            speed=float(weapon_data.get("projectile_speed", 0.5)),
+            damage=self.player.get_current_weapon_damage(),
+            is_player=True,
+            color=weapon_data.get("projectile_color", (0, 255, 255)),
+            size=size_map.get(weapon_name, 0.3),
+            weapon_type=weapon_name,
+        )
+        self.entity_manager.add_projectile(p)
+
+    def _fire_spread(self, weapon_data: dict, weapon_name: str) -> None:
+        """Fire multiple pellets with spread."""
+        pellets = int(weapon_data.get("pellets", 8))
+        spread = float(weapon_data.get("spread", 0.15))
+        for _ in range(pellets):
+            angle_off = random.uniform(-spread, spread)
+            self.check_shot_hit(angle_offset=angle_off)
+
+    def _fire_beam(self, weapon_data: dict, weapon_name: str) -> None:
+        """Fire a hitscan beam with visual trail."""
+        self.check_shot_hit(is_secondary=False, is_laser=True)
+
+    def _fire_burst(self, weapon_data: dict, weapon_name: str) -> None:
+        """Fire a burst of fast projectiles."""
+        damage = self.player.get_current_weapon_damage()
+        num_bullets = MINIGUN_BULLETS_PER_SHOT
+        for _ in range(num_bullets):
+            angle_off = random.uniform(-MINIGUN_SPREAD, MINIGUN_SPREAD)
+            final_angle = self.player.angle + angle_off
             p = Projectile(
                 self.player.x,
                 self.player.y,
-                self.player.angle,
-                speed=float(C.WEAPONS["plasma"].get("projectile_speed", 0.5)),
-                damage=self.player.get_current_weapon_damage(),
+                final_angle,
+                damage,
+                speed=2.0,
                 is_player=True,
-                color=C.WEAPONS["plasma"].get("projectile_color", (0, 255, 255)),
-                size=0.225,
-                weapon_type="plasma",
+                color=(255, 255, 0),
+                size=0.1,
+                weapon_type="minigun",
             )
             self.entity_manager.add_projectile(p)
-            return
 
-        if weapon == "rocket" and not is_secondary:
-            # Spawn Rocket
-            p = Projectile(
-                self.player.x,
-                self.player.y,
-                self.player.angle,
-                speed=float(C.WEAPONS["rocket"].get("projectile_speed", 0.3)),
-                damage=self.player.get_current_weapon_damage(),
-                is_player=True,
-                color=C.WEAPONS["rocket"].get("projectile_color", (255, 100, 0)),
-                size=0.3,
-                weapon_type="rocket",
-            )
-            self.entity_manager.add_projectile(p)
-            return
-
-        if weapon == "minigun" and not is_secondary:
-            # Minigun rapid fire with multiple projectiles and visual effects
-            damage = self.player.get_current_weapon_damage()
-            num_bullets = MINIGUN_BULLETS_PER_SHOT
-            for _ in range(num_bullets):
-                angle_off = random.uniform(-MINIGUN_SPREAD, MINIGUN_SPREAD)
-                final_angle = self.player.angle + angle_off
-
-                # Create minigun projectile with tracer effect
-                p = Projectile(
-                    self.player.x,
-                    self.player.y,
-                    final_angle,
-                    damage,
-                    speed=2.0,  # Fast bullets
-                    is_player=True,
-                    color=(255, 255, 0),  # Yellow tracers for minigun
-                    size=0.1,  # Smaller bullets
-                    weapon_type="minigun",
-                )
-                self.entity_manager.add_projectile(p)
-
-            # Add muzzle flash particles for minigun
-            self.particle_system.add_explosion(
-                C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2, count=8, color=(255, 255, 0)
-            )
-            return
-
-        if weapon == "laser" and not is_secondary:
-            # Hitscan with Beam Visual
-            self.check_shot_hit(is_secondary=False, is_laser=True)
-            return
-
-        if weapon == "shotgun" and not is_secondary:
-            # Spread Fire
-            pellets = int(C.WEAPONS["shotgun"].get("pellets", 8))
-            spread = float(C.WEAPONS["shotgun"].get("spread", 0.15))
-            for _ in range(pellets):
-                angle_off = random.uniform(-spread, spread)
-                self.check_shot_hit(angle_offset=angle_off)
-        else:
-            # Single Hitscan
-            self.check_shot_hit(is_secondary=is_secondary)
+        self.particle_system.add_explosion(
+            C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2, count=8, color=(255, 255, 0)
+        )
 
     def check_shot_hit(
         self,

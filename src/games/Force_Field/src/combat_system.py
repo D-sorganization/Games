@@ -30,66 +30,92 @@ class CombatSystem:
             raise ValueError("Player is None")
         return self.game.player
 
+    _FIRE_DISPATCH: dict[str, str] = {
+        "hitscan": "_fire_hitscan",
+        "projectile": "_fire_projectile",
+        "spread": "_fire_spread",
+        "beam": "_fire_beam",
+        "burst": "_fire_burst",
+    }
+
+    _RECOIL: dict[str, float] = {
+        "minigun": 0.5,
+        "shotgun": 4.0,
+        "rocket": 5.0,
+    }
+
     def fire_weapon(self, is_secondary: bool = False) -> None:
-        """Handle weapon firing (Hitscan or Projectile)"""
-        weapon = self.player.current_weapon
+        """Handle weapon firing via data-driven dispatch."""
+        weapon_name = self.player.current_weapon
+        weapon_data = C.WEAPONS[weapon_name]
 
         # Recoil Effect
-        recoil_amount = 2.0
         if self.player.zoomed:
             recoil_amount = 0.5
-        elif weapon == "minigun":
-            recoil_amount = 0.5
-        elif weapon == "shotgun":
-            recoil_amount = 4.0
-        elif weapon == "rocket":
-            recoil_amount = 5.0
-
+        else:
+            recoil_amount = self._RECOIL.get(weapon_name, 2.0)
         self.player.pitch += recoil_amount
-        # Clamp pitch is handled in player update, but we can clamp here too if needed
-        # or rely on player logic.
 
         # Sound
-        sound_name = f"shoot_{weapon}"
-        self.game.sound_manager.play_sound(sound_name)
+        self.game.sound_manager.play_sound(f"shoot_{weapon_name}")
 
-        # Visuals & Logic
-        if weapon == "plasma" and not is_secondary:
-            self._fire_plasma()
+        if is_secondary:
+            self.check_shot_hit(is_secondary=True)
             return
 
-        if weapon == "pulse" and not is_secondary:
-            self._fire_pulse()
-            return
+        fire_mode = weapon_data.get("fire_mode", "hitscan")
+        handler = getattr(self, self._FIRE_DISPATCH[fire_mode])
+        handler(weapon_data, weapon_name)
 
-        if weapon == "rocket" and not is_secondary:
-            self._fire_rocket()
-            return
+    def _fire_hitscan(self, weapon_data: dict, weapon_name: str) -> None:
+        """Fire a single hitscan ray."""
+        self.check_shot_hit(is_secondary=False)
 
-        if weapon == "flamethrower" and not is_secondary:
-            self._fire_flamethrower()
-            return
-
-        if weapon == "freezer" and not is_secondary:
-            self._fire_freezer()
-            return
-
-        if weapon == "minigun" and not is_secondary:
-            self._fire_minigun()
-            return
-
-        if weapon == "laser" and not is_secondary:
-            self.check_shot_hit(is_secondary=False, is_laser=True)
-            return
-
-        if weapon == "shotgun" and not is_secondary:
-            pellets = int(C.WEAPONS["shotgun"].get("pellets", 8))
-            spread = float(C.WEAPONS["shotgun"].get("spread", 0.15))
-            for _ in range(pellets):
-                angle_off = random.uniform(-spread, spread)
-                self.check_shot_hit(angle_offset=angle_off)
+    def _fire_projectile(self, weapon_data: dict, weapon_name: str) -> None:
+        """Spawn a projectile, delegating to weapon-specific handlers."""
+        _projectile_handlers = {
+            "plasma": self._fire_plasma,
+            "pulse": self._fire_pulse,
+            "rocket": self._fire_rocket,
+            "flamethrower": self._fire_flamethrower,
+            "freezer": self._fire_freezer,
+        }
+        handler = _projectile_handlers.get(weapon_name)
+        if handler:
+            handler()
         else:
-            self.check_shot_hit(is_secondary=is_secondary)
+            self._fire_generic_projectile(weapon_data, weapon_name)
+
+    def _fire_generic_projectile(self, weapon_data: dict, weapon_name: str) -> None:
+        """Fallback projectile spawner for weapons without a specific handler."""
+        p = Projectile(
+            self.player.x,
+            self.player.y,
+            self.player.angle,
+            speed=float(weapon_data.get("projectile_speed", 0.5)),
+            damage=self.player.get_current_weapon_damage(),
+            is_player=True,
+            color=weapon_data.get("projectile_color", (0, 255, 255)),
+            size=0.3,
+            weapon_type=weapon_name,
+        )
+        self.game.entity_manager.add_projectile(p)
+
+    def _fire_spread(self, weapon_data: dict, weapon_name: str) -> None:
+        """Fire multiple pellets with spread."""
+        pellets = int(weapon_data.get("pellets", 8))
+        spread = float(weapon_data.get("spread", 0.15))
+        for _ in range(pellets):
+            angle_off = random.uniform(-spread, spread)
+            self.check_shot_hit(angle_offset=angle_off)
+
+    def _fire_beam(self, weapon_data: dict, weapon_name: str) -> None:
+        """Fire a hitscan beam with visual trail."""
+        self.check_shot_hit(is_secondary=False, is_laser=True)
+
+    def _fire_burst(self, weapon_data: dict, weapon_name: str) -> None:
+        """Fire a burst of fast projectiles via minigun handler."""
+        self._fire_minigun()
 
     def _fire_plasma(self) -> None:
         p = Projectile(

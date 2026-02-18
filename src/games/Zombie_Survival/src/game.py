@@ -519,91 +519,86 @@ class Game(FPSGameBase):
         except OSError:
             logger.exception("Save failed")
 
+    _FIRE_DISPATCH: dict[str, str] = {
+        "hitscan": "_fire_hitscan",
+        "projectile": "_fire_projectile",
+        "spread": "_fire_spread",
+        "beam": "_fire_beam",
+        "burst": "_fire_burst",
+    }
+
     def fire_weapon(self, is_secondary: bool = False) -> None:
-        """Handle weapon firing (Hitscan or Projectile)"""
+        """Handle weapon firing via data-driven dispatch."""
         assert self.player is not None
-        weapon = self.player.current_weapon
+        weapon_name = self.player.current_weapon
+        weapon_data = C.WEAPONS[weapon_name]
 
         # Sound
-        sound_name = f"shoot_{weapon}"
-        self.sound_manager.play_sound(sound_name)
+        self.sound_manager.play_sound(f"shoot_{weapon_name}")
 
-        # Visuals & Logic
-        if weapon == "plasma" and not is_secondary:
-            # Spawn Projectile
+        if is_secondary:
+            self.check_shot_hit(is_secondary=True)
+            return
+
+        fire_mode = weapon_data.get("fire_mode", "hitscan")
+        handler = getattr(self, self._FIRE_DISPATCH[fire_mode])
+        handler(weapon_data, weapon_name)
+
+    def _fire_hitscan(self, weapon_data: dict, weapon_name: str) -> None:
+        """Fire a single hitscan ray."""
+        self.check_shot_hit(is_secondary=False)
+
+    def _fire_projectile(self, weapon_data: dict, weapon_name: str) -> None:
+        """Spawn a projectile based on weapon data."""
+        size_map = {"plasma": 0.225, "rocket": 0.3}
+        p = Projectile(
+            self.player.x,
+            self.player.y,
+            self.player.angle,
+            speed=float(weapon_data.get("projectile_speed", 0.5)),
+            damage=self.player.get_current_weapon_damage(),
+            is_player=True,
+            color=weapon_data.get("projectile_color", (0, 255, 255)),
+            size=size_map.get(weapon_name, 0.3),
+            weapon_type=weapon_name,
+        )
+        self.entity_manager.add_projectile(p)
+
+    def _fire_spread(self, weapon_data: dict, weapon_name: str) -> None:
+        """Fire multiple pellets with spread."""
+        pellets = int(weapon_data.get("pellets", 8))
+        spread = float(weapon_data.get("spread", 0.15))
+        for _ in range(pellets):
+            angle_off = random.uniform(-spread, spread)
+            self.check_shot_hit(angle_offset=angle_off)
+
+    def _fire_beam(self, weapon_data: dict, weapon_name: str) -> None:
+        """Fire a hitscan beam with visual trail."""
+        self.check_shot_hit(is_secondary=False, is_laser=True)
+
+    def _fire_burst(self, weapon_data: dict, weapon_name: str) -> None:
+        """Fire a burst of fast projectiles."""
+        damage = self.player.get_current_weapon_damage()
+        num_bullets = MINIGUN_BULLETS_PER_SHOT
+        for _ in range(num_bullets):
+            angle_off = random.uniform(-MINIGUN_SPREAD, MINIGUN_SPREAD)
+            final_angle = self.player.angle + angle_off
             p = Projectile(
                 self.player.x,
                 self.player.y,
-                self.player.angle,
-                speed=float(C.WEAPONS["plasma"].get("projectile_speed", 0.5)),
-                damage=self.player.get_current_weapon_damage(),
+                final_angle,
+                damage,
+                speed=2.0,
                 is_player=True,
-                color=C.WEAPONS["plasma"].get("projectile_color", (0, 255, 255)),
-                size=0.225,
-                weapon_type="plasma",
+                color=(255, 255, 0),
+                size=0.1,
+                weapon_type="minigun",
             )
             self.entity_manager.add_projectile(p)
-            return
 
-        if weapon == "rocket" and not is_secondary:
-            # Spawn Rocket
-            p = Projectile(
-                self.player.x,
-                self.player.y,
-                self.player.angle,
-                speed=float(C.WEAPONS["rocket"].get("projectile_speed", 0.3)),
-                damage=self.player.get_current_weapon_damage(),
-                is_player=True,
-                color=C.WEAPONS["rocket"].get("projectile_color", (255, 100, 0)),
-                size=0.3,
-                weapon_type="rocket",
-            )
-            self.entity_manager.add_projectile(p)
-            return
-
-        if weapon == "minigun" and not is_secondary:
-            # Minigun rapid fire with multiple projectiles and visual effects
-            damage = self.player.get_current_weapon_damage()
-            num_bullets = MINIGUN_BULLETS_PER_SHOT
-            for _ in range(num_bullets):
-                angle_off = random.uniform(-MINIGUN_SPREAD, MINIGUN_SPREAD)
-                final_angle = self.player.angle + angle_off
-
-                # Create minigun projectile with tracer effect
-                p = Projectile(
-                    self.player.x,
-                    self.player.y,
-                    final_angle,
-                    damage,
-                    speed=2.0,  # Fast bullets
-                    is_player=True,
-                    color=(255, 255, 0),  # Yellow tracers for minigun
-                    size=0.1,  # Smaller bullets
-                    weapon_type="minigun",
-                )
-                self.entity_manager.add_projectile(p)
-
-            # Add muzzle flash particles for minigun
-            self.particle_system.add_explosion(
-                C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2, count=8, color=(255, 255, 0)
-            )
-            return
-
-        if weapon == "laser" and not is_secondary:
-            # Hitscan with Beam Visual
-            self.check_shot_hit(is_secondary=False, is_laser=True)
-            return
-
-        if weapon == "shotgun" and not is_secondary:
-            # Spread Fire
-            pellets = int(C.WEAPONS["shotgun"].get("pellets", 8))
-            spread = float(C.WEAPONS["shotgun"].get("spread", 0.15))
-            for _ in range(pellets):
-                angle_off = random.uniform(-spread, spread)
-                self.check_shot_hit(angle_offset=angle_off)
-        else:
-            # Single Hitscan
-            self.check_shot_hit(is_secondary=is_secondary)
+        self.particle_system.add_explosion(
+            C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2, count=8, color=(255, 255, 0)
+        )
 
     def check_shot_hit(
         self,
