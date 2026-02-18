@@ -9,6 +9,8 @@ from typing import TYPE_CHECKING, Any
 
 import pygame
 
+from games.shared.contracts import validate_not_none, validate_positive
+
 try:
     import cv2
 
@@ -33,6 +35,9 @@ class UIRendererBase:
             screen_width: Screen width in pixels
             screen_height: Screen height in pixels
         """
+        validate_not_none(screen, "screen")
+        validate_positive(screen_width, "screen_width")
+        validate_positive(screen_height, "screen_height")
         self.screen = screen
         self.screen_width = screen_width
         self.screen_height = screen_height
@@ -152,11 +157,9 @@ class UIRendererBase:
             )
 
         # Update existing drips
-        for drip in self.title_drips[:]:
+        for drip in self.title_drips:
             drip["y"] += drip["speed"]
-            # Remove drips that fall off screen
-            if drip["y"] > self.screen_height:
-                self.title_drips.remove(drip)
+        self.title_drips = [d for d in self.title_drips if d["y"] <= self.screen_height]
 
     def _draw_blood_drips(self, drips: list[dict[str, Any]]) -> None:
         """Draw blood drip effects.

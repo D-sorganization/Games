@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import pygame
 
+from games.shared.contracts import validate_not_none, validate_positive
+
 
 class GameRendererBase:
     """Base class for game renderers with common setup."""
@@ -16,6 +18,9 @@ class GameRendererBase:
             screen_width: Screen width in pixels
             screen_height: Screen height in pixels
         """
+        validate_not_none(screen, "screen")
+        validate_positive(screen_width, "screen_width")
+        validate_positive(screen_height, "screen_height")
         self.screen = screen
         self.screen_width = screen_width
         self.screen_height = screen_height

@@ -127,41 +127,40 @@ class Bot:
         if self._check_status_effects():
             return None
 
-        self._update_animations()
+        self._update_visual_animations()
 
         if self.enemy_type == "health_pack":
             return None
 
-        # Calculate distance to player
+        # Calculate squared distance to player (avoid sqrt for comparisons)
         dx = player.x - self.x
         dy = player.y - self.y
-        dist_sq = dx**2 + dy**2
-        distance = math.sqrt(dist_sq)
+        dist_sq = dx * dx + dy * dy
 
         # Face player
         self.angle = float(math.atan2(dy, dx))
 
         # Behavior dispatch
         if self.enemy_type == "ball":
+            # Ball needs actual distance for velocity normalization
+            distance = math.sqrt(dist_sq)
             return self._update_behavior_ball(game_map, player, dx, dy, distance)
         elif self.enemy_type == "ninja":
-            return self._update_behavior_ninja(game_map, player, distance, other_bots)
+            return self._update_behavior_ninja(game_map, player, dist_sq, other_bots)
         elif self.enemy_type == "beast":
-            return self._update_behavior_beast(game_map, player, distance, other_bots)
+            return self._update_behavior_beast(game_map, player, dist_sq, other_bots)
         elif self.enemy_type == "minigunner":
             return self._update_behavior_minigunner(
-                game_map, player, distance, other_bots
+                game_map, player, dist_sq, other_bots
             )
         elif self.enemy_type == "sniper":
-            return self._update_behavior_sniper(game_map, player, distance, other_bots)
+            return self._update_behavior_sniper(game_map, player, dist_sq, other_bots)
         elif self.enemy_type == "ice_zombie":
             # Ice Zombies are slower but maybe have an aura or ranged attack?
             # For now, just standard behavior but they look cool.
-            return self._update_behavior_standard(
-                game_map, player, distance, other_bots
-            )
+            return self._update_behavior_standard(game_map, player, dist_sq, other_bots)
 
-        return self._update_behavior_standard(game_map, player, distance, other_bots)
+        return self._update_behavior_standard(game_map, player, dist_sq, other_bots)
 
     def _check_status_effects(self) -> bool:
         """Check pain, frozen, and death states.
@@ -180,15 +179,20 @@ class Bot:
             return True
 
         if self.dead:
-            self.death_timer += 1
-            if self.death_timer > 60:
-                self.disintegrate_timer += 1
-                if self.disintegrate_timer > 100:
-                    self.removed = True
+            self._update_death_animation()
             return True
         return False
 
-    def _update_animations(self) -> None:
+    def _update_death_animation(self) -> None:
+        """Advance the death / disintegration timers."""
+        self.death_timer += 1
+        if self.death_timer > 60:
+            self.disintegrate_timer += 1
+            if self.disintegrate_timer > 100:
+                self.removed = True
+
+    def _update_visual_animations(self) -> None:
+        """Update shoot animation decay, eye rotation, drool, and mouth toggle."""
         if self.shoot_animation > 0:
             self.shoot_animation -= 0.1
             self.shoot_animation = max(self.shoot_animation, 0)
@@ -200,6 +204,43 @@ class Bot:
         if self.mouth_timer > 30:
             self.mouth_open = not self.mouth_open
             self.mouth_timer = 0
+
+    def _try_attack(
+        self,
+        game_map: Map,
+        player: Player,
+        dist_sq: float,
+        *,
+        attack_range_sq: float,
+        damage: int,
+        speed: float,
+        cooldown: int,
+        color: tuple[int, int, int] = (255, 0, 0),
+        size: float = 0.2,
+    ) -> Projectile | None:
+        """Attempt a ranged attack if in range, off cooldown, and has LOS.
+
+        Returns:
+            A new Projectile on success, otherwise None.
+        """
+        if dist_sq >= attack_range_sq or self.attack_timer > 0:
+            return None
+        if not self.has_line_of_sight(game_map, player):
+            return None
+
+        projectile = Projectile(
+            self.x,
+            self.y,
+            self.angle,
+            damage,
+            speed,
+            is_player=False,
+            color=color,
+            size=size,
+        )
+        self.attack_timer = cooldown
+        self.shoot_animation = 1.0
+        return projectile
 
     def _update_behavior_ball(
         self, game_map: Map, player: Player, dx: float, dy: float, dist: float
@@ -251,98 +292,95 @@ class Bot:
         return None
 
     def _update_behavior_ninja(
-        self, game_map: Map, player: Player, distance: float, other_bots: list[Bot]
+        self, game_map: Map, player: Player, dist_sq: float, other_bots: list[Bot]
     ) -> Projectile | None:
-        if distance < 1.2 and self.attack_timer <= 0:
+        if dist_sq < 1.44 and self.attack_timer <= 0:  # 1.2^2
             if not player.god_mode:
                 player.take_damage(self.damage)
             self.attack_timer = 30
             return None
 
-        return self._move_and_collide(game_map, other_bots)
+        self._update_default_movement(game_map, player, other_bots)
+        return None
 
     def _update_behavior_beast(
-        self, game_map: Map, player: Player, distance: float, other_bots: list[Bot]
+        self, game_map: Map, player: Player, dist_sq: float, other_bots: list[Bot]
     ) -> Projectile | None:
-        if distance < 15 and self.attack_timer <= 0:
-            if self.has_line_of_sight(game_map, player):
-                projectile = Projectile(
-                    self.x,
-                    self.y,
-                    self.angle,
-                    damage=self.damage * 2,
-                    speed=0.15,
-                    is_player=False,
-                    color=(255, 100, 0),
-                    size=1.0,
-                )
-                self.attack_timer = 120
-                self.shoot_animation = 1.0
-                return projectile
-        return self._move_and_collide(game_map, other_bots)
+        projectile = self._try_attack(
+            game_map,
+            player,
+            dist_sq,
+            attack_range_sq=225,  # 15^2
+            damage=self.damage * 2,
+            speed=0.15,
+            cooldown=120,
+            color=(255, 100, 0),
+            size=1.0,
+        )
+        if projectile is not None:
+            return projectile
+        self._update_default_movement(game_map, player, other_bots)
+        return None
 
     def _update_behavior_minigunner(
-        self, game_map: Map, player: Player, distance: float, other_bots: list[Bot]
+        self, game_map: Map, player: Player, dist_sq: float, other_bots: list[Bot]
     ) -> Projectile | None:
-        if distance < 12 and self.attack_timer <= 0:
-            if self.has_line_of_sight(game_map, player):
-                projectile = Projectile(
-                    self.x,
-                    self.y,
-                    self.angle,
-                    damage=self.damage,
-                    speed=0.2,
-                    is_player=False,
-                    color=(255, 255, 0),
-                    size=0.1,
-                )
-                self.attack_timer = 10
-                self.shoot_animation = 1.0
-                return projectile
-        return self._move_and_collide(game_map, other_bots)
+        projectile = self._try_attack(
+            game_map,
+            player,
+            dist_sq,
+            attack_range_sq=144,  # 12^2
+            damage=self.damage,
+            speed=0.2,
+            cooldown=10,
+            color=(255, 255, 0),
+            size=0.1,
+        )
+        if projectile is not None:
+            return projectile
+        self._update_default_movement(game_map, player, other_bots)
+        return None
 
     def _update_behavior_sniper(
-        self, game_map: Map, player: Player, distance: float, other_bots: list[Bot]
+        self, game_map: Map, player: Player, dist_sq: float, other_bots: list[Bot]
     ) -> Projectile | None:
-        if distance < C.WEAPON_RANGE_SNIPER and self.attack_timer <= 0:
-            if self.has_line_of_sight(game_map, player):
-                projectile = Projectile(
-                    self.x,
-                    self.y,
-                    self.angle,
-                    damage=self.damage,
-                    speed=0.4,
-                    is_player=False,
-                    color=(255, 0, 0),
-                    size=0.1,
-                )
-                self.attack_timer = 180
-                self.shoot_animation = 1.0
-                return projectile
-        return self._move_and_collide(game_map, other_bots)
+        projectile = self._try_attack(
+            game_map,
+            player,
+            dist_sq,
+            attack_range_sq=C.WEAPON_RANGE_SNIPER**2,
+            damage=self.damage,
+            speed=0.4,
+            cooldown=180,
+            color=(255, 0, 0),
+            size=0.1,
+        )
+        if projectile is not None:
+            return projectile
+        self._update_default_movement(game_map, player, other_bots)
+        return None
 
     def _update_behavior_standard(
-        self, game_map: Map, player: Player, distance: float, other_bots: list[Bot]
+        self, game_map: Map, player: Player, dist_sq: float, other_bots: list[Bot]
     ) -> Projectile | None:
-        if distance < C.BOT_ATTACK_RANGE and self.attack_timer <= 0:
-            if self.has_line_of_sight(game_map, player):
-                projectile = Projectile(
-                    self.x,
-                    self.y,
-                    self.angle,
-                    C.BOT_PROJECTILE_DAMAGE + self.damage,
-                    C.BOT_PROJECTILE_SPEED,
-                    is_player=False,
-                )
-                self.attack_timer = C.BOT_ATTACK_COOLDOWN
-                self.shoot_animation = 1.0
-                return projectile
+        projectile = self._try_attack(
+            game_map,
+            player,
+            dist_sq,
+            attack_range_sq=C.BOT_ATTACK_RANGE**2,
+            damage=C.BOT_PROJECTILE_DAMAGE + self.damage,
+            speed=C.BOT_PROJECTILE_SPEED,
+            cooldown=C.BOT_ATTACK_COOLDOWN,
+        )
+        if projectile is not None:
+            return projectile
 
-        return self._move_and_collide(game_map, other_bots)
+        self._update_default_movement(game_map, player, other_bots)
+        return None
 
-    def _move_and_collide(
-        self, game_map: Map, other_bots: list[Bot]
-    ) -> Projectile | None:
+    def _update_default_movement(
+        self, game_map: Map, player: Player, other_bots: list[Bot]
+    ) -> None:
         # Move toward player (angle already set)
         move_dx = math.cos(self.angle) * self.speed
         move_dy = math.sin(self.angle) * self.speed
@@ -411,8 +449,6 @@ class Bot:
 
         if self.attack_timer > 0:
             self.attack_timer -= 1
-
-        return None
 
     def has_line_of_sight(self, game_map: Map, player: Player) -> bool:
         """Check if bot has line of sight to player"""

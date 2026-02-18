@@ -10,6 +10,8 @@ from typing import Any
 import pygame
 
 from games.shared.config import RaycasterConfig
+from games.shared.constants import GameState
+from games.shared.fps_game_base import FPSGameBase
 from games.shared.interfaces import Portal
 from games.shared.raycaster import Raycaster
 
@@ -28,11 +30,12 @@ from .ui_renderer import UIRenderer
 logger = logging.getLogger(__name__)
 
 
-class Game:
+class Game(FPSGameBase):
     """Main game class"""
 
     def __init__(self) -> None:
         """Initialize game"""
+        self.C = C
         flags = pygame.SCALED | pygame.RESIZABLE
         self.screen = pygame.display.set_mode((C.SCREEN_WIDTH, C.SCREEN_HEIGHT), flags)
         pygame.display.set_caption("Zombie Survival - Undead Nightmare")
@@ -44,7 +47,7 @@ class Game:
         self.ui_renderer = UIRenderer(self.screen)
 
         # Game state
-        self.state = "intro"
+        self.state = GameState.INTRO
         self.intro_phase = 0
         self.intro_step = 0
         self.intro_timer = 0
@@ -117,192 +120,6 @@ class Game:
         # Input Manager
         self.input_manager = InputManager()
         self.binding_action: str | None = None
-
-    @property
-    def bots(self) -> list[Bot]:
-        """Get list of active bots."""
-        return self.entity_manager.bots
-
-    @property
-    def projectiles(self) -> list[Projectile]:
-        """Get list of active projectiles."""
-        return self.entity_manager.projectiles
-
-    def cycle_render_scale(self) -> None:
-        """Cycle through render scales."""
-        scales = [1, 2, 4, 8]
-        try:
-            idx = scales.index(self.render_scale)
-            self.render_scale = scales[(idx + 1) % len(scales)]
-        except ValueError:
-            self.render_scale = 2
-
-        if self.raycaster:
-            self.raycaster.set_render_scale(self.render_scale)
-
-        scale_names = {1: "ULTRA", 2: "HIGH", 4: "MEDIUM", 8: "LOW"}
-        msg = f"QUALITY: {scale_names.get(self.render_scale, 'CUSTOM')}"
-        self.add_message(msg, C.WHITE)
-
-    def add_message(self, text: str, color: tuple[int, int, int]) -> None:
-        """Add a temporary message to the center of the screen"""
-        self.damage_texts.append(
-            {
-                "x": C.SCREEN_WIDTH // 2,
-                "y": C.SCREEN_HEIGHT // 2 - 50,
-                "text": text,
-                "color": color,
-                "timer": 60,
-                "vy": -0.5,
-            }
-        )
-
-    def switch_weapon_with_message(self, weapon_name: str) -> None:
-        """Switch weapon and show a message if successful"""
-        if weapon_name not in self.unlocked_weapons:
-            self.add_message("WEAPON LOCKED", C.RED)
-            return
-
-        assert self.player is not None
-        if self.player.current_weapon != weapon_name:
-            self.player.switch_weapon(weapon_name)
-            self.add_message(f"SWITCHED TO {weapon_name.upper()}", C.YELLOW)
-
-    def spawn_portal(self) -> None:
-        """Spawn exit portal"""
-        # Spawn at last enemy death position if possible (guaranteed accessible usually)
-        if self.last_death_pos:
-            self.portal = {"x": self.last_death_pos[0], "y": self.last_death_pos[1]}
-            return
-
-        # Fallback: Find a spot near player
-        assert self.player is not None
-        if self.game_map:
-            for r in range(2, 10):
-                for angle in range(0, 360, 45):
-                    rad = math.radians(angle)
-                    tx = int(self.player.x + math.cos(rad) * r)
-                    ty = int(self.player.y + math.sin(rad) * r)
-                    if not self.game_map.is_wall(tx, ty):
-                        self.portal = {"x": tx + 0.5, "y": ty + 0.5}
-                        return
-
-    def find_safe_spawn(
-        self,
-        base_x: float,
-        base_y: float,
-        angle: float,
-    ) -> tuple[float, float, float]:
-        """Find a safe spawn position near the base coordinates"""
-        game_map = self.game_map
-        map_size = game_map.size if game_map else self.selected_map_size
-        if not game_map:
-            return (base_x, base_y, angle)
-
-        for attempt in range(10):
-            # Try positions in a small radius around the corner
-            radius = attempt * 2
-            for angle_offset in [
-                0,
-                math.pi / 4,
-                math.pi / 2,
-                3 * math.pi / 4,
-                math.pi,
-                5 * math.pi / 4,
-                3 * math.pi / 2,
-                7 * math.pi / 4,
-            ]:
-                test_x = base_x + math.cos(angle_offset) * radius
-                test_y = base_y + math.sin(angle_offset) * radius
-
-                # Ensure within bounds
-                in_x = test_x >= 2 and test_x < map_size - 2
-                in_y = test_y >= 2 and test_y < map_size - 2
-                if not (in_x and in_y):
-                    continue
-
-                # Check if not a wall
-                if not game_map.is_wall(test_x, test_y):
-                    return (test_x, test_y, angle)
-
-        # Fallback to base position if all attempts fail
-        return (base_x, base_y, angle)
-
-    def get_corner_positions(self) -> list[tuple[float, float, float]]:
-        """Get spawn positions for four corners (x, y, angle)"""
-        offset = 5
-        map_size = self.game_map.size if self.game_map else self.selected_map_size
-
-        # Building 4 occupies 0.75 * size to 0.95 * size,
-        # so bottom-right spawn must be before 0.75 * size
-        building4_start = int(map_size * 0.75)
-        bottom_right_offset = map_size - building4_start + C.SPAWN_SAFETY_MARGIN
-
-        corners = [
-            (offset, offset, math.pi / 4),  # Top-left
-            (offset, map_size - offset, 7 * math.pi / 4),  # Bottom-left
-            (map_size - offset, offset, 3 * math.pi / 4),  # Top-right
-            (
-                map_size - bottom_right_offset,
-                map_size - bottom_right_offset,
-                5 * math.pi / 4,
-            ),  # Bottom-right
-        ]
-
-        # Find safe spawns for each corner
-        safe_corners = []
-        for x, y, angle in corners:
-            safe_corners.append(self.find_safe_spawn(x, y, angle))
-
-        return safe_corners
-
-    def _get_best_spawn_point(self) -> tuple[float, float, float]:
-        """Find a valid spawn point."""
-        corners = self.get_corner_positions()
-        random.shuffle(corners)
-
-        game_map = self.game_map
-        if not game_map:
-            return C.DEFAULT_PLAYER_SPAWN
-
-        for pos in corners:
-            if not game_map.is_wall(pos[0], pos[1]):
-                return pos
-
-        # Fallback linear search
-        for y in range(game_map.height):
-            for x in range(game_map.width):
-                if not game_map.is_wall(x, y):
-                    return (x + 0.5, y + 0.5, 0.0)
-
-        return C.DEFAULT_PLAYER_SPAWN
-
-    def respawn_player(self) -> None:
-        """Respawn player after death if lives remain"""
-        assert self.game_map is not None
-        assert self.player is not None
-
-        player_pos = self._get_best_spawn_point()
-
-        # Reset Player
-        self.player.x = player_pos[0]
-        self.player.y = player_pos[1]
-        self.player.angle = player_pos[2]
-        self.player.health = 100
-        self.player.alive = True
-        self.player.shield_active = False  # Reset shield
-
-        # Show message
-        self.damage_texts.append(
-            {
-                "x": C.SCREEN_WIDTH // 2,
-                "y": C.SCREEN_HEIGHT // 2,
-                "text": "RESPAWNED",
-                "color": C.GREEN,
-                "timer": 120,
-                "vy": -0.5,
-            }
-        )
 
     def start_game(self) -> None:
         """Start new game"""
@@ -417,9 +234,9 @@ class Game:
                 by = random.randint(2, self.game_map.size - 2)
 
                 # More flexible distance check - but maintain safe minimum
-                min_distance = 15.0 if attempt < 40 else 12.0  # Keep safer distance
-                dist = math.sqrt((bx - player_pos[0]) ** 2 + (by - player_pos[1]) ** 2)
-                if dist < min_distance:
+                min_dist_sq = 225.0 if attempt < 40 else 144.0  # 15^2 / 12^2
+                dist_sq = (bx - player_pos[0]) ** 2 + (by - player_pos[1]) ** 2
+                if dist_sq < min_dist_sq:
                     continue
 
                 if not self.game_map.is_wall(bx, by):
@@ -462,11 +279,11 @@ class Game:
             cy = random.randint(2, upper_bound)
 
             # More flexible distance for boss spawning - but keep safe
-            min_boss_distance = 15.0 if attempt < 70 else 12.0
+            min_boss_dist_sq = 225.0 if attempt < 70 else 144.0  # 15^2 / 12^2
             if (
                 not self.game_map.is_wall(cx, cy)
-                and math.sqrt((cx - player_pos[0]) ** 2 + (cy - player_pos[1]) ** 2)
-                > min_boss_distance
+                and (cx - player_pos[0]) ** 2 + (cy - player_pos[1]) ** 2
+                > min_boss_dist_sq
             ):
                 self.entity_manager.add_bot(
                     Bot(
@@ -643,10 +460,10 @@ class Game:
                             self.save_game()
                             self.add_message("GAME SAVED", C.GREEN)
                         elif 470 <= my <= 520:  # Controls
-                            self.state = "key_config"
+                            self.state = GameState.KEY_CONFIG
                             self.binding_action = None  # Initialize binding state
                         elif 530 <= my <= 580:  # Quit to Menu
-                            self.state = "menu"
+                            self.state = GameState.MENU
                             self.paused = False
                             self.sound_manager.start_music("music_loop")
 
@@ -1127,7 +944,7 @@ class Game:
             self.level_times.append(level_time)
             self.lives = 0
 
-            self.state = "game_over"
+            self.state = GameState.GAME_OVER
             self.game_over_timer = 0
             self.sound_manager.play_sound("game_over1")
             pygame.mouse.set_visible(True)
@@ -1153,13 +970,13 @@ class Game:
         if self.portal:
             dx = self.portal["x"] - self.player.x
             dy = self.portal["y"] - self.player.y
-            dist = math.sqrt(dx * dx + dy * dy)
-            if dist < 1.5:
+            dist_sq = dx * dx + dy * dy
+            if dist_sq < 2.25:  # 1.5^2
                 paused = self.total_paused_time
                 now = pygame.time.get_ticks()
                 level_time = (now - self.level_start_time - paused) / 1000.0
                 self.level_times.append(level_time)
-                self.state = "level_complete"
+                self.state = GameState.LEVEL_COMPLETE
                 pygame.mouse.set_visible(True)
                 pygame.event.set_grab(False)
                 return
@@ -1231,11 +1048,10 @@ class Game:
 
         self.particle_system.update()
 
-        for t in self.damage_texts[:]:
+        for t in self.damage_texts:
             t["y"] += t["vy"]
             t["timer"] -= 1
-            if t["timer"] <= 0:
-                self.damage_texts.remove(t)
+        self.damage_texts = [t for t in self.damage_texts if t["timer"] > 0]
 
         sprint_key = keys[pygame.K_RSHIFT]
         is_sprinting = self.input_manager.is_action_pressed("sprint") or sprint_key
@@ -1289,8 +1105,8 @@ class Game:
             if bot.alive and is_item:
                 dx = bot.x - self.player.x
                 dy = bot.y - self.player.y
-                dist = math.sqrt(dx * dx + dy * dy)
-                if dist < 0.8:
+                dist_sq = dx * dx + dy * dy
+                if dist_sq < 0.64:  # 0.8^2
                     pickup_msg = ""
                     color = C.GREEN
 
@@ -1409,12 +1225,12 @@ class Game:
                     if self.ui_renderer.intro_video:
                         self.ui_renderer.intro_video.release()
                         self.ui_renderer.intro_video = None
-                    self.state = "menu"
+                    self.state = GameState.MENU
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if self.ui_renderer.intro_video:
                     self.ui_renderer.intro_video.release()
                     self.ui_renderer.intro_video = None
-                self.state = "menu"
+                self.state = GameState.MENU
 
     def handle_menu_events(self) -> None:
         """Handle main menu events"""
@@ -1423,11 +1239,11 @@ class Game:
                 self.running = False
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RETURN or event.key == pygame.K_SPACE:
-                    self.state = "map_select"
+                    self.state = GameState.MAP_SELECT
                 elif event.key == pygame.K_ESCAPE:
                     self.running = False
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                self.state = "map_select"
+                self.state = GameState.MAP_SELECT
 
     def handle_map_select_events(self) -> None:
         """Handle map selection events"""
@@ -1437,16 +1253,16 @@ class Game:
                 self.running = False
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
-                    self.state = "menu"
+                    self.state = GameState.MENU
                 elif event.key == pygame.K_RETURN:
                     self.start_game()
-                    self.state = "playing"
+                    self.state = GameState.PLAYING
                     pygame.mouse.set_visible(False)
                     pygame.event.set_grab(True)
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if self.ui_renderer.start_button.is_clicked(event.pos):
                     self.start_game()
-                    self.state = "playing"
+                    self.state = GameState.PLAYING
                     pygame.mouse.set_visible(False)
                     pygame.event.set_grab(True)
 
@@ -1481,9 +1297,9 @@ class Game:
                 if event.key == pygame.K_SPACE:
                     self.level += 1
                     self.start_level()
-                    self.state = "playing"
+                    self.state = GameState.PLAYING
                 elif event.key == pygame.K_ESCAPE:
-                    self.state = "menu"
+                    self.state = GameState.MENU
 
     def handle_game_over_events(self) -> None:
         """Handle input events during the game over screen."""
@@ -1498,9 +1314,9 @@ class Game:
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:
                     self.start_game()
-                    self.state = "playing"
+                    self.state = GameState.PLAYING
                 elif event.key == pygame.K_ESCAPE:
-                    self.state = "menu"
+                    self.state = GameState.MENU
 
     def handle_key_config_events(self) -> None:
         """Handle input events in Key Config menu."""
@@ -1515,7 +1331,7 @@ class Game:
                         self.input_manager.bind_key(self.binding_action, event.key)
                     self.binding_action = None
                 elif event.key == pygame.K_ESCAPE:
-                    self.state = "playing" if self.paused else "menu"
+                    self.state = GameState.PLAYING if self.paused else GameState.MENU
 
             elif event.type == pygame.MOUSEBUTTONDOWN and not self.binding_action:
                 mx, my = event.pos
@@ -1547,7 +1363,7 @@ class Game:
                 top_y = C.SCREEN_HEIGHT - 80
                 back_rect = pygame.Rect(center_x, top_y, 100, 40)
                 if back_rect.collidepoint(mx, my):
-                    self.state = "playing" if self.paused else "menu"
+                    self.state = GameState.PLAYING if self.paused else GameState.MENU
 
     def _update_intro_logic(self, elapsed: int) -> None:
         """Update intro sequence logic and transitions.
@@ -1576,7 +1392,7 @@ class Game:
                     if hasattr(self, "_laugh_played"):
                         del self._laugh_played
             else:
-                self.state = "menu"
+                self.state = GameState.MENU
                 return
 
         if self.intro_phase < 2:
@@ -1597,7 +1413,7 @@ class Game:
         """Main game loop"""
         try:
             while self.running:
-                if self.state == "intro":
+                if self.state == GameState.INTRO:
                     self.handle_intro_events()
                     if self.intro_start_time == 0:
                         self.intro_start_time = pygame.time.get_ticks()
@@ -1608,19 +1424,19 @@ class Game:
                     )
                     self._update_intro_logic(elapsed)
 
-                elif self.state == "menu":
+                elif self.state == GameState.MENU:
                     self.handle_menu_events()
                     self.ui_renderer.render_menu()
 
-                elif self.state == "key_config":
+                elif self.state == GameState.KEY_CONFIG:
                     self.handle_key_config_events()
                     self.ui_renderer.render_key_config(self)
 
-                elif self.state == "map_select":
+                elif self.state == GameState.MAP_SELECT:
                     self.handle_map_select_events()
                     self.ui_renderer.render_map_select(self)
 
-                elif self.state == "playing":
+                elif self.state == GameState.PLAYING:
                     self.handle_game_events()
                     if self.paused:
                         # Pause Menu Audio
@@ -1645,11 +1461,11 @@ class Game:
                     if not self.paused and self.damage_flash_timer > 0:
                         self.damage_flash_timer -= 1
 
-                elif self.state == "level_complete":
+                elif self.state == GameState.LEVEL_COMPLETE:
                     self.handle_level_complete_events()
                     self.ui_renderer.render_level_complete(self)
 
-                elif self.state == "game_over":
+                elif self.state == GameState.GAME_OVER:
                     self.handle_game_over_events()
                     self.ui_renderer.render_game_over(self)
 

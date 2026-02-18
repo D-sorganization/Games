@@ -18,6 +18,8 @@ from __future__ import annotations
 import math
 import random
 
+from games.shared.contracts import validate_positive
+
 
 class Particle:
     """A single 2D screen-space particle."""
@@ -210,6 +212,8 @@ class ParticleSystem:
         speed: float = 5.0,
     ) -> None:
         """Spawn an outward burst of particles."""
+        validate_positive(count, "count")
+        validate_positive(speed, "speed")
         for _ in range(count):
             c = color or (
                 random.randint(200, 255),
@@ -236,6 +240,8 @@ class ParticleSystem:
         width: int = 2,
     ) -> None:
         """Add a laser line particle."""
+        validate_positive(timer, "timer")
+        validate_positive(width, "width")
         self.particles.append(
             Particle(
                 0,
@@ -258,6 +264,8 @@ class ParticleSystem:
         width: int = 1,
     ) -> None:
         """Add a bullet trace line particle."""
+        validate_positive(timer, "timer")
+        validate_positive(width, "width")
         self.particles.append(
             Particle(
                 0,
@@ -299,6 +307,8 @@ class ParticleSystem:
         speed: float = 0.2,
     ) -> None:
         """Spawn a 3D outward burst of world particles."""
+        validate_positive(count, "count")
+        validate_positive(speed, "speed")
         for _ in range(count):
             c = color or (
                 random.randint(200, 255),
@@ -321,8 +331,8 @@ class ParticleSystem:
 
     def update(self) -> None:
         """Advance all particles and remove dead ones."""
-        self.particles = [p for p in self.particles if p.update()]
-        self.world_particles = [p for p in self.world_particles if p.update()]
+        self.particles[:] = [p for p in self.particles if p.update()]
+        self.world_particles[:] = [p for p in self.world_particles if p.update()]
 
     def render(self, screen: object) -> None:
         """Render all 2D particles to a pygame surface."""

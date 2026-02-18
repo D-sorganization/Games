@@ -3,6 +3,8 @@ import random
 import numpy as np
 import pygame
 
+from games.shared.contracts import validate_non_negative, validate_positive
+
 
 class TextureGenerator:
     """Generates procedural textures for the game."""
@@ -12,6 +14,9 @@ class TextureGenerator:
         width: int, height: int, color_base: tuple[int, int, int], variation: int = 30
     ) -> pygame.Surface:
         """Generates a simple noise texture."""
+        validate_positive(width, "width")
+        validate_positive(height, "height")
+        validate_non_negative(variation, "variation")
         arr = np.zeros((width, height, 3), dtype=np.uint8)
 
         # Base color
@@ -36,6 +41,8 @@ class TextureGenerator:
         color_mortar: tuple[int, int, int],
     ) -> pygame.Surface:
         """Generates a brick pattern."""
+        validate_positive(width, "width")
+        validate_positive(height, "height")
         surface = pygame.Surface((width, height))
         surface.fill(color_brick)
         arr = pygame.surfarray.pixels3d(surface)
@@ -73,6 +80,8 @@ class TextureGenerator:
     @staticmethod
     def generate_stone(width: int, height: int) -> pygame.Surface:
         """Generates a large slate blocks pattern."""
+        validate_positive(width, "width")
+        validate_positive(height, "height")
         surface = pygame.Surface((width, height))
         base_shade = 80
         surface.fill((base_shade, base_shade, base_shade))
@@ -106,6 +115,8 @@ class TextureGenerator:
     @staticmethod
     def generate_metal(width: int, height: int) -> pygame.Surface:
         """Generates a metal panel pattern with rivets."""
+        validate_positive(width, "width")
+        validate_positive(height, "height")
         surface = pygame.Surface((width, height))
         surface.fill((140, 140, 150))
         arr = pygame.surfarray.pixels3d(surface)
@@ -146,6 +157,8 @@ class TextureGenerator:
     @staticmethod
     def generate_tech(width: int, height: int) -> pygame.Surface:
         """Generates a sci-fi tech pattern with clean grid and glow."""
+        validate_positive(width, "width")
+        validate_positive(height, "height")
         surface = pygame.Surface((width, height))
         surface.fill((20, 20, 30))
         arr = pygame.surfarray.pixels3d(surface)
@@ -184,6 +197,8 @@ class TextureGenerator:
     @staticmethod
     def generate_secret(width: int, height: int) -> pygame.Surface:
         """Generates a secret wall (cracked)."""
+        validate_positive(width, "width")
+        validate_positive(height, "height")
         # Start with standard bricks but darker/different tint
         surface = TextureGenerator.generate_bricks(
             width, height, (130, 60, 50), (100, 100, 100)

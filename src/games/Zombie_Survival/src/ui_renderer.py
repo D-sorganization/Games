@@ -88,11 +88,10 @@ class UIRenderer(UIRendererBase):
             )
 
         # Update
-        for drip in self.title_drips[:]:
+        for drip in self.title_drips:
             drip["y"] += drip["speed"]
             drip["speed"] *= 1.02
-            if drip["y"] > C.SCREEN_HEIGHT:
-                self.title_drips.remove(drip)
+        self.title_drips = [d for d in self.title_drips if d["y"] <= C.SCREEN_HEIGHT]
 
     def _draw_blood_drips(self, drips: list[dict[str, Any]]) -> None:
         """Draw the blood drips"""
@@ -186,16 +185,24 @@ class UIRenderer(UIRendererBase):
         self._render_crosshair()
         self._render_secondary_charge(game.player)
 
-        # Damage texts
-        self._render_damage_texts(game.damage_texts)
+        # HUD elements
+        self._render_messages(game)
+        self._render_health_bar(game)
+        self._render_ammo_display(game)
+        self._render_weapon_slots(game)
+        self._render_level_info(game)
+        self._render_minimap(game)
+        self._render_status_bars(game)
+        self._render_pause_overlay(game)
 
+    def _render_health_bar(self, game: Game) -> None:
+        """Render the player health bar."""
         hud_bottom = C.SCREEN_HEIGHT - 80
         health_width = 150
         health_height = 25
         health_x = 20
         health_y = hud_bottom
 
-        # Health
         pygame.draw.rect(
             self.screen, C.DARK_GRAY, (health_x, health_y, health_width, health_height)
         )
@@ -215,7 +222,10 @@ class UIRenderer(UIRendererBase):
             2,
         )
 
-        # Ammo / State
+    def _render_ammo_display(self, game: Game) -> None:
+        """Render the ammo counter and weapon name."""
+        hud_bottom = C.SCREEN_HEIGHT - 80
+
         w_state = game.player.weapon_state[game.player.current_weapon]
         w_name = C.WEAPONS[game.player.current_weapon]["name"]
 
@@ -244,7 +254,9 @@ class UIRenderer(UIRendererBase):
         self.screen.blit(at, at_rect)
         self.screen.blit(bt, bt_rect)
 
-        # Inventory
+    def _render_weapon_slots(self, game: Game) -> None:
+        """Render the weapon inventory slots."""
+        hud_bottom = C.SCREEN_HEIGHT - 80
         inv_y = hud_bottom - 80
         for w in ["pistol", "rifle", "shotgun", "laser", "plasma", "rocket", "minigun"]:
             color = C.GRAY
@@ -260,7 +272,8 @@ class UIRenderer(UIRendererBase):
             self.screen.blit(inv_txt, inv_rect)
             inv_y -= 25
 
-        # Stats
+    def _render_level_info(self, game: Game) -> None:
+        """Render the level number, enemy count, kills, and controls hint."""
         level_text = self.small_font.render(f"Level: {game.level}", True, C.YELLOW)
         level_rect = level_text.get_rect(topright=(C.SCREEN_WIDTH - 20, 20))
         self.screen.blit(level_text, level_rect)
@@ -282,16 +295,43 @@ class UIRenderer(UIRendererBase):
         score_rect = score_text.get_rect(topright=(C.SCREEN_WIDTH - 20, 80))
         self.screen.blit(score_text, score_rect)
 
+        controls_hint = self.tiny_font.render(
+            "WASD:Move | 1-5:Wpn | R:Reload | F:Bomb | SPACE:Shield | M:Map | ESC:Menu",
+            True,
+            C.WHITE,
+        )
+        controls_hint_rect = controls_hint.get_rect(topleft=(10, 10))
+        bg_surface = pygame.Surface(
+            (
+                controls_hint_rect.width + C.HINT_BG_PADDING_H,
+                controls_hint_rect.height + C.HINT_BG_PADDING_V,
+            ),
+            pygame.SRCALPHA,
+        )
+        bg_surface.fill(C.HINT_BG_COLOR)
+        self.screen.blit(
+            bg_surface,
+            (
+                controls_hint_rect.x - C.HINT_BG_PADDING_H // 2,
+                controls_hint_rect.y - C.HINT_BG_PADDING_V // 2,
+            ),
+        )
+        self.screen.blit(controls_hint, controls_hint_rect)
+
+    def _render_minimap(self, game: Game) -> None:
+        """Render the minimap."""
         if game.show_minimap:
             game.raycaster.render_minimap(
                 self.screen, game.player, game.bots, game.visited_cells, game.portal
             )
 
-        # Shield Bar
+    def _render_status_bars(self, game: Game) -> None:
+        """Render the shield bar, stamina bar, and laser charge."""
+        hud_bottom = C.SCREEN_HEIGHT - 80
         shield_width = 150
         shield_height = 10
-        shield_x = health_x
-        shield_y = health_y - 20
+        shield_x = 20
+        shield_y = hud_bottom - 20
 
         shield_pct = game.player.shield_timer / C.SHIELD_MAX_DURATION
         pygame.draw.rect(
@@ -339,30 +379,12 @@ class UIRenderer(UIRendererBase):
             s_txt = self.tiny_font.render("STAMINA", True, C.WHITE)
             self.screen.blit(s_txt, (shield_x + shield_width + 5, stamina_y - 2))
 
-        controls_hint = self.tiny_font.render(
-            "WASD:Move | 1-5:Wpn | R:Reload | F:Bomb | SPACE:Shield | M:Map | ESC:Menu",
-            True,
-            C.WHITE,
-        )
-        controls_hint_rect = controls_hint.get_rect(topleft=(10, 10))
-        bg_surface = pygame.Surface(
-            (
-                controls_hint_rect.width + C.HINT_BG_PADDING_H,
-                controls_hint_rect.height + C.HINT_BG_PADDING_V,
-            ),
-            pygame.SRCALPHA,
-        )
-        bg_surface.fill(C.HINT_BG_COLOR)
-        self.screen.blit(
-            bg_surface,
-            (
-                controls_hint_rect.x - C.HINT_BG_PADDING_H // 2,
-                controls_hint_rect.y - C.HINT_BG_PADDING_V // 2,
-            ),
-        )
-        self.screen.blit(controls_hint, controls_hint_rect)
+    def _render_messages(self, game: Game) -> None:
+        """Render floating damage texts and messages."""
+        self._render_damage_texts(game.damage_texts)
 
-        # Pause Menu
+    def _render_pause_overlay(self, game: Game) -> None:
+        """Render the pause menu overlay if the game is paused."""
         if game.paused:
             self._render_pause_menu()
 

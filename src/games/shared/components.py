@@ -17,7 +17,11 @@ from __future__ import annotations
 import math
 from typing import Any
 
-from games.shared.contracts import validate_non_negative, validate_positive
+from games.shared.contracts import (
+    validate_non_negative,
+    validate_positive,
+    validate_range,
+)
 
 
 class Positioned:
@@ -107,6 +111,7 @@ class Animated:
 
     def advance_animation(self, dt: float = 1.0) -> None:
         """Advance animation timer by dt * speed."""
+        validate_non_negative(dt, "dt")
         self.animation_timer += dt * self.animation_speed
 
     def set_animation(self, name: str) -> None:
@@ -132,5 +137,6 @@ class HasVelocity:
 
     def apply_friction(self, factor: float = 0.9) -> None:
         """Reduce velocity by a friction factor."""
+        validate_range(factor, 0.0, 1.0, "friction_factor")
         self.vx *= factor
         self.vy *= factor

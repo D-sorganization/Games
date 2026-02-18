@@ -122,11 +122,10 @@ class UIRenderer(UIRendererBase):
             )
 
         # Update
-        for drip in self.title_drips[:]:
+        for drip in self.title_drips:
             drip["y"] += drip["speed"]
             drip["speed"] *= 1.02
-            if drip["y"] > C.SCREEN_HEIGHT:
-                self.title_drips.remove(drip)
+        self.title_drips = [d for d in self.title_drips if d["y"] <= C.SCREEN_HEIGHT]
 
     def _draw_blood_drips(self, drips: list[dict[str, Any]]) -> None:
         """Draw the blood drips"""
@@ -223,17 +222,31 @@ class UIRenderer(UIRendererBase):
         self._render_crosshair()
         self._render_secondary_charge(game.player)
 
-        # Damage texts
-        self._render_damage_texts(game.damage_texts)
+        # Floating damage/message texts
+        self._render_messages(game)
 
-        # Stacked Bars Configuration
+        # Stacked status bars (health, shield, charge, stamina)
+        self._render_health_bar(game)
+        self._render_status_bars(game)
+
+        # Controls hint
+        self._render_controls_hint()
+
+        # Pause Menu
+        if game.paused:
+            self._render_pause_overlay(game)
+
+    # ------------------------------------------------------------------
+    # HUD helper methods (extracted from render_hud)
+    # ------------------------------------------------------------------
+
+    def _render_health_bar(self, game: Game) -> None:
+        """Render the player health bar at the bottom of the HUD."""
         bar_height = 12
-        bar_spacing = 8
         bar_width = 150
         start_x = 20
         start_y = C.SCREEN_HEIGHT - 40  # Start from bottom
 
-        # 1. Health Bar (Bottom)
         health_y = start_y
         self._render_bar(
             start_x,
@@ -245,7 +258,17 @@ class UIRenderer(UIRendererBase):
             "HP",
         )
 
-        # 2. Shield Bar
+    def _render_status_bars(self, game: Game) -> None:
+        """Render shield bar, secondary charge bar, and stamina bar."""
+        bar_height = 12
+        bar_spacing = 8
+        bar_width = 150
+        start_x = 20
+        start_y = C.SCREEN_HEIGHT - 40  # Start from bottom
+
+        health_y = start_y
+
+        # Shield Bar
         shield_y = health_y - (bar_height + bar_spacing)
         self._render_bar(
             start_x,
@@ -262,7 +285,7 @@ class UIRenderer(UIRendererBase):
             txt = self.tiny_font.render(status, True, C.GRAY)
             self.screen.blit(txt, (start_x + bar_width + 5, shield_y - 2))
 
-        # 3. Secondary Charge
+        # Secondary Charge
         charge_y = shield_y - (bar_height + bar_spacing)
         charge_pct = 1.0 - (game.player.secondary_cooldown / C.SECONDARY_COOLDOWN)
         self._render_bar(
@@ -275,7 +298,7 @@ class UIRenderer(UIRendererBase):
             "CHRG",
         )
 
-        # 4. Stamina
+        # Stamina
         stamina_y = charge_y - (bar_height + bar_spacing)
         self._render_bar(
             start_x,
@@ -287,6 +310,16 @@ class UIRenderer(UIRendererBase):
             "STM",
         )
 
+    def _render_messages(self, game: Game) -> None:
+        """Render floating damage texts and messages."""
+        self._render_damage_texts(game.damage_texts)
+
+    def _render_pause_overlay(self, game: Game) -> None:
+        """Render the pause menu overlay (delegates to _render_pause_menu)."""
+        self._render_pause_menu(game)
+
+    def _render_controls_hint(self) -> None:
+        """Render the controls hint bar at the top of the screen."""
         msg = "WASD:Move|1-7:Wpn|R:Rel|Ctrl+C:Cheat|SPACE:Shield|M:Map|ESC:Menu"
         controls_hint = self.tiny_font.render(
             msg,
@@ -310,10 +343,6 @@ class UIRenderer(UIRendererBase):
             ),
         )
         self.screen.blit(controls_hint, controls_hint_rect)
-
-        # Pause Menu
-        if game.paused:
-            self._render_pause_menu(game)
 
     def _render_damage_texts(self, texts: list[dict[str, Any]]) -> None:
         """Render floating damage text indicators with enhanced effects."""

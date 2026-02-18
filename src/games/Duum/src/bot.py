@@ -117,13 +117,67 @@ class Bot:
     ) -> Projectile | None:
         """Update bot AI"""
         if self.dead:
-            self.death_timer += 1
-            if self.death_timer > 60:  # Start disintegrating after 1 second
-                self.disintegrate_timer += 1
-                if self.disintegrate_timer > 100:
-                    self.removed = True
+            self._update_death_animation()
             return None
 
+        self._update_visual_animations()
+
+        if self.enemy_type == "health_pack":
+            return None
+
+        # Calculate squared distance to player (avoid sqrt for comparisons)
+        dx = player.x - self.x
+        dy = player.y - self.y
+        dist_sq = dx * dx + dy * dy
+
+        # Face player
+        self.angle = float(math.atan2(dy, dx))
+
+        if self.enemy_type == "ball":
+            self._update_ball(game_map, player)
+            return None
+
+        if self.enemy_type == "ninja":
+            if self._update_ninja(player):
+                return None
+
+        if self.enemy_type == "beast":
+            result = self._update_beast(game_map, player, other_bots)
+            if result is not None:
+                return result
+
+        if self.enemy_type == "minigunner":
+            result = self._update_minigunner(game_map, player, other_bots)
+            if result is not None:
+                return result
+
+        if self._is_in_attack_mode(dist_sq):
+            result = self._try_attack(player, game_map)
+            if result is not None:
+                return result
+        else:
+            self._update_default_movement(game_map, player, other_bots)
+
+        # Update attack timer
+        if self.attack_timer > 0:
+            self.attack_timer -= 1
+
+        return None  # No projectile shot this frame
+
+    # ------------------------------------------------------------------
+    # Private helpers (extracted from update)
+    # ------------------------------------------------------------------
+
+    def _update_death_animation(self) -> None:
+        """Advance the death / disintegration timers."""
+        self.death_timer += 1
+        if self.death_timer > 60:  # Start disintegrating after 1 second
+            self.disintegrate_timer += 1
+            if self.disintegrate_timer > 100:
+                self.removed = True
+
+    def _update_visual_animations(self) -> None:
+        """Tick shoot_animation, eye_rotation, drool_offset, mouth_timer."""
         # Update animations
         if self.shoot_animation > 0:
             self.shoot_animation -= 0.1
@@ -138,120 +192,133 @@ class Bot:
             self.mouth_open = not self.mouth_open
             self.mouth_timer = 0
 
-        if self.enemy_type == "health_pack":
-            return None
+    def _update_ball(self, game_map: Map, player: Player) -> None:
+        """Rolling momentum logic — accelerate, bounce off walls, crush player."""
+        # Accelerate towards player
+        accel = 0.001 * self.speed
+        dx = player.x - self.x
+        dy = player.y - self.y
+        dist = math.sqrt(dx * dx + dy * dy)
 
-        # Calculate distance to player
+        # Normalize direction
+        if dist > 0:
+            self.vx += (dx / dist) * accel
+            self.vy += (dy / dist) * accel
+
+        # Max speed cap (high)
+        current_speed = math.sqrt(self.vx**2 + self.vy**2)
+        max_speed = self.speed * 2.0
+        if current_speed > max_speed:
+            scale = max_speed / current_speed
+            self.vx *= scale
+            self.vy *= scale
+
+        # Move
+        new_x = self.x + self.vx
+        new_y = self.y + self.vy
+
+        # Bounce off walls
+        if game_map.is_wall(new_x, self.y):
+            self.vx *= -0.8  # Bounce with some loss
+            new_x = self.x
+        if game_map.is_wall(self.x, new_y):
+            self.vy *= -0.8
+            new_y = self.y
+
+        # Update pos
+        self.x = new_x
+        self.y = new_y
+
+        # Visual rotation
+        self.angle = math.atan2(self.vy, self.vx)
+
+        # Collision with player (Crush)
+        # Recalculate distance after move
+        dist_new = math.sqrt((new_x - player.x) ** 2 + (new_y - player.y) ** 2)
+        if dist_new < 1.0:
+            if not player.god_mode:
+                player.take_damage(self.damage)
+            # Bounce back
+            self.vx *= -1.0
+            self.vy *= -1.0
+
+    def _update_ninja(self, player: Player) -> bool:
+        """Ninja melee attack.
+
+        Returns True if a melee attack was performed (caller should return
+        None from update), False otherwise (fall through to movement).
+        """
+        dx = player.x - self.x
+        dy = player.y - self.y
+        distance = math.sqrt(dx**2 + dy**2)
+        if distance < 1.2 and self.attack_timer <= 0:
+            if not player.god_mode:
+                player.take_damage(self.damage)
+            self.attack_timer = 30
+            return True
+        return False
+
+    def _update_beast(
+        self, game_map: Map, player: Player, other_bots: list[Bot]
+    ) -> Projectile | None:
+        """Beast fireball attack — returns Projectile on attack, or None."""
+        # Slow movement, big fireballs
+        # Standard move logic below will handle slow movement
         dx = player.x - self.x
         dy = player.y - self.y
         distance = math.sqrt(dx**2 + dy**2)
 
-        # Face player
-        self.angle = float(math.atan2(dy, dx))
+        # Custom Fireball Attack
+        if distance < 15 and self.attack_timer <= 0:  # Long range
+            if self.has_line_of_sight(game_map, player):
+                # Calculate parabola (fake 3D arc)
+                # We just spawn a big fireball projectile
+                # (fake 3D arc handled later)
+                # For now, just a big fireball projectile
+                projectile = Projectile(
+                    self.x,
+                    self.y,
+                    self.angle,
+                    damage=self.damage * 2,
+                    speed=0.15,  # Slow heavy projectile
+                    is_player=False,
+                    color=(255, 100, 0),
+                    size=1.0,  # Big
+                )
+                self.attack_timer = 120  # Slow fire rate
+                self.shoot_animation = 1.0
+                return projectile
+        return None
 
-        if self.enemy_type == "ball":
-            # Rolling Momentum Logic
-            # Accelerate towards player
-            accel = 0.001 * self.speed
-            dx = player.x - self.x
-            dy = player.y - self.y
-            dist = math.sqrt(dx * dx + dy * dy)
+    def _update_minigunner(
+        self, game_map: Map, player: Player, other_bots: list[Bot]
+    ) -> Projectile | None:
+        """Minigunner rapid-fire attack — returns Projectile on attack, or None."""
+        dx = player.x - self.x
+        dy = player.y - self.y
+        distance = math.sqrt(dx**2 + dy**2)
+        if distance < 12 and self.attack_timer <= 0:
+            if self.has_line_of_sight(game_map, player):
+                projectile = Projectile(
+                    self.x,
+                    self.y,
+                    self.angle,
+                    damage=self.damage,
+                    speed=0.2,  # Fast projectile
+                    is_player=False,
+                    color=(255, 255, 0),
+                    size=0.1,
+                )
+                self.attack_timer = 10  # Rapid fire
+                self.shoot_animation = 1.0
+                return projectile
+        return None
 
-            # Normalize direction
-            if dist > 0:
-                self.vx += (dx / dist) * accel
-                self.vy += (dy / dist) * accel
-
-            # Max speed cap (high)
-            current_speed = math.sqrt(self.vx**2 + self.vy**2)
-            max_speed = self.speed * 2.0
-            if current_speed > max_speed:
-                scale = max_speed / current_speed
-                self.vx *= scale
-                self.vy *= scale
-
-            # Move
-            new_x = self.x + self.vx
-            new_y = self.y + self.vy
-
-            # Bounce off walls
-            if game_map.is_wall(new_x, self.y):
-                self.vx *= -0.8  # Bounce with some loss
-                new_x = self.x
-            if game_map.is_wall(self.x, new_y):
-                self.vy *= -0.8
-                new_y = self.y
-
-            # Update pos
-            self.x = new_x
-            self.y = new_y
-
-            # Visual rotation
-            self.angle = math.atan2(self.vy, self.vx)
-
-            # Collision with player (Crush)
-            # Recalculate distance after move
-            dist_new = math.sqrt((new_x - player.x) ** 2 + (new_y - player.y) ** 2)
-            if dist_new < 1.0:
-                if not player.god_mode:
-                    player.take_damage(self.damage)
-                # Bounce back
-                self.vx *= -1.0
-                self.vy *= -1.0
-
-            return None
-
-        if self.enemy_type == "ninja":
-            if distance < 1.2 and self.attack_timer <= 0:
-                if not player.god_mode:
-                    player.take_damage(self.damage)
-                self.attack_timer = 30
-                return None
-
-        if self.enemy_type == "beast":
-            # Slow movement, big fireballs
-            # Standard move logic below will handle slow movement
-
-            # Custom Fireball Attack
-            if distance < 15 and self.attack_timer <= 0:  # Long range
-                if self.has_line_of_sight(game_map, player):
-                    # Calculate parabola (fake 3D arc)
-                    # We just spawn a big fireball projectile
-                    # (fake 3D arc handled later)
-                    # For now, just a big fireball projectile
-                    projectile = Projectile(
-                        self.x,
-                        self.y,
-                        self.angle,
-                        damage=self.damage * 2,
-                        speed=0.15,  # Slow heavy projectile
-                        is_player=False,
-                        color=(255, 100, 0),
-                        size=1.0,  # Big
-                    )
-                    self.attack_timer = 120  # Slow fire rate
-                    self.shoot_animation = 1.0
-                    return projectile
-
-        if self.enemy_type == "minigunner":
-            if distance < 12 and self.attack_timer <= 0:
-                if self.has_line_of_sight(game_map, player):
-                    projectile = Projectile(
-                        self.x,
-                        self.y,
-                        self.angle,
-                        damage=self.damage,
-                        speed=0.2,  # Fast projectile
-                        is_player=False,
-                        color=(255, 255, 0),
-                        size=0.1,
-                    )
-                    self.attack_timer = 10  # Rapid fire
-                    self.shoot_animation = 1.0
-                    return projectile
-
-        if (
-            distance < C.BOT_ATTACK_RANGE
+    def _is_in_attack_mode(self, dist_sq: float) -> bool:
+        """Return True when the bot should attempt a standard ranged attack
+        rather than moving toward the player."""
+        return (
+            dist_sq < C.BOT_ATTACK_RANGE * C.BOT_ATTACK_RANGE
             and self.enemy_type
             not in [
                 "beast",
@@ -262,87 +329,93 @@ class Bot:
                 "bomb_item",
             ]
             and not self.enemy_type.startswith("pickup_")
-        ):  # Beast, Ninja, Minigunner and Items handled separately
-            if self.attack_timer <= 0:
-                # Check line of sight
-                if self.has_line_of_sight(game_map, player):
-                    # Shoot projectile instead of direct damage
-                    projectile = Projectile(
-                        self.x,
-                        self.y,
-                        self.angle,
-                        C.BOT_PROJECTILE_DAMAGE + self.damage,
-                        C.BOT_PROJECTILE_SPEED,
-                        is_player=False,
-                    )
-                    self.attack_timer = C.BOT_ATTACK_COOLDOWN
-                    self.shoot_animation = 1.0  # Start shoot animation
-                    return projectile  # Return projectile to be added to list
-        else:
-            # Move toward player
-            move_dx = math.cos(self.angle) * self.speed
-            move_dy = math.sin(self.angle) * self.speed
+        )
 
-            new_x = self.x + move_dx
-            new_y = self.y + move_dy
+    def _try_attack(self, player: Player, game_map: Map) -> Projectile | None:
+        """Fire a standard ranged projectile if the attack timer is ready
+        and the bot has line of sight.
 
-            # Check wall collision
-            can_move_x = not game_map.is_wall(new_x, self.y)
-            can_move_y = not game_map.is_wall(self.x, new_y)
+        Caller must check ``_is_in_attack_mode`` first.
+        Returns a Projectile if the bot fires, otherwise None.
+        """
+        if self.attack_timer <= 0:
+            # Check line of sight
+            if self.has_line_of_sight(game_map, player):
+                # Shoot projectile instead of direct damage
+                projectile = Projectile(
+                    self.x,
+                    self.y,
+                    self.angle,
+                    C.BOT_PROJECTILE_DAMAGE + self.damage,
+                    C.BOT_PROJECTILE_SPEED,
+                    is_player=False,
+                )
+                self.attack_timer = C.BOT_ATTACK_COOLDOWN
+                self.shoot_animation = 1.0  # Start shoot animation
+                return projectile  # Return projectile to be added to list
+        return None
 
-            # Check collision with other bots
-            # Optimization: Use squared distance to avoid sqrt
-            collision_radius = 0.5 + (0.5 if self.enemy_type == "beast" else 0)
-            col_sq = collision_radius * collision_radius
+    def _update_default_movement(
+        self, game_map: Map, player: Player, other_bots: list[Bot]
+    ) -> None:
+        """Move toward the player with wall / bot collision avoidance."""
+        move_dx = math.cos(self.angle) * self.speed
+        move_dy = math.sin(self.angle) * self.speed
 
-            for other_bot in other_bots:
-                if other_bot != self and not other_bot.dead:
-                    # Quick check X
-                    if (
-                        abs(new_x - other_bot.x) > collision_radius
-                        and abs(self.x - other_bot.x) > collision_radius
-                    ):
-                        pass  # Check Y later
+        new_x = self.x + move_dx
+        new_y = self.y + move_dy
 
-                    dx_sq = (new_x - other_bot.x) ** 2
-                    dy_sq = (self.y - other_bot.y) ** 2
-                    if dx_sq + dy_sq < col_sq:
-                        can_move_x = False
-                        # Beast pushes others?
-                        if self.enemy_type == "beast":
-                            push_x = other_bot.x + move_dx * 2
-                            if not game_map.is_wall(push_x, other_bot.y):
-                                other_bot.x = push_x
+        # Check wall collision
+        can_move_x = not game_map.is_wall(new_x, self.y)
+        can_move_y = not game_map.is_wall(self.x, new_y)
 
-                    dx_sq = (self.x - other_bot.x) ** 2
-                    dy_sq = (new_y - other_bot.y) ** 2
-                    if dx_sq + dy_sq < col_sq:
-                        can_move_y = False
-                        # Beast pushes others (Y only)
-                        if self.enemy_type == "beast":
-                            push_y = other_bot.y + move_dy * 2
-                            if not game_map.is_wall(other_bot.x, push_y):
-                                other_bot.y = push_y
+        # Check collision with other bots
+        # Optimization: Use squared distance to avoid sqrt
+        collision_radius = 0.5 + (0.5 if self.enemy_type == "beast" else 0)
+        col_sq = collision_radius * collision_radius
 
-            if can_move_x:
-                self.x = new_x
-            if can_move_y:
-                self.y = new_y
+        for other_bot in other_bots:
+            if other_bot != self and not other_bot.dead:
+                # Quick check X
+                if (
+                    abs(new_x - other_bot.x) > collision_radius
+                    and abs(self.x - other_bot.x) > collision_radius
+                ):
+                    pass  # Check Y later
 
-            # Update walk animation
-            moved = self.x != self.last_x or self.y != self.last_y
-            if moved:
-                self.walk_animation += 0.3
-                if self.walk_animation > 2 * math.pi:
-                    self.walk_animation -= 2 * math.pi
-            self.last_x = self.x
-            self.last_y = self.y
+                dx_sq = (new_x - other_bot.x) ** 2
+                dy_sq = (self.y - other_bot.y) ** 2
+                if dx_sq + dy_sq < col_sq:
+                    can_move_x = False
+                    # Beast pushes others?
+                    if self.enemy_type == "beast":
+                        push_x = other_bot.x + move_dx * 2
+                        if not game_map.is_wall(push_x, other_bot.y):
+                            other_bot.x = push_x
 
-        # Update attack timer
-        if self.attack_timer > 0:
-            self.attack_timer -= 1
+                dx_sq = (self.x - other_bot.x) ** 2
+                dy_sq = (new_y - other_bot.y) ** 2
+                if dx_sq + dy_sq < col_sq:
+                    can_move_y = False
+                    # Beast pushes others (Y only)
+                    if self.enemy_type == "beast":
+                        push_y = other_bot.y + move_dy * 2
+                        if not game_map.is_wall(other_bot.x, push_y):
+                            other_bot.y = push_y
 
-        return None  # No projectile shot this frame
+        if can_move_x:
+            self.x = new_x
+        if can_move_y:
+            self.y = new_y
+
+        # Update walk animation
+        moved = self.x != self.last_x or self.y != self.last_y
+        if moved:
+            self.walk_animation += 0.3
+            if self.walk_animation > 2 * math.pi:
+                self.walk_animation -= 2 * math.pi
+        self.last_x = self.x
+        self.last_y = self.y
 
     def has_line_of_sight(self, game_map: Map, player: Player) -> bool:
         """Check if bot has line of sight to player"""
