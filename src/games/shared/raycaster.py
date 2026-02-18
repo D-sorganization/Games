@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-import itertools
 import math
 import random
+from collections import OrderedDict
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, cast
 
@@ -72,7 +72,9 @@ class Raycaster:
                 strips.append(tex.subsurface((x, 0, 1, h)))
             self.texture_strips[name] = strips
 
-        self._strip_cache: dict[tuple[str, int, int], pygame.Surface] = {}
+        self._strip_cache: OrderedDict[tuple[str, int, int], pygame.Surface] = (
+            OrderedDict()
+        )
 
     def _init_atmosphere(self) -> None:
         """Initialize sky backgrounds and stars."""
@@ -93,8 +95,8 @@ class Raycaster:
 
     def _init_buffers(self) -> None:
         """Initialize rendering buffers and surfaces."""
-        self.sprite_cache: dict[tuple, pygame.Surface] = {}
-        self._scaled_sprite_cache: dict[tuple, pygame.Surface] = {}
+        self.sprite_cache: OrderedDict[tuple, pygame.Surface] = OrderedDict()
+        self._scaled_sprite_cache: OrderedDict[tuple, pygame.Surface] = OrderedDict()
 
         self.minimap_surface: pygame.Surface | None = None
         self.minimap_size = 200
@@ -166,25 +168,24 @@ class Raycaster:
         self._update_ray_angles()
 
     def update_cache(self) -> None:
-        """Perform cache maintenance once per frame."""
+        """Perform cache maintenance once per frame.
+
+        Caches use OrderedDict with LRU eviction: on hit, entries are
+        moved to the end via ``move_to_end``; on eviction, the *least*
+        recently used entries are popped from the front.
+        """
         # Limit cache size to prevent memory issues
         if len(self._strip_cache) > 10000:
-            # Remove oldest entries
-            keys_to_remove = list(itertools.islice(self._strip_cache, 1000))
-            for key in keys_to_remove:
-                del self._strip_cache[key]
+            for _ in range(1000):
+                self._strip_cache.popitem(last=False)
 
         if len(self.sprite_cache) > 400:
-            sprite_keys_to_remove = list(itertools.islice(self.sprite_cache, 40))
-            for k in sprite_keys_to_remove:
-                del self.sprite_cache[k]
+            for _ in range(40):
+                self.sprite_cache.popitem(last=False)
 
         if len(self._scaled_sprite_cache) > 200:
-            scaled_keys_to_remove = list(
-                itertools.islice(self._scaled_sprite_cache, 20)
-            )
-            for scaled_k in scaled_keys_to_remove:
-                del self._scaled_sprite_cache[scaled_k]
+            for _ in range(20):
+                self._scaled_sprite_cache.popitem(last=False)
 
     def _get_cached_strip(
         self, texture_name: str, strip_x: int, height: int
@@ -193,6 +194,7 @@ class Raycaster:
         cache_key = (texture_name, strip_x, height)
 
         if cache_key in self._strip_cache:
+            self._strip_cache.move_to_end(cache_key)
             return self._strip_cache[cache_key]
 
         strips = self.texture_strips.get(texture_name)
@@ -540,7 +542,12 @@ class Raycaster:
             | tuple[pygame.Surface, tuple[int, int], tuple[int, int, int, int]]
         ] = []
 
-        # Optimization: Convert numpy arrays to lists for faster iteration
+        # Optimization: Convert numpy arrays to Python lists for faster per-element
+        # access in the per-ray loop below.  Python list __getitem__ with an int
+        # index is ~5-10x faster than numpy scalar indexing (arr[i]) because numpy
+        # must box the result into a Python scalar on every access.  Since the loop
+        # is pure-Python ``for i in range(num_rays)`` with individual element reads,
+        # pre-converting via .tolist() is the optimal approach.  (See issue #477.)
         distances_list = distances.tolist()
         wall_types_list = wall_types.tolist()
         wall_x_hits_list = wall_x_hits.tolist()
@@ -635,6 +642,8 @@ class Raycaster:
             1.0,
         )
 
+        # Convert to Python lists: these feed a per-ray Python loop where list
+        # indexing outperforms numpy scalar indexing.  See issue #477 for details.
         return (
             wall_heights_int.tolist(),
             wall_tops.tolist(),
@@ -968,6 +977,7 @@ class Raycaster:
         )
 
         if cache_key in self.sprite_cache:
+            self.sprite_cache.move_to_end(cache_key)
             return self.sprite_cache[cache_key], cache_key, distance_shade
 
         surf_size = int(cached_size * visual_scale)
@@ -987,9 +997,8 @@ class Raycaster:
             sprite_surface.fill((150, 200, 255), special_flags=pygame.BLEND_MULT)
 
         if len(self.sprite_cache) > 400:
-            keys_to_remove = list(itertools.islice(self.sprite_cache, 40))
-            for k in keys_to_remove:
-                del self.sprite_cache[k]
+            for _ in range(40):
+                self.sprite_cache.popitem(last=False)
         self.sprite_cache[cache_key] = sprite_surface
         return sprite_surface, cache_key, distance_shade
 
@@ -1088,6 +1097,7 @@ class Raycaster:
 
         scaled_cache_key = (cache_key, final_w, final_h)
         if scaled_cache_key in self._scaled_sprite_cache:
+            self._scaled_sprite_cache.move_to_end(scaled_cache_key)
             scaled_sprite = self._scaled_sprite_cache[scaled_cache_key]
         else:
             try:
@@ -1095,11 +1105,8 @@ class Raycaster:
                     sprite_surface, (final_w, final_h)
                 )
                 if len(self._scaled_sprite_cache) > 200:
-                    scaled_keys_to_remove = list(
-                        itertools.islice(self._scaled_sprite_cache, 20)
-                    )
-                    for scaled_k in scaled_keys_to_remove:
-                        del self._scaled_sprite_cache[scaled_k]
+                    for _ in range(20):
+                        self._scaled_sprite_cache.popitem(last=False)
                 self._scaled_sprite_cache[scaled_cache_key] = scaled_sprite
             except (ValueError, pygame.error):
                 return
