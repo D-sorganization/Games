@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import logging
-from collections import defaultdict
 from typing import TYPE_CHECKING
+
+from games.shared.spatial_grid import SpatialGrid
 
 from . import constants as C  # noqa: N812
 from .projectile import Projectile
@@ -25,8 +26,7 @@ class EntityManager:
         self.projectiles: list[Projectile] = []
 
         # Spatial partitioning for optimized collision detection
-        self.spatial_grid: dict[tuple[int, int], list[Bot]] = defaultdict(list)
-        self.grid_cell_size = 5
+        self.spatial_grid: SpatialGrid = SpatialGrid(cell_size=5.0)
 
     def reset(self) -> None:
         """Clear all entities."""
@@ -43,27 +43,12 @@ class EntityManager:
         self.projectiles.append(projectile)
 
     def _update_spatial_grid(self) -> None:
-        """Update the spatial grid with current bot positions."""
-        self.spatial_grid.clear()
-        for bot in self.bots:
-            if bot.alive:
-                # Calculate grid cell coordinates
-                cell_x = int(bot.x // self.grid_cell_size)
-                cell_y = int(bot.y // self.grid_cell_size)
-                self.spatial_grid[(cell_x, cell_y)].append(bot)
+        """Rebuild the spatial grid with current alive bot positions."""
+        self.spatial_grid.update([b for b in self.bots if b.alive])
 
     def get_nearby_bots(self, x: float, y: float, radius: float = 1.0) -> list[Bot]:
         """Get bots near a specific location using the spatial grid."""
-        cell_x = int(x // self.grid_cell_size)
-        cell_y = int(y // self.grid_cell_size)
-
-        nearby_bots = []
-        for dx in (-1, 0, 1):
-            for dy in (-1, 0, 1):
-                cell_bots = self.spatial_grid.get((cell_x + dx, cell_y + dy))
-                if cell_bots:
-                    nearby_bots.extend(cell_bots)
-        return nearby_bots
+        return self.spatial_grid.get_nearby(x, y)
 
     def update_bots(self, game_map: Map, player: Player, game: Game) -> None:
         """Update all bots."""
