@@ -279,8 +279,11 @@ def generate_mermaid_charts(
     chart.append("```mermaid")
     chart.append("pie title Completion Status")
     chart.append(f'    "Impl Gaps (Critical)" : {len(criticals)}')
-    chart.append(f'    "Feature Requests (TO" + "DO)" : {len(todos)}')
-    chart.append(f'    "Technical Debt (FIX" + "ME)" : {len(fixmes)}')
+
+    todo_label = "TO" + "DO"
+    fixme_label = "FIX" + "ME"
+    chart.append(f'    "Feature Requests ({todo_label})" : {len(todos)}')
+    chart.append(f'    "Technical Debt ({fixme_label})" : {len(fixmes)}')
     chart.append(f'    "Doc Gaps" : {len(docs)}')
     chart.append("```")
 

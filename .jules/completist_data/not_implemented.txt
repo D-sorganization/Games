@@ -1,4 +1,4 @@
-./scripts/analyze_completist_data.py:199:        "NotImplementedError": 4,
-./scripts/shared/quality_checks_common.py:13:    (re.compile(r"NotImplementedError"), "NotImplementedError placeholder"),
 ./src/games/Zombie_Survival/src/bot.py:289:                        pass  # Check Y later
 ./src/games/Duum/src/bot.py:305:                        pass  # Check Y later
+./scripts/analyze_completist_data.py:207:        "NotImplementedError": 4,
+./scripts/shared/quality_checks_common.py:13:    (re.compile(r"NotImplementedError"), "NotImplementedError placeholder"),
