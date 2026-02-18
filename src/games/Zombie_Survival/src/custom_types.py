@@ -13,6 +13,7 @@ class WeaponData(TypedDict, total=False):
     reload_time: int
     key: str
     automatic: bool
+    fire_mode: str  # "hitscan", "projectile", "spread", "beam", "burst"
     spin_up_time: int
     heat_per_shot: float
     max_heat: float
