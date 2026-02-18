@@ -46,6 +46,17 @@ class Bot:
     removed: bool
     frozen: bool
 
+    # Dispatch table: enemy_type -> method name for type-specific behavior.
+    # Each handler accepts (game_map, player, dist_sq, other_bots) and returns
+    # Projectile | None.  Adding a new enemy type only requires a new handler
+    # method and one entry here.
+    _BEHAVIOR_DISPATCH: dict[str, str] = {
+        "ball": "_update_behavior_ball",
+        "ninja": "_update_behavior_ninja",
+        "beast": "_update_behavior_beast",
+        "minigunner": "_update_behavior_minigunner",
+    }
+
     def __init__(
         self,
         x: float,
@@ -133,36 +144,14 @@ class Bot:
         # Face player
         self.angle = float(math.atan2(dy, dx))
 
-        if self.enemy_type == "ball":
-            self._update_ball(game_map, player)
-            return None
+        # Dispatch to type-specific behavior
+        handler_name = self._BEHAVIOR_DISPATCH.get(self.enemy_type)
+        if handler_name is not None:
+            handler = getattr(self, handler_name)
+            return handler(game_map, player, dist_sq, other_bots)
 
-        if self.enemy_type == "ninja":
-            if self._update_ninja(player):
-                return None
-
-        if self.enemy_type == "beast":
-            result = self._update_beast(game_map, player, other_bots)
-            if result is not None:
-                return result
-
-        if self.enemy_type == "minigunner":
-            result = self._update_minigunner(game_map, player, other_bots)
-            if result is not None:
-                return result
-
-        if self._is_in_attack_mode(dist_sq):
-            result = self._try_attack(player, game_map)
-            if result is not None:
-                return result
-        else:
-            self._update_default_movement(game_map, player, other_bots)
-
-        # Update attack timer
-        if self.attack_timer > 0:
-            self.attack_timer -= 1
-
-        return None  # No projectile shot this frame
+        # Default behavior for types without a dedicated handler
+        return self._update_behavior_standard(game_map, player, dist_sq, other_bots)
 
     # ------------------------------------------------------------------
     # Private helpers (extracted from update)
@@ -192,8 +181,21 @@ class Bot:
             self.mouth_open = not self.mouth_open
             self.mouth_timer = 0
 
-    def _update_ball(self, game_map: Map, player: Player) -> None:
-        """Rolling momentum logic — accelerate, bounce off walls, crush player."""
+    # ------------------------------------------------------------------
+    # Behavior handlers (uniform signature for dispatch table)
+    #
+    # Each handler accepts (game_map, player, dist_sq, other_bots) and
+    # returns Projectile | None.
+    # ------------------------------------------------------------------
+
+    def _update_behavior_ball(
+        self,
+        game_map: Map,
+        player: Player,
+        dist_sq: float,  # noqa: ARG002
+        other_bots: list[Bot],  # noqa: ARG002
+    ) -> Projectile | None:
+        """Rolling momentum logic -- accelerate, bounce off walls, crush player."""
         # Accelerate towards player
         accel = 0.001 * self.speed
         dx = player.x - self.x
@@ -241,13 +243,16 @@ class Bot:
             # Bounce back
             self.vx *= -1.0
             self.vy *= -1.0
+        return None
 
-    def _update_ninja(self, player: Player) -> bool:
-        """Ninja melee attack.
-
-        Returns True if a melee attack was performed (caller should return
-        None from update), False otherwise (fall through to movement).
-        """
+    def _update_behavior_ninja(
+        self,
+        game_map: Map,
+        player: Player,
+        dist_sq: float,
+        other_bots: list[Bot],
+    ) -> Projectile | None:
+        """Ninja melee attack, then fall through to default movement."""
         dx = player.x - self.x
         dy = player.y - self.y
         distance = math.sqrt(dx**2 + dy**2)
@@ -255,15 +260,22 @@ class Bot:
             if not player.god_mode:
                 player.take_damage(self.damage)
             self.attack_timer = 30
-            return True
-        return False
+            return None
 
-    def _update_beast(
-        self, game_map: Map, player: Player, other_bots: list[Bot]
+        # No melee this frame -- move toward player
+        self._update_default_movement(game_map, player, other_bots)
+        if self.attack_timer > 0:
+            self.attack_timer -= 1
+        return None
+
+    def _update_behavior_beast(
+        self,
+        game_map: Map,
+        player: Player,
+        dist_sq: float,
+        other_bots: list[Bot],
     ) -> Projectile | None:
-        """Beast fireball attack — returns Projectile on attack, or None."""
-        # Slow movement, big fireballs
-        # Standard move logic below will handle slow movement
+        """Beast fireball attack -- slow movement, big fireballs."""
         dx = player.x - self.x
         dy = player.y - self.y
         distance = math.sqrt(dx**2 + dy**2)
@@ -271,10 +283,6 @@ class Bot:
         # Custom Fireball Attack
         if distance < 15 and self.attack_timer <= 0:  # Long range
             if self.has_line_of_sight(game_map, player):
-                # Calculate parabola (fake 3D arc)
-                # We just spawn a big fireball projectile
-                # (fake 3D arc handled later)
-                # For now, just a big fireball projectile
                 projectile = Projectile(
                     self.x,
                     self.y,
@@ -288,12 +296,21 @@ class Bot:
                 self.attack_timer = 120  # Slow fire rate
                 self.shoot_animation = 1.0
                 return projectile
+
+        # No fireball this frame -- move toward player
+        self._update_default_movement(game_map, player, other_bots)
+        if self.attack_timer > 0:
+            self.attack_timer -= 1
         return None
 
-    def _update_minigunner(
-        self, game_map: Map, player: Player, other_bots: list[Bot]
+    def _update_behavior_minigunner(
+        self,
+        game_map: Map,
+        player: Player,
+        dist_sq: float,
+        other_bots: list[Bot],
     ) -> Projectile | None:
-        """Minigunner rapid-fire attack — returns Projectile on attack, or None."""
+        """Minigunner rapid-fire attack."""
         dx = player.x - self.x
         dy = player.y - self.y
         distance = math.sqrt(dx**2 + dy**2)
@@ -312,30 +329,46 @@ class Bot:
                 self.attack_timer = 10  # Rapid fire
                 self.shoot_animation = 1.0
                 return projectile
+
+        # No burst this frame -- move toward player
+        self._update_default_movement(game_map, player, other_bots)
+        if self.attack_timer > 0:
+            self.attack_timer -= 1
         return None
 
-    def _is_in_attack_mode(self, dist_sq: float) -> bool:
-        """Return True when the bot should attempt a standard ranged attack
-        rather than moving toward the player."""
-        return (
-            dist_sq < C.BOT_ATTACK_RANGE * C.BOT_ATTACK_RANGE
-            and self.enemy_type
-            not in [
-                "beast",
-                "ninja",
-                "minigunner",
-                "ammo_box",
-                "health_pack",
-                "bomb_item",
-            ]
-            and not self.enemy_type.startswith("pickup_")
-        )
+    # ------------------------------------------------------------------
+    # Standard / default behavior (used by types not in dispatch table)
+    # ------------------------------------------------------------------
 
-    def _try_attack(self, player: Player, game_map: Map) -> Projectile | None:
+    def _update_behavior_standard(
+        self,
+        game_map: Map,
+        player: Player,
+        dist_sq: float,
+        other_bots: list[Bot],
+    ) -> Projectile | None:
+        """Default behavior for types not in the dispatch table:
+        attempt a standard ranged attack if in range, otherwise move."""
+        attack_range_sq = C.BOT_ATTACK_RANGE * C.BOT_ATTACK_RANGE
+        if (
+            dist_sq < attack_range_sq
+            and self.enemy_type not in ("ammo_box", "health_pack", "bomb_item")
+            and not self.enemy_type.startswith("pickup_")
+        ):
+            projectile = self._try_attack(game_map, player)
+            if projectile is not None:
+                return projectile
+        else:
+            self._update_default_movement(game_map, player, other_bots)
+
+        if self.attack_timer > 0:
+            self.attack_timer -= 1
+        return None
+
+    def _try_attack(self, game_map: Map, player: Player) -> Projectile | None:
         """Fire a standard ranged projectile if the attack timer is ready
         and the bot has line of sight.
 
-        Caller must check ``_is_in_attack_mode`` first.
         Returns a Projectile if the bot fires, otherwise None.
         """
         if self.attack_timer <= 0:
