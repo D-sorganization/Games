@@ -1,25 +1,47 @@
-"""Base class for game maps with cellular automata generation."""
+"""Base class for game maps with pluggable generation strategies."""
 
 from __future__ import annotations
 
 import math
 import random
+from typing import TYPE_CHECKING
 
 from games.shared.contracts import validate_positive
+from games.shared.map_generators import CellularAutomataGenerator
+
+if TYPE_CHECKING:
+    from games.shared.map_generators import MapGenerator
 
 
 class MapBase:
-    """Base class for game maps with walls and buildings using cellular automata."""
+    """Base class for game maps with walls and buildings.
 
-    def __init__(self, size: int, generate: bool = True):
+    The generation algorithm is pluggable via the *generator* parameter.
+    Any object satisfying the :class:`~games.shared.map_generators.MapGenerator`
+    protocol can be passed in.  When *generator* is ``None`` (the default),
+    a :class:`~games.shared.map_generators.CellularAutomataGenerator` is used,
+    preserving full backward compatibility.
+    """
+
+    def __init__(
+        self,
+        size: int,
+        generate: bool = True,
+        generator: MapGenerator | None = None,
+    ):
         """Initialize a map with walls and buildings.
 
         Args:
-            size: Map size (grid dimensions)
-            generate: Whether to generate the map immediately (default: True)
+            size: Map size (grid dimensions).
+            generate: Whether to generate the map immediately (default: True).
+            generator: Optional map-generation strategy.  Defaults to
+                :class:`CellularAutomataGenerator` when ``None``.
         """
         validate_positive(size, "map_size")
         self.size = size
+        self.generator: MapGenerator = (
+            generator if generator is not None else CellularAutomataGenerator()
+        )
         self.grid = [[0 for _ in range(size)] for _ in range(size)]
         if generate:
             self.create_map()
@@ -35,43 +57,14 @@ class MapBase:
         return self.size
 
     def create_map(self) -> None:
-        """Create the map layout using Cellular Automata for organic caves/rooms."""
-        size = self.size
+        """Create the map layout by delegating to the pluggable generator.
 
-        # 1. Initialize random grid (45% chance of being a wall)
-        for i in range(size):
-            for j in range(size):
-                if random.random() < 0.45:
-                    self.grid[i][j] = 1
-                else:
-                    self.grid[i][j] = 0
-
-        # Border walls
-        for i in range(size):
-            self.grid[0][i] = 1
-            self.grid[size - 1][i] = 1
-            self.grid[i][0] = 1
-            self.grid[i][size - 1] = 1
-
-        # 2. Cellular Automata Smoothing (5 iterations)
-        for _ in range(5):
-            new_grid = [row[:] for row in self.grid]
-            for i in range(1, size - 1):
-                for j in range(1, size - 1):
-                    # Count neighbors
-                    neighbors = 0
-                    for ni in range(-1, 2):
-                        for nj in range(-1, 2):
-                            if ni == 0 and nj == 0:
-                                continue
-                            if self.grid[i + ni][j + nj] > 0:
-                                neighbors += 1
-
-                    if neighbors > 4:
-                        new_grid[i][j] = 1
-                    elif neighbors < 4:
-                        new_grid[i][j] = 0
-            self.grid = new_grid
+        After the generator fills the base terrain the method adds
+        rectangular room overlays and ensures full connectivity, just
+        as the original implementation did.
+        """
+        # 1 + 2. Delegate base terrain generation to the strategy
+        self.generator.generate(self.grid, self.size)
 
         # 3. Add Buildings / Rooms overlay (Rectangular structures for variety)
         self._add_rooms()
