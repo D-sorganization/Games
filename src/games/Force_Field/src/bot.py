@@ -49,6 +49,19 @@ class Bot:
     frozen: bool
     frozen_timer: int
 
+    # Dispatch table: enemy_type -> method name for type-specific behavior.
+    # Each handler accepts (game_map, player, dist_sq, other_bots) and returns
+    # Projectile | None.  Adding a new enemy type only requires a new handler
+    # method and one entry here.
+    _BEHAVIOR_DISPATCH: dict[str, str] = {
+        "ball": "_update_behavior_ball",
+        "ninja": "_update_behavior_ninja",
+        "beast": "_update_behavior_beast",
+        "minigunner": "_update_behavior_minigunner",
+        "sniper": "_update_behavior_sniper",
+        "ice_zombie": "_update_behavior_standard",
+    }
+
     def __init__(
         self,
         x: float,
@@ -141,26 +154,13 @@ class Bot:
         # Face player
         self.angle = float(math.atan2(dy, dx))
 
-        # Behavior dispatch
-        if self.enemy_type == "ball":
-            # Ball needs actual distance for velocity normalization
-            distance = math.sqrt(dist_sq)
-            return self._update_behavior_ball(game_map, player, dx, dy, distance)
-        elif self.enemy_type == "ninja":
-            return self._update_behavior_ninja(game_map, player, dist_sq, other_bots)
-        elif self.enemy_type == "beast":
-            return self._update_behavior_beast(game_map, player, dist_sq, other_bots)
-        elif self.enemy_type == "minigunner":
-            return self._update_behavior_minigunner(
-                game_map, player, dist_sq, other_bots
-            )
-        elif self.enemy_type == "sniper":
-            return self._update_behavior_sniper(game_map, player, dist_sq, other_bots)
-        elif self.enemy_type == "ice_zombie":
-            # Ice Zombies are slower but maybe have an aura or ranged attack?
-            # For now, just standard behavior but they look cool.
-            return self._update_behavior_standard(game_map, player, dist_sq, other_bots)
+        # Dispatch to type-specific behavior
+        handler_name = self._BEHAVIOR_DISPATCH.get(self.enemy_type)
+        if handler_name is not None:
+            handler = getattr(self, handler_name)
+            return handler(game_map, player, dist_sq, other_bots)
 
+        # Default behavior for types without a dedicated handler
         return self._update_behavior_standard(game_map, player, dist_sq, other_bots)
 
     def _check_status_effects(self) -> bool:
@@ -243,9 +243,26 @@ class Bot:
         self.shoot_animation = 1.0
         return projectile
 
+    # ------------------------------------------------------------------
+    # Behavior handlers (uniform signature for dispatch table)
+    #
+    # Each handler accepts (game_map, player, dist_sq, other_bots) and
+    # returns Projectile | None.
+    # ------------------------------------------------------------------
+
     def _update_behavior_ball(
-        self, game_map: Map, player: Player, dx: float, dy: float, dist: float
+        self,
+        game_map: Map,
+        player: Player,
+        dist_sq: float,
+        other_bots: list[Bot],  # noqa: ARG002
     ) -> Projectile | None:
+        """Rolling momentum logic -- accelerate, bounce off walls, crush player."""
+        # Compute dx/dy/dist from dist_sq for velocity normalization
+        dx = player.x - self.x
+        dy = player.y - self.y
+        dist = math.sqrt(dist_sq)
+
         # Accelerate towards player
         accel = 0.001 * self.speed
 
