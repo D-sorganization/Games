@@ -10,6 +10,7 @@ import numpy as np
 import pygame
 
 from .bot_renderer import BotRenderer
+from .contracts import validate_positive
 from .texture_generator import TextureGenerator
 from .utils import cast_ray_dda
 
@@ -92,12 +93,14 @@ class Raycaster:
 
     def _init_buffers(self) -> None:
         """Initialize rendering buffers and surfaces."""
-        self.sprite_cache: dict[str, pygame.Surface] = {}
-        self._scaled_sprite_cache: dict[tuple[str, int, int], pygame.Surface] = {}
+        self.sprite_cache: dict[tuple, pygame.Surface] = {}
+        self._scaled_sprite_cache: dict[tuple, pygame.Surface] = {}
 
         self.minimap_surface: pygame.Surface | None = None
         self.minimap_size = 200
         self.minimap_scale = self.minimap_size / self.map_size
+        self._fog_surface: pygame.Surface | None = None
+        self._fog_visited_count: int = 0
 
         self.render_scale = self.config.DEFAULT_RENDER_SCALE
         self.num_rays = self.config.SCREEN_WIDTH // self.render_scale
@@ -151,6 +154,7 @@ class Raycaster:
 
     def set_render_scale(self, scale: int) -> None:
         """Update render scale and related buffers."""
+        validate_positive(scale, "scale")
         self.render_scale = scale
         self.num_rays = self.config.SCREEN_WIDTH // scale
 
@@ -952,12 +956,16 @@ class Raycaster:
         shade_level = int(distance_shade * 20)
 
         cache_key = (
-            f"{bot.enemy_type}_{bot.type_data.get('visual_style')}_"
-            f"{int(bot.walk_animation * 5)}_{int(bot.shoot_animation * 5)}_"
-            f"{bot.dead}_{int(bot.death_timer // 5)}_{cached_size}_{shade_level}"
+            bot.enemy_type,
+            bot.type_data.get("visual_style"),
+            int(bot.walk_animation * 5),
+            int(bot.shoot_animation * 5),
+            bot.dead,
+            int(bot.death_timer // 5),
+            cached_size,
+            shade_level,
+            bot.frozen,
         )
-        if bot.frozen:
-            cache_key += "_frozen"
 
         if cache_key in self.sprite_cache:
             return self.sprite_cache[cache_key], cache_key, distance_shade
@@ -1424,23 +1432,29 @@ class Raycaster:
 
         if self.minimap_surface:
             if visited_cells is not None:
-                fog_surface = pygame.Surface(
-                    (self.minimap_size, self.minimap_size), pygame.SRCALPHA
-                )
-                fog_surface.fill((0, 0, 0, 255))
-
-                for vx, vy in visited_cells:
-                    fog_surface.fill(
-                        (0, 0, 0, 0),
-                        rect=(
-                            vx * self.minimap_scale,
-                            vy * self.minimap_scale,
-                            self.minimap_scale,
-                            self.minimap_scale,
-                        ),
+                visited_count = len(visited_cells)
+                if (
+                    self._fog_surface is None
+                    or self._fog_visited_count != visited_count
+                ):
+                    self._fog_surface = pygame.Surface(
+                        (self.minimap_size, self.minimap_size), pygame.SRCALPHA
                     )
+                    self._fog_surface.fill((0, 0, 0, 255))
+
+                    for vx, vy in visited_cells:
+                        self._fog_surface.fill(
+                            (0, 0, 0, 0),
+                            rect=(
+                                vx * self.minimap_scale,
+                                vy * self.minimap_scale,
+                                self.minimap_scale,
+                                self.minimap_scale,
+                            ),
+                        )
+                    self._fog_visited_count = visited_count
                 screen.blit(self.minimap_surface, (minimap_x, minimap_y))
-                screen.blit(fog_surface, (minimap_x, minimap_y))
+                screen.blit(self._fog_surface, (minimap_x, minimap_y))
             else:
                 screen.blit(self.minimap_surface, (minimap_x, minimap_y))
 

@@ -5,8 +5,9 @@ Duum, Force Field, and Zombie Survival. Game-specific constants
 (colors, themes, unique enemy types) remain in each game's own
 constants module and can override these defaults.
 
-Usage in game-specific constants.py:
-    from games.shared.constants import *  # noqa: F403
+Usage in game-specific constants.py::
+
+    from games.shared.constants import GameState, SCREEN_WIDTH, ...
     # Then override only what differs, e.g.:
     # SKY_COLOR = (20, 0, 0)
 """
@@ -14,6 +15,23 @@ Usage in game-specific constants.py:
 from __future__ import annotations
 
 import math
+from enum import Enum
+
+
+# ---------------------------------------------------------------------------
+# Game States
+# ---------------------------------------------------------------------------
+class GameState(Enum):
+    """Game states shared across all FPS games."""
+
+    INTRO = "intro"
+    MENU = "menu"
+    KEY_CONFIG = "key_config"
+    MAP_SELECT = "map_select"
+    PLAYING = "playing"
+    LEVEL_COMPLETE = "level_complete"
+    GAME_OVER = "game_over"
+
 
 # ---------------------------------------------------------------------------
 # Screen & Display
