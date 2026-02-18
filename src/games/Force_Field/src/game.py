@@ -26,7 +26,6 @@ from games.shared.raycaster import Raycaster
 from games.shared.sound_manager_base import SoundManagerBase
 
 from . import constants as C  # noqa: N812
-from .bot import Bot
 from .combat_system import CombatSystem
 from .entity_manager import EntityManager
 from .game_input import GameInputHandler
@@ -37,6 +36,7 @@ from .player import Player
 from .projectile import Projectile
 from .renderer import GameRenderer
 from .sound import SoundManager
+from .spawn_manager import FFSpawnManager
 from .ui_renderer import UIRenderer
 
 logger = logging.getLogger(__name__)
@@ -114,6 +114,7 @@ class Game(FPSGameBase):
         self.game_map: Map | None = None
         self.player: Player | None = None
         self.entity_manager = EntityManager()
+        self.spawn_manager = FFSpawnManager(self.entity_manager)
         self.combat_system = CombatSystem(self)
         self.raycaster: Raycaster | None = None
         self.portal: Portal | None = None
@@ -277,136 +278,11 @@ class Game(FPSGameBase):
         # Propagate God Mode state
         self.player.god_mode = self.god_mode
 
-        # Bots spawn in random locations, but respect safety radius
+        # Delegate spawning to SpawnManager
         self.entity_manager.reset()
-
-        num_enemies = int(
-            min(
-                50,
-                5
-                + self.level
-                * 2
-                * C.DIFFICULTIES[self.selected_difficulty]["score_mult"],
-            )
+        self.spawn_manager.spawn_all(
+            player_pos, self.game_map, self.level, self.selected_difficulty
         )
-
-        for _ in range(num_enemies):
-            # Try to place bot with more attempts and flexible distance
-            for attempt in range(50):
-                bx = random.randint(2, self.game_map.size - 2)
-                by = random.randint(2, self.game_map.size - 2)
-
-                # More flexible distance check - but maintain safe minimum
-                min_dist_sq = (
-                    C.SPAWN_SAFE_ZONE_RADIUS**2
-                    if attempt < 40
-                    else (C.SPAWN_SAFE_ZONE_RADIUS * 0.5) ** 2
-                )
-                dist_sq = (bx - player_pos[0]) ** 2 + (by - player_pos[1]) ** 2
-
-                # Failsafe: if we are at attempt 49 (last one), ignore distance check
-                if dist_sq < min_dist_sq and attempt < 49:
-                    continue
-
-                if not self.game_map.is_wall(bx, by):
-                    # Add bot - exclude items and special bosses from regular spawning
-                    enemy_type = random.choice(list(C.ENEMY_TYPES.keys()))
-
-                    exclusions = [
-                        "boss",
-                        "demon",
-                        "ball",
-                        "beast",
-                        "health_pack",
-                        "ammo_box",
-                        "bomb_item",
-                        "pickup_rocket",
-                        "pickup_flamethrower",
-                        "pickup_pulse",
-                        "pickup_freezer",
-                    ]
-                    # Also exclude pickups
-                    while enemy_type in exclusions or enemy_type.startswith("pickup"):
-                        enemy_type = random.choice(list(C.ENEMY_TYPES.keys()))
-
-                    self.entity_manager.add_bot(
-                        Bot(
-                            bx + 0.5,
-                            by + 0.5,
-                            self.level,
-                            enemy_type,
-                            difficulty=self.selected_difficulty,
-                        )
-                    )
-                    break
-            else:
-                logger.warning("Failed to spawn enemy after 50 attempts.")
-
-        # Spawn Boss & Fast Enemy (Demon)
-        boss_options = ["ball", "beast"]
-        boss_type = random.choice(boss_options)
-
-        upper_bound = max(2, self.game_map.size - 3)
-        for attempt in range(100):  # More attempts for boss spawning
-            cx = random.randint(2, upper_bound)
-            cy = random.randint(2, upper_bound)
-
-            min_boss_dist_sq = (
-                C.MIN_BOSS_DISTANCE**2
-                if attempt < 70
-                else (C.MIN_BOSS_DISTANCE * 0.7) ** 2
-            )
-            dist_sq = (cx - player_pos[0]) ** 2 + (cy - player_pos[1]) ** 2
-
-            if not self.game_map.is_wall(cx, cy) and dist_sq > min_boss_dist_sq:
-                self.entity_manager.add_bot(
-                    Bot(
-                        cx + 0.5,
-                        cy + 0.5,
-                        self.level,
-                        enemy_type=boss_type,
-                        difficulty=self.selected_difficulty,
-                    )
-                )
-                break
-
-        # Spawn Pickups
-        possible_weapons = [
-            "pickup_rifle",
-            "pickup_shotgun",
-            "pickup_plasma",
-            "pickup_minigun",
-            "pickup_flamethrower",
-            "pickup_pulse",
-            "pickup_freezer",
-        ]
-        for w_pickup in possible_weapons:
-            if random.random() < 0.4:  # 40% chance per level
-                rx = random.randint(5, self.game_map.size - 5)
-                ry = random.randint(5, self.game_map.size - 5)
-                if not self.game_map.is_wall(rx, ry):
-                    self.entity_manager.add_bot(
-                        Bot(rx + 0.5, ry + 0.5, self.level, w_pickup)
-                    )
-
-        # Ammo / Bombs
-        for _ in range(8):
-            rx = random.randint(5, self.game_map.size - 5)
-            ry = random.randint(5, self.game_map.size - 5)
-            if not self.game_map.is_wall(rx, ry):
-                choice = random.random()
-                if choice < 0.2:
-                    self.entity_manager.add_bot(
-                        Bot(rx + 0.5, ry + 0.5, self.level, "bomb_item")
-                    )
-                elif choice < 0.7:
-                    self.entity_manager.add_bot(
-                        Bot(rx + 0.5, ry + 0.5, self.level, "ammo_box")
-                    )
-                else:
-                    self.entity_manager.add_bot(
-                        Bot(rx + 0.5, ry + 0.5, self.level, "health_pack")
-                    )
 
         # Start Music
         music_tracks = [
