@@ -20,6 +20,7 @@ import argparse
 import ast
 import hashlib
 import json
+import logging
 import re
 import sys
 from collections import defaultdict
@@ -31,19 +32,7 @@ _REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
-
-# Mock imports/utils if shared/python doesn't exist in all repos
-# We will define minimal utils here to ensure standalone execution
-def setup_script_logging(name):
-    import logging
-
-    logging.basicConfig(
-        level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-    )
-    return logging.getLogger(name)
-
-
-logger = setup_script_logging(__name__)
+logger = logging.getLogger(__name__)
 
 # Constants for Principles
 PRINCIPLES = {
@@ -115,7 +104,6 @@ def check_dry_violations(files: list[Path]) -> list[dict]:
     issues = []
     chunk_size = 6
     code_blocks = defaultdict(list)
-    # magic_numbers removed (unused)
 
     for file_path in files:
         try:
@@ -244,7 +232,7 @@ def check_testing(root_path: Path) -> list[dict]:
 
 
 def run_review(root_path: Path):
-    logger.info(f"Running Pragmatic Review on {root_path}")
+    logger.info("Running Pragmatic Review on %s", root_path)
     files = find_python_files(root_path)
 
     all_issues = []
@@ -297,7 +285,11 @@ if __name__ == "__main__":
     parser.add_argument("--json-output", type=Path)
     args = parser.parse_args()
 
+    logging.basicConfig(
+        level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+    )
+
     repo_root = Path.cwd()
     results = run_review(repo_root)
     generate_markdown_report(results, args.output)
-    print(f"Report generated at {args.output}")
+    logger.info("Report generated at %s", args.output)

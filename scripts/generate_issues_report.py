@@ -4,7 +4,10 @@ Generate a report of issues to be created based on assessment scores.
 """
 
 import json
+import logging
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 
 def main():
@@ -12,14 +15,14 @@ def main():
     output_path = Path("docs/assessments/ISSUES_TO_CREATE.md")
 
     if not summary_path.exists():
-        print(f"Error: {summary_path} not found.")
+        logger.error("%s not found.", summary_path)
         return
 
     try:
         with open(summary_path) as f:
             data = json.load(f)
     except Exception as e:
-        print(f"Error loading JSON: {e}")
+        logger.error("Error loading JSON: %s", e)
         return
 
     category_scores = data.get("category_scores", {})
@@ -38,14 +41,16 @@ def main():
             f.write("# Issues to Create\n\n")
             f.write("\n".join(issues))
             f.write("\n")
-            print(
-                f"Found {len(issues)} categories with score < 5. "
-                f"Report saved to {output_path}"
+            logger.info(
+                "Found %d categories with score < 5. Report saved to %s",
+                len(issues),
+                output_path,
             )
         else:
             f.write("No categories scored below 5. No issues to create.\n")
-            print(f"No categories scored below 5. Report saved to {output_path}")
+            logger.info("No categories scored below 5. Report saved to %s", output_path)
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
     main()

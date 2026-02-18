@@ -1,7 +1,10 @@
+import logging
 import os
 import subprocess
 import sys
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 
 def get_test_environment(game_path: Path, root_dir: Path) -> dict[str, str]:
@@ -19,31 +22,29 @@ def get_test_environment(game_path: Path, root_dir: Path) -> dict[str, str]:
 
 def run_game_tests(name: str, game_path: Path, root_dir: Path) -> bool:
     """Run tests for a single game and return success status."""
-    print(f"=== Running tests for {name} ===")
+    logger.info("=== Running tests for %s ===", name)
     test_path = game_path / "tests"
 
     if not test_path.exists():
-        print(f"No tests found for {name} at {test_path}")
+        logger.warning("No tests found for %s at %s", name, test_path)
         return True
 
     env = get_test_environment(game_path, root_dir)
 
     try:
         cmd = [sys.executable, "-m", "pytest", str(test_path)]
-        print(f"Running: {' '.join(cmd)}")
+        logger.info("Running: %s", " ".join(cmd))
         result = subprocess.run(cmd, env=env, capture_output=False)
 
         if result.returncode != 0:
-            print(f"Tests failed for {name}")
+            logger.error("Tests failed for %s", name)
             return False
         else:
-            print(f"Tests passed for {name}")
+            logger.info("Tests passed for %s", name)
             return True
     except Exception as e:
-        print(f"Error running tests for {name}: {e}")
+        logger.error("Error running tests for %s: %s", name, e)
         return False
-    finally:
-        print("\n")
 
 
 def run_tests() -> None:
@@ -69,4 +70,5 @@ def run_tests() -> None:
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
     run_tests()

@@ -1,7 +1,10 @@
+import logging
 import os
 import random
 
 import pygame
+
+logger = logging.getLogger(__name__)
 
 
 def create_title_image() -> None:
@@ -57,8 +60,9 @@ def create_title_image() -> None:
     # Save
     path = os.path.join(os.path.dirname(__file__), "title.png")
     pygame.image.save(surface, path)
-    print(f"Created {path}")
+    logger.info("Created %s", path)
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
     create_title_image()

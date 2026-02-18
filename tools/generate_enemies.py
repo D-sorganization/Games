@@ -1,5 +1,8 @@
+import logging
 import os
 import sys
+
+logger = logging.getLogger(__name__)
 
 # Add Tools repo to Python path
 # Try to find Tools repo relative to this script
@@ -27,9 +30,9 @@ try:
     )
     from humanoid_character_builder.core.body_parameters import BuildType
 
-    print("Successfully imported humanoid_character_builder")
+    logger.info("Successfully imported humanoid_character_builder")
 except ImportError as e:
-    print(f"Error importing humanoid_character_builder: {e}")
+    logger.error("Error importing humanoid_character_builder: %s", e)
     sys.exit(1)
 
 # Output to src/games/QuatGolf/assets/enemies relative to this script
@@ -39,7 +42,7 @@ OUTPUT_DIR = os.path.join(
 
 
 def generate_enemy(name, params):
-    print(f"Generating {name}...")
+    logger.info("Generating %s...", name)
     builder = CharacterBuilder()
     result = builder.build(params)
 
@@ -58,7 +61,7 @@ def generate_enemy(name, params):
     params.name = name
 
     result.export_urdf(enemy_dir)
-    print(f"Saved to {enemy_dir}/{name}.urdf")
+    logger.info("Saved to %s/%s.urdf", enemy_dir, name)
 
 
 def main():
@@ -97,4 +100,5 @@ def main():
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
     main()
