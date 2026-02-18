@@ -14,6 +14,7 @@ from games.shared.constants import GameState
 from games.shared.fps_game_base import FPSGameBase
 from games.shared.interfaces import Portal
 from games.shared.raycaster import Raycaster
+from games.shared.sound_manager_base import SoundManagerBase
 
 from . import constants as C  # noqa: N812
 from .bot import Bot
@@ -33,8 +34,17 @@ logger = logging.getLogger(__name__)
 class Game(FPSGameBase):
     """Main game class"""
 
-    def __init__(self) -> None:
-        """Initialize game"""
+    def __init__(
+        self,
+        sound_manager: SoundManagerBase | None = None,
+    ) -> None:
+        """Initialize game.
+
+        Args:
+            sound_manager: Optional sound manager instance.  If not
+                provided, a default SoundManager is created.  Pass a
+                NullSoundManager for testing or headless environments.
+        """
         self.C = C
         flags = pygame.SCALED | pygame.RESIZABLE
         self.screen = pygame.display.set_mode((C.SCREEN_WIDTH, C.SCREEN_HEIGHT), flags)
@@ -100,7 +110,9 @@ class Game(FPSGameBase):
         self.game_over_timer = 0
 
         # Audio
-        self.sound_manager = SoundManager()
+        self.sound_manager = (
+            sound_manager if sound_manager is not None else SoundManager()
+        )
         self.sound_manager.start_music()
 
         # Input
