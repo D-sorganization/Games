@@ -1,4 +1,4 @@
-"""Base class for game sound managers with singleton pattern."""
+"""Base class for game sound managers."""
 
 from __future__ import annotations
 
@@ -12,26 +12,13 @@ logger = logging.getLogger(__name__)
 
 
 class SoundManagerBase:
-    """Base class for managing sound effects and music with singleton pattern."""
-
-    _instances: dict[type[SoundManagerBase], SoundManagerBase] = {}
-    initialized: bool
+    """Base class for managing sound effects and music."""
 
     # Subclasses should override this with their sound file mappings
     SOUND_FILES: dict[str, str] = {}
 
-    def __new__(cls) -> SoundManagerBase:  # noqa: PYI034
-        """Create singleton instance."""
-        if cls not in cls._instances:
-            cls._instances[cls] = super().__new__(cls)
-            cls._instances[cls].initialized = False
-        return cls._instances[cls]
-
     def __init__(self) -> None:
         """Initialize SoundManager."""
-        if self.initialized:
-            return
-
         # Re-initialize mixer with lower buffer to reduce latency
         with contextlib.suppress(Exception):
             pygame.mixer.quit()
@@ -46,7 +33,6 @@ class SoundManagerBase:
 
         # Load assets
         self.load_assets()
-        self.initialized = True
 
     def load_assets(self) -> None:
         """Load all sound files from the game's assets directory."""
@@ -129,3 +115,36 @@ class SoundManagerBase:
         """Unpause all sounds and music."""
         if self.sound_enabled:
             pygame.mixer.unpause()
+
+
+class NullSoundManager(SoundManagerBase):
+    """Silent sound manager for testing and headless environments.
+
+    Implements the full SoundManagerBase interface but performs no audio
+    operations, making it safe to use without pygame mixer initialization.
+    """
+
+    def __init__(self) -> None:
+        """Initialize without touching pygame mixer."""
+        self.sounds: dict[str, pygame.mixer.Sound] = {}
+        self.music_channel = None
+        self.sound_enabled = False
+        self.current_music: str | None = None
+
+    def load_assets(self) -> None:
+        """No-op: skip asset loading."""
+
+    def play_sound(self, name: str) -> None:
+        """No-op: skip sound playback."""
+
+    def start_music(self, name: str = "music_loop") -> None:
+        """No-op: skip music playback."""
+
+    def stop_music(self) -> None:
+        """No-op: skip music stop."""
+
+    def pause_all(self) -> None:
+        """No-op: skip pause."""
+
+    def unpause_all(self) -> None:
+        """No-op: skip unpause."""
