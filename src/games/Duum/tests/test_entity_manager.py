@@ -28,11 +28,11 @@ class TestEntityManager(unittest.TestCase):
 
         self.em._update_spatial_grid()
 
-        assert len(self.em.spatial_grid[(0, 0)]) == 1
-        assert self.em.spatial_grid[(0, 0)][0] == bot1
+        assert len(self.em.spatial_grid.cells[(0, 0)]) == 1
+        assert self.em.spatial_grid.cells[(0, 0)][0] == bot1
 
-        assert len(self.em.spatial_grid[(1, 0)]) == 1
-        assert self.em.spatial_grid[(1, 0)][0] == bot2
+        assert len(self.em.spatial_grid.cells[(1, 0)]) == 1
+        assert self.em.spatial_grid.cells[(1, 0)][0] == bot2
 
     def test_get_nearby_bots(self) -> None:
         """Test retrieving nearby bots."""
