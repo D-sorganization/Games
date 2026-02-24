@@ -1,4 +1,5 @@
-./src/games/Zombie_Survival/src/bot.py:289:                        pass  # Check Y later
-./src/games/Duum/src/bot.py:305:                        pass  # Check Y later
 ./scripts/analyze_completist_data.py:207:        "NotImplementedError": 4,
 ./scripts/shared/quality_checks_common.py:13:    (re.compile(r"NotImplementedError"), "NotImplementedError placeholder"),
+./src/games/Zombie_Survival/src/bot.py:400:                    pass  # Check Y later
+./src/games/Duum/src/bot.py:418:                    pass  # Check Y later
+./src/games/shared/spawn_manager.py:98:        raise NotImplementedError("Subclasses must implement _make_bot")
