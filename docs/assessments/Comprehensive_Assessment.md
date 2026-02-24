@@ -64,13 +64,13 @@
    - *Fix*: Commit lock file
 5. **[L] Complexity**: File too large (717 lines) (Major)
    - *Fix*: Split file
-6. **[L] Complexity**: File too large (542 lines) (Major)
+6. **[L] Complexity**: File too large (771 lines) (Major)
    - *Fix*: Split file
-7. **[L] Complexity**: File too large (1505 lines) (Major)
+7. **[L] Complexity**: File too large (542 lines) (Major)
    - *Fix*: Split file
-8. **[L] Complexity**: File too large (579 lines) (Major)
+8. **[L] Complexity**: File too large (1505 lines) (Major)
    - *Fix*: Split file
-9. **[L] Complexity**: File too large (796 lines) (Major)
+9. **[L] Complexity**: File too large (579 lines) (Major)
    - *Fix*: Split file
-10. **[L] Complexity**: File too large (1137 lines) (Major)
+10. **[L] Complexity**: File too large (796 lines) (Major)
    - *Fix*: Split file

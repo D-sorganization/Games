@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
 Comprehensive Assessment Runner for Categories A-O.
+
 This script performs a detailed audit based on specific prompt requirements.
 """
 
@@ -152,13 +153,20 @@ class AssessmentRunner:
             )
         else:
             # Check individual games structure
-            for game in [
+            games = [
                 d
                 for d in self.games_dir.iterdir()
                 if d.is_dir()
                 and d.name
-                not in ["shared", "vendor", "__pycache__", "launcher_assets", "sounds"]
-            ]:
+                not in [
+                    "shared",
+                    "vendor",
+                    "__pycache__",
+                    "launcher_assets",
+                    "sounds",
+                ]
+            ]
+            for game in games:
                 src = game / "src"
                 if not src.exists():
                     findings.append(
@@ -175,7 +183,7 @@ class AssessmentRunner:
 
     def _assess_hygiene(self) -> dict[str, Any]:
         """Assessment B: Hygiene."""
-        findings = []
+        findings: list[dict[str, Any]] = []
 
         # Check for print statements
         try:
@@ -231,13 +239,20 @@ class AssessmentRunner:
 
         # Check Game READMEs
         if self.games_dir.exists():
-            for game in [
+            games = [
                 d
                 for d in self.games_dir.iterdir()
                 if d.is_dir()
                 and d.name
-                not in ["shared", "vendor", "__pycache__", "launcher_assets", "sounds"]
-            ]:
+                not in [
+                    "shared",
+                    "vendor",
+                    "__pycache__",
+                    "launcher_assets",
+                    "sounds",
+                ]
+            ]
+            for game in games:
                 readme = game / "README.md"
                 if not readme.exists():
                     findings.append(
@@ -379,6 +394,73 @@ class AssessmentRunner:
             pass
         return {"findings": findings}
 
+    def _assess_security(self) -> dict[str, Any]:
+        """Assessment I: Security & Input Validation."""
+        findings = []
+        try:
+            grep = subprocess.run(
+                ["grep", "-r", "shell=True", "--include=*.py", "src"],
+                capture_output=True,
+                text=True,
+            )
+            if grep.stdout:
+                findings.append(
+                    {
+                        "severity": "Critical",
+                        "category": "Security",
+                        "location": "Multiple",
+                        "symptom": "subprocess.run(shell=True) detected",
+                        "fix": "Set shell=False",
+                    }
+                )
+        except Exception:
+            pass
+
+        try:
+            grep = subprocess.run(
+                ["grep", "-r", "eval(", "--include=*.py", "src"],
+                capture_output=True,
+                text=True,
+            )
+            if grep.stdout:
+                findings.append(
+                    {
+                        "severity": "Critical",
+                        "category": "Security",
+                        "location": "Multiple",
+                        "symptom": "eval() usage detected",
+                        "fix": "Remove eval()",
+                    }
+                )
+        except Exception:
+            pass
+
+        return {"findings": findings}
+
+    def _assess_extensibility(self) -> dict[str, Any]:
+        """Assessment J: Extensibility & Plugin Architecture."""
+        findings = []
+        # Check for ABC imports
+        try:
+            grep = subprocess.run(
+                ["grep", "-r", "from abc import ABC", "--include=*.py", "src"],
+                capture_output=True,
+                text=True,
+            )
+            if not grep.stdout:
+                findings.append(
+                    {
+                        "severity": "Minor",
+                        "category": "Architecture",
+                        "location": "Codebase",
+                        "symptom": "No Abstract Base Classes detected",
+                        "fix": "Define explicit interfaces",
+                    }
+                )
+        except Exception:
+            pass
+        return {"findings": findings}
+
     def _assess_reproducibility(self) -> dict[str, Any]:
         """Assessment K: Reproducibility & Provenance."""
         findings = []
@@ -489,73 +571,6 @@ class AssessmentRunner:
                 )
         return {"findings": findings}
 
-    def _assess_security(self) -> dict[str, Any]:
-        """Assessment I: Security & Input Validation."""
-        findings = []
-        try:
-            grep = subprocess.run(
-                ["grep", "-r", "shell=True", "--include=*.py", "src"],
-                capture_output=True,
-                text=True,
-            )
-            if grep.stdout:
-                findings.append(
-                    {
-                        "severity": "Critical",
-                        "category": "Security",
-                        "location": "Multiple",
-                        "symptom": "subprocess.run(shell=True) detected",
-                        "fix": "Set shell=False",
-                    }
-                )
-        except Exception:
-            pass
-
-        try:
-            grep = subprocess.run(
-                ["grep", "-r", "eval(", "--include=*.py", "src"],
-                capture_output=True,
-                text=True,
-            )
-            if grep.stdout:
-                findings.append(
-                    {
-                        "severity": "Critical",
-                        "category": "Security",
-                        "location": "Multiple",
-                        "symptom": "eval() usage detected",
-                        "fix": "Remove eval()",
-                    }
-                )
-        except Exception:
-            pass
-
-        return {"findings": findings}
-
-    def _assess_extensibility(self) -> dict[str, Any]:
-        """Assessment J: Extensibility & Plugin Architecture."""
-        findings = []
-        # Check for ABC imports
-        try:
-            grep = subprocess.run(
-                ["grep", "-r", "from abc import ABC", "--include=*.py", "src"],
-                capture_output=True,
-                text=True,
-            )
-            if not grep.stdout:
-                findings.append(
-                    {
-                        "severity": "Minor",
-                        "category": "Architecture",
-                        "location": "Codebase",
-                        "symptom": "No Abstract Base Classes detected",
-                        "fix": "Define explicit interfaces",
-                    }
-                )
-        except Exception:
-            pass
-        return {"findings": findings}
-
     def _generate_report(
         self, category_id: str, topic: str, data: dict[str, Any], score: int
     ):
@@ -574,16 +589,30 @@ class AssessmentRunner:
         content += "- Adheres to 'Adversarial' review standard.\n\n"
 
         content += "## Scorecard\n\n"
-        content += f"| Category | Score | Notes |\n| --- | --- | --- |\n| **Overall** | **{score}/10** | Automated Score |\n\n"
+        content += (
+            f"| Category | Score | Notes |\n| --- | --- | --- |\n"
+            f"| **Overall** | **{score}/10** | Automated Score |\n\n"
+        )
 
         content += "## Findings Table\n\n"
         content += "| ID | Severity | Category | Location | Symptom | Fix |\n"
         content += "| --- | --- | --- | --- | --- | --- |\n"
         if data.get("findings"):
             for i, f in enumerate(data["findings"]):
-                content += f"| {category_id}-{i+1:03d} | {f.get('severity', 'Minor')} | {f.get('category', 'General')} | {f.get('location', 'Repo')} | {f.get('symptom', 'Issue')} | {f.get('fix', 'Fix it')} |\n"
+                sev = f.get("severity", "Minor")
+                cat = f.get("category", "General")
+                loc = f.get("location", "Repo")
+                sym = f.get("symptom", "Issue")
+                fix = f.get("fix", "Fix it")
+                content += (
+                    f"| {category_id}-{i+1:03d} | {sev} | {cat} | {loc} | "
+                    f"{sym} | {fix} |\n"
+                )
         else:
-            content += f"| {category_id}-000 | Info | Setup | - | No critical findings detected by automation. | - |\n"
+            content += (
+                f"| {category_id}-000 | Info | Setup | - | "
+                "No critical findings detected by automation. | - |\n"
+            )
 
         content += "\n## Refactoring Plan\n\n"
         content += "**48 Hours**\n- Review automated findings.\n\n"
@@ -635,10 +664,8 @@ class AssessmentRunner:
                     content += f"- {line}\n"
             content += "\n"
 
-        output_file = (
-            completist_dir
-            / f"Completist_Report_{datetime.now().strftime('%Y-%m-%d')}.md"
-        )
+        timestamp = datetime.now().strftime("%Y-%m-%d")
+        output_file = completist_dir / f"Completist_Report_{timestamp}.md"
         output_file.write_text(content)
         logger.info(f"Generated Completist Report: {output_file}")
 
@@ -663,14 +690,16 @@ class AssessmentRunner:
             if category_id in self.results:
                 score = self.results[category_id].get("score", 0)
                 topic = TOPICS[category_id]
-                content += f"| {category_id}: {topic} | {score}/10 | {'Pass' if score >= 8 else 'Fail' if score < 5 else 'Warn'} |\n"
+                status = "Pass" if score >= 8 else "Fail" if score < 5 else "Warn"
+                content += f"| {category_id}: {topic} | {score}/10 | {status} |\n"
                 total_score += score
                 count += 1
 
         # Completist
         if "Completist" in self.results:
             score = self.results["Completist"]["score"]
-            content += f"| Completist Audit | {score}/10 | {'Pass' if score >= 8 else 'Fail'} |\n"
+            status = "Pass" if score >= 8 else "Fail"
+            content += f"| Completist Audit | {score}/10 | {status} |\n"
             total_score += score
             count += 1
 
@@ -697,7 +726,10 @@ class AssessmentRunner:
                         preview + "\n...\n(See full Pragmatic Review for details)\n"
                     )
                 else:
-                    content += "Refer to [Pragmatic Review](pragmatic_programmer/review_2026-02-24.md)\n"
+                    content += (
+                        "Refer to [Pragmatic Review]"
+                        "(pragmatic_programmer/review_2026-02-24.md)\n"
+                    )
             except Exception:
                 content += "Could not read Pragmatic Review file.\n"
         else:
@@ -713,11 +745,20 @@ class AssessmentRunner:
                 all_findings.append({**f, "origin": cat})
 
         # Sort by severity (Blocker > Critical > Major > Minor)
-        severity_map = {"Blocker": 0, "Critical": 1, "Major": 2, "Minor": 3, "Info": 4}
+        severity_map = {
+            "Blocker": 0,
+            "Critical": 1,
+            "Major": 2,
+            "Minor": 3,
+            "Info": 4,
+        }
         all_findings.sort(key=lambda x: severity_map.get(x.get("severity", "Info"), 5))
 
         for i, f in enumerate(all_findings[:10]):
-            content += f"{i+1}. **[{f['origin']}] {f.get('category')}**: {f.get('symptom')} ({f.get('severity')})\n"
+            content += (
+                f"{i+1}. **[{f['origin']}] {f.get('category')}**: "
+                f"{f.get('symptom')} ({f.get('severity')})\n"
+            )
             content += f"   - *Fix*: {f.get('fix')}\n"
 
         filepath = self.output_dir / "Comprehensive_Assessment.md"
