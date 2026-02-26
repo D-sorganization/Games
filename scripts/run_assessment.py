@@ -13,7 +13,11 @@ from datetime import datetime
 from pathlib import Path
 
 from scripts.shared.logging_config import setup_script_logging
-from scripts.shared.subprocess_utils import run_black_check, run_ruff_check
+from scripts.shared.subprocess_utils import (
+    run_black_check,
+    run_command,
+    run_ruff_check,
+)
 
 logger = setup_script_logging()
 
@@ -196,6 +200,38 @@ def run_assessment(assessment_id: str, output_path: Path) -> int:
         else:
             findings.append("- Good number of test files")
 
+        # Attempt to run pytest with coverage
+        try:
+            # We don't fail if this errors, as environment might not support it
+            cmd = [
+                sys.executable,
+                "-m",
+                "pytest",
+                "--cov=src",
+                "--cov-report=term-missing",
+            ]
+            result = run_command(cmd, check=False)
+            if result.returncode == 0:
+                findings.append("- Pytest execution: ✓ Passed")
+                # Parse coverage percentage if possible (simple heuristic)
+                match = re.search(r"TOTAL\s+\d+\s+\d+\s+(\d+)%", result.stdout)
+                if match:
+                    cov_percent = int(match.group(1))
+                    findings.append(f"- Coverage: {cov_percent}%")
+                    if cov_percent < 50:
+                        score -= 2
+                        findings.append("- Warning: Low test coverage (< 50%)")
+                    elif cov_percent < 80:
+                        score -= 1
+                        findings.append("- Note: Moderate test coverage (< 80%)")
+            else:
+                findings.append(
+                    f"- Pytest execution: ✗ Failed (Exit code {result.returncode})"
+                )
+                score -= 2
+        except Exception as e:
+            findings.append(f"- Pytest execution failed to start: {e}")
+
     elif assessment_id == "D":  # Error Handling
         try_count = grep_in_files(r"try:", python_files)
         except_count = grep_in_files(r"except:", python_files)
@@ -211,12 +247,21 @@ def run_assessment(assessment_id: str, output_path: Path) -> int:
             r"import cProfile|import timeit|import pstats", python_files
         )
         findings.append(f"- Files with performance tools: {perf_imports}")
+
+        # Check for time.sleep which is often an anti-pattern
+        time_sleep = grep_in_files(r"time\.sleep", python_files)
+        findings.append(f"- Files using time.sleep: {time_sleep}")
+
         if perf_imports == 0:
             findings.append(
                 "- Note: No explicit performance profiling tools found in code"
             )
-            # Deduct slightly or neutral depending on philosophy.
-            # Let's keep it neutral but report it.
+            score -= 1
+
+        if time_sleep > 2:
+            findings.append(
+                "- Warning: Multiple uses of time.sleep detected (potential bottleneck)"
+            )
             score -= 1
 
     elif assessment_id == "F":  # Security
@@ -231,14 +276,44 @@ def run_assessment(assessment_id: str, output_path: Path) -> int:
         else:
             findings.append("- subprocess with shell=True: Not found (Good)")
 
+        # Check for potential secrets
+        secrets_pattern = r"api_key|password|secret|token"
+        secrets_found = grep_in_files(secrets_pattern, python_files)
+        if secrets_found > 0:
+            findings.append(
+                f"- Warning: Potential secrets found in {secrets_found} files (vars)"
+            )
+            score -= 1
+
+        # Check for eval/exec
+        unsafe_eval = grep_in_files(r"eval\(|exec\(", python_files)
+        if unsafe_eval > 0:
+            findings.append(
+                f"- Critical: Unsafe eval/exec detected in {unsafe_eval} files"
+            )
+            score -= 3
+
     elif assessment_id == "G":  # Dependencies
         has_req = Path("requirements.txt").exists()
         has_pyproject = Path("pyproject.toml").exists()
         findings.append(f"- requirements.txt: {'✓' if has_req else '✗'}")
         findings.append(f"- pyproject.toml: {'✓' if has_pyproject else '✗'}")
+
+        # Check for lock files
+        has_poetry_lock = Path("poetry.lock").exists()
+        has_package_lock = Path("package-lock.json").exists()
+        has_lock = has_poetry_lock or has_package_lock
+        findings.append(
+            f"- Lock files (poetry.lock/package-lock.json): {'✓' if has_lock else '✗'}"
+        )
+
         if not (has_req or has_pyproject):
             score -= 5
             findings.append("- Critical: No dependency definition found")
+
+        if not (has_poetry_lock or has_package_lock):
+            findings.append("- Note: No lock file found (reproducibility risk)")
+            score -= 1
 
     elif assessment_id == "H":  # CI/CD
         has_github_workflows = Path(".github/workflows").exists()
@@ -246,6 +321,11 @@ def run_assessment(assessment_id: str, output_path: Path) -> int:
         if not has_github_workflows:
             score -= 3
             findings.append("- Warning: No GitHub Actions workflows found")
+        else:
+            workflow_count = len(list(Path(".github/workflows").glob("*.yml"))) + len(
+                list(Path(".github/workflows").glob("*.yaml"))
+            )
+            findings.append(f"- Number of workflows: {workflow_count}")
 
     elif assessment_id == "I":  # Code Style
         ruff_result = run_ruff_check_wrapper()
@@ -377,15 +457,13 @@ def run_assessment(assessment_id: str, output_path: Path) -> int:
             findings.append("- Warning: High average file size")
 
     else:
-        # No automated checks available for this category
-        # DO NOT fabricate a score - require real bot/manual review
+        # Fallback for unexpected assessment IDs
         score = None  # type: ignore [assignment]
         findings.append(f"- Python files analyzed: {file_count}")
         findings.append(
             "- **REQUIRES REVIEW**: No automated checks available for this category"
         )
         findings.append("- Score must be assigned by Jules bot or manual code review")
-        findings.append("- Do NOT use a default score - real analysis is required")
 
     # Format score display
     if score is not None:

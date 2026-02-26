@@ -1,16 +1,18 @@
 # Assessment G: Dependencies
 
-**Date**: 2026-02-23 08:21:08
+**Date**: 2026-02-26 08:30:09
 **Assessment**: G - Dependencies
 **Description**: Dependency management
 **Generated**: Automated via Jules Assessment Auto-Fix workflow
 
-## Score: 10/10
+## Score: 9/10
 
 ## Findings
 
 - requirements.txt: ✓
 - pyproject.toml: ✓
+- Lock files (poetry.lock/package-lock.json): ✗
+- Note: No lock file found (reproducibility risk)
 
 ## Recommendations
 

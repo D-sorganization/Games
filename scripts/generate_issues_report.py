@@ -4,10 +4,12 @@ Generate a report of issues to be created based on assessment scores.
 """
 
 import json
-import logging
+from datetime import datetime
 from pathlib import Path
 
-logger = logging.getLogger(__name__)
+from scripts.shared.logging_config import setup_script_logging
+
+logger = setup_script_logging()
 
 
 def main():
@@ -32,25 +34,41 @@ def main():
         score = details.get("score", 10)
         if score < 5:
             issues.append(
-                f"- Category {cat_id} ({details.get('name')}) "
-                f"score {score} < 5. Label: jules:assessment,needs-attention"
+                f"- **Category {cat_id} ({details.get('name')})**\n"
+                f"  - Score: {score}/10\n"
+                f"  - Action: Create GitHub Issue\n"
+                f"  - Label: `jules:assessment,needs-attention`"
             )
 
+    # Prepare report content
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    content = f"# Issues to Create Report\n\n**Date**: {timestamp}\n\n"
+
+    if issues:
+        content += "## Found Categories with Score < 5\n\n"
+        content += "\n".join(issues)
+        content += (
+            "\n\n## Instructions\n\nRun the following command to create issues:\n"
+        )
+        # Potential future command integration
+        content += (
+            "```bash\n# Example command (requires gh cli)\n# gh issue create ...\n```\n"
+        )
+        logger.info(
+            "Found %d categories with score < 5. Report saved to %s",
+            len(issues),
+            output_path,
+        )
+    else:
+        content += (
+            "## Status: All Good\n\n"
+            "No categories scored below 5. No issues to create.\n"
+        )
+        logger.info("No categories scored below 5. Report saved to %s", output_path)
+
     with open(output_path, "w") as f:
-        if issues:
-            f.write("# Issues to Create\n\n")
-            f.write("\n".join(issues))
-            f.write("\n")
-            logger.info(
-                "Found %d categories with score < 5. Report saved to %s",
-                len(issues),
-                output_path,
-            )
-        else:
-            f.write("No categories scored below 5. No issues to create.\n")
-            logger.info("No categories scored below 5. Report saved to %s", output_path)
+        f.write(content)
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
     main()

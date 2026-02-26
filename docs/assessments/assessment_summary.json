@@ -1,20 +1,25 @@
 {
-  "timestamp": "2026-02-23T08:21:31.539916",
-  "overall_score": 9.75,
+  "timestamp": "2026-02-26T08:30:11.769616",
+  "overall_score": 9.27,
   "category_scores": {
     "A": {
       "score": 10.0,
       "name": "Code Structure",
       "weight": 8.33
     },
-    "B": {
+    "K": {
       "score": 10.0,
-      "name": "Documentation",
-      "weight": 10.0
+      "name": "Data Handling",
+      "weight": 2.5
     },
-    "C": {
-      "score": 10.0,
-      "name": "Test Coverage",
+    "O": {
+      "score": 7.0,
+      "name": "Maintainability",
+      "weight": 8.34
+    },
+    "F": {
+      "score": 9.0,
+      "name": "Security",
       "weight": 15.0
     },
     "D": {
@@ -22,45 +27,45 @@
       "name": "Error Handling",
       "weight": 2.5
     },
-    "E": {
+    "L": {
       "score": 10.0,
-      "name": "Performance",
-      "weight": 15.0
-    },
-    "F": {
-      "score": 10.0,
-      "name": "Security",
-      "weight": 15.0
-    },
-    "G": {
-      "score": 10.0,
-      "name": "Dependencies",
+      "name": "Logging",
       "weight": 2.5
+    },
+    "C": {
+      "score": 8.0,
+      "name": "Test Coverage",
+      "weight": 15.0
     },
     "H": {
       "score": 10.0,
       "name": "CI/CD",
       "weight": 2.5
     },
-    "I": {
-      "score": 10.0,
-      "name": "Code Style",
-      "weight": 8.33
-    },
     "J": {
       "score": 10.0,
       "name": "API Design",
       "weight": 2.5
     },
-    "K": {
+    "E": {
       "score": 10.0,
-      "name": "Data Handling",
+      "name": "Performance",
+      "weight": 15.0
+    },
+    "I": {
+      "score": 10.0,
+      "name": "Code Style",
+      "weight": 8.33
+    },
+    "G": {
+      "score": 9.0,
+      "name": "Dependencies",
       "weight": 2.5
     },
-    "L": {
+    "B": {
       "score": 10.0,
-      "name": "Logging",
-      "weight": 2.5
+      "name": "Documentation",
+      "weight": 10.0
     },
     "M": {
       "score": 10.0,
@@ -71,14 +76,20 @@
       "score": 10.0,
       "name": "Scalability",
       "weight": 2.5
-    },
-    "O": {
-      "score": 7.0,
-      "name": "Maintainability",
-      "weight": 8.34
     }
   },
-  "critical_issues": [],
-  "total_issues": 0,
+  "top_recommendations": [
+    {
+      "severity": "WARNING",
+      "description": "17 large files detected (> 500 lines)",
+      "source": "Assessment_O_Maintainability"
+    },
+    {
+      "severity": "WARNING",
+      "description": "Potential secrets found in 6 files (vars)",
+      "source": "Assessment_F_Security"
+    }
+  ],
+  "total_issues": 2,
   "reports_analyzed": 15
 }
