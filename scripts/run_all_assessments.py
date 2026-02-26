@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Run all assessments (A-O) and generate individual reports.
+Run all assessments (A-O), generate summary, and identify issues.
 """
 
 import logging
@@ -38,6 +38,7 @@ def main():
 
     failed = []
 
+    # 1. Run individual assessments
     for assessment_id, name in ASSESSMENTS.items():
         output_file = output_dir / f"Assessment_{assessment_id}_{name}.md"
         cmd = base_cmd + ["--assessment", assessment_id, "--output", str(output_file)]
@@ -51,9 +52,41 @@ def main():
 
     if failed:
         logger.error("Failed assessments: %s", ", ".join(failed))
+        # We continue even if some failed, to generate partial summary
+
+    # 2. Generate Summary
+    logger.info("Generating Comprehensive Assessment Summary...")
+    summary_md = output_dir / "Comprehensive_Assessment.md"
+    summary_json = output_dir / "assessment_summary.json"
+
+    summary_cmd = [
+        sys.executable,
+        "scripts/generate_assessment_summary.py",
+        "--input",
+        str(output_dir / "Assessment_*.md"),
+        "--output",
+        str(summary_md),
+        "--json-output",
+        str(summary_json),
+    ]
+
+    try:
+        subprocess.run(summary_cmd, check=True)
+    except subprocess.CalledProcessError:
+        logger.error("Failed to generate assessment summary.")
         sys.exit(1)
 
-    logger.info("All assessments completed successfully.")
+    # 3. Generate Issues Report
+    logger.info("Generating Issues Report...")
+    issues_cmd = [sys.executable, "scripts/generate_issues_report.py"]
+
+    try:
+        subprocess.run(issues_cmd, check=True)
+    except subprocess.CalledProcessError:
+        logger.error("Failed to generate issues report.")
+        sys.exit(1)
+
+    logger.info("All assessment tasks completed successfully.")
 
 
 if __name__ == "__main__":

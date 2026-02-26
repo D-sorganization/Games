@@ -1,15 +1,16 @@
 # Assessment F: Security
 
-**Date**: 2026-02-23 08:21:08
+**Date**: 2026-02-26 08:30:09
 **Assessment**: F - Security
 **Description**: Vulnerabilities, best practices
 **Generated**: Automated via Jules Assessment Auto-Fix workflow
 
-## Score: 10/10
+## Score: 9/10
 
 ## Findings
 
 - subprocess with shell=True: Not found (Good)
+- Warning: Potential secrets found in 6 files (vars)
 
 ## Recommendations
 

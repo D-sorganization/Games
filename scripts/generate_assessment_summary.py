@@ -54,20 +54,22 @@ def extract_issues_from_report(report_path: Path) -> list[dict[str, Any]]:
         with open(report_path) as f:
             content = f.read()
 
-        # Look for severity markers
+        # Look for severity markers or warnings/criticals
+        # We also look for standard bullet points that indicate issues
         severity_patterns = {
             "BLOCKER": r"BLOCKER:?\s*(.+)",
             "CRITICAL": r"CRITICAL:?\s*(.+)",
             "MAJOR": r"MAJOR:?\s*(.+)",
             "MINOR": r"MINOR:?\s*(.+)",
+            "WARNING": r"Warning:?\s*(.+)",
         }
 
         for severity, pattern in severity_patterns.items():
-            matches = re.finditer(pattern, content, re.MULTILINE)
+            matches = re.finditer(pattern, content, re.MULTILINE | re.IGNORECASE)
             for match in matches:
                 issues.append(
                     {
-                        "severity": severity,
+                        "severity": severity.upper(),
                         "description": match.group(1).strip(),
                         "source": report_path.stem,
                     }
@@ -100,21 +102,21 @@ def generate_summary(
     # Category mapping with weights based on prompt
     # Code 25%, Testing 15%, Docs 10%, Security 15%, Perf 15%, Ops 10%, Design 10%
     categories = {
-        "A": {"name": "Code Structure", "weight": 8.33},
-        "B": {"name": "Documentation", "weight": 10.0},
-        "C": {"name": "Test Coverage", "weight": 15.0},
-        "D": {"name": "Error Handling", "weight": 2.5},
-        "E": {"name": "Performance", "weight": 15.0},
-        "F": {"name": "Security", "weight": 15.0},
-        "G": {"name": "Dependencies", "weight": 2.5},
-        "H": {"name": "CI/CD", "weight": 2.5},
-        "I": {"name": "Code Style", "weight": 8.33},
-        "J": {"name": "API Design", "weight": 2.5},
-        "K": {"name": "Data Handling", "weight": 2.5},
-        "L": {"name": "Logging", "weight": 2.5},
-        "M": {"name": "Configuration", "weight": 2.5},
-        "N": {"name": "Scalability", "weight": 2.5},
-        "O": {"name": "Maintainability", "weight": 8.34},
+        "A": {"name": "Code Structure", "weight": 8.33, "group": "Code"},
+        "B": {"name": "Documentation", "weight": 10.0, "group": "Docs"},
+        "C": {"name": "Test Coverage", "weight": 15.0, "group": "Testing"},
+        "D": {"name": "Error Handling", "weight": 2.5, "group": "Design"},
+        "E": {"name": "Performance", "weight": 15.0, "group": "Perf"},
+        "F": {"name": "Security", "weight": 15.0, "group": "Security"},
+        "G": {"name": "Dependencies", "weight": 2.5, "group": "Ops"},
+        "H": {"name": "CI/CD", "weight": 2.5, "group": "Ops"},
+        "I": {"name": "Code Style", "weight": 8.33, "group": "Code"},
+        "J": {"name": "API Design", "weight": 2.5, "group": "Design"},
+        "K": {"name": "Data Handling", "weight": 2.5, "group": "Design"},
+        "L": {"name": "Logging", "weight": 2.5, "group": "Ops"},
+        "M": {"name": "Configuration", "weight": 2.5, "group": "Ops"},
+        "N": {"name": "Scalability", "weight": 2.5, "group": "Design"},
+        "O": {"name": "Maintainability", "weight": 8.34, "group": "Code"},
     }
 
     # Collect scores and issues
@@ -133,17 +135,40 @@ def generate_summary(
     total_weighted_score = 0.0
     total_weight = 0.0
 
+    # Calculate group scores
+    group_scores = {
+        "Code": {"total": 0.0, "weight": 0.0, "target": 25},
+        "Testing": {"total": 0.0, "weight": 0.0, "target": 15},
+        "Docs": {"total": 0.0, "weight": 0.0, "target": 10},
+        "Security": {"total": 0.0, "weight": 0.0, "target": 15},
+        "Perf": {"total": 0.0, "weight": 0.0, "target": 15},
+        "Ops": {"total": 0.0, "weight": 0.0, "target": 10},
+        "Design": {"total": 0.0, "weight": 0.0, "target": 10},
+    }
+
     for assessment_id, score in scores.items():
         if assessment_id in categories:
-            weight = float(cast(Any, categories[assessment_id]["weight"]))
+            cat = categories[assessment_id]
+            weight = float(cast(Any, cat["weight"]))
             total_weighted_score += score * weight
             total_weight += weight
 
+            group = cat["group"]
+            if group in group_scores:
+                group_scores[group]["total"] += score * weight
+                group_scores[group]["weight"] += weight
+
     overall_score = total_weighted_score / total_weight if total_weight > 0 else 7.0
 
-    # Count critical issues
-    critical_severities = ("BLOCKER", "CRITICAL")
-    critical_issues = [i for i in all_issues if i["severity"] in critical_severities]
+    # Prioritize issues for Top 5 Recommendations
+    # Priority: BLOCKER > CRITICAL > MAJOR > WARNING
+    severity_order = {"BLOCKER": 0, "CRITICAL": 1, "MAJOR": 2, "WARNING": 3}
+
+    sorted_issues = sorted(
+        all_issues, key=lambda x: severity_order.get(x["severity"], 4)
+    )
+
+    top_5_recommendations = sorted_issues[:5]
 
     # Generate markdown summary
     md_content = f"""# Comprehensive Assessment Summary
@@ -158,6 +183,19 @@ Repository assessment completed across all {len(scores)} categories.
 
 ### Overall Health: {overall_score:.1f}/10
 
+### Weighted Average Breakdown
+| Group | Target Weight | Effective Score (Contribution) |
+|-------|---------------|--------------------------------|
+"""
+    for group, data in group_scores.items():
+        # Contribution is weighted score for this group relative to total weight (100)
+        # But we want to show how well this group performed.
+        # Actually, "Code 25%" means Code categories contribute 25% to total score.
+        # So we can just show the average score for the group.
+        group_avg = data["total"] / data["weight"] if data["weight"] > 0 else 0
+        md_content += f"| {group} | {data['target']}% | {group_avg:.1f}/10 |\n"
+
+    md_content += """
 ### Category Scores
 
 | Category | Name | Score | Weight |
@@ -172,26 +210,26 @@ Repository assessment completed across all {len(scores)} categories.
             weight = float(cast(Any, cat_info["weight"]))
             md_content += f"| **{aid}** | {name} | {score:.1f} | {weight}% |\n"
 
-    md_content += f"""
-## Critical Issues
-
-Found {len(critical_issues)} critical issues requiring immediate attention:
+    md_content += """
+## Top 5 Recommendations
 
 """
 
-    for i, issue in enumerate(critical_issues[:10], 1):
-        sev = issue["severity"]
-        desc = issue["description"]
-        src = issue["source"]
-        md_content += f"{i}. **[{sev}]** {desc} (Source: {src})\n"
+    if top_5_recommendations:
+        for i, issue in enumerate(top_5_recommendations, 1):
+            sev = issue["severity"]
+            desc = issue["description"]
+            src = issue["source"]
+            md_content += f"{i}. **[{sev}]** {desc} (Source: {src})\n"
+    else:
+        md_content += "No major issues found. Maintain current practices.\n"
 
     md_content += """
-## Recommendations
+## Detailed Recommendations
 
-1. Address all BLOCKER issues immediately
-2. Create action plan for CRITICAL issues
-3. Schedule remediation for MAJOR issues
-4. Monitor trends in assessment scores
+- Address all items in the Top 5 Recommendations list above.
+- Review individual assessment reports for detailed findings.
+- Focus on categories with scores below 5/10.
 
 ## Next Assessment
 
@@ -224,7 +262,7 @@ Recommended: 30 days from today
         "timestamp": datetime.now().isoformat(),
         "overall_score": round(overall_score, 2),
         "category_scores": category_scores,
-        "critical_issues": critical_issues,
+        "top_recommendations": top_5_recommendations,
         "total_issues": len(all_issues),
         "reports_analyzed": len(input_reports),
     }
