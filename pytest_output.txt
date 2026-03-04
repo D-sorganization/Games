@@ -1,0 +1,224 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.5, pytest-8.4.1, pluggy-1.6.0
+benchmark: 5.2.3 (defaults: timer=time.perf_counter disable_gc=False min_rounds=5 min_time=0.000005 max_time=1.0 calibration_precision=10 warmup=False warmup_iterations=100000)
+PyQt6 6.9.1 -- Qt runtime 6.9.1 -- Qt compiled 6.9.0
+rootdir: C:\Users\diete\Repositories\Games
+configfile: pyproject.toml
+testpaths: tests
+plugins: anyio-4.9.0, hypothesis-6.151.9, asyncio-1.3.0, benchmark-5.2.3, cov-7.0.0, mock-3.15.1, qt-4.5.0, timeout-2.3.1
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 0 items / 19 errors
+
+=================================== ERRORS ====================================
+_____________ ERROR collecting tests/shared/test_asset_catalog.py _____________
+ImportError while importing test module 'C:\Users\diete\Repositories\Games\tests\shared\test_asset_catalog.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\AppData\Local\Programs\Python\Python313\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\shared\test_asset_catalog.py:7: in <module>
+    from games.shared.asset_catalog import AssetCatalog
+E   ModuleNotFoundError: No module named 'games'
+_______________ ERROR collecting tests/shared/test_bot_base.py ________________
+ImportError while importing test module 'C:\Users\diete\Repositories\Games\tests\shared\test_bot_base.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\AppData\Local\Programs\Python\Python313\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\shared\test_bot_base.py:9: in <module>
+    from games.shared.bot_base import BotBase
+E   ModuleNotFoundError: No module named 'games'
+______________ ERROR collecting tests/shared/test_components.py _______________
+ImportError while importing test module 'C:\Users\diete\Repositories\Games\tests\shared\test_components.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\AppData\Local\Programs\Python\Python313\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\shared\test_components.py:8: in <module>
+    from games.shared.components import (
+E   ModuleNotFoundError: No module named 'games'
+________________ ERROR collecting tests/shared/test_config.py _________________
+ImportError while importing test module 'C:\Users\diete\Repositories\Games\tests\shared\test_config.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\AppData\Local\Programs\Python\Python313\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\shared\test_config.py:7: in <module>
+    from games.shared.config import RaycasterConfig
+E   ModuleNotFoundError: No module named 'games'
+_______________ ERROR collecting tests/shared/test_constants.py _______________
+ImportError while importing test module 'C:\Users\diete\Repositories\Games\tests\shared\test_constants.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\AppData\Local\Programs\Python\Python313\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\shared\test_constants.py:13: in <module>
+    from games.shared import constants as C
+E   ModuleNotFoundError: No module named 'games'
+_______________ ERROR collecting tests/shared/test_contracts.py _______________
+ImportError while importing test module 'C:\Users\diete\Repositories\Games\tests\shared\test_contracts.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\AppData\Local\Programs\Python\Python313\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\shared\test_contracts.py:7: in <module>
+    from games.shared.contracts import (
+E   ModuleNotFoundError: No module named 'games'
+______________ ERROR collecting tests/shared/test_dbc_shared.py _______________
+ImportError while importing test module 'C:\Users\diete\Repositories\Games\tests\shared\test_dbc_shared.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\AppData\Local\Programs\Python\Python313\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\shared\test_dbc_shared.py:5: in <module>
+    from games.shared.components import Animated, HasVelocity, Positioned
+E   ModuleNotFoundError: No module named 'games'
+_______________ ERROR collecting tests/shared/test_event_bus.py _______________
+ImportError while importing test module 'C:\Users\diete\Repositories\Games\tests\shared\test_event_bus.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\AppData\Local\Programs\Python\Python313\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\shared\test_event_bus.py:7: in <module>
+    from games.shared.event_bus import EventBus
+E   ModuleNotFoundError: No module named 'games'
+_____________ ERROR collecting tests/shared/test_fps_game_base.py _____________
+ImportError while importing test module 'C:\Users\diete\Repositories\Games\tests\shared\test_fps_game_base.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\AppData\Local\Programs\Python\Python313\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\shared\test_fps_game_base.py:8: in <module>
+    from games.shared.fps_game_base import FPSGameBase
+E   ModuleNotFoundError: No module named 'games'
+______________ ERROR collecting tests/shared/test_interfaces.py _______________
+ImportError while importing test module 'C:\Users\diete\Repositories\Games\tests\shared\test_interfaces.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\AppData\Local\Programs\Python\Python313\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\shared\test_interfaces.py:13: in <module>
+    from games.shared.interfaces import Bot, Map, Player, Projectile, WorldParticle
+E   ModuleNotFoundError: No module named 'games'
+_______________ ERROR collecting tests/shared/test_map_base.py ________________
+ImportError while importing test module 'C:\Users\diete\Repositories\Games\tests\shared\test_map_base.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\AppData\Local\Programs\Python\Python313\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\shared\test_map_base.py:7: in <module>
+    from games.shared.contracts import ContractViolation
+E   ModuleNotFoundError: No module named 'games'
+____________ ERROR collecting tests/shared/test_map_generators.py _____________
+ImportError while importing test module 'C:\Users\diete\Repositories\Games\tests\shared\test_map_generators.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\AppData\Local\Programs\Python\Python313\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\shared\test_map_generators.py:5: in <module>
+    from games.shared.map_base import MapBase
+E   ModuleNotFoundError: No module named 'games'
+____________ ERROR collecting tests/shared/test_notes_workspace.py ____________
+ImportError while importing test module 'C:\Users\diete\Repositories\Games\tests\shared\test_notes_workspace.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\AppData\Local\Programs\Python\Python313\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\shared\test_notes_workspace.py:9: in <module>
+    from games.shared.contracts import ContractViolation
+E   ModuleNotFoundError: No module named 'games'
+____________ ERROR collecting tests/shared/test_particle_system.py ____________
+ImportError while importing test module 'C:\Users\diete\Repositories\Games\tests\shared\test_particle_system.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\AppData\Local\Programs\Python\Python313\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\shared\test_particle_system.py:3: in <module>
+    from games.shared.particle_system import Particle, ParticleSystem, WorldParticle
+E   ModuleNotFoundError: No module named 'games'
+______________ ERROR collecting tests/shared/test_player_base.py ______________
+ImportError while importing test module 'C:\Users\diete\Repositories\Games\tests\shared\test_player_base.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\AppData\Local\Programs\Python\Python313\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\shared\test_player_base.py:13: in <module>
+    from games.shared.contracts import ContractViolation
+E   ModuleNotFoundError: No module named 'games'
+____________ ERROR collecting tests/shared/test_projectile_base.py ____________
+ImportError while importing test module 'C:\Users\diete\Repositories\Games\tests\shared\test_projectile_base.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\AppData\Local\Programs\Python\Python313\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\shared\test_projectile_base.py:9: in <module>
+    from games.shared.contracts import ContractViolation
+E   ModuleNotFoundError: No module named 'games'
+_________________ ERROR collecting tests/shared/test_scene.py _________________
+ImportError while importing test module 'C:\Users\diete\Repositories\Games\tests\shared\test_scene.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\AppData\Local\Programs\Python\Python313\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\shared\test_scene.py:5: in <module>
+    from games.shared.contracts import ContractViolation
+E   ModuleNotFoundError: No module named 'games'
+_____________ ERROR collecting tests/shared/test_spatial_grid.py ______________
+ImportError while importing test module 'C:\Users\diete\Repositories\Games\tests\shared\test_spatial_grid.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\AppData\Local\Programs\Python\Python313\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\shared\test_spatial_grid.py:7: in <module>
+    from games.shared.spatial_grid import Positioned, SpatialGrid
+E   ModuleNotFoundError: No module named 'games'
+_________________ ERROR collecting tests/shared/test_utils.py _________________
+ImportError while importing test module 'C:\Users\diete\Repositories\Games\tests\shared\test_utils.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\AppData\Local\Programs\Python\Python313\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\shared\test_utils.py:13: in <module>
+    from games.shared.utils import cast_ray_dda, has_line_of_sight, try_move_entity
+E   ModuleNotFoundError: No module named 'games'
+=========================== short test summary info ===========================
+ERROR tests/shared/test_asset_catalog.py
+ERROR tests/shared/test_bot_base.py
+ERROR tests/shared/test_components.py
+ERROR tests/shared/test_config.py
+ERROR tests/shared/test_constants.py
+ERROR tests/shared/test_contracts.py
+ERROR tests/shared/test_dbc_shared.py
+ERROR tests/shared/test_event_bus.py
+ERROR tests/shared/test_fps_game_base.py
+ERROR tests/shared/test_interfaces.py
+ERROR tests/shared/test_map_base.py
+ERROR tests/shared/test_map_generators.py
+ERROR tests/shared/test_notes_workspace.py
+ERROR tests/shared/test_particle_system.py
+ERROR tests/shared/test_player_base.py
+ERROR tests/shared/test_projectile_base.py
+ERROR tests/shared/test_scene.py
+ERROR tests/shared/test_spatial_grid.py
+ERROR tests/shared/test_utils.py
+!!!!!!!!!!!!!!!!!! Interrupted: 19 errors during collection !!!!!!!!!!!!!!!!!!!
+============================= 19 errors in 1.14s ==============================

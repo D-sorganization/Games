@@ -63,8 +63,8 @@ class ProjectileBase:
         self.vz = vz
         self.gravity = gravity
 
-        # Optional: Secret wall hit tracking
-        self.hit_secret_pos: tuple[int, int] | None = None
+        # Optional: Hidden wall hit tracking
+        self.hit_hidden_pos: tuple[int, int] | None = None
 
     def update(self, game_map: Map) -> None:
         """Update projectile position and check collisions.
@@ -95,10 +95,10 @@ class ProjectileBase:
 
         # Wall collision
         if game_map.is_wall(new_x, new_y):
-            # Check for secret walls (type 5)
+            # Check for hidden walls (type 5)
             w_type = game_map.get_wall_type(new_x, new_y)
             if w_type == 5:
-                self.hit_secret_pos = (int(new_x), int(new_y))
+                self.hit_hidden_pos = (int(new_x), int(new_y))
 
             self.alive = False
             return

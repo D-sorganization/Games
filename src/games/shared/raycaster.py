@@ -61,7 +61,7 @@ class Raycaster:
         """Initialize texture mapping and caches."""
         self.use_textures = True
         self.textures = TextureGenerator.generate_textures()
-        self.texture_map = {1: "stone", 2: "brick", 3: "metal", 4: "tech", 5: "secret"}
+        self.texture_map = {1: "stone", 2: "brick", 3: "metal", 4: "tech", 5: "hidden"}
 
         self.texture_strips: dict[str, list[pygame.Surface]] = {}
         for name, tex in self.textures.items():

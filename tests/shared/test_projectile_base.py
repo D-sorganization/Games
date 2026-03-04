@@ -14,8 +14,8 @@ from tests.conftest import MockMap
 # Also create a map with a secret wall for testing
 
 
-def _secret_wall_map() -> MockMap:
-    """Map with a secret wall (type 5) at position (4, 5)."""
+def _hidden_wall_map() -> MockMap:
+    """Map with a hidden wall (type 5) at position (4, 5)."""
     grid = [
         [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
         [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
@@ -164,21 +164,21 @@ class TestProjectileUpdate:
         p.update(open_map)
         assert p.x == pytest.approx(old_x)
 
-    def test_secret_wall_tracking(self) -> None:
-        """Hit on secret wall (type 5) should record position."""
-        m = _secret_wall_map()
+    def test_hidden_wall_tracking(self) -> None:
+        """Hit on hidden wall (type 5) should record position."""
+        m = _hidden_wall_map()
         # Near (4, 5) heading east
         p = ProjectileBase(3.5, 5.5, 0.0, damage=10, speed=1.0)
         p.update(m)
         assert p.alive is False
-        assert p.hit_secret_pos is not None
-        assert p.hit_secret_pos == (4, 5)
+        assert p.hit_hidden_pos is not None
+        assert p.hit_hidden_pos == (4, 5)
 
-    def test_no_secret_pos_on_normal_wall(self, open_map: MockMap) -> None:
-        """Normal wall hit should not set hit_secret_pos."""
+    def test_no_hidden_pos_on_normal_wall(self, open_map: MockMap) -> None:
+        """Normal wall hit should not set hit_hidden_pos."""
         p = ProjectileBase(8.5, 5.0, 0.0, damage=10, speed=1.0)
         p.update(open_map)
-        assert p.hit_secret_pos is None
+        assert p.hit_hidden_pos is None
 
 
 class TestProjectilePhysics:

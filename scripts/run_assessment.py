@@ -302,16 +302,18 @@ def run_assessment(assessment_id: str, output_path: Path) -> int:
         # Check for lock files
         has_poetry_lock = Path("poetry.lock").exists()
         has_package_lock = Path("package-lock.json").exists()
-        has_lock = has_poetry_lock or has_package_lock
+        has_req_lock = Path("requirements.lock").exists()
+        has_lock = has_poetry_lock or has_package_lock or has_req_lock
         findings.append(
-            f"- Lock files (poetry.lock/package-lock.json): {'✓' if has_lock else '✗'}"
+            f"- Lock files (poetry.lock/package-lock.json/requirements.lock): "
+            f"{'✓' if has_lock else '✗'}"
         )
 
         if not (has_req or has_pyproject):
             score -= 5
             findings.append("- Critical: No dependency definition found")
 
-        if not (has_poetry_lock or has_package_lock):
+        if not has_lock:
             findings.append("- Note: No lock file found (reproducibility risk)")
             score -= 1
 
