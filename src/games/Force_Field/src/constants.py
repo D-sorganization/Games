@@ -11,7 +11,7 @@ FPS = 60
 MAP_SIZE = 40  # Will be set by user
 TILE_SIZE = 64
 MIN_BUILDING_OFFSET = 3  # Minimum offset from map edges for building generation
-WALL_SECRET = 5
+WALL_HIDDEN = 5
 BOMBS_START = 3
 
 # Rendering Quality

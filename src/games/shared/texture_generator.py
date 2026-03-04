@@ -195,8 +195,8 @@ class TextureGenerator:
         return surface
 
     @staticmethod
-    def generate_secret(width: int, height: int) -> pygame.Surface:
-        """Generates a secret wall (cracked)."""
+    def generate_hidden(width: int, height: int) -> pygame.Surface:
+        """Generates a hidden wall (cracked)."""
         validate_positive(width, "width")
         validate_positive(height, "height")
         # Start with standard bricks but darker/different tint
@@ -241,6 +241,6 @@ class TextureGenerator:
         textures["stone"] = TextureGenerator.generate_stone(size, size)
         textures["metal"] = TextureGenerator.generate_metal(size, size)
         textures["tech"] = TextureGenerator.generate_tech(size, size)
-        textures["secret"] = TextureGenerator.generate_secret(size, size)
+        textures["hidden"] = TextureGenerator.generate_hidden(size, size)
 
         return textures
