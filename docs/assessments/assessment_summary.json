@@ -1,6 +1,6 @@
 {
-  "timestamp": "2026-02-26T08:30:11.769616",
-  "overall_score": 9.27,
+  "timestamp": "2026-03-05T08:19:16.496253",
+  "overall_score": 9.3,
   "category_scores": {
     "A": {
       "score": 10.0,
@@ -58,7 +58,7 @@
       "weight": 8.33
     },
     "G": {
-      "score": 9.0,
+      "score": 10.0,
       "name": "Dependencies",
       "weight": 2.5
     },
@@ -86,7 +86,7 @@
     },
     {
       "severity": "WARNING",
-      "description": "Potential secrets found in 6 files (vars)",
+      "description": "Potential secrets found in 3 files (vars)",
       "source": "Assessment_F_Security"
     }
   ],
