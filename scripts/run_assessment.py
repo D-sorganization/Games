@@ -7,9 +7,9 @@ based on actual code analysis.
 """
 
 import argparse
+import os
 import re
 import sys
-import os
 from datetime import datetime
 from pathlib import Path
 
