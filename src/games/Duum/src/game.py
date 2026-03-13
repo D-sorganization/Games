@@ -661,17 +661,12 @@ class Game(FPSGameBase):
         )
         self._sync_combat_state()
 
-    def update_game(self) -> None:
-        """Update game state"""
-        if self.paused:
-            return
-
-        assert self.player is not None
+    def _check_game_over(self) -> bool:
         if not self.player.alive:
             if self.lives > 1:
                 self.lives -= 1
                 self.respawn_player()
-                return
+                return True
             level_time = (
                 pygame.time.get_ticks() - self.level_start_time - self.total_paused_time
             ) / 1000.0
@@ -683,10 +678,11 @@ class Game(FPSGameBase):
             self.sound_manager.play_sound("game_over1")
             pygame.mouse.set_visible(True)
             pygame.event.set_grab(False)
-            return
+            return True
+        return False
 
+    def _check_portal_completion(self) -> bool:
         enemies_alive = self.entity_manager.get_active_enemies()
-
         if not enemies_alive:
             if self.portal is None:
                 self.spawn_portal()
@@ -713,80 +709,75 @@ class Game(FPSGameBase):
                 self.state = GameState.LEVEL_COMPLETE
                 pygame.mouse.set_visible(True)
                 pygame.event.set_grab(False)
-                return
+                return True
+        return False
 
-        assert self.player is not None
-        assert self.game_map is not None
-        keys = pygame.key.get_pressed()
+    def _handle_joystick_input(self, shield_active: bool) -> bool:
+        axis_x = self.joystick.get_axis(0)
+        axis_y = self.joystick.get_axis(1)
 
-        shield_active = self.input_manager.is_action_pressed("shield")
+        if abs(axis_x) > C.JOYSTICK_DEADZONE:
+            self.player.strafe(
+                self.game_map,
+                self.bots,
+                right=(axis_x > 0),
+                speed=abs(axis_x) * C.PLAYER_SPEED,
+            )
+            self.player.is_moving = True
+        if abs(axis_y) > C.JOYSTICK_DEADZONE:
+            self.player.move(
+                self.game_map,
+                self.bots,
+                forward=(axis_y < 0),
+                speed=abs(axis_y) * C.PLAYER_SPEED,
+            )
+            self.player.is_moving = True
 
-        if self.joystick and not self.paused and self.player and self.player.alive:
-            axis_x = self.joystick.get_axis(0)
-            axis_y = self.joystick.get_axis(1)
+        look_x = 0.0
+        look_y = 0.0
+        if self.joystick.get_numaxes() >= 4:
+            look_x = self.joystick.get_axis(2)
+            look_y = self.joystick.get_axis(3)
 
-            if abs(axis_x) > C.JOYSTICK_DEADZONE:
-                self.player.strafe(
-                    self.game_map,
-                    self.bots,
-                    right=(axis_x > 0),
-                    speed=abs(axis_x) * C.PLAYER_SPEED,
-                )
-                self.player.is_moving = True
-            if abs(axis_y) > C.JOYSTICK_DEADZONE:
-                self.player.move(
-                    self.game_map,
-                    self.bots,
-                    forward=(axis_y < 0),
-                    speed=abs(axis_y) * C.PLAYER_SPEED,
-                )
-                self.player.is_moving = True
+        if abs(look_x) > C.JOYSTICK_DEADZONE:
+            self.player.rotate(look_x * C.PLAYER_ROT_SPEED * 15 * C.SENSITIVITY_X)
+        if abs(look_y) > C.JOYSTICK_DEADZONE:
+            self.player.pitch_view(-look_y * 10 * C.SENSITIVITY_Y)
 
-            look_x = 0.0
-            look_y = 0.0
-            if self.joystick.get_numaxes() >= 4:
-                look_x = self.joystick.get_axis(2)
-                look_y = self.joystick.get_axis(3)
+        if self.joystick.get_numbuttons() > 0 and self.joystick.get_button(0):
+            shield_active = True
 
-            if abs(look_x) > C.JOYSTICK_DEADZONE:
-                self.player.rotate(look_x * C.PLAYER_ROT_SPEED * 15 * C.SENSITIVITY_X)
-            if abs(look_y) > C.JOYSTICK_DEADZONE:
-                self.player.pitch_view(-look_y * 10 * C.SENSITIVITY_Y)
+        if self.joystick.get_numbuttons() > 2 and self.joystick.get_button(2):
+            self.player.reload()
 
-            if self.joystick.get_numbuttons() > 0 and self.joystick.get_button(0):
-                shield_active = True
+        if self.joystick.get_numbuttons() > 5 and self.joystick.get_button(5):
+            if self.player.shoot():
+                self.fire_weapon()
 
-            if self.joystick.get_numbuttons() > 2 and self.joystick.get_button(2):
-                self.player.reload()
+        if self.joystick.get_numbuttons() > 4 and self.joystick.get_button(4):
+            if self.player.fire_secondary():
+                self.fire_weapon(is_secondary=True)
 
-            if self.joystick.get_numbuttons() > 5 and self.joystick.get_button(5):
-                if self.player.shoot():
-                    self.fire_weapon()
+        if self.joystick.get_numhats() > 0:
+            hat = self.joystick.get_hat(0)
+            if hat[0] == -1:
+                self.switch_weapon_with_message("pistol")
+            if hat[0] == 1:
+                self.switch_weapon_with_message("rifle")
+            if hat[1] == 1:
+                self.switch_weapon_with_message("shotgun")
+            if hat[1] == -1:
+                self.switch_weapon_with_message("plasma")
 
-            if self.joystick.get_numbuttons() > 4 and self.joystick.get_button(4):
-                if self.player.fire_secondary():
-                    self.fire_weapon(is_secondary=True)
+        return shield_active
 
-            if self.joystick.get_numhats() > 0:
-                hat = self.joystick.get_hat(0)
-                if hat[0] == -1:
-                    self.switch_weapon_with_message("pistol")
-                if hat[0] == 1:
-                    self.switch_weapon_with_message("rifle")
-                if hat[1] == 1:
-                    self.switch_weapon_with_message("shotgun")
-                if hat[1] == -1:
-                    self.switch_weapon_with_message("plasma")
-
-        self.player.set_shield(shield_active)
-
-        self.particle_system.update()
-
+    def _update_damage_texts(self) -> None:
         for t in self.damage_texts:
             t["y"] += t["vy"]
             t["timer"] -= 1
         self.damage_texts = [t for t in self.damage_texts if t["timer"] > 0]
 
+    def _handle_keyboard_movement(self, keys) -> None:
         sprint_key = keys[pygame.K_RSHIFT]
         is_sprinting = self.input_manager.is_action_pressed("sprint") or sprint_key
         if is_sprinting and self.player.stamina > 0:
@@ -830,10 +821,7 @@ class Game(FPSGameBase):
         if self.input_manager.is_action_pressed("look_down"):
             self.player.pitch_view(-5)
 
-        self.player.update()
-
-        self.entity_manager.update_bots(self.game_map, self.player, self)
-
+    def _check_item_pickups(self) -> None:
         for bot in self.bots:
             is_item = bot.enemy_type.startswith(("health", "ammo", "bomb", "pickup"))
             if bot.alive and is_item:
@@ -885,8 +873,7 @@ class Game(FPSGameBase):
                             }
                         )
 
-        self.entity_manager.update_projectiles(self.game_map, self.player, self)
-
+    def _update_large_fog_reveal(self) -> None:
         cx, cy = int(self.player.x), int(self.player.y)
         reveal_radius = FOG_REVEAL_RADIUS
         for r_i in range(-reveal_radius, reveal_radius + 1):
@@ -894,6 +881,7 @@ class Game(FPSGameBase):
                 if r_i * r_i + r_j * r_j <= reveal_radius * reveal_radius:
                     self.visited_cells.add((cx + r_j, cy + r_i))
 
+    def _update_atmosphere(self) -> None:
         min_dist_sq = float("inf")
         for bot in self.bots:
             if bot.alive:
@@ -927,6 +915,7 @@ class Game(FPSGameBase):
                 self.sound_manager.play_sound("groan")
                 self.groan_timer = GROAN_TIMER_DELAY
 
+    def _check_kill_combo(self) -> None:
         if self.kill_combo_timer > 0:
             self.kill_combo_timer -= 1
             if self.kill_combo_timer <= 0:
@@ -948,6 +937,39 @@ class Game(FPSGameBase):
             # Push combo state back to the combat manager
             self.combat_manager.kill_combo_timer = self.kill_combo_timer
             self.combat_manager.kill_combo_count = self.kill_combo_count
+
+    def update_game(self) -> None:
+        """Update game state"""
+        if self.paused:
+            return
+
+        assert self.player is not None
+        if self._check_game_over():
+            return
+
+        if self._check_portal_completion():
+            return
+
+        keys = pygame.key.get_pressed()
+        shield_active = self.input_manager.is_action_pressed("shield")
+
+        if self.joystick and not self.paused and self.player and self.player.alive:
+            shield_active = self._handle_joystick_input(shield_active)
+
+        self.player.set_shield(shield_active)
+        self.particle_system.update()
+        self._update_damage_texts()
+
+        self._handle_keyboard_movement(keys)
+        self.player.update()
+
+        self.entity_manager.update_bots(self.game_map, self.player, self)
+        self._check_item_pickups()
+        self.entity_manager.update_projectiles(self.game_map, self.player, self)
+
+        self._update_large_fog_reveal()
+        self._update_atmosphere()
+        self._check_kill_combo()
 
         # Decay Flash
         if self.flash_intensity > 0:
