@@ -158,6 +158,70 @@ class Game(FPSGameBase):
         self.input_manager = InputManager()
         self.binding_action: str | None = None
 
+    # --- Law of Demeter (LOD) Flattened Properties ---
+    @property
+    def player_x(self) -> float:
+        return self.player.x if self.player else 0.0
+
+    @property
+    def player_y(self) -> float:
+        return self.player.y if self.player else 0.0
+
+    @property
+    def player_angle(self) -> float:
+        return self.player.angle if self.player else 0.0
+
+    @property
+    def player_health(self) -> int:
+        return self.player.health if self.player else 0
+
+    @player_health.setter
+    def player_health(self, value: int) -> None:
+        if self.player:
+            self.player.health = value
+
+    @property
+    def player_alive(self) -> bool:
+        return self.player.alive if self.player else False
+
+    @property
+    def player_is_moving(self) -> bool:
+        return self.player.is_moving if self.player else False
+
+    @player_is_moving.setter
+    def player_is_moving(self, value: bool) -> None:
+        if self.player:
+            self.player.is_moving = value
+
+    @property
+    def player_current_weapon(self) -> str:
+        return self.player.current_weapon if self.player else "pistol"
+
+    @player_current_weapon.setter
+    def player_current_weapon(self, value: str) -> None:
+        if self.player:
+            self.player.current_weapon = value
+
+    @property
+    def player_stamina(self) -> float:
+        return self.player.stamina if self.player else 0.0
+
+    @player_stamina.setter
+    def player_stamina(self, value: float) -> None:
+        if self.player:
+            self.player.stamina = value
+
+    @property
+    def player_bombs(self) -> int:
+        return self.player.bombs if self.player else 0
+
+    @player_bombs.setter
+    def player_bombs(self, value: int) -> None:
+        if self.player:
+            self.player.bombs = value
+
+    # ------------------------------------------------
+
     def _wire_event_bus(self) -> None:
         """Subscribe subsystems to game events via the event bus."""
         self.event_bus.subscribe(
@@ -167,10 +231,10 @@ class Game(FPSGameBase):
 
     def _sync_combat_state(self) -> None:
         """Synchronize kill/combo state from the combat manager back to Game."""
-        self.kills = self.combat_manager.kills
-        self.kill_combo_count = self.combat_manager.kill_combo_count
-        self.kill_combo_timer = self.combat_manager.kill_combo_timer
-        self.last_death_pos = self.combat_manager.last_death_pos
+        self.kills = self.kills
+        self.kill_combo_count = self.kill_combo_count
+        self.kill_combo_timer = self.kill_combo_timer
+        self.last_death_pos = self.last_death_pos
 
     def start_game(self) -> None:
         """Start new game"""
@@ -197,10 +261,10 @@ class Game(FPSGameBase):
         self.beast_timer = 0
 
         # Reset combat manager state
-        self.combat_manager.kills = 0
-        self.combat_manager.kill_combo_count = 0
-        self.combat_manager.kill_combo_timer = 0
-        self.combat_manager.last_death_pos = None
+        self.kills = 0
+        self.kill_combo_count = 0
+        self.kill_combo_timer = 0
+        self.last_death_pos = None
 
         # Create map with selected size
         self.game_map = Map(self.selected_map_size)
@@ -260,13 +324,13 @@ class Game(FPSGameBase):
         if previous_ammo:
             self.player.ammo = previous_ammo
             if previous_weapon in self.unlocked_weapons:
-                self.player.current_weapon = previous_weapon
+                self.player_current_weapon = previous_weapon
             else:
-                self.player.current_weapon = "pistol"
+                self.player_current_weapon = "pistol"
         # Validate current weapon is unlocked
         # (e.g. Player init sets 'rifle' but it might be locked)
-        if self.player.current_weapon not in self.unlocked_weapons:
-            self.player.current_weapon = "pistol"
+        if self.player_current_weapon not in self.unlocked_weapons:
+            self.player_current_weapon = "pistol"
 
         # Propagate God Mode state
         self.player.god_mode = self.god_mode
@@ -321,7 +385,7 @@ class Game(FPSGameBase):
                             msg = "GOD MODE ON" if self.god_mode else "GOD MODE OFF"
                             self.add_message(msg, C.YELLOW)
                             if self.player:
-                                self.player.health = 100
+                                self.player_health = 100
                                 self.player.god_mode = self.god_mode
                             self.current_cheat_input = ""
                             self.cheat_mode_active = False
@@ -452,7 +516,7 @@ class Game(FPSGameBase):
     def fire_weapon(self, is_secondary: bool = False) -> None:
         """Handle weapon firing via data-driven dispatch."""
         assert self.player is not None
-        weapon_name = self.player.current_weapon
+        weapon_name = self.player_current_weapon
         weapon_data = C.WEAPONS[weapon_name]
 
         # Sound
@@ -474,9 +538,9 @@ class Game(FPSGameBase):
         """Spawn a projectile based on weapon data."""
         size_map = {"plasma": 0.225, "rocket": 0.3}
         p = Projectile(
-            self.player.x,
-            self.player.y,
-            self.player.angle,
+            self.player_x,
+            self.player_y,
+            self.player_angle,
             speed=float(weapon_data.get("projectile_speed", 0.5)),
             damage=self.player.get_current_weapon_damage(),
             is_player=True,
@@ -504,10 +568,10 @@ class Game(FPSGameBase):
         num_bullets = MINIGUN_BULLETS_PER_SHOT
         for _ in range(num_bullets):
             angle_off = random.uniform(-MINIGUN_SPREAD, MINIGUN_SPREAD)
-            final_angle = self.player.angle + angle_off
+            final_angle = self.player_angle + angle_off
             p = Projectile(
-                self.player.x,
-                self.player.y,
+                self.player_x,
+                self.player_y,
                 final_angle,
                 damage,
                 speed=2.0,
@@ -591,7 +655,7 @@ class Game(FPSGameBase):
             return
 
         assert self.player is not None
-        if not self.player.alive:
+        if not self.player_alive:
             if self.lives > 1:
                 self.lives -= 1
                 self.respawn_player()
@@ -626,8 +690,8 @@ class Game(FPSGameBase):
                 )
 
         if self.portal:
-            dx = self.portal["x"] - self.player.x
-            dy = self.portal["y"] - self.player.y
+            dx = self.portal["x"] - self.player_x
+            dy = self.portal["y"] - self.player_y
             dist_sq = dx * dx + dy * dy
             if dist_sq < PORTAL_RADIUS_SQ:
                 paused = self.total_paused_time
@@ -645,7 +709,7 @@ class Game(FPSGameBase):
 
         shield_active = self.input_manager.is_action_pressed("shield")
 
-        if self.joystick and not self.paused and self.player and self.player.alive:
+        if self.joystick and not self.paused and self.player and self.player_alive:
             axis_x = self.joystick.get_axis(0)
             axis_y = self.joystick.get_axis(1)
 
@@ -656,7 +720,7 @@ class Game(FPSGameBase):
                     right=(axis_x > 0),
                     speed=abs(axis_x) * C.PLAYER_SPEED,
                 )
-                self.player.is_moving = True
+                self.player_is_moving = True
             if abs(axis_y) > C.JOYSTICK_DEADZONE:
                 self.player.move(
                     self.game_map,
@@ -664,7 +728,7 @@ class Game(FPSGameBase):
                     forward=(axis_y < 0),
                     speed=abs(axis_y) * C.PLAYER_SPEED,
                 )
-                self.player.is_moving = True
+                self.player_is_moving = True
 
             look_x = 0.0
             look_y = 0.0
@@ -713,10 +777,10 @@ class Game(FPSGameBase):
 
         sprint_key = keys[pygame.K_RSHIFT]
         is_sprinting = self.input_manager.is_action_pressed("sprint") or sprint_key
-        if is_sprinting and self.player.stamina > 0:
+        if is_sprinting and self.player_stamina > 0:
             current_speed = C.PLAYER_SPRINT_SPEED
-            self.player.stamina -= 1
-            self.player.stamina_recharge_delay = 60
+            self.player_stamina -= 1
+            self.player_stamina_recharge_delay = 60
         else:
             current_speed = C.PLAYER_SPEED
 
@@ -743,7 +807,7 @@ class Game(FPSGameBase):
             )
             moving = True
 
-        self.player.is_moving = moving
+        self.player_is_moving = moving
 
         if self.input_manager.is_action_pressed("turn_left"):
             self.player.rotate(-0.05)
@@ -761,16 +825,16 @@ class Game(FPSGameBase):
         for bot in self.bots:
             is_item = bot.enemy_type.startswith(("health", "ammo", "bomb", "pickup"))
             if bot.alive and is_item:
-                dx = bot.x - self.player.x
-                dy = bot.y - self.player.y
+                dx = bot.x - self.player_x
+                dy = bot.y - self.player_y
                 dist_sq = dx * dx + dy * dy
                 if dist_sq < PICKUP_RADIUS_SQ:
                     pickup_msg = ""
                     color = C.GREEN
 
                     if bot.enemy_type == "health_pack":
-                        if self.player.health < 100:
-                            self.player.health = min(100, self.player.health + 50)
+                        if self.player_health < 100:
+                            self.player_health = min(100, self.player_health + 50)
                             pickup_msg = "HEALTH +50"
                     elif bot.enemy_type == "ammo_box":
                         for w in self.player.ammo:
@@ -778,7 +842,7 @@ class Game(FPSGameBase):
                         pickup_msg = "AMMO FOUND"
                         color = C.YELLOW
                     elif bot.enemy_type == "bomb_item":
-                        self.player.bombs += 1
+                        self.player_bombs += 1
                         pickup_msg = "BOMB +1"
                         color = C.ORANGE
                     elif bot.enemy_type.startswith("pickup_"):
@@ -811,7 +875,7 @@ class Game(FPSGameBase):
 
         self.entity_manager.update_projectiles(self.game_map, self.player, self)
 
-        cx, cy = int(self.player.x), int(self.player.y)
+        cx, cy = int(self.player_x), int(self.player_y)
         reveal_radius = FOG_REVEAL_RADIUS
         for r_i in range(-reveal_radius, reveal_radius + 1):
             for r_j in range(-reveal_radius, reveal_radius + 1):
@@ -821,8 +885,8 @@ class Game(FPSGameBase):
         min_dist_sq = float("inf")
         for bot in self.bots:
             if bot.alive:
-                dx = bot.x - self.player.x
-                dy = bot.y - self.player.y
+                dx = bot.x - self.player_x
+                dy = bot.y - self.player_y
                 d_sq = dx * dx + dy * dy
                 if d_sq < min_dist_sq:
                     min_dist_sq = d_sq
@@ -845,7 +909,7 @@ class Game(FPSGameBase):
                 self.sound_manager.play_sound("breath")
                 self.heartbeat_timer = beat_delay
 
-        if self.player.health < 50:
+        if self.player_health < 50:
             self.groan_timer -= 1
             if self.groan_timer <= 0:
                 self.sound_manager.play_sound("groan")
@@ -870,8 +934,8 @@ class Game(FPSGameBase):
                     )
                 self.kill_combo_count = 0
             # Push combo state back to the combat manager
-            self.combat_manager.kill_combo_timer = self.kill_combo_timer
-            self.combat_manager.kill_combo_count = self.kill_combo_count
+            self.kill_combo_timer = self.kill_combo_timer
+            self.kill_combo_count = self.kill_combo_count
 
     def handle_intro_events(self) -> None:
         """Handle intro screen events"""
@@ -1108,7 +1172,7 @@ class Game(FPSGameBase):
                             self.sound_manager.play_sound("breath")
                             self.heartbeat_timer = beat_delay
 
-                        if self.player and self.player.health < 50:
+                        if self.player and self.player_health < 50:
                             self.groan_timer -= 1
                             if self.groan_timer <= 0:
                                 self.sound_manager.play_sound("groan")
