@@ -1,4 +1,7 @@
 import math
+import os
+
+from games.shared.asset_catalog import AssetCatalog
 
 from .custom_types import EnemyData, LevelTheme, WeaponData
 
@@ -56,102 +59,16 @@ WEAPON_RANGE_STORMTROOPER = 30
 WEAPON_RANGE_MINIGUN = 20
 
 # Weapon settings
-WEAPONS: dict[str, WeaponData] = {
-    "pistol": {
-        "name": "Pistol",
-        "damage": 25,
-        "range": WEAPON_RANGE_PISTOL,
-        "ammo": 999,  # Infinite total ammo concept? Or max carry?
-        # Keeping 999 as "unlimited" pool for now
-        "cooldown": 10,
-        "clip_size": 12,
-        "reload_time": 60,  # 1 second
-        "key": "1",
-        "fire_mode": "hitscan",
-    },
-    "rifle": {
-        "name": "Rifle",
-        "damage": 20,
-        "range": WEAPON_RANGE_RIFLE,
-        "ammo": 999,
-        "cooldown": 20,
-        "clip_size": 30,
-        "reload_time": 120,  # 2 seconds
-        "key": "2",
-        "fire_mode": "hitscan",
-    },
-    "shotgun": {
-        "name": "Shotgun",
-        "damage": 20,
-        "range": WEAPON_RANGE_SHOTGUN,
-        "ammo": 999,
-        "cooldown": 30,
-        "clip_size": 2,  # Two shots
-        "reload_time": 80,
-        "pellets": 8,
-        "spread": 0.15,
-        "key": "3",
-        "fire_mode": "spread",
-    },
-    "minigun": {
-        "name": "Minigun",
-        "damage": 12,
-        "range": WEAPON_RANGE_MINIGUN,
-        "ammo": 999,
-        "cooldown": 3,
-        "automatic": True,
-        "clip_size": 100,
-        "reload_time": 150,
-        "key": "7",
-        "spin_up_time": 30,
-        "fire_mode": "burst",
-    },
-    "plasma": {
-        "name": "Plasma",
-        "damage": 100,
-        "range": WEAPON_RANGE_PLASMA,
-        "ammo": 999,
-        "cooldown": 8,
-        "automatic": True,
-        "clip_size": 999,
-        "heat_per_shot": 0.25,
-        "max_heat": 1.0,
-        "cooling_rate": 0.01,
-        "overheat_penalty": 180,
-        "projectile_speed": 0.5,
-        "projectile_color": (0, 191, 255),
-        "key": "5",
-        "fire_mode": "projectile",
-    },
-    "laser": {
-        "name": "Laser",
-        "damage": 50,  # Continuous damage capability
-        "range": 50,  # Long range
-        "ammo": 999,
-        "cooldown": 5,  # Very fast fire
-        "automatic": True,
-        "clip_size": 100,
-        "reload_time": 100,
-        "key": "4",
-        "beam_color": (255, 0, 0),  # Red laser
-        "beam_width": 3,
-        "fire_mode": "beam",
-    },
-    "rocket": {
-        "name": "Rocket Launcher",
-        "damage": 150,
-        "range": 100,
-        "ammo": 999,
-        "cooldown": 45,
-        "clip_size": 1,
-        "reload_time": 180,
-        "key": "6",
-        "projectile_speed": 0.3,
-        "projectile_color": (255, 100, 0),
-        "aoe_radius": 6.0,
-        "fire_mode": "projectile",
-    },
-}
+_catalog_path = os.path.dirname(os.path.dirname(__file__))
+_catalog = AssetCatalog(_catalog_path)
+WEAPONS: dict[str, WeaponData] = _catalog.load_json("config/weapons.json") or {}
+for k in WEAPONS:
+    if "projectile_color" in WEAPONS[k]:
+        pc = WEAPONS[k]["projectile_color"]
+        WEAPONS[k]["projectile_color"] = (int(pc[0]), int(pc[1]), int(pc[2]))
+    if "beam_color" in WEAPONS[k]:
+        bc = WEAPONS[k]["beam_color"]
+        WEAPONS[k]["beam_color"] = (int(bc[0]), int(bc[1]), int(bc[2]))
 
 # Combat settings
 HEADSHOT_THRESHOLD = 0.05
@@ -248,169 +165,11 @@ DINOSAUR_COLOR = (63, 163, 77)
 RAIDER_COLOR = (122, 92, 255)
 NINJA_COLOR = (0, 0, 100)
 
-ENEMY_TYPES: dict[str, EnemyData] = {
-    "zombie": {
-        "color": (80, 100, 80),  # Rotting Green
-        "health_mult": 1.0,
-        "speed_mult": 0.8,
-        "damage_mult": 1.0,
-        "scale": 1.0,
-        "visual_style": "monster",
-    },
-    "ghost": {
-        "color": (200, 200, 255),
-        "health_mult": 0.6,
-        "speed_mult": 0.6,
-        "damage_mult": 1.5,
-        "scale": 0.9,
-        "visual_style": "ghost",
-    },
-    "boss": {
-        "color": BOSS_COLOR,
-        "health_mult": 5.0,
-        "speed_mult": 0.5,
-        "damage_mult": 2.0,
-        "scale": 1.4,
-        "visual_style": "monster",
-    },
-    "demon": {
-        "color": DEMON_COLOR,
-        "health_mult": 0.5,
-        "speed_mult": 1.2,
-        "damage_mult": 1.5,
-        "scale": 0.8,
-        "visual_style": "monster",
-    },
-    "dinosaur": {
-        "color": DINOSAUR_COLOR,
-        "health_mult": 2.0,
-        "speed_mult": 0.9,
-        "damage_mult": 1.0,
-        "scale": 1.0,
-        "visual_style": "monster",
-    },
-    "raider": {
-        "color": RAIDER_COLOR,
-        "health_mult": 1.1,
-        "speed_mult": 1.0,
-        "damage_mult": 1.2,
-        "scale": 1.0,
-        "visual_style": "monster",
-    },
-    "ninja": {
-        "color": NINJA_COLOR,
-        "health_mult": 0.5,
-        "speed_mult": 1.5,
-        "damage_mult": 1.2,
-        "scale": 0.9,
-        "visual_style": "ghost",
-    },
-    # Baby Variants (Cute/Creepy Round Style)
-    "baby_zombie": {
-        "color": (200, 255, 200),
-        "health_mult": 0.4,
-        "speed_mult": 1.3,
-        "damage_mult": 0.5,
-        "scale": 0.5,
-        "visual_style": "baby",
-    },
-    "mutant_baby": {
-        "color": (255, 180, 200),
-        "health_mult": 0.6,
-        "speed_mult": 1.1,
-        "damage_mult": 0.7,
-        "scale": 0.6,
-        "visual_style": "baby",
-    },
-    "health_pack": {
-        "color": (0, 255, 0),
-        "health_mult": 1.0,
-        "speed_mult": 0.0,
-        "damage_mult": 0.0,
-        "scale": 0.5,
-        "visual_style": "item",
-    },
-    "pickup_rocket": {
-        "color": (255, 100, 0),
-        "health_mult": 1.0,
-        "speed_mult": 0.0,
-        "damage_mult": 0.0,
-        "scale": 0.5,
-        "visual_style": "item",
-    },
-    "ammo_box": {
-        "color": (255, 255, 0),
-        "health_mult": 1.0,
-        "speed_mult": 0.0,
-        "damage_mult": 0.0,
-        "scale": 0.4,
-        "visual_style": "item",
-    },
-    "bomb_item": {
-        "color": (50, 50, 50),
-        "health_mult": 1.0,
-        "speed_mult": 0.0,
-        "damage_mult": 0.0,
-        "scale": 0.4,
-        "visual_style": "item",
-    },
-    "pickup_rifle": {
-        "color": (100, 100, 255),
-        "health_mult": 1.0,
-        "speed_mult": 0.0,
-        "damage_mult": 0.0,
-        "scale": 0.5,
-        "visual_style": "item",
-    },
-    "pickup_shotgun": {
-        "color": (150, 75, 0),
-        "health_mult": 1.0,
-        "speed_mult": 0.0,
-        "damage_mult": 0.0,
-        "scale": 0.5,
-        "visual_style": "item",
-    },
-    "pickup_plasma": {
-        "color": (0, 255, 255),
-        "health_mult": 1.0,
-        "speed_mult": 0.0,
-        "damage_mult": 0.0,
-        "scale": 0.5,
-        "visual_style": "item",
-    },
-    "pickup_minigun": {
-        "color": (150, 150, 255),
-        "health_mult": 1.0,
-        "speed_mult": 0.0,
-        "damage_mult": 0.0,
-        "scale": 0.5,
-        "visual_style": "item",
-    },
-    "minigunner": {
-        "color": (100, 100, 150),
-        "health_mult": 2.0,
-        "speed_mult": 0.5,
-        "damage_mult": 0.8,
-        "scale": 1.2,
-        "visual_style": "monster",
-    },
-    "ball": {
-        "color": (50, 50, 50),  # Metallic
-        "health_mult": 3.0,
-        "speed_mult": 2.5,  # Very fast
-        "damage_mult": 3.0,  # Crushing damage
-        "scale": 1.5,
-        "visual_style": "ball",
-    },
-    "beast": {
-        "color": (160, 40, 40),  # Dark Red
-        "health_mult": 6.0,
-        "speed_mult": 0.4,  # Slow
-        "damage_mult": 2.5,
-        "scale": 3.0,  # Huge
-        "visual_style": "beast",
-    },
-}
+ENEMY_TYPES: dict[str, EnemyData] = _catalog.load_json("config/enemies.json") or {}
+for k in ENEMY_TYPES:
+    if "color" in ENEMY_TYPES[k]:
+        ec = ENEMY_TYPES[k]["color"]
+        ENEMY_TYPES[k]["color"] = (int(ec[0]), int(ec[1]), int(ec[2]))
 
 # Wall colors
 WALL_COLORS = {

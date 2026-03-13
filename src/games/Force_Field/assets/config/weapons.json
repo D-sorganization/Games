@@ -1,0 +1,182 @@
+{
+    "pistol": {
+        "name": "Pistol",
+        "damage": 25,
+        "range": 15,
+        "ammo": 48,
+        "cooldown": 10,
+        "clip_size": 12,
+        "reload_time": 60,
+        "key": "1",
+        "automatic": true,
+        "fire_mode": "hitscan"
+    },
+    "rifle": {
+        "name": "Rifle",
+        "damage": 40,
+        "range": 25,
+        "ammo": 90,
+        "cooldown": 8,
+        "automatic": true,
+        "clip_size": 15,
+        "reload_time": 120,
+        "key": "2",
+        "fire_mode": "hitscan"
+    },
+    "shotgun": {
+        "name": "Shotgun",
+        "damage": 20,
+        "range": 12,
+        "ammo": 24,
+        "cooldown": 30,
+        "clip_size": 2,
+        "reload_time": 80,
+        "pellets": 8,
+        "spread": 0.15,
+        "key": "3",
+        "automatic": true,
+        "fire_mode": "spread"
+    },
+    "minigun": {
+        "name": "Minigun",
+        "damage": 12,
+        "range": 20,
+        "ammo": 200,
+        "cooldown": 3,
+        "automatic": true,
+        "clip_size": 100,
+        "reload_time": 150,
+        "key": "7",
+        "spin_up_time": 30,
+        "fire_mode": "burst"
+    },
+    "plasma": {
+        "name": "Plasma",
+        "damage": 100,
+        "range": 30,
+        "ammo": 100,
+        "cooldown": 8,
+        "automatic": true,
+        "clip_size": 999,
+        "heat_per_shot": 0.25,
+        "max_heat": 1.0,
+        "cooling_rate": 0.01,
+        "overheat_penalty": 180,
+        "projectile_speed": 0.5,
+        "projectile_color": [
+            0,
+            191,
+            255
+        ],
+        "key": "5",
+        "fire_mode": "projectile"
+    },
+    "pulse": {
+        "name": "Pulse Rifle",
+        "damage": 45,
+        "range": 35,
+        "ammo": 120,
+        "cooldown": 6,
+        "automatic": true,
+        "clip_size": 40,
+        "reload_time": 100,
+        "projectile_speed": 0.6,
+        "projectile_color": [
+            100,
+            100,
+            255
+        ],
+        "key": "0",
+        "fire_mode": "projectile"
+    },
+    "laser": {
+        "name": "Laser",
+        "damage": 50,
+        "range": 50,
+        "ammo": 100,
+        "cooldown": 5,
+        "automatic": true,
+        "clip_size": 100,
+        "reload_time": 100,
+        "key": "4",
+        "beam_color": [
+            255,
+            0,
+            0
+        ],
+        "beam_width": 15,
+        "fire_mode": "beam"
+    },
+    "rocket": {
+        "name": "Rocket Launcher",
+        "damage": 150,
+        "range": 100,
+        "ammo": 10,
+        "cooldown": 45,
+        "clip_size": 1,
+        "reload_time": 180,
+        "key": "6",
+        "projectile_speed": 0.3,
+        "projectile_color": [
+            255,
+            100,
+            0
+        ],
+        "aoe_radius": 6.0,
+        "fire_mode": "projectile"
+    },
+    "bfg": {
+        "name": "BFG 9000",
+        "damage": 500,
+        "range": 100,
+        "ammo": 5,
+        "cooldown": 60,
+        "clip_size": 1,
+        "reload_time": 200,
+        "key": "8",
+        "projectile_speed": 0.2,
+        "projectile_color": [
+            0,
+            255,
+            0
+        ],
+        "aoe_radius": 15.0,
+        "fire_mode": "projectile"
+    },
+    "flamethrower": {
+        "name": "Flamethrower",
+        "damage": 8,
+        "range": 18,
+        "ammo": 300,
+        "cooldown": 2,
+        "automatic": true,
+        "clip_size": 100,
+        "reload_time": 180,
+        "key": "9",
+        "projectile_speed": 0.35,
+        "projectile_color": [
+            255,
+            140,
+            0
+        ],
+        "fire_mode": "projectile"
+    },
+    "freezer": {
+        "name": "Freezer",
+        "damage": 15,
+        "range": 15,
+        "ammo": 150,
+        "cooldown": 5,
+        "automatic": true,
+        "clip_size": 50,
+        "reload_time": 120,
+        "key": "-",
+        "projectile_speed": 0.4,
+        "projectile_color": [
+            200,
+            255,
+            255
+        ],
+        "fire_mode": "projectile"
+    }
+}
