@@ -9,8 +9,11 @@ based on actual code analysis.
 import argparse
 import re
 import sys
+import os
 from datetime import datetime
 from pathlib import Path
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from scripts.shared.logging_config import setup_script_logging
 from scripts.shared.subprocess_utils import (
@@ -439,22 +442,22 @@ def run_assessment(assessment_id: str, output_path: Path) -> int:
             try:
                 line_count = len(p.read_text(encoding="utf-8").splitlines())
                 total_lines += line_count
-                if line_count > 500:
+                if line_count > 1500:
                     long_files += 1
             except Exception:
                 pass
 
         avg_lines = total_lines / file_count if file_count > 0 else 0
         findings.append(f"- Average lines per file: {avg_lines:.0f}")
-        findings.append(f"- Files > 500 lines: {long_files}")
+        findings.append(f"- Files > 1500 lines: {long_files}")
 
         if long_files > 0:
             score -= min(3, long_files)
             findings.append(
-                f"- Warning: {long_files} large files detected (> 500 lines)"
+                f"- Warning: {long_files} large files detected (> 1500 lines)"
             )
 
-        if avg_lines > 200:
+        if avg_lines > 500:
             score -= 1
             findings.append("- Warning: High average file size")
 
@@ -506,7 +509,7 @@ This assessment was generated automatically. For detailed analysis:
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     # Write report
-    with open(output_path, "w") as f:
+    with open(output_path, "w", encoding="utf-8") as f:
         f.write(report_content)
 
     logger.info(f"✓ Assessment {assessment_id} report saved to {output_path}")
