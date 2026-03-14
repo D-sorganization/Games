@@ -8,17 +8,17 @@ on:
   workflow_dispatch:
     inputs:
       dry_run:
-        description: 'Dry run - analyze only without creating PR'
+        description: "Dry run - analyze only without creating PR"
         required: false
-        default: 'true'
+        default: "true"
         type: choice
         options:
-          - 'true'
-          - 'false'
+          - "true"
+          - "false"
       branch_pattern:
-        description: 'Pattern to match branches for consolidation'
+        description: "Pattern to match branches for consolidation"
         required: false
-        default: 'jules/'
+        default: "jules/"
         type: string
 
 permissions:
@@ -34,7 +34,7 @@ jobs:
     name: Compile Related PRs
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
