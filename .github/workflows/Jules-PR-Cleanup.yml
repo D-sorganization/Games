@@ -113,13 +113,16 @@ jobs:
               echo "[DRY RUN] Would close PR #$PR_NUM: $PR_TITLE"
             else
               echo "Closing PR #$PR_NUM: $PR_TITLE"
-              gh pr close "$PR_NUM" --comment "Auto-closed: Stale Jules-generated PR with failing CI.
-
-              If this PR is still needed, you can:
-              1. Reopen it and push new commits
-              2. Add the \`jules-keep\` label to prevent auto-closure
-
-              This cleanup runs weekly to prevent PR accumulation."
+              COMMENT=$(printf '%s\n' \
+                "Auto-closed: Stale Jules-generated PR with failing CI." \
+                "" \
+                "If this PR is still needed, you can:" \
+                "1. Reopen it and push new commits" \
+                "2. Add the `jules-keep` label to prevent auto-closure" \
+                "" \
+                "This cleanup runs weekly to prevent PR accumulation.")
+              gh pr close "$PR_NUM" --comment "$COMMENT"
+              gh pr close "$PR_NUM" --comment "$COMMENT"
 
               # Also delete the branch
               gh api -X DELETE "repos/${{ github.repository }}/git/refs/heads/$PR_BRANCH" 2>/dev/null || true
