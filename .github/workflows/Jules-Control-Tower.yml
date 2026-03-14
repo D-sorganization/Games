@@ -11,7 +11,7 @@ on:
   schedule:
     # COST OPTIMIZED: Runs Mon/Thu (2x weekly for active repos)
     # Time-based routing in triage step handles worker selection
-    - cron: "0 8 * * 1,4"  # Monday and Thursday at midnight PST
+    - cron: "0 8 * * 1,4" # Monday and Thursday at midnight PST
   workflow_dispatch:
     inputs:
       target:
