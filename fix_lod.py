@@ -1,7 +1,7 @@
 import re
 
 file_path = r"c:\Users\diete\Repositories\Games\src\games\Zombie_Survival\src\game.py"
-with open(file_path, "r", encoding="utf-8") as f:
+with open(file_path, encoding="utf-8") as f:
     content = f.read()
 
 # Replace common self.player.* accesses
@@ -15,7 +15,6 @@ replacements = {
     r"self\.player\.current_weapon": r"self.player_current_weapon",
     r"self\.player\.stamina": r"self.player_stamina",
     r"self\.player\.bombs": r"self.player_bombs",
-    
     r"self\.combat_manager\.kills": r"self.kills",
     r"self\.combat_manager\.kill_combo_count": r"self.kill_combo_count",
     r"self\.combat_manager\.kill_combo_timer": r"self.kill_combo_timer",
@@ -24,7 +23,7 @@ replacements = {
 
 for old, new in replacements.items():
     content = re.sub(old, new, content)
-    
+
 # We need to inject the properties into the game.py file
 properties = """
     # --- Law of Demeter (LOD) Flattened Properties ---
