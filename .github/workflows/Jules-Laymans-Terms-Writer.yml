@@ -8,9 +8,9 @@ on:
   workflow_dispatch:
     inputs:
       target_path:
-        description: 'Path to analyze'
+        description: "Path to analyze"
         required: false
-        default: 'games/'
+        default: "games/"
         type: string
 
 permissions:
@@ -26,11 +26,11 @@ jobs:
     name: Generate Plain Language Docs
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 1
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.11"
 
