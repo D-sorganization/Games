@@ -83,13 +83,74 @@ _pg.locals = sys.modules["pygame.locals"]
 _pg.Surface = MagicMock  # type: ignore[attr-defined]
 _pg.Rect = MagicMock  # type: ignore[attr-defined]
 _pg.Color = MagicMock  # type: ignore[attr-defined]
+_pg.SRCALPHA = 65536  # type: ignore[attr-defined]
+
+# Event types
 _pg.QUIT = 256  # type: ignore[attr-defined]
 _pg.KEYDOWN = 768  # type: ignore[attr-defined]
 _pg.KEYUP = 769  # type: ignore[attr-defined]
-_pg.K_ESCAPE = 27  # type: ignore[attr-defined]
 _pg.MOUSEBUTTONDOWN = 1025  # type: ignore[attr-defined]
+_pg.MOUSEBUTTONUP = 1026  # type: ignore[attr-defined]
 _pg.MOUSEMOTION = 1024  # type: ignore[attr-defined]
 _pg.JOYAXISMOTION = 1536  # type: ignore[attr-defined]
+_pg.JOYBUTTONDOWN = 1539  # type: ignore[attr-defined]
+_pg.JOYBUTTONUP = 1540  # type: ignore[attr-defined]
+_pg.VIDEORESIZE = 65281  # type: ignore[attr-defined]
+
+# Key constants — letters
+for _i, _letter in enumerate("abcdefghijklmnopqrstuvwxyz"):
+    setattr(_pg, f"K_{_letter}", 97 + _i)
+
+# Key constants — digits
+for _d in range(10):
+    setattr(_pg, f"K_{_d}", 48 + _d)
+
+# Key constants — special keys
+_KEY_SPECIALS = {
+    "K_ESCAPE": 27,
+    "K_RETURN": 13,
+    "K_SPACE": 32,
+    "K_TAB": 9,
+    "K_BACKSPACE": 8,
+    "K_DELETE": 127,
+    "K_UP": 273,
+    "K_DOWN": 274,
+    "K_RIGHT": 275,
+    "K_LEFT": 276,
+    "K_INSERT": 277,
+    "K_HOME": 278,
+    "K_END": 279,
+    "K_PAGEUP": 280,
+    "K_PAGEDOWN": 281,
+    "K_F1": 282,
+    "K_F2": 283,
+    "K_F3": 284,
+    "K_F4": 285,
+    "K_F5": 286,
+    "K_F6": 287,
+    "K_F7": 288,
+    "K_F8": 289,
+    "K_F9": 290,
+    "K_F10": 291,
+    "K_F11": 292,
+    "K_F12": 293,
+    "K_LSHIFT": 304,
+    "K_RSHIFT": 303,
+    "K_LCTRL": 306,
+    "K_RCTRL": 305,
+    "K_LALT": 308,
+    "K_RALT": 307,
+    "K_MINUS": 45,
+    "K_EQUALS": 61,
+    "K_PLUS": 270,
+}
+for _k, _v in _KEY_SPECIALS.items():
+    setattr(_pg, _k, _v)
+
+# Mouse button constants
+_pg.BUTTON_LEFT = 1  # type: ignore[attr-defined]
+_pg.BUTTON_MIDDLE = 2  # type: ignore[attr-defined]
+_pg.BUTTON_RIGHT = 3  # type: ignore[attr-defined]
 
 # display helpers
 _pg.display.set_mode = MagicMock(return_value=MagicMock())  # type: ignore[attr-defined]
@@ -126,5 +187,36 @@ _pg.event.get = MagicMock(return_value=[])  # type: ignore[attr-defined]
 # joystick helpers
 _pg.joystick.init = MagicMock()  # type: ignore[attr-defined]
 _pg.joystick.get_count = MagicMock(return_value=0)  # type: ignore[attr-defined]
+
+# key helpers
+_pg.key.get_pressed = MagicMock(  # type: ignore[attr-defined]
+    return_value=[False] * 512,
+)
+_pg.key.name = MagicMock(return_value="unknown")  # type: ignore[attr-defined]
+
+# math helpers (Vector2)
+_pg.math.Vector2 = MagicMock  # type: ignore[attr-defined]
+
+# mixer extras
+_pg.mixer.pre_init = MagicMock()  # type: ignore[attr-defined]
+_pg.mixer.set_num_channels = MagicMock()  # type: ignore[attr-defined]
+_pg.mixer.pause = MagicMock()  # type: ignore[attr-defined]
+_pg.mixer.unpause = MagicMock()  # type: ignore[attr-defined]
+
+# mouse helpers
+_pg.mouse.get_pos = MagicMock(return_value=(0, 0))  # type: ignore[attr-defined]
+_pg.mouse.get_rel = MagicMock(return_value=(0, 0))  # type: ignore[attr-defined]
+_pg.mouse.set_visible = MagicMock()  # type: ignore[attr-defined]
+
+# image helpers
+_pg.image.load = MagicMock(return_value=MagicMock())  # type: ignore[attr-defined]
+
+# transform helpers
+_pg.transform.scale = MagicMock(  # type: ignore[attr-defined]
+    return_value=MagicMock(),
+)
+_pg.transform.rotate = MagicMock(  # type: ignore[attr-defined]
+    return_value=MagicMock(),
+)
 
 sys.modules["pygame"] = _pg
