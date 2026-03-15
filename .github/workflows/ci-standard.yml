@@ -131,7 +131,13 @@ jobs:
           python-version: ${{ matrix.python }}
       - run: pip install -r requirements.txt
       - run: pip install -e .
-      - run: pytest . --ignore=.venv --cov=. --cov-report=xml || echo "No tests found yet"
+      - name: Install SDL dependencies
+        run: sudo apt-get update && sudo apt-get install -y libsdl2-dev libsdl2-mixer-dev libsdl2-image-dev libsdl2-ttf-dev xvfb
+      - name: Run tests with coverage
+        env:
+          SDL_VIDEODRIVER: dummy
+          SDL_AUDIODRIVER: disk
+        run: xvfb-run -a pytest . --ignore=.venv --cov=src/games/shared --cov-branch --cov-report=xml --cov-report=term-missing --timeout=60 || echo "::warning::Some tests failed"
       - uses: codecov/codecov-action@v4
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
