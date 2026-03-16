@@ -335,3 +335,117 @@ class TestExplodeGeneric:
             damage_flash_timer=0,
         )
         assert result == 0
+
+
+class TestCheckShotHit:
+    """Tests for check_shot_hit, applying hit damage, and secondary hits."""
+
+    def test_check_shot_hit_primary(self) -> None:
+        mgr = CombatManagerBase(
+            entity_manager=_make_entity_manager(),
+            particle_system=MagicMock(),
+            sound_manager=MagicMock(),
+            constants=_make_constants(),
+        )
+        mgr._apply_hit_damage = MagicMock()
+
+        player = SimpleNamespace(
+            x=0.0,
+            y=0.0,
+            angle=0.0,
+            zoomed=False,
+            get_current_weapon_range=lambda: 100.0,
+            get_current_weapon_damage=lambda: 10,
+        )
+        bot = _make_bot(x=10.0, y=0.0, alive=True)
+        mgr.entity_manager.bots = [bot]
+
+        mock_rc = MagicMock()
+        mock_rc.cast_ray.return_value = (50.0, 0, 0, 0, 0)
+
+        mgr.check_shot_hit(player, mock_rc, [bot], [], angle_offset=0.0)
+        assert mock_rc.cast_ray.called
+        assert mgr._apply_hit_damage.called
+
+    def test_check_shot_hit_laser(self) -> None:
+        mgr = CombatManagerBase(
+            entity_manager=_make_entity_manager(),
+            particle_system=MagicMock(),
+            sound_manager=MagicMock(),
+            constants=_make_constants(),
+        )
+        player = SimpleNamespace(
+            x=0.0,
+            y=0.0,
+            angle=0.0,
+            zoomed=False,
+            get_current_weapon_range=lambda: 100.0,
+            get_current_weapon_damage=lambda: 10,
+        )
+
+        mock_rc = MagicMock()
+        mock_rc.cast_ray.return_value = (50.0, 0, 0, 0, 0)
+
+        mgr.check_shot_hit(player, mock_rc, [], [], angle_offset=0.0, is_laser=True)
+        assert mgr.particle_system.add_laser.called
+
+    def test_check_shot_hit_secondary(self) -> None:
+        mgr = CombatManagerBase(
+            entity_manager=_make_entity_manager(),
+            particle_system=MagicMock(),
+            sound_manager=MagicMock(),
+            constants=_make_constants(),
+        )
+        mgr._handle_secondary_hit = MagicMock()
+
+        player = SimpleNamespace(
+            x=0.0,
+            y=0.0,
+            angle=0.0,
+            zoomed=False,
+            get_current_weapon_range=lambda: 100.0,
+            get_current_weapon_damage=lambda: 10,
+        )
+
+        mock_rc = MagicMock()
+        mock_rc.cast_ray.return_value = (50.0, 0, 0, 0, 0)
+
+        mgr.check_shot_hit(player, mock_rc, [], [], angle_offset=0.0, is_secondary=True)
+        assert mgr._handle_secondary_hit.called
+
+    def test_handle_secondary_hit_creates_explosion(self) -> None:
+        mgr = CombatManagerBase(
+            entity_manager=_make_entity_manager(),
+            particle_system=MagicMock(),
+            sound_manager=MagicMock(),
+            constants=_make_constants(),
+        )
+        mgr.explode_laser = MagicMock()
+        player = SimpleNamespace(x=0.0, y=0.0, angle=0.0)
+
+        mgr._handle_secondary_hit(player, None, float("inf"), 10.0, [])
+        assert mgr.explode_laser.called
+        assert mgr.particle_system.add_laser.called
+
+    def test_apply_hit_damage(self) -> None:
+        mgr = CombatManagerBase(
+            entity_manager=_make_entity_manager(),
+            particle_system=MagicMock(),
+            sound_manager=MagicMock(),
+            constants=_make_constants(),
+        )
+        bot = _make_bot(alive=True, health=100)
+        player = SimpleNamespace(x=0.0, y=0.0, angle=0.0)
+
+        mgr._apply_hit_damage(
+            player,
+            bot,
+            distance=5.0,
+            weapon_range=100.0,
+            base_damage=50,
+            is_headshot=False,
+            damage_texts=[],
+            show_damage=True,
+        )
+        assert bot.health < 100
+        assert mgr.particle_system.add_particle.called

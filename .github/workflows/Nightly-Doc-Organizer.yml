@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   organize-docs:
-    runs-on: ubuntu-latest
+    runs-on: d-sorg-fleet-4core
     if: hashFiles('.github/WORKFLOWS_PAUSED') == ''
     steps:
       - name: Checkout

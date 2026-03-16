@@ -22,7 +22,7 @@ permissions:
 
 jobs:
   discover:
-    runs-on: ubuntu-latest
+    runs-on: d-sorg-fleet-4core
     outputs:
       pr_count: ${{ steps.list.outputs.count }}
       pr_list: ${{ steps.list.outputs.prs }}
@@ -45,7 +45,7 @@ jobs:
   consolidate:
     needs: discover
     if: needs.discover.outputs.should_consolidate == 'true' && inputs.dry_run != 'true'
-    runs-on: ubuntu-latest
+    runs-on: d-sorg-fleet-4core
     steps:
       - uses: actions/checkout@v6
         with:
