@@ -30,7 +30,7 @@ class InputManager(InputManagerBase):
         # Ensure user-facing documentation and in-game tutorials reflect this.
         "dash": pygame.K_LSHIFT,
         "sprint": pygame.K_TAB,
-        "shoot_alt": pygame.K_KP0,
+        "shoot_alt": pygame.K_0,
         "pause": pygame.K_ESCAPE,
         "interact": pygame.K_e,
         "weapon_1": pygame.K_1,
