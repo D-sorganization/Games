@@ -81,6 +81,8 @@ _pg.locals = sys.modules["pygame.locals"]
 
 # Common pygame top-level classes/constants
 _pg.Surface = MagicMock  # type: ignore[attr-defined]
+
+
 class MockRect:
     def __init__(self, x, y, width, height):
         self.x = x
@@ -96,13 +98,17 @@ class MockRect:
         self.topright = (x + width, y)
         self.bottomleft = (x, y + height)
         self.bottomright = (x + width, y + height)
+
     def collidepoint(self, pos):
         px, py = pos
         return self.left <= px <= self.right and self.top <= py <= self.bottom
+
     def copy(self):
         return MockRect(self.x, self.y, self.width, self.height)
+
     def __repr__(self):
         return f"<rect({self.x}, {self.y}, {self.width}, {self.height})>"
+
 
 _pg.Rect = MockRect  # type: ignore[attr-defined]
 _pg.Color = MagicMock  # type: ignore[attr-defined]
