@@ -49,7 +49,7 @@ env:
 
 jobs:
   intelligent-repair:
-    runs-on: ubuntu-latest
+    runs-on: d-sorg-fleet-4core
     # Prevent multiple repairs on same branch simultaneously
     concurrency:
       group: auto-repair-${{ inputs.branch || github.event.workflow_run.head_branch }}

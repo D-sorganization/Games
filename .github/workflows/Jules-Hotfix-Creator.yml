@@ -20,7 +20,7 @@ permissions:
 
 jobs:
   create-hotfix:
-    runs-on: ubuntu-latest
+    runs-on: d-sorg-fleet-4core
     # Only run for trusted branches (main/master)
     if: inputs.failed_branch == 'main' || inputs.failed_branch == 'master'
     steps:

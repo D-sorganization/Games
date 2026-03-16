@@ -50,7 +50,7 @@ permissions:
 
 jobs:
   triage:
-    runs-on: ubuntu-latest
+    runs-on: d-sorg-fleet-4core
     # Removed global actor check to allow scheduled runs even if file modified by bot
     outputs:
       target: ${{ steps.decide.outputs.target }}

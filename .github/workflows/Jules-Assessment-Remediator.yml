@@ -54,7 +54,7 @@ env:
 
 jobs:
   remediate:
-    runs-on: ubuntu-latest
+    runs-on: d-sorg-fleet-4core
     timeout-minutes: 10
 
     steps:

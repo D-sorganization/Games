@@ -6,7 +6,9 @@ pygame.Rect and font are mocked via the root conftest.
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
+
+import pytest
 
 from games.shared.ui import BloodButton, Button
 
@@ -141,3 +143,76 @@ class TestBloodButton:
         """Default BloodButton color should be dark red."""
         btn = BloodButton(0, 0, 200, 50, "Play")
         assert btn.color == (139, 0, 0)
+
+class MockRect:
+    def __init__(self, x=0, y=0, width=100, height=50, **kwargs):
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+        self.center = (x + width // 2, y + height // 2)
+        self.topleft = (x, y)
+        self.topright = (x + width, y)
+        self.bottomleft = (x, y + height)
+        self.bottomright = (x + width, y + height)
+        self.bottom = y + height
+
+    def collidepoint(self, pos):
+        px, py = pos
+        return (
+            self.x <= px <= self.x + self.width and self.y <= py <= self.y + self.height
+        )
+
+    def copy(self):
+        return MockRect(self.x, self.y, self.width, self.height)
+
+
+@pytest.fixture(autouse=True)
+def patch_rect():
+    import pygame
+
+    with patch.object(pygame, "Rect", MockRect):
+        yield
+
+
+class TestButtonDraw:
+    """Tests for Button draw methods."""
+
+    def test_button_draw(self) -> None:
+        """Button draw should call pygame methods."""
+        import pygame
+        pygame.draw.rect = MagicMock()
+        
+        btn = Button(0, 0, 100, 50, "Test", (100, 100, 100))
+        screen = MagicMock()
+        font = MagicMock()
+        font.render.return_value = MagicMock()
+        btn.draw(screen, font)
+        assert screen.blit.called
+        assert font.render.called
+
+    def test_blood_button_draw(self) -> None:
+        """BloodButton.draw should call pygame methods."""
+        import pygame
+
+        # Inject drawing mocks into the FakeModule
+        pygame.draw.rect = MagicMock()
+        pygame.draw.circle = MagicMock()
+        pygame.draw.line = MagicMock()
+        
+        mock_surf = MagicMock()
+        mock_surf.get_rect.return_value = MockRect()
+        pygame.Surface = MagicMock(return_value=mock_surf)
+
+        btn = BloodButton(0, 0, 200, 50, "Play")
+        screen = MagicMock()
+        font = MagicMock()
+        font.render.return_value = MagicMock()
+        font.render.return_value.get_rect.return_value = MockRect()
+
+        btn.draw(screen, font)
+        
+        assert pygame.draw.rect.called
+        assert pygame.draw.circle.called
+        assert pygame.draw.line.called
+        assert screen.blit.called

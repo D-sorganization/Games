@@ -20,7 +20,7 @@ permissions:
 
 jobs:
   review:
-    runs-on: ubuntu-latest
+    runs-on: d-sorg-fleet-4core
     steps:
       - uses: actions/checkout@v6
         with:
