@@ -1,57 +1,7 @@
 {
-  "timestamp": "2026-03-09T08:21:00.265619",
-  "overall_score": 9.3,
+  "timestamp": "2026-03-16T08:51:09.457359",
+  "overall_score": 9.47,
   "category_scores": {
-    "A": {
-      "score": 10.0,
-      "name": "Code Structure",
-      "weight": 8.33
-    },
-    "K": {
-      "score": 10.0,
-      "name": "Data Handling",
-      "weight": 2.5
-    },
-    "O": {
-      "score": 7.0,
-      "name": "Maintainability",
-      "weight": 8.34
-    },
-    "F": {
-      "score": 9.0,
-      "name": "Security",
-      "weight": 15.0
-    },
-    "D": {
-      "score": 10.0,
-      "name": "Error Handling",
-      "weight": 2.5
-    },
-    "L": {
-      "score": 10.0,
-      "name": "Logging",
-      "weight": 2.5
-    },
-    "C": {
-      "score": 8.0,
-      "name": "Test Coverage",
-      "weight": 15.0
-    },
-    "H": {
-      "score": 10.0,
-      "name": "CI/CD",
-      "weight": 2.5
-    },
-    "J": {
-      "score": 10.0,
-      "name": "API Design",
-      "weight": 2.5
-    },
-    "E": {
-      "score": 10.0,
-      "name": "Performance",
-      "weight": 15.0
-    },
     "I": {
       "score": 10.0,
       "name": "Code Style",
@@ -62,26 +12,76 @@
       "name": "Dependencies",
       "weight": 2.5
     },
-    "B": {
+    "J": {
       "score": 10.0,
-      "name": "Documentation",
-      "weight": 10.0
+      "name": "API Design",
+      "weight": 2.5
+    },
+    "O": {
+      "score": 9.0,
+      "name": "Maintainability",
+      "weight": 8.34
+    },
+    "D": {
+      "score": 10.0,
+      "name": "Error Handling",
+      "weight": 2.5
+    },
+    "C": {
+      "score": 8.0,
+      "name": "Test Coverage",
+      "weight": 15.0
+    },
+    "F": {
+      "score": 9.0,
+      "name": "Security",
+      "weight": 15.0
     },
     "M": {
       "score": 10.0,
       "name": "Configuration",
       "weight": 2.5
     },
+    "A": {
+      "score": 10.0,
+      "name": "Code Structure",
+      "weight": 8.33
+    },
     "N": {
       "score": 10.0,
       "name": "Scalability",
       "weight": 2.5
+    },
+    "H": {
+      "score": 10.0,
+      "name": "CI/CD",
+      "weight": 2.5
+    },
+    "K": {
+      "score": 10.0,
+      "name": "Data Handling",
+      "weight": 2.5
+    },
+    "L": {
+      "score": 10.0,
+      "name": "Logging",
+      "weight": 2.5
+    },
+    "E": {
+      "score": 10.0,
+      "name": "Performance",
+      "weight": 15.0
+    },
+    "B": {
+      "score": 10.0,
+      "name": "Documentation",
+      "weight": 10.0
     }
   },
   "top_recommendations": [
     {
       "severity": "WARNING",
-      "description": "17 large files detected (> 500 lines)",
+      "description": "1 large files detected (> 1500 lines)",
       "source": "Assessment_O_Maintainability"
     },
     {

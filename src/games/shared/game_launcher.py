@@ -43,6 +43,7 @@ def setup_logging(level: int = logging.INFO) -> None:
         level: The logging level to use
     """
     logging.basicConfig(
+        force=True,
         level=level,
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         handlers=[logging.StreamHandler()],
