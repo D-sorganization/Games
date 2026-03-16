@@ -1,0 +1,10 @@
+545	test: improve renderer test coverage part 3	feat/improve-game-loop-and-component-testing-part-3	OPEN	2026-03-16T22:09:25Z
+544	feat: expand game test coverage	feat/expand-game-test-coverage	MERGED	2026-03-16T21:24:35Z
+543	test(games): comprehensive tests for texture generator and ui base	feat/improve-games-coverage-part2	MERGED	2026-03-16T13:18:35Z
+542	test(games): comprehensive tests for ui and combat	fix/conftest-pygame-constants	MERGED	2026-03-16T11:41:24Z
+541	Generate assessments and fix tests	jules-14169916731167971273-9dfe6a43	MERGED	2026-03-16T08:47:01Z
+538	feat: Migrate CI/CD to use custom fleet runner	fix/conftest-pygame-constants	CLOSED	2026-03-15T20:23:46Z
+537	fix: complete pygame mock with key/event/mouse constants	fix/conftest-pygame-constants	MERGED	2026-03-15T18:04:22Z
+536	test: comprehensive tests for 6 untested shared modules	feat/test-coverage-round2	MERGED	2026-03-15T17:56:39Z
+535	test: headless pygame mock and CI test infrastructure	feat/test-coverage-90pct	MERGED	2026-03-15T17:30:38Z
+534	Fix malformed GitHub Actions workflow YAML	fix/workflow-yaml-parse-errors-20260314	MERGED	2026-03-14T16:41:29Z
