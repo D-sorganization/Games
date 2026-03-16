@@ -25,7 +25,7 @@ class InputManager(InputManagerBase):
         "bomb": pygame.K_f,
         "shield": pygame.K_SPACE,  # Force Field Shield as documented
         "sprint": pygame.K_LSHIFT,
-        "shoot_alt": pygame.K_KP0,
+        "shoot_alt": pygame.K_0,
         "pause": pygame.K_ESCAPE,
         "interact": pygame.K_e,
         "weapon_1": pygame.K_1,

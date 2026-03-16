@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import os
+import random
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -141,8 +142,6 @@ class UIRendererBase:
         Args:
             rect: Rectangle of the title text to drip from
         """
-        import random
-
         # Spawn new drips occasionally
         if random.random() < 0.05:
             x = rect.left + random.randint(0, rect.width)
