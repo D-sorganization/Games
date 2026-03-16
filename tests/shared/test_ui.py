@@ -144,6 +144,7 @@ class TestBloodButton:
         btn = BloodButton(0, 0, 200, 50, "Play")
         assert btn.color == (139, 0, 0)
 
+
 class MockRect:
     def __init__(self, x=0, y=0, width=100, height=50, **kwargs):
         self.x = x
@@ -181,8 +182,9 @@ class TestButtonDraw:
     def test_button_draw(self) -> None:
         """Button draw should call pygame methods."""
         import pygame
+
         pygame.draw.rect = MagicMock()
-        
+
         btn = Button(0, 0, 100, 50, "Test", (100, 100, 100))
         screen = MagicMock()
         font = MagicMock()
@@ -199,7 +201,7 @@ class TestButtonDraw:
         pygame.draw.rect = MagicMock()
         pygame.draw.circle = MagicMock()
         pygame.draw.line = MagicMock()
-        
+
         mock_surf = MagicMock()
         mock_surf.get_rect.return_value = MockRect()
         pygame.Surface = MagicMock(return_value=mock_surf)
@@ -211,7 +213,7 @@ class TestButtonDraw:
         font.render.return_value.get_rect.return_value = MockRect()
 
         btn.draw(screen, font)
-        
+
         assert pygame.draw.rect.called
         assert pygame.draw.circle.called
         assert pygame.draw.line.called

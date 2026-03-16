@@ -99,9 +99,9 @@ class TestMapBaseGeneration:
         size = m.size
         for i in range(size):
             assert m.grid[0][i] > 0, f"Top border at ({i},0) should be wall"
-            assert m.grid[size - 1][i] > 0, f"Bottom border at ({i},{size-1})"
+            assert m.grid[size - 1][i] > 0, f"Bottom border at ({i},{size - 1})"
             assert m.grid[i][0] > 0, f"Left border at (0,{i})"
-            assert m.grid[i][size - 1] > 0, f"Right border at ({size-1},{i})"
+            assert m.grid[i][size - 1] > 0, f"Right border at ({size - 1},{i})"
 
     def test_generated_map_has_open_spaces(self) -> None:
         """Generated map should have some open spaces in the interior."""
@@ -152,6 +152,6 @@ class TestMapBaseGeneration:
             1 for i in range(m.size) for j in range(m.size) if m.grid[i][j] == 0
         )
 
-        assert (
-            len(visited) == total_open
-        ), f"Not all open cells are connected: {len(visited)}/{total_open}"
+        assert len(visited) == total_open, (
+            f"Not all open cells are connected: {len(visited)}/{total_open}"
+        )

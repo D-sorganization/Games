@@ -1,14 +1,35 @@
 from unittest.mock import MagicMock, patch
 
+import numpy as np
 import pytest
 
+from games.shared.contracts import ContractViolation
 from games.shared.texture_generator import TextureGenerator
 
 
 @pytest.fixture
 def mock_pygame_surfarray():
-    with patch("games.shared.texture_generator.pygame.surfarray") as mock_sa:
+    with patch(
+        "games.shared.texture_generator.pygame.surfarray", create=True
+    ) as mock_sa:
         mock_sa.make_surface = MagicMock(return_value=MagicMock())
+
+        def fake_pixels(surf):
+            try:
+                w, h = surf.get_width() or 32, surf.get_height() or 32
+            except Exception:
+                w, h = 32, 32
+            return np.zeros((w, h, 3), dtype=np.uint8)
+
+        def fake_pixels2d(surf):
+            try:
+                w, h = surf.get_width() or 32, surf.get_height() or 32
+            except Exception:
+                w, h = 32, 32
+            return np.zeros((w, h), dtype=np.uint8)
+
+        mock_sa.pixels3d = MagicMock(side_effect=fake_pixels)
+        mock_sa.pixels2d = MagicMock(side_effect=fake_pixels2d)
         yield mock_sa
 
 
@@ -57,9 +78,13 @@ class TestTextureGenerator:
 
     def test_generate_textures(self, mock_pygame_surfarray, mock_pygame_surface):
         with patch(
-            "games.shared.texture_generator.pygame.get_init", return_value=False
+            "games.shared.texture_generator.pygame.get_init",
+            return_value=False,
+            create=True,
         ):
-            with patch("games.shared.texture_generator.pygame.init") as mock_init:
+            with patch(
+                "games.shared.texture_generator.pygame.init", create=True
+            ) as mock_init:
                 textures = TextureGenerator.generate_textures()
                 assert mock_init.called
                 assert "brick" in textures
@@ -68,5 +93,5 @@ class TestTextureGenerator:
     def test_invalid_dimensions(
         self, width, height, mock_pygame_surfarray, mock_pygame_surface
     ):
-        with pytest.raises(ValueError):
+        with pytest.raises(ContractViolation):
             TextureGenerator.generate_stone(width, height)

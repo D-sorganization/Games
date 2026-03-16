@@ -2,6 +2,7 @@ import random
 
 import numpy as np
 import pygame
+import pygame.surfarray
 
 from games.shared.contracts import validate_non_negative, validate_positive
 
