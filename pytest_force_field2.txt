@@ -1,0 +1,43 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.5, pytest-8.4.1, pluggy-1.6.0 -- C:\Users\diete\AppData\Local\Programs\Python\Python313\python.exe
+cachedir: .pytest_cache
+hypothesis profile 'default'
+PySide6 6.10.2 -- Qt runtime 6.10.2 -- Qt compiled 6.10.2
+rootdir: C:\Users\diete\Repositories\Games
+configfile: pyproject.toml
+plugins: anyio-4.9.0, hypothesis-6.151.9, asyncio-1.3.0, cov-7.0.0, mock-3.15.1, qt-4.5.0, timeout-2.3.1, xdist-3.8.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 30 items
+
+tests/Force_Field/test_weapon_renderer.py::TestWeaponRenderer::test_weapon_renderer_init PASSED [  3%]
+tests/Force_Field/test_weapon_renderer.py::TestWeaponRenderer::test_render_weapons[pistol] PASSED [  6%]
+tests/Force_Field/test_weapon_renderer.py::TestWeaponRenderer::test_render_weapons[shotgun] PASSED [ 10%]
+tests/Force_Field/test_weapon_renderer.py::TestWeaponRenderer::test_render_weapons[rifle] PASSED [ 13%]
+tests/Force_Field/test_weapon_renderer.py::TestWeaponRenderer::test_render_weapons[minigun] PASSED [ 16%]
+tests/Force_Field/test_weapon_renderer.py::TestWeaponRenderer::test_render_weapons[laser] PASSED [ 20%]
+tests/Force_Field/test_weapon_renderer.py::TestWeaponRenderer::test_render_weapons[plasma] PASSED [ 23%]
+tests/Force_Field/test_weapon_renderer.py::TestWeaponRenderer::test_render_weapons[pulse] PASSED [ 26%]
+tests/Force_Field/test_weapon_renderer.py::TestWeaponRenderer::test_render_weapons[rocket] PASSED [ 30%]
+tests/Force_Field/test_weapon_renderer.py::TestWeaponRenderer::test_render_weapons[bfg] PASSED [ 33%]
+tests/Force_Field/test_weapon_renderer.py::TestWeaponRenderer::test_render_weapons_shooting[pistol] PASSED [ 36%]
+tests/Force_Field/test_weapon_renderer.py::TestWeaponRenderer::test_render_weapons_shooting[shotgun] PASSED [ 40%]
+tests/Force_Field/test_weapon_renderer.py::TestWeaponRenderer::test_render_weapons_shooting[rifle] PASSED [ 43%]
+tests/Force_Field/test_weapon_renderer.py::TestWeaponRenderer::test_render_weapons_shooting[minigun] PASSED [ 46%]
+tests/Force_Field/test_weapon_renderer.py::TestWeaponRenderer::test_render_weapons_shooting[laser] PASSED [ 50%]
+tests/Force_Field/test_weapon_renderer.py::TestWeaponRenderer::test_render_weapons_shooting[plasma] PASSED [ 53%]
+tests/Force_Field/test_weapon_renderer.py::TestWeaponRenderer::test_render_weapons_shooting[pulse] PASSED [ 56%]
+tests/Force_Field/test_weapon_renderer.py::TestWeaponRenderer::test_render_weapons_shooting[rocket] PASSED [ 60%]
+tests/Force_Field/test_weapon_renderer.py::TestWeaponRenderer::test_render_weapons_shooting[bfg] PASSED [ 63%]
+tests/Force_Field/test_weapon_renderer.py::TestWeaponRenderer::test_render_weapons_moving PASSED [ 66%]
+tests/Force_Field/test_weapon_renderer.py::TestWeaponRenderer::test_render_weapons_zoomed PASSED [ 70%]
+tests/Force_Field/test_weapon_renderer.py::TestWeaponRenderer::test_render_weapons_reloading PASSED [ 73%]
+tests/Force_Field/test_weapon_renderer.py::TestWeaponRenderer::test_render_weapons_overheated PASSED [ 76%]
+tests/Force_Field/test_weapon_renderer.py::TestWeaponRenderer::test_render_weapons_rocket_empty PASSED [ 80%]
+tests/Force_Field/test_weapon_renderer.py::TestWeaponRenderer::test_render_muzzle_flash[plasma] PASSED [ 83%]
+tests/Force_Field/test_weapon_renderer.py::TestWeaponRenderer::test_render_muzzle_flash[pulse] PASSED [ 86%]
+tests/Force_Field/test_weapon_renderer.py::TestWeaponRenderer::test_render_muzzle_flash[shotgun] PASSED [ 90%]
+tests/Force_Field/test_weapon_renderer.py::TestWeaponRenderer::test_render_muzzle_flash[minigun] PASSED [ 93%]
+tests/Force_Field/test_weapon_renderer.py::TestWeaponRenderer::test_render_muzzle_flash[bfg] PASSED [ 96%]
+tests/Force_Field/test_weapon_renderer.py::TestWeaponRenderer::test_render_muzzle_flash[unknown] PASSED [100%]
+
+============================= 30 passed in 0.94s ==============================
