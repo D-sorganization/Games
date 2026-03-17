@@ -58,6 +58,9 @@ class DummySurface:
     def get_height(self):
         return self._h
 
+    def __bool__(self):
+        return True
+
     def subsurface(self, rect):
         return DummySurface((rect[2], rect[3]))
 
@@ -188,7 +191,7 @@ class TestRaycasterInit:
         screen = DummySurface((800, 600))
         player = MagicMock(angle=0.0, pitch=0.0, x=1.0, y=1.0, alive=True)
         raycaster.render_floor_ceiling(screen, player, 1)
-        raycaster.render_minimap(screen, player, [], [])
+        raycaster.render_minimap(screen, player, [])
 
     def test_projectile_effects(self, raycaster: Raycaster) -> None:
         rect = MagicMock()
@@ -208,3 +211,180 @@ class TestRaycasterInit:
         ]:
             proj = MagicMock(weapon_type=w)
             raycaster._draw_projectile_effect(proj, rect)
+
+    def test_get_cached_strip_large_height(self, raycaster: Raycaster) -> None:
+        """Test preventing memory crashes from large height values."""
+        assert raycaster._get_cached_strip("stone", 0, 20000) is None
+
+    def test_get_cached_strip_exception(self, raycaster: Raycaster) -> None:
+        """Test catching exceptions during scaling."""
+        with (
+            patch(
+                "games.shared.raycaster.pygame.transform.scale", side_effect=ValueError
+            ),
+            patch("games.shared.raycaster.pygame.error", ValueError, create=True),
+        ):
+            assert raycaster._get_cached_strip("stone", 0, 100) is None
+
+    def test_resolve_wall_theme_empty(self, raycaster: Raycaster) -> None:
+        """Test defaulting when theme walls are empty."""
+        raycaster.config.LEVEL_THEMES = [{"floor": (0, 0, 0)}]
+        colors = raycaster._resolve_wall_theme(1)
+        assert colors == {}
+
+    def test_perform_dda_loop_coverage(self, raycaster: Raycaster) -> None:
+        """Test _perform_dda_loop to hit out of bounds and max depth."""
+        import numpy as np
+
+        raycaster.num_rays = 3
+        raycaster.map_width = 2
+        raycaster.map_height = 2
+        raycaster.np_grid = np.array([[0, 0], [0, 1]], dtype=np.int8)
+
+        # Ray 0: Out of bounds immediately
+        # Ray 1: Stays at 0,0, never hits (step is 0, deltadist > 0)
+        # Ray 2: Hits the block at (1, 1)
+
+        map_x = np.array([-1, 0, 1])
+        map_y = np.array([-1, 0, 1])
+        side_dist_x = np.array([0.0, 0.0, 0.0])
+        side_dist_y = np.array([0.0, 0.0, 0.0])
+        delta_dist_x = np.array([1.0, 1.0, 1.0])
+        delta_dist_y = np.array([1.0, 1.0, 1.0])
+        step_x = np.array([1, 0, 0])
+        step_y = np.array([1, 0, 0])
+
+        hits, wall_types, side = raycaster._perform_dda_loop(
+            map_x,
+            map_y,
+            side_dist_x,
+            side_dist_y,
+            delta_dist_x,
+            delta_dist_y,
+            step_x,
+            step_y,
+        )
+        assert hits[0]  # OOB
+        assert not hits[1]  # Never hit
+        assert hits[2]  # Hit
+        assert wall_types[2] == 1
+
+    def test_minimap_features(self, raycaster: Raycaster) -> None:
+        """Test minimap with visited cells, portals, and bots."""
+        screen = DummySurface((800, 600))
+        player = MagicMock(angle=0.0, pitch=0.0, x=1.0, y=1.0, alive=True)
+        raycaster.minimap_surface = DummySurface((64, 64))
+        raycaster.config.CYAN = (0, 255, 255)
+        raycaster.config.ENEMY_TYPES = {"demon": {"visual_style": "default"}}
+
+        bot = MagicMock(x=1.5, y=1.5, alive=True, enemy_type="demon")
+        visited = set([(1, 1)])
+        portal = {"x": 1.0, "y": 1.0}
+
+        raycaster.render_minimap(
+            screen,
+            player,
+            [bot],
+            visited_cells=visited,
+            portal=portal,
+        )
+        # Call again to test fog surface caching condition doesn't crash
+        raycaster.render_minimap(
+            screen,
+            player,
+            [bot],
+            visited_cells=visited,
+            portal=portal,
+        )
+
+        # Test falsy minimap_surface
+        raycaster.minimap_surface = []  # type: ignore
+        raycaster.render_minimap(
+            screen,
+            player,
+            [bot],
+            visited_cells=visited,
+            portal=portal,
+        )
+
+    def test_blit_strip_scaled_coverage(self, raycaster: Raycaster) -> None:
+        """Test fallback _blit_strip_scaled logic."""
+        sprite_surf = DummySurface((32, 32))
+        sprite_surf.subsurface = MagicMock(return_value=DummySurface((5, 32)))  # type: ignore
+        raycaster.view_surface = DummySurface((800, 600))
+        raycaster._blit_strip_scaled(
+            sprite_surface=sprite_surf,  # type: ignore
+            visible_runs=[(10, 20), (30, 40)],
+            target_width=100,
+            target_height=100,
+            sprite_ray_x=15.0,
+            sprite_ray_width=50.0,
+            sprite_y=200.0,
+            visual_scale=1.0,
+        )
+
+        # Test 0 width run
+        raycaster._blit_strip_scaled(
+            sprite_surface=sprite_surf,  # type: ignore
+            visible_runs=[(10, 10)],
+            target_width=100,
+            target_height=100,
+            sprite_ray_x=15.0,
+            sprite_ray_width=50.0,
+            sprite_y=200.0,
+            visual_scale=1.0,
+        )
+
+        with patch("games.shared.raycaster.pygame.error", ValueError, create=True):
+            # Test exception
+            sprite_surf.subsurface.side_effect = ValueError  # type: ignore
+            raycaster._blit_strip_scaled(
+                sprite_surface=sprite_surf,  # type: ignore
+                visible_runs=[(10, 20)],
+                target_width=100,
+                target_height=100,
+                sprite_ray_x=15.0,
+                sprite_ray_width=50.0,
+                sprite_y=200.0,
+                visual_scale=1.0,
+            )
+
+    def test_draw_single_projectile(self, raycaster: Raycaster) -> None:
+        """Test drawing projectile with occlusion."""
+        import numpy as np
+
+        player = MagicMock(x=1.0, y=1.0, angle=0.0, pitch=0)
+        proj = MagicMock(
+            x=2.0, y=1.0, alive=True, weapon_type="plasma", color=(255, 0, 0)
+        )
+        raycaster.z_buffer = np.full(800, 5.0)
+        raycaster.view_surface = DummySurface((800, 600))
+
+        with patch("games.shared.raycaster.pygame.error", ValueError, create=True):
+            # Drawn
+            raycaster._draw_single_projectile(
+                player, proj, dist=2.0, angle=0.0, half_fov=0.5, view_offset_y=0.0
+            )
+
+            # Occluded
+            raycaster._draw_single_projectile(
+                player, proj, dist=10.0, angle=0.0, half_fov=0.5, view_offset_y=0.0
+            )
+
+            # Out of bounds
+            raycaster._draw_single_projectile(
+                player, proj, dist=2.0, angle=3.14, half_fov=0.5, view_offset_y=0.0
+            )
+
+    def test_floor_ceiling_coverage(self, raycaster: Raycaster) -> None:
+        """Test floor ceiling generation and scaling conditions."""
+        screen = DummySurface((800, 600))
+        player = MagicMock(angle=0.0, pitch=100, x=1.0, y=1.0, alive=True)
+        raycaster._scaled_background_surface = None
+        raycaster._background_surface = DummySurface((800, 600))
+        raycaster.stars = [(10, 10, 2, (255, 255, 255))]
+        raycaster.render_floor_ceiling(screen, player, 1, view_offset_y=50.0)
+
+        # Change horizon
+        player.pitch = -400
+        raycaster.render_floor_ceiling(screen, player, 1, view_offset_y=-50.0)

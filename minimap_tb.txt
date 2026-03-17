@@ -1,0 +1,43 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.5, pytest-8.4.1, pluggy-1.6.0
+PySide6 6.10.2 -- Qt runtime 6.10.2 -- Qt compiled 6.10.2
+rootdir: C:\Users\diete\Repositories\Games
+configfile: pyproject.toml
+plugins: anyio-4.9.0, hypothesis-6.151.9, asyncio-1.3.0, cov-7.0.0, mock-3.15.1, qt-4.5.0, timeout-2.3.1, xdist-3.8.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 1 item
+
+tests\shared\test_raycaster.py F                                         [100%]
+
+================================== FAILURES ===================================
+___________________ TestRaycasterInit.test_minimap_features ___________________
+
+self = <tests.shared.test_raycaster.TestRaycasterInit object at 0x000002115746B930>
+raycaster = <games.shared.raycaster.Raycaster object at 0x00000211573D23C0>
+
+    def test_minimap_features(self, raycaster: Raycaster) -> None:
+        """Test minimap with visited cells, portals, and bots."""
+        screen = DummySurface((800, 600))
+        player = MagicMock(angle=0.0, pitch=0.0, x=1.0, y=1.0, alive=True)
+        raycaster.minimap_surface = DummySurface((64, 64))
+        raycaster.config.CYAN = (0, 255, 255)
+        raycaster.config.ENEMY_TYPES = {"demon": {"visual_style": "default"}}
+    
+        bot = MagicMock(x=1.5, y=1.5, alive=True, enemy_type="demon")
+        visited = set([(1, 1)])
+        portal = {"x": 1.0, "y": 1.0}
+    
+>       raycaster.render_minimap(
+            screen,
+            player,
+            [bot],
+            [],
+            visited_cells=visited,
+            portal=portal,
+        )
+E       TypeError: Raycaster.render_minimap() got multiple values for argument 'visited_cells'
+
+tests\shared\test_raycaster.py:281: TypeError
+=========================== short test summary info ===========================
+FAILED tests/shared/test_raycaster.py::TestRaycasterInit::test_minimap_features
+============================== 1 failed in 0.78s ==============================

@@ -300,9 +300,6 @@ class Raycaster:
         if self.game_map.grid is not self.grid:
             self.grid = self.game_map.grid
             self.np_grid = np.array(self.game_map.grid, dtype=np.int8)
-        elif self.game_map.grid != self.grid:
-            self.grid = self.game_map.grid
-            self.np_grid = np.array(self.game_map.grid, dtype=np.int8)
 
     def _calculate_rays(self, player: Player) -> tuple[
         np.ndarray[Any, np.dtype[Any]],
@@ -603,7 +600,9 @@ class Raycaster:
         level_themes = self.config.LEVEL_THEMES or []
         theme_idx = (level - 1) % len(level_themes) if level_themes else 0
         theme = level_themes[theme_idx] if level_themes else None
-        wall_colors: dict[int, tuple[int, int, int]] = theme["walls"] if theme else {}
+        wall_colors: dict[int, tuple[int, int, int]] = (
+            theme.get("walls", {}) if theme else {}
+        )
         self._cached_level = level
         self._cached_wall_colors = wall_colors
         return wall_colors
