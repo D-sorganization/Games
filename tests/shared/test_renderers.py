@@ -124,6 +124,11 @@ class TestRenderers:
         )
 
         mock_item.enemy_type = "bomb_item"
+        mock_random.return_value = 0.1
+        renderer.render(
+            mock_surface, mock_item, 100, 100, 50, 50, (0, 255, 0), base_config
+        )
+        mock_random.return_value = 0.9
         renderer.render(
             mock_surface, mock_item, 100, 100, 50, 50, (0, 255, 0), base_config
         )
