@@ -91,3 +91,15 @@ class TestBotRenderer:
         self, mock_get_renderer, mock_screen, mock_bot, base_config
     ):
         BotRenderer.render_sprite(mock_screen, mock_bot, 100, 100, 50, base_config)
+
+    @patch(
+        "games.shared.bot_renderer.BotStyleRendererFactory.get_renderer",
+        return_value=None,
+    )
+    def test_render_sprite_missing_item_renderers(
+        self, mock_get_renderer, mock_screen, mock_bot, base_config
+    ):
+        mock_bot.enemy_type = "health_pack"
+        BotRenderer.render_sprite(mock_screen, mock_bot, 100, 100, 50, base_config)
+        mock_bot.enemy_type = "pickup_shotgun"
+        BotRenderer.render_sprite(mock_screen, mock_bot, 100, 100, 50, base_config)
