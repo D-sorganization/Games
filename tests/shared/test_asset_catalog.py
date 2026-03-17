@@ -1,6 +1,7 @@
 """Tests for AssetCatalog — path resolution, JSON loading, caching."""
 
 import json
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -93,6 +94,131 @@ class TestTextLoading:
     def test_load_text_nonexistent(self, tmp_path):
         catalog = AssetCatalog(tmp_path)
         assert catalog.load_text("nope.txt") is None
+
+    def test_load_text_cache_hit(self, tmp_path):
+        assets = tmp_path / "assets"
+        assets.mkdir()
+        (assets / "readme.txt").write_text("hello world", encoding="utf-8")
+        catalog = AssetCatalog(tmp_path)
+        first = catalog.load_text("readme.txt")
+        second = catalog.load_text("readme.txt")
+        assert first is second
+
+    @patch("pathlib.Path.read_text")
+    def test_load_text_oserror(self, mock_read, tmp_path):
+        mock_read.side_effect = OSError("Access denied")
+        assets = tmp_path / "assets"
+        assets.mkdir()
+        (assets / "err.txt").write_text("hello", encoding="utf-8")
+        catalog = AssetCatalog(tmp_path)
+        assert catalog.load_text("err.txt") is None
+
+
+# --- Sound Loading ---
+
+class TestSoundLoading:
+    @patch("pygame.mixer.Sound")
+    def test_load_sound_success(self, mock_sound_cls, tmp_path):
+        mock_sound_instance = MagicMock()
+        mock_sound_cls.return_value = mock_sound_instance
+
+        sounds = tmp_path / "assets" / "sounds"
+        sounds.mkdir(parents=True)
+        (sounds / "jump.wav").write_text("dummy audio", encoding="utf-8")
+
+        catalog = AssetCatalog(tmp_path)
+        result = catalog.load_sound("jump.wav", volume=0.5)
+
+        assert result is mock_sound_instance
+        mock_sound_instance.set_volume.assert_called_with(0.5)
+
+    def test_load_sound_nonexistent(self, tmp_path):
+        catalog = AssetCatalog(tmp_path)
+        assert catalog.load_sound("nope.wav") is None
+
+    @patch("pygame.mixer.Sound")
+    def test_load_sound_cache_hit(self, mock_sound_cls, tmp_path):
+        mock_sound_cls.return_value = MagicMock()
+        sounds = tmp_path / "assets" / "sounds"
+        sounds.mkdir(parents=True)
+        (sounds / "jump.wav").write_text("dummy", encoding="utf-8")
+        catalog = AssetCatalog(tmp_path)
+        first = catalog.load_sound("jump.wav")
+        second = catalog.load_sound("jump.wav")
+        assert first is second
+
+    @patch("pygame.mixer.Sound")
+    def test_load_sound_exception(self, mock_sound_cls, tmp_path):
+        mock_sound_cls.side_effect = Exception("Pygame error")
+        sounds = tmp_path / "assets" / "sounds"
+        sounds.mkdir(parents=True)
+        (sounds / "bad.wav").write_text("dummy", encoding="utf-8")
+
+        catalog = AssetCatalog(tmp_path)
+        assert catalog.load_sound("bad.wav") is None
+
+
+# --- Image Loading ---
+
+class TestImageLoading:
+    @patch("pygame.image.load")
+    def test_load_image_success_alpha(self, mock_load, tmp_path):
+        mock_surf = MagicMock()
+        mock_load.return_value = mock_surf
+        mock_surf.convert_alpha.return_value = "surface_alpha"
+
+        images = tmp_path / "assets" / "images"
+        images.mkdir(parents=True)
+        (images / "hero.png").write_text("dummy", encoding="utf-8")
+
+        catalog = AssetCatalog(tmp_path)
+        result = catalog.load_image("hero.png", alpha=True)
+
+        assert result == "surface_alpha"
+        mock_surf.convert_alpha.assert_called_once()
+
+    @patch("pygame.image.load")
+    def test_load_image_success_no_alpha(self, mock_load, tmp_path):
+        mock_surf = MagicMock()
+        mock_load.return_value = mock_surf
+        mock_surf.convert.return_value = "surface_no_alpha"
+
+        images = tmp_path / "assets" / "images"
+        images.mkdir(parents=True)
+        (images / "bg.png").write_text("dummy", encoding="utf-8")
+
+        catalog = AssetCatalog(tmp_path)
+        result = catalog.load_image("bg.png", alpha=False)
+
+        assert result == "surface_no_alpha"
+        mock_surf.convert.assert_called_once()
+
+    def test_load_image_nonexistent(self, tmp_path):
+        catalog = AssetCatalog(tmp_path)
+        assert catalog.load_image("nope.png") is None
+
+    @patch("pygame.image.load")
+    def test_load_image_cache_hit(self, mock_load, tmp_path):
+        mock_surf = MagicMock()
+        mock_load.return_value = mock_surf
+        mock_surf.convert_alpha.return_value = "surface_alpha"
+        images = tmp_path / "assets" / "images"
+        images.mkdir(parents=True)
+        (images / "hero.png").write_text("dummy", encoding="utf-8")
+        catalog = AssetCatalog(tmp_path)
+        first = catalog.load_image("hero.png")
+        second = catalog.load_image("hero.png")
+        assert first is second
+
+    @patch("pygame.image.load")
+    def test_load_image_exception(self, mock_load, tmp_path):
+        mock_load.side_effect = Exception("Pygame error")
+        images = tmp_path / "assets" / "images"
+        images.mkdir(parents=True)
+        (images / "bad.png").write_text("dummy", encoding="utf-8")
+
+        catalog = AssetCatalog(tmp_path)
+        assert catalog.load_image("bad.png") is None
 
 
 # --- Caching ---

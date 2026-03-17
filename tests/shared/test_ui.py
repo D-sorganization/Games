@@ -181,9 +181,8 @@ class TestButtonDraw:
 
     def test_button_draw(self) -> None:
         """Button draw should call pygame methods."""
-        import pygame
 
-        with patch.object(pygame.draw, "rect"):
+        with patch("games.shared.ui.pygame.draw.rect", create=True):
             btn = Button(0, 0, 100, 50, "Test", (100, 100, 100))
             screen = MagicMock()
             font = MagicMock()
@@ -198,11 +197,10 @@ class TestButtonDraw:
 
         mock_surf = MagicMock()
         mock_surf.get_rect.return_value = MockRect()
-        
-        with patch.object(pygame.draw, "rect"), \
-             patch.object(pygame.draw, "circle"), \
-             patch.object(pygame.draw, "line"), \
-             patch("pygame.Surface", return_value=mock_surf):
+        with patch("games.shared.ui.pygame.draw.rect", create=True), \
+             patch("games.shared.ui.pygame.draw.circle", create=True), \
+             patch("games.shared.ui.pygame.draw.line", create=True), \
+             patch("games.shared.ui.pygame.Surface", return_value=mock_surf):
 
             btn = BloodButton(0, 0, 200, 50, "Play")
             screen = MagicMock()
@@ -216,3 +214,6 @@ class TestButtonDraw:
             assert pygame.draw.circle.called
             assert pygame.draw.line.called
             assert screen.blit.called
+
+            btn.hovered = True
+            btn.draw(screen, font)
