@@ -18,7 +18,7 @@ on:
 
 jobs:
   control:
-    runs-on: d-sorg-fleet-4core
+    runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:

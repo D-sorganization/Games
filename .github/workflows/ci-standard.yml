@@ -29,7 +29,7 @@ concurrency:
 
 jobs:
   quality-gate:
-    runs-on: d-sorg-fleet-4core
+    runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v6
@@ -106,7 +106,7 @@ jobs:
 
   # Assessment E: Security scanning for dependency vulnerabilities
   security-scan:
-    runs-on: d-sorg-fleet-4core
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
@@ -120,7 +120,7 @@ jobs:
 
   tests:
     needs: quality-gate
-    runs-on: d-sorg-fleet-4core
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         python: ["3.11"]
@@ -153,7 +153,7 @@ jobs:
   # Enforces: format (rustfmt), lint (clippy), tests (cargo test), audit.
   # =============================================================================
   rust-quality-gate:
-    runs-on: d-sorg-fleet-4core
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v6

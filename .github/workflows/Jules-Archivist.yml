@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   archive-tasks:
-    runs-on: d-sorg-fleet-4core
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v6
