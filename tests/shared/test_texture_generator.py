@@ -95,3 +95,34 @@ class TestTextureGenerator:
     ):
         with pytest.raises(ContractViolation):
             TextureGenerator.generate_stone(width, height)
+
+    def test_generate_metal_small(
+        self, mock_pygame_surfarray, mock_pygame_surface
+    ):
+        # Trigger out of bounds check for rivets (152->147)
+        surf = TextureGenerator.generate_metal(5, 5)
+        assert surf is not None
+
+    def test_generate_hidden_out_of_bounds(
+        self, mock_pygame_surfarray, mock_pygame_surface
+    ):
+        # Trigger crack going out of bounds (217->224, 221->219)
+        with patch("games.shared.texture_generator.random.randint", return_value=-10):
+            surf = TextureGenerator.generate_hidden(2, 30)
+            assert surf is not None
+
+    def test_generate_textures_already_init(
+        self, mock_pygame_surfarray, mock_pygame_surface
+    ):
+        # Trigger true branch of pygame.get_init() (233->236)
+        with patch(
+            "games.shared.texture_generator.pygame.get_init",
+            return_value=True,
+            create=True,
+        ):
+            with patch(
+                "games.shared.texture_generator.pygame.init", create=True
+            ) as mock_init:
+                textures = TextureGenerator.generate_textures()
+                assert not mock_init.called
+                assert "brick" in textures
