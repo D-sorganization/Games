@@ -449,3 +449,139 @@ class TestCheckShotHit:
         )
         assert bot.health < 100
         assert mgr.particle_system.add_particle.called
+
+
+class TestCombatManagerEdgeCases:
+    """Detailed edge-case tests to reach 100% coverage."""
+
+    def test_check_shot_hit_edge_cases(self) -> None:
+        mgr = CombatManagerBase(
+            entity_manager=_make_entity_manager(),
+            particle_system=MagicMock(),
+            sound_manager=MagicMock(),
+            constants=_make_constants(),
+        )
+        player = SimpleNamespace(
+            x=0.0,
+            y=0.0,
+            angle=0.0,
+            zoomed=False,
+            get_current_weapon_range=lambda: 100.0,
+            get_current_weapon_damage=lambda: 10,
+        )
+        bot_dead = _make_bot(x=10.0, y=0.0, alive=False)
+        bot_far = _make_bot(x=150.0, y=0.0, alive=True)
+        bot_behind = _make_bot(x=-10.0, y=-10.0, alive=True)
+        bot_wrap = _make_bot(x=-10.0, y=10.0, alive=True)
+
+        # Add two bots in line of fire, one further, to hit distance
+        # < closest_dist false branch 166->144
+        bot_close = _make_bot(x=5.0, y=0.0, alive=True)
+        bot_further_in_line = _make_bot(x=10.0, y=0.0, alive=True)
+
+        mock_rc = MagicMock()
+        # Make wall dist > weapon_range to hit 135
+        mock_rc.cast_ray.return_value = (200.0, 0, 0, 0, 0)
+
+        mgr.check_shot_hit(
+            player,
+            mock_rc,
+            [bot_dead, bot_far, bot_behind, bot_wrap, bot_close, bot_further_in_line],
+            [],
+            angle_offset=0.1,
+        )
+
+        # Exception
+        mgr.check_shot_hit(None, mock_rc, [], [])
+
+    def test_handle_secondary_hit_exception(self) -> None:
+        mgr = CombatManagerBase(
+            entity_manager=_make_entity_manager(),
+            particle_system=MagicMock(),
+            sound_manager=MagicMock(),
+            constants=_make_constants(),
+        )
+        mgr.explode_laser = MagicMock(side_effect=Exception("Explode error"))
+        player = SimpleNamespace(x=0.0, y=0.0, angle=0.0)
+        bot = _make_bot(x=5.0, y=5.0)
+        mgr._handle_secondary_hit(player, bot, 5.0, 50.0, [])
+        assert mgr.particle_system.add_laser.called
+
+    def test_apply_hit_damage_death_and_no_show_damage(self) -> None:
+        mgr = CombatManagerBase(
+            entity_manager=_make_entity_manager(),
+            particle_system=MagicMock(),
+            sound_manager=MagicMock(),
+            constants=_make_constants(),
+        )
+        # To hit angle_diff > math.pi (262) and bot_angle < 0 (258),
+        # player.angle = 0.1, bot_angle = 2*pi - ~0.1.
+        # Bot at x=10, y=-1 -> bot_angle is ~ -0.1 rad.
+        bot = _make_bot(x=10.0, y=-1.0, alive=True, health=10)
+        player = SimpleNamespace(x=0.0, y=0.0, angle=0.1)
+        mgr._apply_hit_damage(
+            player,
+            bot,
+            distance=5.0,
+            weapon_range=100.0,
+            base_damage=50,
+            is_headshot=False,
+            damage_texts=[],
+            show_damage=False,
+        )
+        assert not bot.alive
+
+    def test_handle_bomb_explosion_exception_and_tank_bot(self) -> None:
+        bot_tank = _make_bot(x=4.0, y=4.0, health=5000)
+        bot_far = _make_bot(x=20.0, y=20.0)
+        em = _make_entity_manager([bot_tank, bot_far])
+        mgr = CombatManagerBase(
+            entity_manager=em,
+            particle_system=MagicMock(),
+            sound_manager=MagicMock(
+                play_sound=MagicMock(side_effect=Exception("no sound"))
+            ),
+            constants=_make_constants(BOMB_RADIUS=10.0),
+        )
+        player = SimpleNamespace(x=0.0, y=0.0)
+        mgr.handle_bomb_explosion(player, [bot_tank, bot_far], [])
+        assert bot_tank.alive  # Survives 1000 dmg, coverage for bot dies = False
+
+    def test_explode_laser_exception(self) -> None:
+        mgr = CombatManagerBase(
+            entity_manager=_make_entity_manager(),
+            particle_system=MagicMock(
+                add_world_explosion=MagicMock(side_effect=Exception("error"))
+            ),
+            sound_manager=MagicMock(
+                play_sound=MagicMock(side_effect=Exception("no sound"))
+            ),
+            constants=_make_constants(),
+        )
+        mgr.explode_laser(0.0, 0.0, [])
+
+        bot_killed = _make_bot(x=1.0, y=1.0, health=10)
+        bot_survives = _make_bot(x=2.0, y=2.0, health=1000)  # Survived laser 500 dmg
+        mgr.entity_manager.bots = [bot_killed, bot_survives]
+        mgr.particle_system = MagicMock()
+        mgr.sound_manager = MagicMock()
+        mgr.explode_laser(0.0, 0.0, [])
+        assert not bot_killed.alive
+        assert bot_survives.alive
+
+    def test_explode_generic_edge_cases(self) -> None:
+        bot_tank = _make_bot(x=1.0, y=1.0, health=5000)
+        bot_dead = _make_bot(alive=False)
+        bot_far = _make_bot(x=100.0, y=100.0)
+        mgr = CombatManagerBase(
+            entity_manager=_make_entity_manager([bot_tank, bot_dead, bot_far]),
+            particle_system=MagicMock(),
+            sound_manager=MagicMock(
+                play_sound=MagicMock(side_effect=Exception("no sound"))
+            ),
+            constants=_make_constants(),
+        )
+        projectile = SimpleNamespace(x=1.0, y=1.0, damage=10, z=0.5)
+        player = SimpleNamespace(x=18.0, y=1.0)  # > 15 but < 20 dist
+        mgr.explode_generic(projectile, 5.0, "rocket", player, 0)
+        assert bot_tank.alive

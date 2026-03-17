@@ -96,9 +96,7 @@ class TestTextureGenerator:
         with pytest.raises(ContractViolation):
             TextureGenerator.generate_stone(width, height)
 
-    def test_generate_metal_small(
-        self, mock_pygame_surfarray, mock_pygame_surface
-    ):
+    def test_generate_metal_small(self, mock_pygame_surfarray, mock_pygame_surface):
         # Trigger out of bounds check for rivets (152->147)
         surf = TextureGenerator.generate_metal(5, 5)
         assert surf is not None

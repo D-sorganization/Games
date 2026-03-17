@@ -17,8 +17,12 @@ from __future__ import annotations
 
 import math
 import random
+from typing import TYPE_CHECKING
 
 from games.shared.contracts import validate_positive
+
+if TYPE_CHECKING:
+    import pygame
 
 
 class Particle:
@@ -334,7 +338,7 @@ class ParticleSystem:
         self.particles[:] = [p for p in self.particles if p.update()]
         self.world_particles[:] = [p for p in self.world_particles if p.update()]
 
-    def render(self, screen: object) -> None:
+    def render(self, screen: pygame.Surface) -> None:
         """Render all 2D particles to a pygame surface."""
         import pygame
 

@@ -114,6 +114,24 @@ class TestMapBaseGeneration:
         # Should have at least some open space
         assert open_count > 0
 
+    def test_generated_map_small_size_skips_rooms(self) -> None:
+        """MapBase with small size should skip adding rooms gracefully."""
+        m = MapBase(10)
+        assert getattr(m, "grid", None) is not None
+
+    def test_ensure_connectivity_handles_all_walls(self) -> None:
+        """If grid is entirely walls, ensure_connectivity forces center open."""
+
+        class WallGenerator:
+            def generate(self, grid: list[list[int]], size: int) -> None:
+                for i in range(size):
+                    for j in range(size):
+                        grid[i][j] = 1
+
+        m = MapBase(10, generator=WallGenerator())
+        cx, cy = 10 // 2, 10 // 2
+        assert m.grid[cy][cx] == 0
+
     def test_generated_map_is_connected(self) -> None:
         """All open cells should be reachable from each other (connectivity)."""
         m = MapBase(20)
@@ -152,6 +170,6 @@ class TestMapBaseGeneration:
             1 for i in range(m.size) for j in range(m.size) if m.grid[i][j] == 0
         )
 
-        assert len(visited) == total_open, (
-            f"Not all open cells are connected: {len(visited)}/{total_open}"
-        )
+        assert (
+            len(visited) == total_open
+        ), f"Not all open cells are connected: {len(visited)}/{total_open}"

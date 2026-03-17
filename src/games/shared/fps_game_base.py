@@ -42,6 +42,18 @@ class FPSGameBase:
         - self.entity_manager: EntityManager
     """
 
+    C: Any
+    render_scale: int
+    raycaster: Any
+    damage_texts: list[dict[str, Any]]
+    unlocked_weapons: set[str]
+    player: Any
+    game_map: Any
+    selected_map_size: int
+    portal: dict[str, Any] | None
+    last_death_pos: tuple[float, float] | None
+    entity_manager: Any
+
     # --- Properties ---
 
     @property

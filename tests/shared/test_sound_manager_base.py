@@ -159,25 +159,25 @@ class TestSoundManagerBase:
 
     def test_pause_all_calls_mixer(self) -> None:
         """pause_all should call pygame.mixer.pause when enabled."""
-        import pygame
-
         mgr = SoundManagerBase.__new__(SoundManagerBase)
         mgr.sound_enabled = True
         mgr.sounds = {}
         mgr.current_music = None
-        mgr.pause_all()
-        pygame.mixer.pause.assert_called()
+        with patch("games.shared.sound_manager_base.pygame.mixer.pause") as mock_pause:
+            mgr.pause_all()
+            mock_pause.assert_called()
 
     def test_unpause_all_calls_mixer(self) -> None:
         """unpause_all should call pygame.mixer.unpause when enabled."""
-        import pygame
-
         mgr = SoundManagerBase.__new__(SoundManagerBase)
         mgr.sound_enabled = True
         mgr.sounds = {}
         mgr.current_music = None
-        mgr.unpause_all()
-        pygame.mixer.unpause.assert_called()
+        with patch(
+            "games.shared.sound_manager_base.pygame.mixer.unpause"
+        ) as mock_unpause:
+            mgr.unpause_all()
+            mock_unpause.assert_called()
 
     def test_init_calls_mixer_and_load_assets(self) -> None:
         """__init__ configures pygame.mixer and calls load_assets."""

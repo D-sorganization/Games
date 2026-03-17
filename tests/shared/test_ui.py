@@ -193,7 +193,8 @@ class TestButtonDraw:
         assert screen.blit.called
         assert font.render.called
 
-    def test_blood_button_draw(self) -> None:
+    @patch("games.shared.ui.pygame.Surface")
+    def test_blood_button_draw(self, mock_surface: MagicMock) -> None:
         """BloodButton.draw should call pygame methods."""
         import pygame
 
@@ -204,7 +205,7 @@ class TestButtonDraw:
 
         mock_surf = MagicMock()
         mock_surf.get_rect.return_value = MockRect()
-        pygame.Surface = MagicMock(return_value=mock_surf)
+        mock_surface.return_value = mock_surf
 
         btn = BloodButton(0, 0, 200, 50, "Play")
         screen = MagicMock()
@@ -219,7 +220,8 @@ class TestButtonDraw:
         assert pygame.draw.line.called
         assert screen.blit.called
 
-    def test_blood_button_draw_hovered(self) -> None:
+    @patch("games.shared.ui.pygame.Surface")
+    def test_blood_button_draw_hovered(self, mock_surface: MagicMock) -> None:
         """BloodButton.draw should handle hovered state."""
         import pygame
 
@@ -228,7 +230,7 @@ class TestButtonDraw:
         pygame.draw.line = MagicMock()
         mock_surf = MagicMock()
         mock_surf.get_rect.return_value = MockRect()
-        pygame.Surface = MagicMock(return_value=mock_surf)
+        mock_surface.return_value = mock_surf
 
         btn = BloodButton(0, 0, 200, 50, "Play")
         btn.hovered = True
