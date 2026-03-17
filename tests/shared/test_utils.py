@@ -77,6 +77,19 @@ class TestCastRayDda:
         result = cast_ray_dda(5.0, 5.0, 0.0, open_map)
         assert len(result) == 7
 
+    def test_cast_ray_out_of_bounds(self) -> None:
+        """Ray cast exiting map bounds should be caught as wall."""
+        # Provide a 2x2 map with NO borders
+        grid = [[0, 0], [0, 0]]
+        no_wall_map = MockMap(grid)
+
+        # Cast ray outside
+        dist, wall_type, hit_x, hit_y, side, map_x, map_y = cast_ray_dda(
+            0.5, 0.5, 0.0, no_wall_map, max_dist=10.0
+        )
+        assert wall_type == 1  # Out of bounds forced wall_type to 1
+        assert hit_x > 1.5
+
 
 class TestHasLineOfSight:
     """Tests for the has_line_of_sight function."""
@@ -184,6 +197,40 @@ class TestTryMoveEntity:
         try_move_entity(entity, -1.0, 1.0, open_map, [])
         assert entity.x == pytest.approx(1.5)
         assert entity.y == pytest.approx(6.0)
+
+    def test_try_move_quick_check_fails(self, open_map: MockMap) -> None:
+        """Obstacles far away should fail quick check."""
+        entity = MockEntity(5.0, 5.0)
+        ob_far_x = MockEntity(10.0, 5.0)  # far on x
+        ob_far_y = MockEntity(5.5, 10.0)  # far on y
+        try_move_entity(entity, 0.5, 0.0, open_map, [ob_far_x, ob_far_y], radius=0.5)
+        assert entity.x == pytest.approx(5.5)
+
+    def test_try_move_distance_squared_fails(self, open_map: MockMap) -> None:
+        """Obstacles that pass quick check but fail squared distance check."""
+        entity = MockEntity(5.0, 5.0)
+        # ob diff = (0.4, 0.4) so abs < 0.5 but sum of squares 0.32 >= 0.25 (collision false!)
+        # Wait, if collision is FALSE, it moves! But we want d_sq to be large enough to skip collision.
+        # Actually to trigger the False branch of `if d_sq < col_sq`, we need d_sq >= col_sq.
+        # That means it evaluates to False, and NO collision occurs, so it skips `collision = True` and keeps going.
+        ob_corner = MockEntity(5.9, 5.4)
+        try_move_entity(entity, 0.5, 0.5, open_map, [ob_corner], radius=0.5)
+        # For X move: new_x=5.5, entity.y=5.0. ob_x=5.9, ob_y=5.4.
+        # dx=0.4, dy=0.4. d_sq=0.32 >= 0.25. False branch! X move succeeds.
+        assert entity.x == pytest.approx(5.5)
+        # For Y move: entity.x=5.5 (now), new_y=5.5.
+        # dx=0.4, dy=0.1. d_sq=0.17 < 0.25. True branch! Y move fails.
+        assert entity.y == pytest.approx(5.0)
+
+        # We also need a case where Y returns false to `d_sq < col_sq`, but X wasn't blocked.
+        # We can just start fresh
+        entity2 = MockEntity(5.0, 5.0)
+        ob2 = MockEntity(5.4, 5.9)
+        try_move_entity(entity2, 0.0, 0.5, open_map, [ob2], radius=0.5)
+        # For X move: dx=0, dy=0, new_x=5.0, entity.y=5.0.
+        # For Y move: entity.x=5.0, new_y=5.5. ob_x=5.4, ob_y=5.9.
+        # dx=0.4, dy=0.4. d_sq=0.32 >= 0.25. False branch! Y move succeeds.
+        assert entity2.y == pytest.approx(5.5)
 
 
 class TestUtilsContracts:
