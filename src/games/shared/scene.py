@@ -32,23 +32,23 @@ class Scene(Protocol):
 
     def on_enter(self) -> None:
         """Called when this scene becomes active."""
-        ...
+        ...  # pragma: no cover
 
     def on_exit(self) -> None:
         """Called when this scene is deactivated."""
-        ...
+        ...  # pragma: no cover
 
     def handle_events(self, events: list[Any]) -> str | None:
         """Process input events. Return scene name to transition, or None."""
-        ...
+        ...  # pragma: no cover
 
     def update(self) -> str | None:
         """Update scene logic. Return scene name to transition, or None."""
-        ...
+        ...  # pragma: no cover
 
     def render(self, screen: Any) -> None:
         """Render the scene to the given surface."""
-        ...
+        ...  # pragma: no cover
 
 
 class SceneManager:
