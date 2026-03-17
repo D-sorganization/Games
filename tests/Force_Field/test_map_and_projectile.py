@@ -13,8 +13,20 @@ class TestFFMap:
         assert len(m.grid[0]) == 20
 
     def test_is_valid_map_passes_quality_check(self) -> None:
-        m = Map(size=20)
+        """Validate that _is_valid_map correctly returns True when there
+        are enough walkable tiles (>= 15% of total)."""
+        from games.Force_Field.src.map import Map
+
+        # Create a Map and manually manipulate the grid to guarantee validity
+        m = Map(size=10)
+        m.grid = [[0] * 10 for _ in range(10)]  # 100% walkable
         assert m._is_valid_map() is True
+
+    def test_is_invalid_map_fails_quality_check(self) -> None:
+        """Verify _is_valid_map returns False when fewer than 15% are walkable."""
+        m = Map(size=10)
+        m.grid = [[1] * 10 for _ in range(10)]  # 0% walkable
+        assert m._is_valid_map() is False
 
     def test_grid_contains_walls_and_floors(self) -> None:
         """Map should have both wall (!=0) and floor (0) tiles."""
