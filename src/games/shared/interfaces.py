@@ -48,13 +48,13 @@ class Map(Protocol):
     size: int
 
     @property
-    def width(self) -> int: ...
+    def width(self) -> int: ...  # pragma: no cover
 
     @property
-    def height(self) -> int: ...
+    def height(self) -> int: ...  # pragma: no cover
 
-    def is_wall(self, x: float, y: float) -> bool: ...
-    def get_wall_type(self, x: float, y: float) -> int: ...
+    def is_wall(self, x: float, y: float) -> bool: ...  # pragma: no cover
+    def get_wall_type(self, x: float, y: float) -> int: ...  # pragma: no cover
 
 
 class LevelTheme(TypedDict):
@@ -80,7 +80,9 @@ class Bot(Protocol):
     frozen: bool
     mouth_open: bool
 
-    def take_damage(self, damage: int, is_headshot: bool = False) -> bool: ...
+    def take_damage(
+        self, damage: int, is_headshot: bool = False
+    ) -> bool: ...  # pragma: no cover
 
 
 @runtime_checkable
