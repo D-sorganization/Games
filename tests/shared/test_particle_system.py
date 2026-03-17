@@ -57,6 +57,22 @@ class TestParticle:
         assert rgba_mid[0] < 255  # Fading
         assert rgba_mid[2] > 0  # Blue increasing
 
+    def test_fade_color_same_as_color(self):
+        p = Particle(
+            0,
+            0,
+            color=(0, 255, 0),
+            fade_color=(0, 255, 0),
+            timer=10,
+        )
+        rgba = p.get_current_color()
+        assert rgba[0] == 0
+
+    def test_max_timer_zero(self):
+        p = Particle(0, 0, timer=0)
+        p.update()
+        assert p.size == p.initial_size
+
     def test_laser_type_no_movement(self):
         p = Particle(
             5,
@@ -189,3 +205,22 @@ class TestParticleSystem:
         ps.add_particle(0, 0)
         ps.add_world_particle(0, 0, 0, 0, 0, 0, (0, 0, 0))
         assert ps.particle_count == 2
+
+    def test_render_particles(self):
+        """Test rendering of all particle types."""
+        from unittest.mock import MagicMock, patch
+
+        ps = ParticleSystem()
+        ps.add_particle(10, 10, color=(255, 0, 0), size=5.0)  # Normal
+        ps.add_particle(10, 10, color=(0, 255, 0), size=0.0)  # Normal (invisible)
+        ps.add_laser((0, 0), (100, 100), (0, 255, 0))  # Laser
+        ps.add_trace((50, 50), (100, 0), (0, 0, 255))  # Trace
+
+        mock_screen = MagicMock()
+        mock_pygame = MagicMock()
+
+        with patch.dict("sys.modules", {"pygame": mock_pygame}):
+            ps.render(mock_screen)
+
+            assert mock_pygame.draw.rect.call_count == 1
+            assert mock_pygame.draw.line.call_count == 2
