@@ -212,7 +212,7 @@ class TestPlayerShooting:
         assert player.weapon_state["pistol"]["reloading"] is True
 
     def test_shoot_fails_empty_clip_no_reload(self, player: PlayerBase) -> None:
-        """When shoot detects empty clip initially, it triggers reload and returns False."""
+        """When shoot detects empty clip initially, it triggers reload and returns False."""  # noqa: E501
         player.switch_weapon("pistol")
         player.weapon_state["pistol"]["clip"] = 0
         result = player.shoot()
