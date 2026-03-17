@@ -53,6 +53,12 @@ class TestPositioned:
         with pytest.raises(ContractViolation):
             p.move_toward(1.0, 1.0, -1.0)
 
+    def test_move_toward_zero_distance(self):
+        p = Positioned(x=5.0, y=5.0)
+        p.move_toward(5.0, 5.0, 1.0) # distance is 0
+        assert p.x == 5.0
+        assert p.y == 5.0
+
 
 # --- HasHealth ---
 
@@ -140,6 +146,18 @@ class TestCollidable:
         b = Entity(x=10, y=0, radius=0.5)
         assert not a.overlaps(b)
 
+    def test_overlaps_without_positioned(self):
+        class JustCollidable(Collidable):
+            pass
+
+        class Entity(Positioned, Collidable):
+            pass
+
+        a = JustCollidable(radius=1.0)
+        b = Entity(x=1.0, y=1.0, radius=1.0)
+        assert not a.overlaps(b)
+        assert not b.overlaps(a)
+
     def test_zero_radius_raises(self):
         with pytest.raises(ContractViolation):
             Collidable(radius=0)
@@ -204,6 +222,15 @@ class TestHasVelocity:
         e.apply_friction(0.5)
         assert abs(e.vx - 5.0) < 1e-6
         assert abs(e.vy - 5.0) < 1e-6
+
+    def test_apply_velocity_without_positioned(self):
+        class JustVelocity(HasVelocity):
+            pass
+
+        e = JustVelocity()
+        e.vx = 5.0
+        e.apply_velocity() # Should do nothing safely
+        assert e.vx == 5.0
 
 
 # --- Composition ---
