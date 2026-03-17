@@ -70,7 +70,9 @@ class TestSoundManagerBase:
         mock_path.return_value = mock_path_instance
         mock_path_cwd = MagicMock()
         mock_path.cwd.return_value = mock_path_cwd
-        mock_path.return_value.resolve.return_value.parent.parent.__truediv__.return_value = mock_path_instance
+        mock_path.return_value.resolve.return_value.parent.parent.__truediv__.return_value = (
+            mock_path_instance
+        )
         mock_path_instance.__truediv__.return_value = mock_path_instance
 
         # Mock file exists
