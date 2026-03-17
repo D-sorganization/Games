@@ -191,6 +191,26 @@ class TestInvariant:
         f._internal_set(-1)  # Should not raise — private method
         assert f.value == -1
 
+    def test_invariant_ignores_non_callable_attributes(self) -> None:
+        """Invariant should ignore class attributes that are not callable."""
+
+        @invariant(lambda self: self.value >= 0, "value must be non-negative")
+        class TestClass:
+            """A class with non-callable public attributes."""
+            some_static_value = 42
+
+            def __init__(self) -> None:
+                self.value = 0
+
+            def increment(self) -> None:
+                self.value += 1
+
+        # The class should initialize fine, and some_static_value shouldn't cause issues
+        c = TestClass()
+        c.increment()
+        assert c.some_static_value == 42
+        assert c.value == 1
+
 
 class TestValidationUtilities:
     """Tests for standalone validation functions."""
