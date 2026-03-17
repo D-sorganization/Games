@@ -1,0 +1,95 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.5, pytest-8.4.1, pluggy-1.6.0
+PySide6 6.10.2 -- Qt runtime 6.10.2 -- Qt compiled 6.10.2
+rootdir: C:\Users\diete\Repositories\Games
+configfile: pyproject.toml
+plugins: anyio-4.9.0, hypothesis-6.151.9, asyncio-1.3.0, cov-7.0.0, mock-3.15.1, qt-4.5.0, timeout-2.3.1, xdist-3.8.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 654 items
+
+tests\shared\test_asset_catalog.py ...............                       [  2%]
+tests\shared\test_asset_catalog_extra.py ............                    [  4%]
+tests\shared\test_bot_base.py ..........................                 [  8%]
+tests\shared\test_bot_renderer.py ..........                             [  9%]
+tests\shared\test_combat_manager.py .............................        [ 14%]
+tests\shared\test_components.py .................................        [ 19%]
+tests\shared\test_config.py ......                                       [ 20%]
+tests\shared\test_constants.py ......................                    [ 23%]
+tests\shared\test_contracts.py ........................                  [ 27%]
+tests\shared\test_dbc_shared.py .............                            [ 29%]
+tests\shared\test_event_bus.py .....................                     [ 32%]
+tests\shared\test_fps_game_base.py ..........................            [ 36%]
+tests\shared\test_game_launcher.py ........                              [ 37%]
+tests\shared\test_game_renderer_base.py ..                               [ 37%]
+tests\shared\test_input_manager_base.py ..............                   [ 39%]
+tests\shared\test_interfaces.py ............                             [ 41%]
+tests\shared\test_map_base.py .................                          [ 44%]
+tests\shared\test_map_generators.py ................                     [ 46%]
+tests\shared\test_notes_workspace.py ................................... [ 52%]
+.                                                                        [ 52%]
+tests\shared\test_particle_system.py .......................             [ 55%]
+tests\shared\test_player_base.py ....................................... [ 61%]
+........................................                                 [ 67%]
+tests\shared\test_projectile_base.py ........................            [ 71%]
+tests\shared\test_raycaster.py .................                         [ 74%]
+tests\shared\test_renderers.py ...........                               [ 75%]
+tests\shared\test_scene.py ..............                                [ 77%]
+tests\shared\test_sound_manager_base.py .........................        [ 81%]
+tests\shared\test_spatial_grid.py .......................                [ 85%]
+tests\shared\test_spawn_manager.py ..................                    [ 88%]
+tests\shared\test_texture_generator.py .............                     [ 90%]
+tests\shared\test_ui.py ...................                              [ 92%]
+tests\shared\test_ui_renderer_base.py ..........                         [ 94%]
+tests\shared\test_utils.py ....................................          [100%]
+
+=============================== tests coverage ================================
+_______________ coverage: platform win32, python 3.13.5-final-0 _______________
+
+Name                                                   Stmts   Miss Branch BrPart  Cover   Missing
+--------------------------------------------------------------------------------------------------
+src\games\shared\__init__.py                               1      0      0      0   100%
+src\games\shared\asset_catalog.py                         94      0     18      0   100%
+src\games\shared\bot_base.py                              46      0      2      0   100%
+src\games\shared\bot_renderer.py                          58      0     20      0   100%
+src\games\shared\combat_manager.py                       217      0     82      0   100%
+src\games\shared\components.py                            82      0     14      0   100%
+src\games\shared\config.py                                26      0      0      0   100%
+src\games\shared\constants.py                             93      0      0      0   100%
+src\games\shared\contracts.py                             57      0     20      0   100%
+src\games\shared\event_bus.py                             19      0      2      0   100%
+src\games\shared\fps_game_base.py                        110      0     40      0   100%
+src\games\shared\game_launcher.py                         29      0      6      0   100%
+src\games\shared\game_renderer_base.py                    13      0      0      0   100%
+src\games\shared\input_manager_base.py                    50      0     16      0   100%
+src\games\shared\interfaces.py                            85      0      0      0   100%
+src\games\shared\map_base.py                              86      0     40      0   100%
+src\games\shared\map_generators.py                        57      0     32      0   100%
+src\games\shared\notes_workspace.py                      128      0     24      0   100%
+src\games\shared\particle_system.py                      120      0     22      0   100%
+src\games\shared\player_base.py                          183      0     80      0   100%
+src\games\shared\projectile_base.py                       44      0     10      0   100%
+src\games\shared\raycaster.py                            647     52    228     41    89%   451->461, 495, 533->531, 556, 560, 580, 592->exit, 674-677, 683-685, 692->698, 699-701, 717-728, 775, 779, 786, 788, 790->768, 849, 853->858, 855, 862->exit, 868-869, 907, 917, 922, 928, 961-962, 992->995, 995->998, 999-1000, 1053, 1067, 1107-1108, 1110-1111, 1118-1119, 1121, 1123->1113, 1215->exit, 1220-1221, 1330-1334, 1352->1368, 1383->exit, 1469->1479, 1480->1479, 1489->1479
+src\games\shared\renderers\__init__.py                    30      0      0      0   100%
+src\games\shared\renderers\baby_renderer.py               21      0      2      0   100%
+src\games\shared\renderers\ball_renderer.py               11      0      0      0   100%
+src\games\shared\renderers\base.py                         6      0      0      0   100%
+src\games\shared\renderers\beast_renderer.py              14      0      0      0   100%
+src\games\shared\renderers\cyber_demon_renderer.py        35      0      2      0   100%
+src\games\shared\renderers\factory.py                     10      0      0      0   100%
+src\games\shared\renderers\ghost_renderer.py              28      0      2      0   100%
+src\games\shared\renderers\item_renderer.py               42      0      8      0   100%
+src\games\shared\renderers\minigunner_renderer.py         22      0      2      0   100%
+src\games\shared\renderers\monster_renderer.py            47      0     14      0   100%
+src\games\shared\renderers\weapon_pickup_renderer.py      13      0      2      0   100%
+src\games\shared\scene.py                                 48      0     12      0   100%
+src\games\shared\sound_manager_base.py                    77      0     24      0   100%
+src\games\shared\spatial_grid.py                          33      0     10      0   100%
+src\games\shared\spawn_manager.py                         86      0     34      0   100%
+src\games\shared\texture_generator.py                    155      0     32      0   100%
+src\games\shared\ui.py                                    82      0     10      0   100%
+src\games\shared\ui_renderer_base.py                      91      0     20      0   100%
+src\games\shared\utils.py                                103      0     46      0   100%
+--------------------------------------------------------------------------------------------------
+TOTAL                                                   3199     52    876     41    98%
+Required test coverage of 25.0% reached. Total coverage: 97.57%
+============================= 654 passed in 3.78s =============================

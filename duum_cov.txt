@@ -1,0 +1,44 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.5, pytest-8.4.1, pluggy-1.6.0
+PySide6 6.10.2 -- Qt runtime 6.10.2 -- Qt compiled 6.10.2
+rootdir: C:\Users\diete\Repositories\Games
+configfile: pyproject.toml
+plugins: anyio-4.9.0, hypothesis-6.151.9, asyncio-1.3.0, cov-7.0.0, mock-3.15.1, qt-4.5.0, timeout-2.3.1, xdist-3.8.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 22 items
+
+src\games\Duum\tests\test_entity_manager.py ...                          [ 13%]
+src\games\Duum\tests\test_fps.py ...                                     [ 27%]
+src\games\Duum\tests\test_game_logic.py .......                          [ 59%]
+src\games\Duum\tests\test_ninja.py ..                                    [ 68%]
+src\games\Duum\tests\test_utils.py .......
+ERROR: Coverage failure: total of 14 is less than fail-under=25
+                                                                         [100%]
+
+=============================== tests coverage ================================
+_______________ coverage: platform win32, python 3.13.5-final-0 _______________
+
+Name                                    Stmts   Miss Branch BrPart  Cover   Missing
+-----------------------------------------------------------------------------------
+src\games\Duum\duum.py                      5      5      0      0     0%   6-14
+src\games\Duum\src\__init__.py              0      0      0      0   100%
+src\games\Duum\src\bot.py                 253    105     90     16    50%   112, 132-133, 138, 163-167, 173-174, 182-183, 201-247, 261->263, 269, 280-305, 315-338, 359-361, 366, 375-390, 412-438, 440->442, 442->446, 447->451, 450, 456, 468, 471
+src\games\Duum\src\combat_manager.py        7      7      0      0     0%   3-22
+src\games\Duum\src\constants.py           116      0     10      1    99%   170->169
+src\games\Duum\src\custom_types.py         11      0      0      0   100%
+src\games\Duum\src\entity_manager.py       85     60     32      0    21%   34-36, 44, 56-68, 72-124, 128, 132
+src\games\Duum\src\game.py                694    694    340      0     0%   1-1087
+src\games\Duum\src\input_manager.py         6      6      0      0     0%   1-13
+src\games\Duum\src\map.py                   6      0      0      0   100%
+src\games\Duum\src\particle_system.py      87     87     18      0     0%   1-272
+src\games\Duum\src\player.py               56     23     20      5    50%   38-41, 56, 66-83, 88, 91-92, 100
+src\games\Duum\src\projectile.py            2      0      0      0   100%
+src\games\Duum\src\renderer.py             75     75     20      0     0%   1-152
+src\games\Duum\src\sound.py                 4      4      0      0     0%   3-12
+src\games\Duum\src\spawn_manager.py        12     12      0      0     0%   3-35
+src\games\Duum\src\ui_renderer.py         459    459    108      0     0%   1-857
+src\games\Duum\src\weapon_renderer.py     138    138     42      0     0%   1-275
+-----------------------------------------------------------------------------------
+TOTAL                                    2016   1675    680     22    14%
+FAIL Required test coverage of 25.0% not reached. Total coverage: 14.06%
+============================= 22 passed in 0.98s ==============================

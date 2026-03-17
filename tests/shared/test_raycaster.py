@@ -388,3 +388,112 @@ class TestRaycasterInit:
         # Change horizon
         player.pitch = -400
         raycaster.render_floor_ceiling(screen, player, 1, view_offset_y=-50.0)
+
+    def test_render_walls_vectorized_coverage(self, raycaster: Raycaster) -> None:
+        import numpy as np
+
+        player = MagicMock(angle=0.0, pitch=0.0, x=1.0, y=1.0, alive=True)
+        distances = np.array([raycaster.config.MAX_DEPTH + 1.0, 5.0, 5.0])
+        wall_types = np.array([1, 0, 1])
+        wall_x_hits = np.array([0.5, 0.5, 0.5])
+        sides = np.array([0, 0, 0])
+        fisheye_factors = np.array([1.0, 1.0, 1.0])
+
+        raycaster.num_rays = 3
+        # Ensure solid wall rendering
+        raycaster.use_textures = False
+        raycaster._render_walls_vectorized(
+            distances=distances,
+            wall_types=wall_types,
+            wall_x_hits=wall_x_hits,
+            sides=sides,
+            player=player,
+            fisheye_factors=fisheye_factors,
+            level=1,
+            view_offset_y=0.0,
+            flash_intensity=0.0,
+        )
+
+        # Textured but missing from strips
+        raycaster.use_textures = True
+        raycaster.config.LEVEL_THEMES = [{"walls": {1: (255, 255, 255)}}]
+        raycaster._cached_level = -1
+        raycaster.texture_map = {1: "missing_texture"}
+        raycaster.texture_strips = {}
+        raycaster._render_walls_vectorized(
+            distances=distances,
+            wall_types=wall_types,
+            wall_x_hits=wall_x_hits,
+            sides=sides,
+            player=player,
+            fisheye_factors=fisheye_factors,
+            level=1,
+            view_offset_y=0.0,
+            flash_intensity=0.0,
+        )
+
+    def test_blit_view_to_screen_render_scale(self, raycaster: Raycaster) -> None:
+        screen = DummySurface((800, 600))
+        raycaster.render_scale = 2
+        raycaster._blit_view_to_screen(screen)
+
+    def test_render_textured_wall_specifics(self, raycaster: Raycaster) -> None:
+        """Test textured walls with shading, fog and edge cases."""
+        raycaster.config.LEVEL_THEMES = [{"walls": {1: (255, 255, 255)}}]
+        raycaster.texture_map = {1: "stone"}
+        raycaster.texture_strips = {"stone": [DummySurface((1, 32))]}
+        wall_strips = {1: raycaster.texture_strips["stone"]}
+        wall_colors = {1: (255, 255, 255)}
+        blits_sequence: list = []
+        view_surface = DummySurface((800, 600))
+
+        # Extreme height fallback
+        raycaster._render_textured_wall(
+            i=0,
+            wt=1,
+            h=9000,
+            top=0,
+            wall_x_hit=0.5,
+            shade=0.5,
+            fog=0.0,
+            wall_strips=wall_strips,
+            wall_colors=wall_colors,
+            view_surface=view_surface,
+            blits_sequence=blits_sequence,
+        )
+        assert len(blits_sequence) == 0
+
+        # Cached strip is None
+        with patch.object(raycaster, "_get_cached_strip", return_value=None):
+            raycaster._render_textured_wall(
+                i=0,
+                wt=1,
+                h=100,
+                top=0,
+                wall_x_hit=0.5,
+                shade=0.5,
+                fog=0.0,
+                wall_strips=wall_strips,
+                wall_colors=wall_colors,
+                view_surface=view_surface,
+                blits_sequence=blits_sequence,
+            )
+            assert len(blits_sequence) == 0
+
+        # Valid strip, with shade and fog alpha
+        surf = DummySurface((1, 100))
+        with patch.object(raycaster, "_get_cached_strip", return_value=surf):
+            raycaster._render_textured_wall(
+                i=0,
+                wt=1,
+                h=100,
+                top=0,
+                wall_x_hit=0.5,
+                shade=0.5,
+                fog=0.5,
+                wall_strips=wall_strips,
+                wall_colors=wall_colors,
+                view_surface=view_surface,
+                blits_sequence=blits_sequence,
+            )
+            assert len(blits_sequence) == 3
