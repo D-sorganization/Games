@@ -30,6 +30,7 @@ def setup_pygame_surface():
                 mock_smooth.return_value = mock_surf_instance
                 yield mock_surf_instance
 
+
 @pytest.fixture(autouse=True)
 def setup_pygame_draw():
     with patch("pygame.draw") as draw:

@@ -197,11 +197,12 @@ class TestButtonDraw:
 
         mock_surf = MagicMock()
         mock_surf.get_rect.return_value = MockRect()
-        with patch("games.shared.ui.pygame.draw.rect", create=True), \
-             patch("games.shared.ui.pygame.draw.circle", create=True), \
-             patch("games.shared.ui.pygame.draw.line", create=True), \
-             patch("games.shared.ui.pygame.Surface", return_value=mock_surf):
-
+        with (
+            patch("games.shared.ui.pygame.draw.rect", create=True),
+            patch("games.shared.ui.pygame.draw.circle", create=True),
+            patch("games.shared.ui.pygame.draw.line", create=True),
+            patch("games.shared.ui.pygame.Surface", return_value=mock_surf),
+        ):
             btn = BloodButton(0, 0, 200, 50, "Play")
             screen = MagicMock()
             font = MagicMock()

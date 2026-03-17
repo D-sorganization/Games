@@ -1,6 +1,5 @@
 from unittest.mock import MagicMock, patch
 
-import pygame
 import pytest
 
 from games.Force_Field.src.weapon_renderer import WeaponRenderer

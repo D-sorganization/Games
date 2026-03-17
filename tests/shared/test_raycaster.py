@@ -1,8 +1,8 @@
 import math
 from unittest.mock import MagicMock, patch
 
-import pytest
 import pygame
+import pytest
 
 from games.shared.config import RaycasterConfig
 from games.shared.raycaster import Raycaster
@@ -71,7 +71,7 @@ def mock_player():
 
 @pytest.fixture(autouse=True)
 def mock_pygame_surface():
-    """Mock pygame.Surface globally for these tests so we don't hit MagicMock spec errors."""
+    """Mock pygame.Surface globally so we don't hit MagicMock spec errors."""
     mock_surf = MagicMock()
     mock_surf.get_width.return_value = 800
     mock_surf.get_height.return_value = 600

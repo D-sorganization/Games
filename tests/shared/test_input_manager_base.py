@@ -125,26 +125,30 @@ class TestBindKey:
 
     def test_is_action_pressed(self) -> None:
         from unittest.mock import patch
+
         mgr = MockInputManager(config_file="__nonexistent__.json")
         mgr.bindings["forward"] = 2
 
         # Test pressed
-        with patch("games.shared.input_manager_base.pygame.key.get_pressed", return_value=[0, 0, 1, 0]):
+        _PRESSED = "games.shared.input_manager_base.pygame.key.get_pressed"
+        with patch(_PRESSED, return_value=[0, 0, 1, 0]):
             assert mgr.is_action_pressed("forward") is True
             assert mgr.is_action_pressed("back") is False
 
         # Test out of bounds / bad key
-        with patch("games.shared.input_manager_base.pygame.key.get_pressed", return_value=[0, 0]):
+        with patch(_PRESSED, return_value=[0, 0]):
             assert mgr.is_action_pressed("forward") is False
             assert mgr.is_action_pressed("unknown") is False
 
     def test_is_action_just_pressed(self) -> None:
         from unittest.mock import MagicMock
+
         mgr = MockInputManager(config_file="__nonexistent__.json")
         mgr.bindings["jump"] = 32
 
         # Make valid event
         import pygame
+
         ev = MagicMock()
         ev.type = pygame.KEYDOWN
         ev.key = 32
@@ -158,9 +162,11 @@ class TestBindKey:
 
     def test_get_key_name(self) -> None:
         from unittest.mock import patch
+
         mgr = MockInputManager(config_file="__nonexistent__.json")
         mgr.bindings["action1"] = 99
 
-        with patch("games.shared.input_manager_base.pygame.key.name", return_value="SPACE"):
+        _KEY_NAME = "games.shared.input_manager_base.pygame.key.name"
+        with patch(_KEY_NAME, return_value="SPACE"):
             assert mgr.get_key_name("action1") == "SPACE"
             assert mgr.get_key_name("unknown") == "None"

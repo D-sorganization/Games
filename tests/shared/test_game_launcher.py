@@ -81,9 +81,10 @@ class TestSetupLogging:
         import sys
         from unittest.mock import patch
 
-        with patch.object(sys, "frozen", True, create=True), \
-             patch.object(sys, "_MEIPASS", "/fake/mei/pass", create=True):
-
+        with (
+            patch.object(sys, "frozen", True, create=True),
+            patch.object(sys, "_MEIPASS", "/fake/mei/pass", create=True),
+        ):
             result = setup_game_path("dummy.py", use_frozen_path=True)
             assert str(result) == str(Path("/fake/mei/pass"))
 
@@ -109,13 +110,14 @@ class TestRunGame:
         mock_game_instance = MagicMock()
         mock_game_class.return_value = mock_game_instance
 
-        with patch("games.shared.game_launcher.setup_game_path") as mock_setup_path, \
-             patch("games.shared.game_launcher.setup_logging") as mock_setup_logging, \
-             patch("games.shared.game_launcher.pygame.init") as mock_pg_init, \
-             patch("games.shared.game_launcher.pygame.quit") as mock_pg_quit, \
-             patch("games.shared.game_launcher.sys.exit") as mock_sys_exit, \
-             patch.dict("os.environ", {}, clear=True):
-
+        with (
+            patch("games.shared.game_launcher.setup_game_path") as mock_setup_path,
+            patch("games.shared.game_launcher.setup_logging") as mock_setup_logging,
+            patch("games.shared.game_launcher.pygame.init") as mock_pg_init,
+            patch("games.shared.game_launcher.pygame.quit") as mock_pg_quit,
+            patch("games.shared.game_launcher.sys.exit") as mock_sys_exit,
+            patch.dict("os.environ", {}, clear=True),
+        ):
             run_game(mock_game_class, "dummy_file.py", center_window=True)
 
             mock_setup_path.assert_called_once_with("dummy_file.py", False)
@@ -127,6 +129,7 @@ class TestRunGame:
             mock_sys_exit.assert_called_once()
 
             import os
+
             assert os.environ.get("SDL_VIDEO_CENTERED") == "1"
 
     def test_run_game_keyboard_interrupt(self) -> None:
@@ -137,13 +140,14 @@ class TestRunGame:
         mock_game_class = MagicMock()
         mock_game_class.side_effect = KeyboardInterrupt()
 
-        with patch("games.shared.game_launcher.setup_game_path"), \
-             patch("games.shared.game_launcher.setup_logging"), \
-             patch("games.shared.game_launcher.pygame.init"), \
-             patch("games.shared.game_launcher.pygame.quit") as mock_pg_quit, \
-             patch("games.shared.game_launcher.sys.exit") as mock_sys_exit, \
-             patch("games.shared.game_launcher.logger.info") as mock_logger_info:
-
+        with (
+            patch("games.shared.game_launcher.setup_game_path"),
+            patch("games.shared.game_launcher.setup_logging"),
+            patch("games.shared.game_launcher.pygame.init"),
+            patch("games.shared.game_launcher.pygame.quit") as mock_pg_quit,
+            patch("games.shared.game_launcher.sys.exit") as mock_sys_exit,
+            patch("games.shared.game_launcher.logger.info") as mock_logger_info,
+        ):
             run_game(mock_game_class, "dummy_file.py")
 
             mock_logger_info.assert_called_with("Game interrupted by user")
