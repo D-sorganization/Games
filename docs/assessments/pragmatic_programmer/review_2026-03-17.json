@@ -1,0 +1,613 @@
+{
+  "timestamp": "2026-03-17T08:11:12.259219",
+  "repository": "Games",
+  "files_analyzed": 249,
+  "issues": [
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 3 locations",
+      "files": [
+        "/home/runner/work/Games/Games/run_tests.py",
+        "/home/runner/work/Games/Games/scripts/run_all_assessments.py",
+        "/home/runner/work/Games/Games/scripts/setup_hooks.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 3 locations",
+      "files": [
+        "/home/runner/work/Games/Games/run_tests.py",
+        "/home/runner/work/Games/Games/scripts/run_all_assessments.py",
+        "/home/runner/work/Games/Games/scripts/setup_hooks.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/game_launcher.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/tests/conftest.py",
+        "/home/runner/work/Games/Games/tests/shared/test_combat_manager.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/tests/conftest.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/tests/conftest.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 3 locations",
+      "files": [
+        "/home/runner/work/Games/Games/tests/conftest.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 3 locations",
+      "files": [
+        "/home/runner/work/Games/Games/tests/conftest.py",
+        "/home/runner/work/Games/Games/tests/shared/test_player_base.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 3 locations",
+      "files": [
+        "/home/runner/work/Games/Games/tests/conftest.py",
+        "/home/runner/work/Games/Games/tests/shared/test_player_base.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 3 locations",
+      "files": [
+        "/home/runner/work/Games/Games/tests/conftest.py",
+        "/home/runner/work/Games/Games/tests/shared/test_player_base.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 3 locations",
+      "files": [
+        "/home/runner/work/Games/Games/tests/conftest.py",
+        "/home/runner/work/Games/Games/tests/shared/test_player_base.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 3 locations",
+      "files": [
+        "/home/runner/work/Games/Games/tests/conftest.py",
+        "/home/runner/work/Games/Games/tests/shared/test_player_base.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/src/games/Zombie_Survival/src/constants.py",
+        "/home/runner/work/Games/Games/tests/conftest.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/src/games/Zombie_Survival/src/constants.py",
+        "/home/runner/work/Games/Games/tests/conftest.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 3 locations",
+      "files": [
+        "/home/runner/work/Games/Games/tests/Duum/test_projectile.py",
+        "/home/runner/work/Games/Games/tests/Force_Field/test_projectile.py",
+        "/home/runner/work/Games/Games/tests/Zombie_Survival/test_projectile.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 3 locations",
+      "files": [
+        "/home/runner/work/Games/Games/tests/Duum/test_projectile.py",
+        "/home/runner/work/Games/Games/tests/Force_Field/test_projectile.py",
+        "/home/runner/work/Games/Games/tests/Zombie_Survival/test_projectile.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 3 locations",
+      "files": [
+        "/home/runner/work/Games/Games/tests/Duum/test_projectile.py",
+        "/home/runner/work/Games/Games/tests/Force_Field/test_projectile.py",
+        "/home/runner/work/Games/Games/tests/Zombie_Survival/test_projectile.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 3 locations",
+      "files": [
+        "/home/runner/work/Games/Games/tests/Duum/test_weapon_renderer.py",
+        "/home/runner/work/Games/Games/tests/Force_Field/test_weapon_renderer.py",
+        "/home/runner/work/Games/Games/tests/Zombie_Survival/test_weapon_renderer.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 3 locations",
+      "files": [
+        "/home/runner/work/Games/Games/tests/Duum/test_weapon_renderer.py",
+        "/home/runner/work/Games/Games/tests/Force_Field/test_weapon_renderer.py",
+        "/home/runner/work/Games/Games/tests/Zombie_Survival/test_weapon_renderer.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 3 locations",
+      "files": [
+        "/home/runner/work/Games/Games/tests/Duum/test_weapon_renderer.py",
+        "/home/runner/work/Games/Games/tests/Force_Field/test_weapon_renderer.py",
+        "/home/runner/work/Games/Games/tests/Zombie_Survival/test_weapon_renderer.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 3 locations",
+      "files": [
+        "/home/runner/work/Games/Games/tests/Duum/test_weapon_renderer.py",
+        "/home/runner/work/Games/Games/tests/Force_Field/test_weapon_renderer.py",
+        "/home/runner/work/Games/Games/tests/Zombie_Survival/test_weapon_renderer.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 6 locations",
+      "files": [
+        "/home/runner/work/Games/Games/tests/Duum/test_ui_renderer.py",
+        "/home/runner/work/Games/Games/tests/Duum/test_weapon_renderer.py",
+        "/home/runner/work/Games/Games/tests/Force_Field/test_ui_renderer.py",
+        "/home/runner/work/Games/Games/tests/Force_Field/test_weapon_renderer.py",
+        "/home/runner/work/Games/Games/tests/Zombie_Survival/test_ui_renderer.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 3 locations",
+      "files": [
+        "/home/runner/work/Games/Games/tests/Duum/test_weapon_renderer.py",
+        "/home/runner/work/Games/Games/tests/Force_Field/test_weapon_renderer.py",
+        "/home/runner/work/Games/Games/tests/Zombie_Survival/test_weapon_renderer.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 3 locations",
+      "files": [
+        "/home/runner/work/Games/Games/tests/Duum/test_weapon_renderer.py",
+        "/home/runner/work/Games/Games/tests/Force_Field/test_weapon_renderer.py",
+        "/home/runner/work/Games/Games/tests/Zombie_Survival/test_weapon_renderer.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 3 locations",
+      "files": [
+        "/home/runner/work/Games/Games/tests/Duum/test_weapon_renderer.py",
+        "/home/runner/work/Games/Games/tests/Force_Field/test_weapon_renderer.py",
+        "/home/runner/work/Games/Games/tests/Zombie_Survival/test_weapon_renderer.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 6 locations",
+      "files": [
+        "/home/runner/work/Games/Games/tests/Duum/test_ui_renderer.py",
+        "/home/runner/work/Games/Games/tests/Duum/test_weapon_renderer.py",
+        "/home/runner/work/Games/Games/tests/Force_Field/test_ui_renderer.py",
+        "/home/runner/work/Games/Games/tests/Force_Field/test_weapon_renderer.py",
+        "/home/runner/work/Games/Games/tests/Zombie_Survival/test_ui_renderer.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 3 locations",
+      "files": [
+        "/home/runner/work/Games/Games/tests/Duum/test_weapon_renderer.py",
+        "/home/runner/work/Games/Games/tests/Force_Field/test_weapon_renderer.py",
+        "/home/runner/work/Games/Games/tests/Zombie_Survival/test_weapon_renderer.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 3 locations",
+      "files": [
+        "/home/runner/work/Games/Games/tests/Duum/test_weapon_renderer.py",
+        "/home/runner/work/Games/Games/tests/Force_Field/test_weapon_renderer.py",
+        "/home/runner/work/Games/Games/tests/Zombie_Survival/test_weapon_renderer.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 3 locations",
+      "files": [
+        "/home/runner/work/Games/Games/tests/Duum/test_weapon_renderer.py",
+        "/home/runner/work/Games/Games/tests/Force_Field/test_weapon_renderer.py",
+        "/home/runner/work/Games/Games/tests/Zombie_Survival/test_weapon_renderer.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 3 locations",
+      "files": [
+        "/home/runner/work/Games/Games/tests/Duum/test_weapon_renderer.py",
+        "/home/runner/work/Games/Games/tests/Force_Field/test_weapon_renderer.py",
+        "/home/runner/work/Games/Games/tests/Zombie_Survival/test_weapon_renderer.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 3 locations",
+      "files": [
+        "/home/runner/work/Games/Games/tests/Duum/test_weapon_renderer.py",
+        "/home/runner/work/Games/Games/tests/Force_Field/test_weapon_renderer.py",
+        "/home/runner/work/Games/Games/tests/Zombie_Survival/test_weapon_renderer.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 3 locations",
+      "files": [
+        "/home/runner/work/Games/Games/tests/Duum/test_weapon_renderer.py",
+        "/home/runner/work/Games/Games/tests/Force_Field/test_weapon_renderer.py",
+        "/home/runner/work/Games/Games/tests/Zombie_Survival/test_weapon_renderer.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 3 locations",
+      "files": [
+        "/home/runner/work/Games/Games/tests/Duum/test_weapon_renderer.py",
+        "/home/runner/work/Games/Games/tests/Force_Field/test_weapon_renderer.py",
+        "/home/runner/work/Games/Games/tests/Zombie_Survival/test_weapon_renderer.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 3 locations",
+      "files": [
+        "/home/runner/work/Games/Games/tests/Duum/test_weapon_renderer.py",
+        "/home/runner/work/Games/Games/tests/Force_Field/test_weapon_renderer.py",
+        "/home/runner/work/Games/Games/tests/Zombie_Survival/test_weapon_renderer.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 3 locations",
+      "files": [
+        "/home/runner/work/Games/Games/tests/Duum/test_weapon_renderer.py",
+        "/home/runner/work/Games/Games/tests/Force_Field/test_weapon_renderer.py",
+        "/home/runner/work/Games/Games/tests/Zombie_Survival/test_weapon_renderer.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/tests/Force_Field/test_weapon_renderer.py",
+        "/home/runner/work/Games/Games/tests/Zombie_Survival/test_weapon_renderer.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/tests/Force_Field/test_weapon_renderer.py",
+        "/home/runner/work/Games/Games/tests/Zombie_Survival/test_weapon_renderer.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/tests/Force_Field/test_weapon_renderer.py",
+        "/home/runner/work/Games/Games/tests/Zombie_Survival/test_weapon_renderer.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/tests/Force_Field/test_weapon_renderer.py",
+        "/home/runner/work/Games/Games/tests/Zombie_Survival/test_weapon_renderer.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/tests/Duum/test_weapon_renderer.py",
+        "/home/runner/work/Games/Games/tests/Zombie_Survival/test_weapon_renderer.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/tests/Duum/test_weapon_renderer.py",
+        "/home/runner/work/Games/Games/tests/Zombie_Survival/test_weapon_renderer.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/tests/Duum/test_weapon_renderer.py",
+        "/home/runner/work/Games/Games/tests/Zombie_Survival/test_weapon_renderer.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/tests/Duum/test_weapon_renderer.py",
+        "/home/runner/work/Games/Games/tests/Zombie_Survival/test_weapon_renderer.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 3 locations",
+      "files": [
+        "/home/runner/work/Games/Games/tests/Duum/test_weapon_renderer.py",
+        "/home/runner/work/Games/Games/tests/Force_Field/test_weapon_renderer.py",
+        "/home/runner/work/Games/Games/tests/Zombie_Survival/test_weapon_renderer.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 3 locations",
+      "files": [
+        "/home/runner/work/Games/Games/tests/Duum/test_weapon_renderer.py",
+        "/home/runner/work/Games/Games/tests/Force_Field/test_weapon_renderer.py",
+        "/home/runner/work/Games/Games/tests/Zombie_Survival/test_weapon_renderer.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 3 locations",
+      "files": [
+        "/home/runner/work/Games/Games/tests/Duum/test_weapon_renderer.py",
+        "/home/runner/work/Games/Games/tests/Force_Field/test_weapon_renderer.py",
+        "/home/runner/work/Games/Games/tests/Zombie_Survival/test_weapon_renderer.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/tests/Duum/test_weapon_renderer.py",
+        "/home/runner/work/Games/Games/tests/Zombie_Survival/test_weapon_renderer.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/tests/Duum/test_weapon_renderer.py",
+        "/home/runner/work/Games/Games/tests/Zombie_Survival/test_weapon_renderer.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/tests/Duum/test_weapon_renderer.py",
+        "/home/runner/work/Games/Games/tests/Zombie_Survival/test_weapon_renderer.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "DRY",
+      "severity": "MAJOR",
+      "title": "Duplicate code block",
+      "description": "Found in 2 locations",
+      "files": [
+        "/home/runner/work/Games/Games/tests/Duum/test_weapon_renderer.py",
+        "/home/runner/work/Games/Games/tests/Zombie_Survival/test_weapon_renderer.py"
+      ],
+      "recommendation": "Refactor into shared utility"
+    },
+    {
+      "principle": "ORTHOGONALITY",
+      "severity": "MAJOR",
+      "title": "God function: __init__",
+      "description": "Length 61 > 50 lines",
+      "files": [
+        "/home/runner/work/Games/Games/src/games/Zombie_Survival/src/game.py"
+      ],
+      "recommendation": "Split function"
+    },
+    {
+      "principle": "ORTHOGONALITY",
+      "severity": "MAJOR",
+      "title": "God function: __init__",
+      "description": "Length 65 > 50 lines",
+      "files": [
+        "/home/runner/work/Games/Games/src/games/Duum/src/game.py"
+      ],
+      "recommendation": "Split function"
+    },
+    {
+      "principle": "ORTHOGONALITY",
+      "severity": "MAJOR",
+      "title": "God function: __init__",
+      "description": "Length 66 > 50 lines",
+      "files": [
+        "/home/runner/work/Games/Games/src/games/Force_Field/src/game.py"
+      ],
+      "recommendation": "Split function"
+    }
+  ]
+}
