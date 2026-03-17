@@ -1,4 +1,4 @@
-"""Additional tests for AssetCatalog — sound and image loading paths (load_sound, load_image)."""
+"""Additional tests for AssetCatalog — sound and image loading paths."""
 
 from __future__ import annotations
 

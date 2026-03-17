@@ -31,7 +31,8 @@ class TestWorldParticle:
             0.0, 0.0, 5.0, 0.0, 0.0, 0.0, (255, 0, 0), 10, 0.1, gravity=0.5
         )
         wp.update()
-        # dz starts at 0.0, then z += dz (0.0) → z = 5.0, then dz -= gravity (0.5) → dz = -0.5
+        # dz starts at 0.0, then z += dz (0.0) → z = 5.0,
+        # then dz -= gravity (0.5) → dz = -0.5
         assert wp.dz == pytest.approx(-0.5)
         assert wp.z == pytest.approx(5.0)
 

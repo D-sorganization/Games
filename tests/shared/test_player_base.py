@@ -648,7 +648,7 @@ class TestPlayerTimersAdvanced:
         assert player.shield_recharge_delay == 49
 
     def test_plasma_overheat_timer_decrement(self) -> None:
-        """Hit the plasma overheat timer > 0 branch where it doesn't clear overheated status yet."""
+        """Hit plasma overheat timer > 0 branch before clearing overheated status."""
         from tests.conftest import make_constants
 
         weapons = {

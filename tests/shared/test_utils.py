@@ -193,7 +193,7 @@ class TestTryMoveEntity:
         assert wall_type == 1
 
     def test_move_corner_obstacle(self, open_map: MockMap) -> None:
-        """Obstacle in corner of radius passes quick bounding-box check but fails squared-distance check."""
+        """Obstacle in corner of radius fails squared-distance check."""
         entity = MockEntity(5.0, 5.0)
         # new_x = 5.0, entity.y = 5.0.
         # Obstacle at 5.4, 5.4.

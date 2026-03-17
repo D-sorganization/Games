@@ -282,7 +282,7 @@ class TestSpawnAll:
             base_sm._make_bot(0, 0, 1, "grunt")
 
     def test_spawn_exhausts_attempts_on_full_map(self) -> None:
-        """Spawning should hit iteration limits and fail gracefully when map is entirely walls."""
+        """Spawning should hit iteration limits when map is entirely walls."""
         em = MagicMock()
         sm = ConcreteSpawnManager(em, _make_constants())
 
