@@ -16,6 +16,7 @@ _pg.__path__ = []  # type: ignore[attr-defined]  # make it look like a package
 for _attr in (
     "init",
     "quit",
+    "get_init",
     "get_error",
     "get_sdl_version",
     "get_sdl_byteorder",
@@ -78,6 +79,15 @@ _pg.sprite = sys.modules["pygame.sprite"]
 _pg.time = sys.modules["pygame.time"]
 _pg.transform = sys.modules["pygame.transform"]
 _pg.locals = sys.modules["pygame.locals"]
+_pg.surfarray = sys.modules["pygame.surfarray"]
+
+# Stub out surfarray functions used in TextureGenerator
+import numpy as _np  # noqa: E402
+
+_pg.surfarray.pixels3d = MagicMock(  # type: ignore[attr-defined]
+    return_value=_np.zeros((64, 64, 3), dtype=_np.uint8)
+)
+_pg.surfarray.blit_array = MagicMock()  # type: ignore[attr-defined]
 
 # Common pygame top-level classes/constants
 _pg.Surface = MagicMock  # type: ignore[attr-defined]

@@ -55,7 +55,7 @@ class TestPositioned:
 
     def test_move_toward_zero_distance(self):
         p = Positioned(x=5.0, y=5.0)
-        p.move_toward(5.0, 5.0, 1.0) # distance is 0
+        p.move_toward(5.0, 5.0, 1.0)  # distance is 0
         assert p.x == 5.0
         assert p.y == 5.0
 
@@ -229,7 +229,7 @@ class TestHasVelocity:
 
         e = JustVelocity()
         e.vx = 5.0
-        e.apply_velocity() # Should do nothing safely
+        e.apply_velocity()  # Should do nothing safely
         assert e.vx == 5.0
 
 

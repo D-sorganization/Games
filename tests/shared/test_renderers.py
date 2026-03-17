@@ -134,7 +134,9 @@ class TestRenderers:
         )
 
     @patch("games.shared.renderers.item_renderer.random.random", return_value=0.9)
-    def test_item_renderer_no_spark(self, mock_random, mock_surface, mock_bot, base_config):
+    def test_item_renderer_no_spark(
+        self, mock_random, mock_surface, mock_bot, base_config
+    ):  # noqa: E501
         mock_item = MagicMock()
         mock_item.enemy_type = "bomb_item"
         renderer = ItemRenderer()

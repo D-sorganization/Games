@@ -209,10 +209,10 @@ class TestTryMoveEntity:
     def test_try_move_distance_squared_fails(self, open_map: MockMap) -> None:
         """Obstacles that pass quick check but fail squared distance check."""
         entity = MockEntity(5.0, 5.0)
-        # ob diff = (0.4, 0.4) so abs < 0.5 but sum of squares 0.32 >= 0.25 (collision false!)
-        # Wait, if collision is FALSE, it moves! But we want d_sq to be large enough to skip collision.
-        # Actually to trigger the False branch of `if d_sq < col_sq`, we need d_sq >= col_sq.
-        # That means it evaluates to False, and NO collision occurs, so it skips `collision = True` and keeps going.
+        # ob diff = (0.4, 0.4) so abs < 0.5 but sum of squares 0.32 >= 0.25 (collision false!)  # noqa: E501
+        # Wait, if collision is FALSE, it moves! But we want d_sq to be large enough to skip collision.  # noqa: E501
+        # Actually to trigger the False branch of `if d_sq < col_sq`, we need d_sq >= col_sq.  # noqa: E501
+        # That means it evaluates to False, and NO collision occurs, so it skips `collision = True` and keeps going.  # noqa: E501
         ob_corner = MockEntity(5.9, 5.4)
         try_move_entity(entity, 0.5, 0.5, open_map, [ob_corner], radius=0.5)
         # For X move: new_x=5.5, entity.y=5.0. ob_x=5.9, ob_y=5.4.
@@ -222,7 +222,7 @@ class TestTryMoveEntity:
         # dx=0.4, dy=0.1. d_sq=0.17 < 0.25. True branch! Y move fails.
         assert entity.y == pytest.approx(5.0)
 
-        # We also need a case where Y returns false to `d_sq < col_sq`, but X wasn't blocked.
+        # We also need a case where Y returns false to `d_sq < col_sq`, but X wasn't blocked.  # noqa: E501
         # We can just start fresh
         entity2 = MockEntity(5.0, 5.0)
         ob2 = MockEntity(5.4, 5.9)

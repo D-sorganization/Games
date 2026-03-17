@@ -1,0 +1,41 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.5, pytest-8.4.1, pluggy-1.6.0 -- C:\Users\diete\AppData\Local\Programs\Python\Python313\python.exe
+cachedir: .pytest_cache
+hypothesis profile 'default'
+PySide6 6.10.2 -- Qt runtime 6.10.2 -- Qt compiled 6.10.2
+rootdir: C:\Users\diete\Repositories\Games
+configfile: pyproject.toml
+plugins: anyio-4.9.0, hypothesis-6.151.9, asyncio-1.3.0, cov-7.0.0, mock-3.15.1, qt-4.5.0, timeout-2.3.1, xdist-3.8.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 11 items
+
+tests/shared/test_ui_renderer_base.py::TestUIRendererBase::test_init_base PASSED [  9%]
+tests/shared/test_ui_renderer_base.py::TestUIRendererBase::test_get_game_name_unknown PASSED [ 18%]
+tests/shared/test_ui_renderer_base.py::TestUIRendererBase::test_init_fonts_fallback PASSED [ 27%]
+tests/shared/test_ui_renderer_base.py::TestUIRendererBase::test_load_assets_success PASSED [ 36%]
+tests/shared/test_ui_renderer_base.py::TestUIRendererBase::test_load_assets_no_scale PASSED [ 45%]
+tests/shared/test_ui_renderer_base.py::TestUIRendererBase::test_load_assets_exception FAILED [ 54%]
+tests/shared/test_ui_renderer_base.py::TestUIRendererBase::test_load_assets_no_cv2 PASSED [ 63%]
+tests/shared/test_ui_renderer_base.py::TestUIRendererBase::test_update_blood_drips PASSED [ 72%]
+tests/shared/test_ui_renderer_base.py::TestUIRendererBase::test_update_blood_drips_no_spawn PASSED [ 81%]
+tests/shared/test_ui_renderer_base.py::TestUIRendererBase::test_draw_blood_drips PASSED [ 90%]
+tests/shared/test_ui_renderer_base.py::TestUIRendererBase::test_draw_blood_drips_out_of_bounds PASSED [100%]
+
+================================== FAILURES ===================================
+________________ TestUIRendererBase.test_load_assets_exception ________________
+tests\shared\test_ui_renderer_base.py:89: in test_load_assets_exception
+    assert mock_log.called
+E   AssertionError: assert False
+E    +  where False = <MagicMock name='exception' id='2308257950288'>.called
+=============================== tests coverage ================================
+_______________ coverage: platform win32, python 3.13.5-final-0 _______________
+
+Name                                   Stmts   Miss Branch BrPart  Cover   Missing
+----------------------------------------------------------------------------------
+src\games\shared\ui_renderer_base.py      93      3     20      1    96%   19-20, 94
+----------------------------------------------------------------------------------
+TOTAL                                     93      3     20      1    96%
+Required test coverage of 25.0% reached. Total coverage: 96.46%
+=========================== short test summary info ===========================
+FAILED tests/shared/test_ui_renderer_base.py::TestUIRendererBase::test_load_assets_exception
+======================== 1 failed, 10 passed in 1.03s =========================

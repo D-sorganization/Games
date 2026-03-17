@@ -275,10 +275,13 @@ class TestSpawnAll:
         # Should have called add_bot multiple times
         assert em.add_bot.call_count > 0
 
+
 class TestEdgeCases:
     def test_base_make_bot_raises(self, sm) -> None:
         base_sm = SpawnManagerBase(sm.entity_manager, sm.C)
-        with pytest.raises(NotImplementedError, match="Subclasses must implement _make_bot"):
+        with pytest.raises(
+            NotImplementedError, match="Subclasses must implement _make_bot"
+        ):  # noqa: E501
             base_sm._make_bot(0.0, 0.0, 1, "grunt")
 
     def test_spawn_enemies_fails_after_50_attempts(self, sm) -> None:

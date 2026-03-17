@@ -28,6 +28,7 @@ class TestUIRendererBase:
         class ValidGameRenderer(UIRendererBase):
             def _get_base_dir(self):
                 from pathlib import Path
+
                 return Path("/fake_dir")
 
         ValidGameRenderer.__module__ = "games.MyTestGame.ui_renderer"

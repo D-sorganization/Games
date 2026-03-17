@@ -197,6 +197,7 @@ class TestInvariant:
         @invariant(lambda self: self.value >= 0, "value must be non-negative")
         class TestClass:
             """A class with non-callable public attributes."""
+
             some_static_value = 42
 
             def __init__(self) -> None:

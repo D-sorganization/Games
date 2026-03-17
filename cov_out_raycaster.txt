@@ -1,0 +1,245 @@
+......................FFFFFFFFFFFFFFFFFF...FFFF.......                   [100%]
+================================== FAILURES ===================================
+______________ TestRenderFloorCeiling.test_renders_without_error ______________
+tests\shared\test_raycaster.py:311: in test_renders_without_error
+    rc.render_floor_ceiling(screen, mock_player, 1)
+src\games\shared\raycaster.py:1324: in render_floor_ceiling
+    self._generate_background_surface(level)
+src\games\shared\raycaster.py:1263: in _generate_background_surface
+    ceiling_color = theme["ceiling"] if theme else self.config.GRAY
+                    ^^^^^^^^^^^^^^^^
+E   KeyError: 'ceiling'
+___________ TestRenderFloorCeiling.test_renders_with_extreme_pitch ____________
+tests\shared\test_raycaster.py:317: in test_renders_with_extreme_pitch
+    rc.render_floor_ceiling(screen, mock_player, 1)
+src\games\shared\raycaster.py:1324: in render_floor_ceiling
+    self._generate_background_surface(level)
+src\games\shared\raycaster.py:1263: in _generate_background_surface
+    ceiling_color = theme["ceiling"] if theme else self.config.GRAY
+                    ^^^^^^^^^^^^^^^^
+E   KeyError: 'ceiling'
+_____________ TestRenderFloorCeiling.test_background_cache_reuse ______________
+tests\shared\test_raycaster.py:322: in test_background_cache_reuse
+    rc.render_floor_ceiling(screen, mock_player, 1)
+src\games\shared\raycaster.py:1324: in render_floor_ceiling
+    self._generate_background_surface(level)
+src\games\shared\raycaster.py:1263: in _generate_background_surface
+    ceiling_color = theme["ceiling"] if theme else self.config.GRAY
+                    ^^^^^^^^^^^^^^^^
+E   KeyError: 'ceiling'
+_____________________ TestRenderMinimap.test_basic_render _____________________
+tests\shared\test_raycaster.py:334: in test_basic_render
+    rc.render_minimap(screen, mock_player, [])
+src\games\shared\raycaster.py:1423: in render_minimap
+    self._generate_minimap_cache()
+src\games\shared\raycaster.py:1402: in _generate_minimap_cache
+    pygame.draw.rect(
+    ^^^^^^^^^^^^^^^^
+E   AttributeError: module 'pygame.draw' has no attribute 'rect'
+___________________ TestRenderMinimap.test_with_fog_of_war ____________________
+tests\shared\test_raycaster.py:340: in test_with_fog_of_war
+    rc.render_minimap(screen, mock_player, [], visited_cells=visited)
+src\games\shared\raycaster.py:1423: in render_minimap
+    self._generate_minimap_cache()
+src\games\shared\raycaster.py:1402: in _generate_minimap_cache
+    pygame.draw.rect(
+    ^^^^^^^^^^^^^^^^
+E   AttributeError: module 'pygame.draw' has no attribute 'rect'
+___________________ TestRenderMinimap.test_fog_cache_reuse ____________________
+tests\shared\test_raycaster.py:346: in test_fog_cache_reuse
+    rc.render_minimap(screen, mock_player, [], visited_cells=visited)
+src\games\shared\raycaster.py:1423: in render_minimap
+    self._generate_minimap_cache()
+src\games\shared\raycaster.py:1402: in _generate_minimap_cache
+    pygame.draw.rect(
+    ^^^^^^^^^^^^^^^^
+E   AttributeError: module 'pygame.draw' has no attribute 'rect'
+_____________________ TestRenderMinimap.test_with_portal ______________________
+tests\shared\test_raycaster.py:355: in test_with_portal
+    rc.render_minimap(screen, mock_player, [], portal=portal)
+src\games\shared\raycaster.py:1423: in render_minimap
+    self._generate_minimap_cache()
+src\games\shared\raycaster.py:1402: in _generate_minimap_cache
+    pygame.draw.rect(
+    ^^^^^^^^^^^^^^^^
+E   AttributeError: module 'pygame.draw' has no attribute 'rect'
+______________ TestRenderMinimap.test_portal_with_visited_cells _______________
+tests\shared\test_raycaster.py:362: in test_portal_with_visited_cells
+    rc.render_minimap(screen, mock_player, [], visited_cells=visited, portal=portal)
+src\games\shared\raycaster.py:1423: in render_minimap
+    self._generate_minimap_cache()
+src\games\shared\raycaster.py:1402: in _generate_minimap_cache
+    pygame.draw.rect(
+    ^^^^^^^^^^^^^^^^
+E   AttributeError: module 'pygame.draw' has no attribute 'rect'
+____________________ TestRenderMinimap.test_with_live_bot _____________________
+tests\shared\test_raycaster.py:373: in test_with_live_bot
+    rc.render_minimap(screen, mock_player, [bot])
+src\games\shared\raycaster.py:1423: in render_minimap
+    self._generate_minimap_cache()
+src\games\shared\raycaster.py:1402: in _generate_minimap_cache
+    pygame.draw.rect(
+    ^^^^^^^^^^^^^^^^
+E   AttributeError: module 'pygame.draw' has no attribute 'rect'
+_____________ TestRenderMinimap.test_minimap_cache_generated_once _____________
+tests\shared\test_raycaster.py:379: in test_minimap_cache_generated_once
+    rc.render_minimap(screen, mock_player, [])
+src\games\shared\raycaster.py:1423: in render_minimap
+    self._generate_minimap_cache()
+src\games\shared\raycaster.py:1402: in _generate_minimap_cache
+    pygame.draw.rect(
+    ^^^^^^^^^^^^^^^^
+E   AttributeError: module 'pygame.draw' has no attribute 'rect'
+_______ TestDrawProjectileEffect.test_known_weapon_draws_circle[plasma] _______
+tests\shared\test_raycaster.py:395: in test_known_weapon_draws_circle
+    with patch("games.shared.raycaster.pygame.draw.circle") as mock_circle:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:1497: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:1467: in get_original
+    raise AttributeError(
+E   AttributeError: <module 'pygame.draw'> does not have the attribute 'circle'
+_______ TestDrawProjectileEffect.test_known_weapon_draws_circle[rocket] _______
+tests\shared\test_raycaster.py:395: in test_known_weapon_draws_circle
+    with patch("games.shared.raycaster.pygame.draw.circle") as mock_circle:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:1497: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:1467: in get_original
+    raise AttributeError(
+E   AttributeError: <module 'pygame.draw'> does not have the attribute 'circle'
+________ TestDrawProjectileEffect.test_known_weapon_draws_circle[bfg] _________
+tests\shared\test_raycaster.py:395: in test_known_weapon_draws_circle
+    with patch("games.shared.raycaster.pygame.draw.circle") as mock_circle:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:1497: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:1467: in get_original
+    raise AttributeError(
+E   AttributeError: <module 'pygame.draw'> does not have the attribute 'circle'
+________ TestDrawProjectileEffect.test_known_weapon_draws_circle[bomb] ________
+tests\shared\test_raycaster.py:395: in test_known_weapon_draws_circle
+    with patch("games.shared.raycaster.pygame.draw.circle") as mock_circle:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:1497: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:1467: in get_original
+    raise AttributeError(
+E   AttributeError: <module 'pygame.draw'> does not have the attribute 'circle'
+____ TestDrawProjectileEffect.test_known_weapon_draws_circle[flamethrower] ____
+tests\shared\test_raycaster.py:395: in test_known_weapon_draws_circle
+    with patch("games.shared.raycaster.pygame.draw.circle") as mock_circle:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:1497: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:1467: in get_original
+    raise AttributeError(
+E   AttributeError: <module 'pygame.draw'> does not have the attribute 'circle'
+_______ TestDrawProjectileEffect.test_known_weapon_draws_circle[pulse] ________
+tests\shared\test_raycaster.py:395: in test_known_weapon_draws_circle
+    with patch("games.shared.raycaster.pygame.draw.circle") as mock_circle:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:1497: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:1467: in get_original
+    raise AttributeError(
+E   AttributeError: <module 'pygame.draw'> does not have the attribute 'circle'
+______ TestDrawProjectileEffect.test_known_weapon_draws_circle[freezer] _______
+tests\shared\test_raycaster.py:395: in test_known_weapon_draws_circle
+    with patch("games.shared.raycaster.pygame.draw.circle") as mock_circle:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:1497: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:1467: in get_original
+    raise AttributeError(
+E   AttributeError: <module 'pygame.draw'> does not have the attribute 'circle'
+____________ TestDrawProjectileEffect.test_unknown_weapon_no_draw _____________
+tests\shared\test_raycaster.py:404: in test_unknown_weapon_no_draw
+    with patch("games.shared.raycaster.pygame.draw.circle") as mock_circle:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:1497: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:1467: in get_original
+    raise AttributeError(
+E   AttributeError: <module 'pygame.draw'> does not have the attribute 'circle'
+_______________ TestRenderSolidWall.test_solid_wall_draws_rect ________________
+tests\shared\test_raycaster.py:446: in test_solid_wall_draws_rect
+    with patch("games.shared.raycaster.pygame.draw.rect") as mock_rect:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:1497: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:1467: in get_original
+    raise AttributeError(
+E   AttributeError: <module 'pygame.draw'> does not have the attribute 'rect'
+____________ TestRenderSolidWall.test_unknown_wall_type_uses_gray _____________
+tests\shared\test_raycaster.py:454: in test_unknown_wall_type_uses_gray
+    with patch("games.shared.raycaster.pygame.draw.rect") as mock_rect:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:1497: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:1467: in get_original
+    raise AttributeError(
+E   AttributeError: <module 'pygame.draw'> does not have the attribute 'rect'
+____________ TestRenderTexturedWall.test_extreme_height_uses_solid ____________
+tests\shared\test_raycaster.py:468: in test_extreme_height_uses_solid
+    with patch("games.shared.raycaster.pygame.draw.rect") as mock_rect:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:1497: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:1467: in get_original
+    raise AttributeError(
+E   AttributeError: <module 'pygame.draw'> does not have the attribute 'rect'
+___________ TestRenderTexturedWall.test_no_cached_strip_falls_back ____________
+tests\shared\test_raycaster.py:492: in test_no_cached_strip_falls_back
+    with patch("games.shared.raycaster.pygame.draw.rect") as mock_rect:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:1497: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+..\..\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:1467: in get_original
+    raise AttributeError(
+E   AttributeError: <module 'pygame.draw'> does not have the attribute 'rect'
+=============================== tests coverage ================================
+_______________ coverage: platform win32, python 3.13.5-final-0 _______________
+
+Name                            Stmts   Miss Branch BrPart  Cover   Missing
+---------------------------------------------------------------------------
+src\games\shared\raycaster.py     650    214    230     40    63%   210-211, 304-305, 429->466, 449-451, 454->464, 536->534, 559, 563, 583, 595->exit, 675-678, 684-686, 691->699, 693->699, 701->exit, 718-729, 776, 787, 789, 799-800, 804-805, 830-870, 908, 918, 923, 929, 962-963, 980-981, 993->996, 996->999, 1000-1001, 1054, 1068, 1100-1101, 1108-1109, 1111-1112, 1119-1120, 1122, 1124->1114, 1144-1171, 1183-1222, 1230-1252, 1264-1305, 1326-1389, 1397->exit, 1398->1397, 1400->1398, 1425-1503
+---------------------------------------------------------------------------
+TOTAL                             650    214    230     40    63%
+Required test coverage of 25.0% reached. Total coverage: 62.73%
+=========================== short test summary info ===========================
+FAILED tests/shared/test_raycaster.py::TestRenderFloorCeiling::test_renders_without_error
+FAILED tests/shared/test_raycaster.py::TestRenderFloorCeiling::test_renders_with_extreme_pitch
+FAILED tests/shared/test_raycaster.py::TestRenderFloorCeiling::test_background_cache_reuse
+FAILED tests/shared/test_raycaster.py::TestRenderMinimap::test_basic_render
+FAILED tests/shared/test_raycaster.py::TestRenderMinimap::test_with_fog_of_war
+FAILED tests/shared/test_raycaster.py::TestRenderMinimap::test_fog_cache_reuse
+FAILED tests/shared/test_raycaster.py::TestRenderMinimap::test_with_portal - ...
+FAILED tests/shared/test_raycaster.py::TestRenderMinimap::test_portal_with_visited_cells
+FAILED tests/shared/test_raycaster.py::TestRenderMinimap::test_with_live_bot
+FAILED tests/shared/test_raycaster.py::TestRenderMinimap::test_minimap_cache_generated_once
+FAILED tests/shared/test_raycaster.py::TestDrawProjectileEffect::test_known_weapon_draws_circle[plasma]
+FAILED tests/shared/test_raycaster.py::TestDrawProjectileEffect::test_known_weapon_draws_circle[rocket]
+FAILED tests/shared/test_raycaster.py::TestDrawProjectileEffect::test_known_weapon_draws_circle[bfg]
+FAILED tests/shared/test_raycaster.py::TestDrawProjectileEffect::test_known_weapon_draws_circle[bomb]
+FAILED tests/shared/test_raycaster.py::TestDrawProjectileEffect::test_known_weapon_draws_circle[flamethrower]
+FAILED tests/shared/test_raycaster.py::TestDrawProjectileEffect::test_known_weapon_draws_circle[pulse]
+FAILED tests/shared/test_raycaster.py::TestDrawProjectileEffect::test_known_weapon_draws_circle[freezer]
+FAILED tests/shared/test_raycaster.py::TestDrawProjectileEffect::test_unknown_weapon_no_draw
+FAILED tests/shared/test_raycaster.py::TestRenderSolidWall::test_solid_wall_draws_rect
+FAILED tests/shared/test_raycaster.py::TestRenderSolidWall::test_unknown_wall_type_uses_gray
+FAILED tests/shared/test_raycaster.py::TestRenderTexturedWall::test_extreme_height_uses_solid
+FAILED tests/shared/test_raycaster.py::TestRenderTexturedWall::test_no_cached_strip_falls_back
+22 failed, 32 passed in 8.73s

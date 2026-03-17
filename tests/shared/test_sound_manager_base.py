@@ -70,32 +70,45 @@ class TestSoundManagerBase:
         mock_path.return_value = mock_path_instance
         mock_path_cwd = MagicMock()
         mock_path.cwd.return_value = mock_path_cwd
-        mock_path.return_value.resolve.return_value.parent.parent.__truediv__.return_value = mock_path_instance
+        mock_path.return_value.resolve.return_value.parent.parent.__truediv__.return_value = (
+            mock_path_instance  # noqa: E501
+        )
         mock_path_instance.__truediv__.return_value = mock_path_instance
-        
+
         # Mock file exists
         mock_path_instance.exists.return_value = True
 
         class MySoundManager(SoundManagerBase):
-            SOUND_FILES = {"boom": "boom.wav", "music_level": "music.wav", "ambient": "amb.wav"}
-            def get_game_name(self): return "MyGame"
-        
+            SOUND_FILES = {
+                "boom": "boom.wav",
+                "music_level": "music.wav",
+                "ambient": "amb.wav",
+            }  # noqa: E501
+
+            def get_game_name(self):
+                return "MyGame"
+
         # Test success mapping
-        with patch("games.shared.sound_manager_base.pygame.mixer.Sound") as mock_sound_cls:
+        with patch(
+            "games.shared.sound_manager_base.pygame.mixer.Sound"
+        ) as mock_sound_cls:  # noqa: E501
             mock_snd = MagicMock()
             mock_sound_cls.return_value = mock_snd
             mgr = MySoundManager()
             assert "boom" in mgr.sounds
             assert "music_level" in mgr.sounds
             assert "ambient" in mgr.sounds
-            
+
             # volume lowered for music and ambient
             mock_snd.set_volume.assert_called_with(0.5)
 
         # Test failure loading sound (Exception caught)
-        with patch("games.shared.sound_manager_base.pygame.mixer.Sound", side_effect=Exception("Codec error")):
+        with patch(
+            "games.shared.sound_manager_base.pygame.mixer.Sound",
+            side_effect=Exception("Codec error"),
+        ):  # noqa: E501
             mgr2 = MySoundManager()
-            assert not mgr2.sounds # nothing loaded
+            assert not mgr2.sounds  # nothing loaded
 
         # Test path doesn't exist
         mock_path_instance.exists.return_value = False
@@ -109,8 +122,7 @@ class TestSoundManagerBase:
         mock_sound.play.side_effect = Exception("error")
         mgr.sounds = {"boom": mock_sound}
         mgr.sound_enabled = True
-        mgr.play_sound("boom") # Should catch the error cleanly
-
+        mgr.play_sound("boom")  # Should catch the error cleanly
 
     def test_play_sound_disabled(self) -> None:
         """play_sound should do nothing when sound is disabled."""

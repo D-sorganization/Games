@@ -116,6 +116,7 @@ class TestTextLoading:
 
 # --- Sound Loading ---
 
+
 class TestSoundLoading:
     @patch("pygame.mixer.Sound")
     def test_load_sound_success(self, mock_sound_cls, tmp_path):
@@ -159,6 +160,7 @@ class TestSoundLoading:
 
 
 # --- Image Loading ---
+
 
 class TestImageLoading:
     @patch("pygame.image.load")

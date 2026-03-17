@@ -152,9 +152,9 @@ class TestMapBaseGeneration:
             1 for i in range(m.size) for j in range(m.size) if m.grid[i][j] == 0
         )
 
-        assert len(visited) == total_open, (
-            f"Not all open cells are connected: {len(visited)}/{total_open}"
-        )
+        assert (
+            len(visited) == total_open
+        ), f"Not all open cells are connected: {len(visited)}/{total_open}"
 
     def test_add_rooms_small_map(self) -> None:
         """Test with a small map size to trigger bounds safety
