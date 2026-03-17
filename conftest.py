@@ -93,6 +93,8 @@ class MockRect:
         self.left = x
         self.bottom = y + height
         self.right = x + width
+        self.centerx = x + width // 2
+        self.centery = y + height // 2
         self.center = (x + width // 2, y + height // 2)
         self.topleft = (x, y)
         self.topright = (x + width, y)
@@ -113,6 +115,8 @@ class MockRect:
 _pg.Rect = MockRect  # type: ignore[attr-defined]
 _pg.Color = MagicMock  # type: ignore[attr-defined]
 _pg.SRCALPHA = 65536  # type: ignore[attr-defined]
+_pg.error = Exception  # type: ignore[attr-defined]  # pygame.error used in exception handlers
+_pg.BLEND_MULT = 7  # type: ignore[attr-defined]  # blend mode constant used in shading
 
 # Event types
 _pg.QUIT = 256  # type: ignore[attr-defined]
