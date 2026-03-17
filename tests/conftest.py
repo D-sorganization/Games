@@ -240,3 +240,4 @@ def player() -> Any:
         weapons_config=constants.WEAPONS,
         constants=constants,
     )
+# trigger
