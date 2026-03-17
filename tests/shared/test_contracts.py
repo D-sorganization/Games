@@ -191,6 +191,19 @@ class TestInvariant:
         f._internal_set(-1)  # Should not raise — private method
         assert f.value == -1
 
+    def test_invariant_ignores_non_callable(self) -> None:
+        """Invariant should not attempt to wrap non-callable attributes."""
+
+        @invariant(lambda self: self.value >= 0, "value must be non-negative")
+        class DataClass:
+            value = 42
+
+            def __init__(self) -> None:
+                self.value = 10
+
+        d = DataClass()
+        assert d.value == 10
+
 
 class TestValidationUtilities:
     """Tests for standalone validation functions."""

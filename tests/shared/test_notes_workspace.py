@@ -284,3 +284,9 @@ class TestPersistence:
         notes = ws.list_notes()
         assert len(notes) == 1
         assert notes[0].title == "Good"
+        assert ws.get("corrupt") is None
+
+    def test_delete_missing_file_silently_ignores(self, ws):
+        # tests covering _delete_file when the file does not exist
+        # just verify it does not naturally raise exceptions
+        ws._delete_file("nonexistent_id", ws._notes_dir)

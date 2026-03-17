@@ -40,7 +40,7 @@ class MapGenerator(Protocol):
             grid: 2-D grid (size x size) to populate. Modified in place.
             size: Side length of the square grid.
         """
-        ...
+        ...  # pragma: no cover
 
 
 class CellularAutomataGenerator:

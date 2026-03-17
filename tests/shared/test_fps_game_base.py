@@ -148,6 +148,26 @@ class TestSpawnPortal:
         assert "x" in game.portal
         assert "y" in game.portal
 
+    def test_spawn_portal_no_map(self):
+        game = _make_game()
+        game.player = MagicMock()
+        game.player.x = 5.0
+        game.player.y = 5.0
+        game.game_map = None
+        game.spawn_portal()
+        assert game.portal is None
+
+    def test_spawn_portal_all_walls(self):
+        game = _make_game()
+        game.player = MagicMock()
+        game.player.x = 5.0
+        game.player.y = 5.0
+        mock_map = MagicMock()
+        mock_map.is_wall.return_value = True
+        game.game_map = mock_map
+        game.spawn_portal()
+        assert game.portal is None
+
 
 class TestFindSafeSpawn:
     def test_returns_base_when_no_map(self):
@@ -179,6 +199,15 @@ class TestFindSafeSpawn:
         result = game.find_safe_spawn(20.0, 20.0, 0.0)
         assert len(result) == 3  # Returns a valid tuple
 
+    def test_finds_safe_spawn_out_of_bounds_and_exhausts(self):
+        game = _make_game()
+        mock_map = MagicMock()
+        mock_map.size = 10
+        mock_map.is_wall.return_value = True
+        game.game_map = mock_map
+        result = game.find_safe_spawn(5.0, 5.0, 0.0)
+        assert result == (5.0, 5.0, 0.0)
+
 
 class TestGetBestSpawnPoint:
     def test_fallback_when_no_map(self):
@@ -196,6 +225,34 @@ class TestGetBestSpawnPoint:
         game.game_map = mock_map
         result = game._get_best_spawn_point()
         assert len(result) == 3
+
+    def test_get_best_spawn_point_corners_are_walls_but_center_free(self):
+        game = _make_game()
+        mock_map = MagicMock()
+        mock_map.size = 40
+        mock_map.height = 40
+        mock_map.width = 40
+
+        def is_wall(x, y):
+            if int(x) == 20 and int(y) == 2:
+                return False
+            return True
+
+        mock_map.is_wall.side_effect = is_wall
+        game.game_map = mock_map
+        result = game._get_best_spawn_point()
+        assert result == (20.5, 2.5, 0.0)
+
+    def test_get_best_spawn_point_all_walls(self):
+        game = _make_game()
+        mock_map = MagicMock()
+        mock_map.size = 40
+        mock_map.height = 40
+        mock_map.width = 40
+        mock_map.is_wall.return_value = True
+        game.game_map = mock_map
+        result = game._get_best_spawn_point()
+        assert result == (5.5, 5.5, 0.0)
 
 
 class TestRespawnPlayer:

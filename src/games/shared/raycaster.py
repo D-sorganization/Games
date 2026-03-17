@@ -304,9 +304,7 @@ class Raycaster:
             self.grid = self.game_map.grid
             self.np_grid = np.array(self.game_map.grid, dtype=np.int8)
 
-    def _calculate_rays(
-        self, player: Player
-    ) -> tuple[
+    def _calculate_rays(self, player: Player) -> tuple[
         np.ndarray[Any, np.dtype[Any]],
         np.ndarray[Any, np.dtype[Any]],
         np.ndarray[Any, np.dtype[Any]],
@@ -949,7 +947,7 @@ class Raycaster:
         sprite_size: float,
         dist: float,
         flash_intensity: float,
-    ) -> tuple[pygame.Surface, str, float]:
+    ) -> tuple[pygame.Surface, tuple[Any, ...], float]:
         """Get or create a cached sprite surface for the given bot.
 
         Returns:
@@ -1036,7 +1034,7 @@ class Raycaster:
     def _blit_sprite_runs(  # noqa: PLR0913
         self,
         sprite_surface: pygame.Surface,
-        cache_key: str,
+        cache_key: tuple[Any, ...],
         visible_runs: list[tuple[int, int]],
         total_visible_pixels: int,
         target_width: int,
@@ -1081,7 +1079,7 @@ class Raycaster:
     def _blit_whole_scaled(  # noqa: PLR0913
         self,
         sprite_surface: pygame.Surface,
-        cache_key: str,
+        cache_key: tuple[Any, ...],
         visible_runs: list[tuple[int, int]],
         target_width: int,
         target_height: int,

@@ -2,22 +2,19 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from unittest.mock import MagicMock, patch
-
-import pytest
 
 from games.shared.asset_catalog import AssetCatalog
 
 
 class TestSoundLoading:
-    def test_load_sound_nonexistent_returns_none(
-        self, tmp_path: pytest.TempPathFactory
-    ) -> None:
+    def test_load_sound_nonexistent_returns_none(self, tmp_path: Path) -> None:
         catalog = AssetCatalog(tmp_path)
         result = catalog.load_sound("doesnt_exist.wav")
         assert result is None
 
-    def test_load_sound_existing_file(self, tmp_path: pytest.TempPathFactory) -> None:
+    def test_load_sound_existing_file(self, tmp_path: Path) -> None:
         sounds_dir = tmp_path / "assets" / "sounds"
         sounds_dir.mkdir(parents=True)
         sound_file = sounds_dir / "test.wav"
@@ -30,9 +27,7 @@ class TestSoundLoading:
         assert result is mock_sound
         mock_sound.set_volume.assert_called_once_with(0.5)
 
-    def test_load_sound_cached_on_second_call(
-        self, tmp_path: pytest.TempPathFactory
-    ) -> None:
+    def test_load_sound_cached_on_second_call(self, tmp_path: Path) -> None:
         sounds_dir = tmp_path / "assets" / "sounds"
         sounds_dir.mkdir(parents=True)
         (sounds_dir / "fx.wav").write_bytes(b"WAVE")
@@ -44,9 +39,7 @@ class TestSoundLoading:
             second = catalog.load_sound("fx.wav")
         assert first is second
 
-    def test_load_sound_exception_returns_none(
-        self, tmp_path: pytest.TempPathFactory
-    ) -> None:
+    def test_load_sound_exception_returns_none(self, tmp_path: Path) -> None:
         sounds_dir = tmp_path / "assets" / "sounds"
         sounds_dir.mkdir(parents=True)
         (sounds_dir / "bad.wav").write_bytes(b"NOT_VALID_WAVE")
@@ -58,31 +51,25 @@ class TestSoundLoading:
 
 
 class TestImageLoading:
-    def test_load_image_nonexistent_returns_none(
-        self, tmp_path: pytest.TempPathFactory
-    ) -> None:
+    def test_load_image_nonexistent_returns_none(self, tmp_path: Path) -> None:
         catalog = AssetCatalog(tmp_path)
         result = catalog.load_image("missing.png")
         assert result is None
 
-    def test_load_image_existing_with_alpha(
-        self, tmp_path: pytest.TempPathFactory
-    ) -> None:
+    def test_load_image_existing_with_alpha(self, tmp_path: Path) -> None:
         images_dir = tmp_path / "assets" / "images"
         images_dir.mkdir(parents=True)
         (images_dir / "sprite.png").write_bytes(b"PNG_DATA")
 
         mock_surface = MagicMock()
         mock_surface.convert_alpha.return_value = mock_surface
-        with (
-            patch("pygame.image.load", return_value=mock_surface),
-        ):
+        with (patch("pygame.image.load", return_value=mock_surface),):
             catalog = AssetCatalog(tmp_path)
             result = catalog.load_image("sprite.png", alpha=True)
         assert result is mock_surface
         mock_surface.convert_alpha.assert_called_once()
 
-    def test_load_image_without_alpha(self, tmp_path: pytest.TempPathFactory) -> None:
+    def test_load_image_without_alpha(self, tmp_path: Path) -> None:
         images_dir = tmp_path / "assets" / "images"
         images_dir.mkdir(parents=True)
         (images_dir / "bg.png").write_bytes(b"PNG_DATA")
@@ -95,7 +82,7 @@ class TestImageLoading:
         assert result is mock_surface
         mock_surface.convert.assert_called_once()
 
-    def test_load_image_cached(self, tmp_path: pytest.TempPathFactory) -> None:
+    def test_load_image_cached(self, tmp_path: Path) -> None:
         images_dir = tmp_path / "assets" / "images"
         images_dir.mkdir(parents=True)
         (images_dir / "cached.png").write_bytes(b"PNG_DATA")
@@ -108,9 +95,7 @@ class TestImageLoading:
             second = catalog.load_image("cached.png")
         assert first is second
 
-    def test_load_image_exception_returns_none(
-        self, tmp_path: pytest.TempPathFactory
-    ) -> None:
+    def test_load_image_exception_returns_none(self, tmp_path: Path) -> None:
         images_dir = tmp_path / "assets" / "images"
         images_dir.mkdir(parents=True)
         (images_dir / "bad.png").write_bytes(b"BAD_DATA")
@@ -144,7 +129,7 @@ class TestImageLoading:
 
 
 class TestTextCache:
-    def test_load_text_cached(self, tmp_path: pytest.TempPathFactory) -> None:
+    def test_load_text_cached(self, tmp_path: Path) -> None:
         assets = tmp_path / "assets"
         assets.mkdir()
         (assets / "notes.txt").write_text("hello", encoding="utf-8")
