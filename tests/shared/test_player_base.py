@@ -211,6 +211,14 @@ class TestPlayerShooting:
         player.shoot()
         assert player.weapon_state["pistol"]["reloading"] is True
 
+    def test_shoot_fails_empty_clip_no_reload(self, player: PlayerBase) -> None:
+        """When shoot detects empty clip initially, it triggers reload and returns False."""
+        player.switch_weapon("pistol")
+        player.weapon_state["pistol"]["clip"] = 0
+        result = player.shoot()
+        assert result is False
+        assert player.weapon_state["pistol"]["reloading"] is True
+
 
 class TestPlayerReload:
     """Tests for reloading mechanics."""
@@ -274,6 +282,15 @@ class TestPlayerTimers:
         assert ws["reloading"] is False
         assert ws["clip"] == 12
 
+    def test_update_weapon_state_reloading_not_done(self, player: PlayerBase) -> None:
+        """Reloading timer decrements but doesn't finish."""
+        player.switch_weapon("pistol")
+        player.weapon_state["pistol"]["reloading"] = True
+        player.weapon_state["pistol"]["reload_timer"] = 5
+        player.update_weapon_state()
+        assert player.weapon_state["pistol"]["reloading"] is True
+        assert player.weapon_state["pistol"]["reload_timer"] == 4
+
 
 class TestPlayerShield:
     """Tests for shield mechanics."""
@@ -300,6 +317,14 @@ class TestPlayerShield:
         player.set_shield(False)
         assert player.shield_active is False
         assert player.shield_recharge_delay > 0
+
+    def test_set_shield_false_when_already_false(self, player: PlayerBase) -> None:
+        """Setting shield to False when already False should skip cooldown."""
+        player.shield_active = False
+        player.shield_recharge_delay = 0
+        player.set_shield(False)
+        assert player.shield_active is False
+        assert player.shield_recharge_delay == 0
 
 
 class TestPlayerBomb:
@@ -418,6 +443,34 @@ class TestPlayerPlasma:
         assert p.weapon_state["plasma"]["overheated"] is False
         assert p.weapon_state["plasma"]["heat"] == pytest.approx(0.0)
 
+    def test_plasma_overheat_partial_recovery(self) -> None:
+        """Overheated plasma recovers heat but timer not empty."""
+        p = self._plasma_player()
+        p.weapon_state["plasma"]["overheated"] = True
+        p.weapon_state["plasma"]["overheat_timer"] = 5
+        p.weapon_state["plasma"]["heat"] = 1.0
+        p.update_weapon_state()
+        assert p.weapon_state["plasma"]["overheated"] is True
+        assert p.weapon_state["plasma"]["heat"] < 1.0
+
+    def test_plasma_heat_zero_skips_cooling(self) -> None:
+        """Plasma with 0 heat skips cooling."""
+        p = self._plasma_player()
+        p.weapon_state["plasma"]["heat"] = 0.0
+        p.update_weapon_state()
+        assert p.weapon_state["plasma"]["heat"] == 0.0
+
+    def test_plasma_overheat_zero_penalty(self) -> None:
+        """Plasma weapon with 0 penalty time skips cooling."""
+        p = self._plasma_player()
+        weapons = getattr(p.C, "WEAPONS", {})
+        weapons["plasma"]["overheat_penalty"] = 0
+        p.weapon_state["plasma"]["overheated"] = True
+        p.weapon_state["plasma"]["overheat_timer"] = 5
+        p.update_weapon_state()
+        # Should decrement timer but skip cooling calculation
+        assert p.weapon_state["plasma"]["overheat_timer"] == 4
+
 
 class TestPlayerMinigun:
     """Tests for minigun spinup mechanics."""
@@ -474,6 +527,14 @@ class TestPlayerMinigun:
         p.shoot_timer = 0
         p.update_timers()
         assert p.weapon_state["minigun"]["spin_timer"] < 10
+
+    def test_update_timers_minigun_spin_timer_already_zero(self) -> None:
+        """Minigun spin timer at 0 shouldn't decrement."""
+        p = self._minigun_player()
+        p.shoot_timer = 0
+        p.weapon_state["minigun"]["spin_timer"] = 0
+        p.update_timers()
+        assert p.weapon_state["minigun"]["spin_timer"] == 0
 
 
 class TestPlayerSecondaryFire:
@@ -540,3 +601,35 @@ class TestPlayerTimersAdvanced:
         player.alive = False
         result = player.shoot()
         assert result is False
+
+    def test_update_timers_no_spin_timer(self, player: PlayerBase) -> None:
+        """Minigun without spin timer shouldn't crash."""
+        player.switch_weapon("pistol")
+        player.shoot_timer = 0
+        player.shooting = True
+        player.update_timers()
+        assert player.shooting is False
+
+    def test_bomb_cooldown_decrements(self, player: PlayerBase) -> None:
+        """Bomb cooldown should decrement each tick."""
+        player.bomb_cooldown = 10
+        player.update_timers()
+        assert player.bomb_cooldown == 9
+
+    def test_update_timers_bomb_cooldown_zero(self, player: PlayerBase) -> None:
+        player.bomb_cooldown = 0
+        player.update_timers()
+        assert player.bomb_cooldown == 0
+
+    def test_shield_timer_decrements(self, player: PlayerBase) -> None:
+        player.shield_active = True
+        player.shield_timer = 100
+        player.update_timers()
+        assert player.shield_active is True
+        assert player.shield_timer == 99
+
+    def test_shield_recharge_delay_decrements(self, player: PlayerBase) -> None:
+        player.shield_active = False
+        player.shield_recharge_delay = 10
+        player.update_timers()
+        assert player.shield_recharge_delay == 9
