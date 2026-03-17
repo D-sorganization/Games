@@ -91,23 +91,16 @@ class MapBase:
             # Carve room (set to 0)
             for i in range(y, y + h):
                 for j in range(x, x + w):
-                    if 0 <= i < size and 0 <= j < size:
-                        self.grid[i][j] = 0
+                    self.grid[i][j] = 0
 
             # Add walls around room (type 2, 3, 4)
             wall_type = random.choice([2, 3, 4])
             for i in range(y, y + h):
-                if 0 <= i < size:
-                    if 0 <= x < size:
-                        self.grid[i][x] = wall_type
-                    if 0 <= x + w - 1 < size:
-                        self.grid[i][x + w - 1] = wall_type
+                self.grid[i][x] = wall_type
+                self.grid[i][x + w - 1] = wall_type
             for j in range(x, x + w):
-                if 0 <= j < size:
-                    if 0 <= y < size:
-                        self.grid[y][j] = wall_type
-                    if 0 <= y + h - 1 < size:
-                        self.grid[y + h - 1][j] = wall_type
+                self.grid[y][j] = wall_type
+                self.grid[y + h - 1][j] = wall_type
 
     def _ensure_connectivity(self) -> None:
         """Ensure map connectivity using flood fill."""

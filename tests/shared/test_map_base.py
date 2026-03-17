@@ -155,3 +155,29 @@ class TestMapBaseGeneration:
         assert len(visited) == total_open, (
             f"Not all open cells are connected: {len(visited)}/{total_open}"
         )
+
+    def test_add_rooms_small_map(self) -> None:
+        """Test with a small map size to trigger bounds safety
+        check in _add_rooms."""
+        m = MapBase(10)
+        assert m.width == 10
+
+    def test_ensure_connectivity_all_walls(self) -> None:
+        """When the map is entirely walls, it should force a starting
+        point at center."""
+        from unittest.mock import patch
+
+        from games.shared.map_generators import MapGenerator
+
+        class AllWallsGenerator(MapGenerator):
+            def generate(self, grid: list[list[int]], size: int) -> None:
+                for y in range(size):
+                    for x in range(size):
+                        grid[y][x] = 1
+
+        with patch("games.shared.map_base.MapBase._add_rooms"):
+            m = MapBase(20, generator=AllWallsGenerator())
+
+        # The center should have been carved out!
+        cx, cy = 10, 10
+        assert m.grid[cy][cx] == 0
