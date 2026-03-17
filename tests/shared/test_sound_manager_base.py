@@ -5,7 +5,7 @@ Tests both SoundManagerBase and NullSoundManager using mocked pygame.
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 from games.shared.sound_manager_base import NullSoundManager, SoundManagerBase
 
@@ -63,6 +63,55 @@ class TestNullSoundManager:
 class TestSoundManagerBase:
     """Tests for SoundManagerBase core logic."""
 
+    @patch("games.shared.sound_manager_base.pygame.mixer")
+    @patch("games.shared.sound_manager_base.Path")
+    def test_init_and_load_assets(self, mock_path, mock_mixer):
+        mock_path_instance = MagicMock()
+        mock_path.return_value = mock_path_instance
+        mock_path_cwd = MagicMock()
+        mock_path.cwd.return_value = mock_path_cwd
+        mock_path.return_value.resolve.return_value.parent.parent.__truediv__.return_value = mock_path_instance
+        mock_path_instance.__truediv__.return_value = mock_path_instance
+        
+        # Mock file exists
+        mock_path_instance.exists.return_value = True
+
+        class MySoundManager(SoundManagerBase):
+            SOUND_FILES = {"boom": "boom.wav", "music_level": "music.wav", "ambient": "amb.wav"}
+            def get_game_name(self): return "MyGame"
+        
+        # Test success mapping
+        with patch("games.shared.sound_manager_base.pygame.mixer.Sound") as mock_sound_cls:
+            mock_snd = MagicMock()
+            mock_sound_cls.return_value = mock_snd
+            mgr = MySoundManager()
+            assert "boom" in mgr.sounds
+            assert "music_level" in mgr.sounds
+            assert "ambient" in mgr.sounds
+            
+            # volume lowered for music and ambient
+            mock_snd.set_volume.assert_called_with(0.5)
+
+        # Test failure loading sound (Exception caught)
+        with patch("games.shared.sound_manager_base.pygame.mixer.Sound", side_effect=Exception("Codec error")):
+            mgr2 = MySoundManager()
+            assert not mgr2.sounds # nothing loaded
+
+        # Test path doesn't exist
+        mock_path_instance.exists.return_value = False
+        mgr3 = MySoundManager()
+        assert not mgr3.sounds
+
+    def test_play_sound_exception(self) -> None:
+        """play_sound should catch exceptions during playback."""
+        mgr = SoundManagerBase.__new__(SoundManagerBase)
+        mock_sound = MagicMock()
+        mock_sound.play.side_effect = Exception("error")
+        mgr.sounds = {"boom": mock_sound}
+        mgr.sound_enabled = True
+        mgr.play_sound("boom") # Should catch the error cleanly
+
+
     def test_play_sound_disabled(self) -> None:
         """play_sound should do nothing when sound is disabled."""
         mgr = SoundManagerBase.__new__(SoundManagerBase)
@@ -100,6 +149,14 @@ class TestSoundManagerBase:
         mock_sound.play.assert_called_once_with(loops=-1)
         assert mgr.current_music == "music_loop"
 
+    def test_start_music_unknown_key(self) -> None:
+        mgr = SoundManagerBase.__new__(SoundManagerBase)
+        mgr.sounds = {}
+        mgr.sound_enabled = True
+        mgr.current_music = None
+        mgr.start_music("nonexistent")
+        assert mgr.current_music is None
+
     def test_start_music_disabled(self) -> None:
         """start_music should do nothing when sound is disabled."""
         mgr = SoundManagerBase.__new__(SoundManagerBase)
@@ -126,6 +183,15 @@ class TestSoundManagerBase:
         mgr.sound_enabled = True
         mgr.current_music = None
         mgr.stop_music()
+
+    def test_stop_music_ambient_fallback(self) -> None:
+        mgr = SoundManagerBase.__new__(SoundManagerBase)
+        mock_ambient = MagicMock()
+        mgr.sounds = {"ambient": mock_ambient}
+        mgr.sound_enabled = True
+        mgr.current_music = None
+        mgr.stop_music()
+        mock_ambient.stop.assert_called_once()
 
     def test_get_game_name_from_module(self) -> None:
         """get_game_name should extract game name from module path."""
@@ -178,3 +244,9 @@ class TestSoundManagerBase:
         mgr.current_music = None
         mgr.unpause_all()
         pygame.mixer.unpause.assert_called()
+
+    def test_pause_unpause_disabled(self) -> None:
+        mgr = SoundManagerBase.__new__(SoundManagerBase)
+        mgr.sound_enabled = False
+        mgr.pause_all()
+        mgr.unpause_all()
