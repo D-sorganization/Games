@@ -148,6 +148,24 @@ class TestSpawnPortal:
         assert "x" in game.portal
         assert "y" in game.portal
 
+    def test_spawn_portal_no_map(self):
+        game = _make_game()
+        game.player = MagicMock()
+        game.game_map = None
+        game.portal = None
+        game.spawn_portal()
+        assert game.portal is None
+
+    def test_spawn_portal_all_walls(self):
+        game = _make_game()
+        game.player = MagicMock()
+        mock_map = MagicMock()
+        mock_map.is_wall.return_value = True
+        game.game_map = mock_map
+        game.portal = None
+        game.spawn_portal()
+        assert game.portal is None
+
 
 class TestFindSafeSpawn:
     def test_returns_base_when_no_map(self):
@@ -179,6 +197,26 @@ class TestFindSafeSpawn:
         result = game.find_safe_spawn(20.0, 20.0, 0.0)
         assert len(result) == 3  # Returns a valid tuple
 
+    def test_find_safe_spawn_out_of_bounds(self):
+        game = _make_game()
+        mock_map = MagicMock()
+        mock_map.size = 10
+        mock_map.is_wall.return_value = False
+        game.game_map = mock_map
+        # Start at 0, 0 so anything radius>0 is partly out of bound
+        result = game.find_safe_spawn(0.0, 0.0, 0.0)
+        # Should test the `not (in_x and in_y)` continue branch
+        assert result is not None
+
+    def test_find_safe_spawn_all_walls(self):
+        game = _make_game()
+        mock_map = MagicMock()
+        mock_map.size = 40
+        mock_map.is_wall.return_value = True
+        game.game_map = mock_map
+        result = game.find_safe_spawn(20.0, 20.0, 0.0)
+        assert result == (20.0, 20.0, 0.0)
+
 
 class TestGetBestSpawnPoint:
     def test_fallback_when_no_map(self):
@@ -196,6 +234,36 @@ class TestGetBestSpawnPoint:
         game.game_map = mock_map
         result = game._get_best_spawn_point()
         assert len(result) == 3
+
+    def test_get_best_spawn_point_corners_blocked_grid_free(self):
+        game = _make_game()
+        mock_map = MagicMock()
+        mock_map.size = 40
+        mock_map.height = 40
+        mock_map.width = 40
+
+        def is_wall_func(x, y):
+            # The corner search is constrained to x >= 2 and y >= 2
+            # So x=0, y=0 is ONLY ever checked in the fallback grid search!
+            if x == 0 and y == 0:
+                return False
+            return True
+
+        mock_map.is_wall.side_effect = is_wall_func
+        game.game_map = mock_map
+        result = game._get_best_spawn_point()
+        assert len(result) == 3
+
+    def test_get_best_spawn_point_all_walls(self):
+        game = _make_game()
+        mock_map = MagicMock()
+        mock_map.size = 40
+        mock_map.height = 10
+        mock_map.width = 10
+        mock_map.is_wall.return_value = True
+        game.game_map = mock_map
+        result = game._get_best_spawn_point()
+        assert result == (5.5, 5.5, 0.0)
 
 
 class TestRespawnPlayer:
