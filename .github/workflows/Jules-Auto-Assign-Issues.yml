@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   auto-assign:
-    runs-on: d-sorg-fleet-4core
+    runs-on: ubuntu-latest
     # CHANGED: Only trigger for automated issues or explicit jules-triage label
     # - Issues created by github-actions (from automated assessments)
     # - Issues with 'jules-triage' or 'auto-generated' labels

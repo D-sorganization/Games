@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   check-mention:
-    runs-on: d-sorg-fleet-4core
+    runs-on: ubuntu-latest
     outputs:
       should_run: ${{ steps.check.outputs.should_run }}
     steps:
@@ -39,7 +39,7 @@ jobs:
   fix-issue:
     needs: check-mention
     if: needs.check-mention.outputs.should_run == 'true' && !github.event.issue.pull_request
-    runs-on: d-sorg-fleet-4core
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
         with:

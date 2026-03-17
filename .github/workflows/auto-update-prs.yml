@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   update-prs:
-    runs-on: d-sorg-fleet-4core
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
       - name: Update PRs with strictly linear history
