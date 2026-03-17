@@ -1,0 +1,63 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.5, pytest-8.4.1, pluggy-1.6.0 -- C:\Users\diete\AppData\Local\Programs\Python\Python313\python.exe
+cachedir: .pytest_cache
+hypothesis profile 'default'
+PySide6 6.10.2 -- Qt runtime 6.10.2 -- Qt compiled 6.10.2
+rootdir: C:\Users\diete\Repositories\Games
+configfile: pyproject.toml
+plugins: anyio-4.9.0, hypothesis-6.151.9, asyncio-1.3.0, cov-7.0.0, mock-3.15.1, qt-4.5.0, timeout-2.3.1, xdist-3.8.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 40 items
+
+tests/shared/test_asset_catalog.py::TestConstruction::test_base_dir PASSED [  2%]
+tests/shared/test_asset_catalog.py::TestConstruction::test_assets_dir PASSED [  5%]
+tests/shared/test_asset_catalog.py::TestConstruction::test_none_base_raises PASSED [  7%]
+tests/shared/test_asset_catalog.py::TestPathResolution::test_resolve_path PASSED [ 10%]
+tests/shared/test_asset_catalog.py::TestPathResolution::test_exists_nonexistent PASSED [ 12%]
+tests/shared/test_asset_catalog.py::TestPathResolution::test_exists_real_file PASSED [ 15%]
+tests/shared/test_asset_catalog.py::TestJsonLoading::test_load_json_from_data_subdir PASSED [ 17%]
+tests/shared/test_asset_catalog.py::TestJsonLoading::test_load_json_fallback_to_assets_root PASSED [ 20%]
+tests/shared/test_asset_catalog.py::TestJsonLoading::test_load_json_nonexistent PASSED [ 22%]
+tests/shared/test_asset_catalog.py::TestJsonLoading::test_load_json_invalid PASSED [ 25%]
+tests/shared/test_asset_catalog.py::TestTextLoading::test_load_text PASSED [ 27%]
+tests/shared/test_asset_catalog.py::TestTextLoading::test_load_text_nonexistent PASSED [ 30%]
+tests/shared/test_asset_catalog.py::TestTextLoading::test_load_text_oserror PASSED [ 32%]
+tests/shared/test_asset_catalog.py::TestSoundLoading::test_load_sound_success PASSED [ 35%]
+tests/shared/test_asset_catalog.py::TestSoundLoading::test_load_sound_nonexistent PASSED [ 37%]
+tests/shared/test_asset_catalog.py::TestSoundLoading::test_load_sound_exception PASSED [ 40%]
+tests/shared/test_asset_catalog.py::TestImageLoading::test_load_image_success_alpha PASSED [ 42%]
+tests/shared/test_asset_catalog.py::TestImageLoading::test_load_image_success_no_alpha PASSED [ 45%]
+tests/shared/test_asset_catalog.py::TestImageLoading::test_load_image_nonexistent PASSED [ 47%]
+tests/shared/test_asset_catalog.py::TestImageLoading::test_load_image_exception PASSED [ 50%]
+tests/shared/test_asset_catalog.py::TestCaching::test_cache_size_grows PASSED [ 52%]
+tests/shared/test_asset_catalog.py::TestCaching::test_cache_returns_same_object PASSED [ 55%]
+tests/shared/test_asset_catalog.py::TestCaching::test_clear_cache PASSED [ 57%]
+tests/shared/test_ui.py::TestButton::test_init_stores_text_and_color PASSED [ 60%]
+tests/shared/test_ui.py::TestButton::test_hover_color_brighter PASSED    [ 62%]
+tests/shared/test_ui.py::TestButton::test_hover_color_capped_at_255 PASSED [ 65%]
+tests/shared/test_ui.py::TestButton::test_hovered_default_false PASSED   [ 67%]
+tests/shared/test_ui.py::TestButton::test_color_setter_updates_hover PASSED [ 70%]
+tests/shared/test_ui.py::TestButtonUpdate::test_update_sets_hovered_true_when_inside PASSED [ 72%]
+tests/shared/test_ui.py::TestButtonUpdate::test_update_sets_hovered_false_when_outside PASSED [ 75%]
+tests/shared/test_ui.py::TestButtonIsClicked::test_clicked_inside_returns_true PASSED [ 77%]
+tests/shared/test_ui.py::TestButtonIsClicked::test_clicked_outside_returns_false PASSED [ 80%]
+tests/shared/test_ui.py::TestBloodButton::test_inherits_button PASSED    [ 82%]
+tests/shared/test_ui.py::TestBloodButton::test_init_generates_drips PASSED [ 85%]
+tests/shared/test_ui.py::TestBloodButton::test_pulse_timer_initialized PASSED [ 87%]
+tests/shared/test_ui.py::TestBloodButton::test_update_advances_pulse_timer PASSED [ 90%]
+tests/shared/test_ui.py::TestBloodButton::test_drip_animation_changes_length PASSED [ 92%]
+tests/shared/test_ui.py::TestBloodButton::test_default_color_is_dark_red PASSED [ 95%]
+tests/shared/test_ui.py::TestButtonDraw::test_button_draw PASSED         [ 97%]
+tests/shared/test_ui.py::TestButtonDraw::test_blood_button_draw PASSED   [100%]
+
+=============================== tests coverage ================================
+_______________ coverage: platform win32, python 3.13.5-final-0 _______________
+
+Name                                Stmts   Miss Branch BrPart  Cover   Missing
+-------------------------------------------------------------------------------
+src\games\shared\asset_catalog.py      94      3     18      3    95%   78, 97, 119
+src\games\shared\ui.py                 82      3     10      1    96%   125-127
+-------------------------------------------------------------------------------
+TOTAL                                 176      6     28      4    95%
+Required test coverage of 25.0% reached. Total coverage: 95.10%
+============================= 40 passed in 0.72s ==============================

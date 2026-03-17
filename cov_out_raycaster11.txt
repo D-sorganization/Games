@@ -1,0 +1,46 @@
+........................................................................ [ 75%]
+..................FFFF.                                                  [100%]
+================================== FAILURES ===================================
+________________ TestBlitWholeScaled.test_cache_miss_then_hit _________________
+tests\shared\test_raycaster_extra.py:273: in test_cache_miss_then_hit
+    rc._blit_whole_scaled(surf, "key_ws_a", 0, 200, 100, 200, 0.0, 200.0)
+src\games\shared\raycaster.py:1114: in _blit_whole_scaled
+    for run_start, run_end in visible_runs:
+                              ^^^^^^^^^^^^
+E   TypeError: 'int' object is not iterable
+_________________ TestBlitWholeScaled.test_with_shade_overlay _________________
+tests\shared\test_raycaster_extra.py:282: in test_with_shade_overlay
+    rc._blit_whole_scaled(surf, "key_ws_b", 0, 200, 100, 200, 0.5, 200.0)
+src\games\shared\raycaster.py:1114: in _blit_whole_scaled
+    for run_start, run_end in visible_runs:
+                              ^^^^^^^^^^^^
+E   TypeError: 'int' object is not iterable
+___________________ TestBlitStripScaled.test_strip_renders ____________________
+tests\shared\test_raycaster_extra.py:294: in test_strip_renders
+    rc._blit_strip_scaled(
+src\games\shared\raycaster.py:1147: in _blit_strip_scaled
+    tex_scale = logical_tex_width / sprite_ray_width
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   ZeroDivisionError: float division by zero
+__________________ TestBlitStripScaled.test_strip_cache_hit ___________________
+tests\shared\test_raycaster_extra.py:304: in test_strip_cache_hit
+    rc._blit_strip_scaled(
+src\games\shared\raycaster.py:1147: in _blit_strip_scaled
+    tex_scale = logical_tex_width / sprite_ray_width
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   ZeroDivisionError: float division by zero
+=============================== tests coverage ================================
+_______________ coverage: platform win32, python 3.13.5-final-0 _______________
+
+Name                            Stmts   Miss Branch BrPart  Cover   Missing
+---------------------------------------------------------------------------
+src\games\shared\raycaster.py     650     26    230     23    94%   304-305, 429->466, 449-451, 454->464, 693->699, 701->exit, 787, 789, 854->859, 863->exit, 918, 1000-1001, 1100-1101, 1108-1109, 1111-1112, 1119-1120, 1122, 1124->1114, 1161, 1170-1171, 1207->1212, 1216->exit, 1221-1222, 1331-1335, 1384->exit, 1440->1468
+---------------------------------------------------------------------------
+TOTAL                             650     26    230     23    94%
+Required test coverage of 25.0% reached. Total coverage: 93.98%
+=========================== short test summary info ===========================
+FAILED tests/shared/test_raycaster_extra.py::TestBlitWholeScaled::test_cache_miss_then_hit
+FAILED tests/shared/test_raycaster_extra.py::TestBlitWholeScaled::test_with_shade_overlay
+FAILED tests/shared/test_raycaster_extra.py::TestBlitStripScaled::test_strip_renders
+FAILED tests/shared/test_raycaster_extra.py::TestBlitStripScaled::test_strip_cache_hit
+4 failed, 91 passed in 8.03s

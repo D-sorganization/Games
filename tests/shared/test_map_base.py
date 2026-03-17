@@ -152,6 +152,6 @@ class TestMapBaseGeneration:
             1 for i in range(m.size) for j in range(m.size) if m.grid[i][j] == 0
         )
 
-        assert len(visited) == total_open, (
-            f"Not all open cells are connected: {len(visited)}/{total_open}"
-        )
+        assert (
+            len(visited) == total_open
+        ), f"Not all open cells are connected: {len(visited)}/{total_open}"

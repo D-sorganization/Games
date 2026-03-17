@@ -1,0 +1,35 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.5, pytest-8.4.1, pluggy-1.6.0 -- C:\Users\diete\AppData\Local\Programs\Python\Python313\python.exe
+cachedir: .pytest_cache
+hypothesis profile 'default'
+PySide6 6.10.2 -- Qt runtime 6.10.2 -- Qt compiled 6.10.2
+rootdir: C:\Users\diete\Repositories\Games
+configfile: pyproject.toml
+plugins: anyio-4.9.0, hypothesis-6.151.9, asyncio-1.3.0, cov-7.0.0, mock-3.15.1, qt-4.5.0, timeout-2.3.1, xdist-3.8.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 13 items
+
+tests/shared/test_input_manager_base.py::TestInit::test_default_bindings_copied PASSED [  7%]
+tests/shared/test_input_manager_base.py::TestInit::test_mouse_sensitivity_default PASSED [ 15%]
+tests/shared/test_input_manager_base.py::TestInit::test_invert_y_default_false PASSED [ 23%]
+tests/shared/test_input_manager_base.py::TestConfigPersistence::test_save_and_load_roundtrip PASSED [ 30%]
+tests/shared/test_input_manager_base.py::TestConfigPersistence::test_load_missing_file_uses_defaults PASSED [ 38%]
+tests/shared/test_input_manager_base.py::TestConfigPersistence::test_load_invalid_json_uses_defaults PASSED [ 46%]
+tests/shared/test_input_manager_base.py::TestConfigPersistence::test_load_partial_config_merges PASSED [ 53%]
+tests/shared/test_input_manager_base.py::TestConfigPersistence::test_save_config_oserror PASSED [ 61%]
+tests/shared/test_input_manager_base.py::TestBindKey::test_bind_existing_action PASSED [ 69%]
+tests/shared/test_input_manager_base.py::TestBindKey::test_bind_nonexistent_action_is_noop PASSED [ 76%]
+tests/shared/test_input_manager_base.py::TestBindKey::test_is_action_pressed PASSED [ 84%]
+tests/shared/test_input_manager_base.py::TestBindKey::test_is_action_just_pressed PASSED [ 92%]
+tests/shared/test_input_manager_base.py::TestBindKey::test_get_key_name PASSED [100%]
+
+=============================== tests coverage ================================
+_______________ coverage: platform win32, python 3.13.5-final-0 _______________
+
+Name                                     Stmts   Miss Branch BrPart  Cover   Missing
+------------------------------------------------------------------------------------
+src\games\shared\input_manager_base.py      50      0     16      0   100%
+------------------------------------------------------------------------------------
+TOTAL                                       50      0     16      0   100%
+Required test coverage of 25.0% reached. Total coverage: 100.00%
+============================= 13 passed in 0.62s ==============================

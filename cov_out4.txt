@@ -1,0 +1,45 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.5, pytest-8.4.1, pluggy-1.6.0 -- C:\Users\diete\AppData\Local\Programs\Python\Python313\python.exe
+cachedir: .pytest_cache
+hypothesis profile 'default'
+PySide6 6.10.2 -- Qt runtime 6.10.2 -- Qt compiled 6.10.2
+rootdir: C:\Users\diete\Repositories\Games
+configfile: pyproject.toml
+plugins: anyio-4.9.0, hypothesis-6.151.9, asyncio-1.3.0, cov-7.0.0, mock-3.15.1, qt-4.5.0, timeout-2.3.1, xdist-3.8.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 23 items
+
+tests/shared/test_sound_manager_base.py::TestNullSoundManager::test_init_does_not_touch_mixer PASSED [  4%]
+tests/shared/test_sound_manager_base.py::TestNullSoundManager::test_play_sound_is_noop PASSED [  8%]
+tests/shared/test_sound_manager_base.py::TestNullSoundManager::test_start_music_is_noop PASSED [ 13%]
+tests/shared/test_sound_manager_base.py::TestNullSoundManager::test_stop_music_is_noop PASSED [ 17%]
+tests/shared/test_sound_manager_base.py::TestNullSoundManager::test_pause_all_is_noop PASSED [ 21%]
+tests/shared/test_sound_manager_base.py::TestNullSoundManager::test_unpause_all_is_noop PASSED [ 26%]
+tests/shared/test_sound_manager_base.py::TestNullSoundManager::test_load_assets_is_noop PASSED [ 30%]
+tests/shared/test_sound_manager_base.py::TestSoundManagerBase::test_init_and_load_assets PASSED [ 34%]
+tests/shared/test_sound_manager_base.py::TestSoundManagerBase::test_play_sound_exception PASSED [ 39%]
+tests/shared/test_sound_manager_base.py::TestSoundManagerBase::test_play_sound_disabled PASSED [ 43%]
+tests/shared/test_sound_manager_base.py::TestSoundManagerBase::test_play_sound_existing_key PASSED [ 47%]
+tests/shared/test_sound_manager_base.py::TestSoundManagerBase::test_play_sound_unknown_key PASSED [ 52%]
+tests/shared/test_sound_manager_base.py::TestSoundManagerBase::test_start_music_plays_loop PASSED [ 56%]
+tests/shared/test_sound_manager_base.py::TestSoundManagerBase::test_start_music_unknown_key PASSED [ 60%]
+tests/shared/test_sound_manager_base.py::TestSoundManagerBase::test_start_music_disabled PASSED [ 65%]
+tests/shared/test_sound_manager_base.py::TestSoundManagerBase::test_stop_music_stops_current PASSED [ 69%]
+tests/shared/test_sound_manager_base.py::TestSoundManagerBase::test_stop_music_no_current PASSED [ 73%]
+tests/shared/test_sound_manager_base.py::TestSoundManagerBase::test_stop_music_ambient_fallback PASSED [ 78%]
+tests/shared/test_sound_manager_base.py::TestSoundManagerBase::test_get_game_name_from_module PASSED [ 82%]
+tests/shared/test_sound_manager_base.py::TestSoundManagerBase::test_get_game_name_unknown_module PASSED [ 86%]
+tests/shared/test_sound_manager_base.py::TestSoundManagerBase::test_pause_all_calls_mixer PASSED [ 91%]
+tests/shared/test_sound_manager_base.py::TestSoundManagerBase::test_unpause_all_calls_mixer PASSED [ 95%]
+tests/shared/test_sound_manager_base.py::TestSoundManagerBase::test_pause_unpause_disabled PASSED [100%]
+
+=============================== tests coverage ================================
+_______________ coverage: platform win32, python 3.13.5-final-0 _______________
+
+Name                                     Stmts   Miss Branch BrPart  Cover   Missing
+------------------------------------------------------------------------------------
+src\games\shared\sound_manager_base.py      77      0     24      0   100%
+------------------------------------------------------------------------------------
+TOTAL                                       77      0     24      0   100%
+Required test coverage of 25.0% reached. Total coverage: 100.00%
+============================= 23 passed in 0.61s ==============================
