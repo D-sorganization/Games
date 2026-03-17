@@ -540,3 +540,158 @@ class TestPlayerTimersAdvanced:
         player.alive = False
         result = player.shoot()
         assert result is False
+
+    def test_shoot_when_clip_already_empty(self, player: PlayerBase) -> None:
+        """Shooting when clip is already zero triggers reload and returns False."""
+        player.switch_weapon("pistol")
+        player.weapon_state["pistol"]["clip"] = 0
+        assert not player.shoot()
+        assert player.weapon_state["pistol"]["reloading"] is True
+
+    def test_set_shield_active_with_zero_timer(self, player: PlayerBase) -> None:
+        """Activating shield with no timer drops to deactivation block."""
+        player.shield_timer = 0
+        player.shield_recharge_delay = 0
+        player.shield_active = False
+        player.set_shield(True)
+        assert player.shield_active is False
+
+    def test_plasma_overheat_zero_penalty(self) -> None:
+        """Overheating without a penalty time."""
+        from tests.conftest import make_constants
+
+        weapons = {
+            "plasma": {
+                "name": "Plasma",
+                "ammo": 999,
+                "clip_size": 999,
+                "overheat_penalty": 0,
+                "max_heat": 1.0,
+            }
+        }
+        c = make_constants(WEAPONS=weapons)
+        p = PlayerBase(0, 0, 0, c.WEAPONS, c)
+        p.switch_weapon("plasma")
+        p.weapon_state["plasma"]["overheated"] = True
+        p.weapon_state["plasma"]["overheat_timer"] = 1
+        p.update_weapon_state()
+        # Should not throw divide by zero
+
+    def test_plasma_cooling_complete(self) -> None:
+        """Plasma heat goes to 0 branch."""
+        from tests.conftest import make_constants
+
+        weapons = {
+            "plasma": {
+                "name": "Plasma",
+                "ammo": 999,
+                "clip_size": 999,
+                "cooling_rate": 0.5,
+            }
+        }
+        c = make_constants(WEAPONS=weapons)
+        p = PlayerBase(0, 0, 0, c.WEAPONS, c)
+        p.switch_weapon("plasma")
+        p.weapon_state["plasma"]["heat"] = 0.0  # Heat already 0
+        p.update_weapon_state()
+        assert p.weapon_state["plasma"]["heat"] == 0.0
+
+    def test_minigun_spin_decay_when_zero(self) -> None:
+        """Minigun spin down logic when spin timer already 0."""
+        from tests.conftest import make_constants
+
+        weapons = {"minigun": {"name": "Minigun", "ammo": 999, "clip_size": 999}}
+        c = make_constants(WEAPONS=weapons)
+        p = PlayerBase(0, 0, 0, c.WEAPONS, c)
+        p.switch_weapon("minigun")
+        p.shoot_timer = 0
+        p.weapon_state["minigun"]["spin_timer"] = 0
+        p.update_timers()
+        assert p.weapon_state["minigun"]["spin_timer"] == 0
+
+    def test_shield_fully_recovered(self, player: PlayerBase) -> None:
+        """Shield timer at max drops through elif."""
+        player.shield_active = False
+        player.shield_recharge_delay = 0
+        player.shield_timer = getattr(player.C, "SHIELD_MAX_DURATION", 600)
+        player.update_timers()
+        assert player.shield_timer == getattr(player.C, "SHIELD_MAX_DURATION", 600)
+
+    def test_bomb_and_secondary_cooldown_passed(self, player: PlayerBase) -> None:
+        """Bomb and secondary cooldown <= 0 drops through."""
+        player.bomb_cooldown = 0
+        player.secondary_cooldown = 0
+        player.update_timers()
+        assert player.bomb_cooldown == 0
+
+    def test_update_weapon_state_reload_timer_active(self, player: PlayerBase) -> None:
+        """Hits the branch where reload is true but timer > 0."""
+        player.weapon_state["pistol"]["reloading"] = True
+        player.weapon_state["pistol"]["reload_timer"] = 5
+        player.update_weapon_state()
+        assert player.weapon_state["pistol"]["reloading"] is True
+        assert player.weapon_state["pistol"]["reload_timer"] == 4
+
+    def test_shield_timer_decreases_when_active(self, player: PlayerBase) -> None:
+        """Hits branch where shield timer decreases when active."""
+        player.shield_active = True
+        player.shield_timer = 100
+        player.update_timers()
+        assert player.shield_active is True
+        assert player.shield_timer == 99
+
+    def test_shield_recharge_delay_decreases(self, player: PlayerBase) -> None:
+        """Hits branch where shield recharge delay decreases."""
+        player.shield_active = False
+        player.shield_recharge_delay = 50
+        player.update_timers()
+        assert player.shield_recharge_delay == 49
+
+    def test_plasma_overheat_timer_decrement(self) -> None:
+        """Hit the plasma overheat timer > 0 branch where it doesn't clear overheated status yet."""
+        from tests.conftest import make_constants
+
+        weapons = {
+            "plasma": {
+                "name": "Plasma",
+                "ammo": 999,
+                "clip_size": 999,
+                "max_heat": 1.0,
+                "overheat_penalty": 120,
+            }
+        }
+        c = make_constants(WEAPONS=weapons)
+        p = PlayerBase(0, 0, 0, c.WEAPONS, c)
+        p.switch_weapon("plasma")
+        p.weapon_state["plasma"]["overheated"] = True
+        p.weapon_state["plasma"]["overheat_timer"] = 5  # > 0
+        p.weapon_state["plasma"]["heat"] = 1.0
+        p.update_weapon_state()
+        assert p.weapon_state["plasma"]["overheat_timer"] == 4
+        assert p.weapon_state["plasma"]["overheated"] is True
+
+    def test_bomb_cooldown_decrement(self, player: PlayerBase) -> None:
+        """Hit branch where bomb cooldown > 0."""
+        player.bomb_cooldown = 10
+        player.update_timers()
+        assert player.bomb_cooldown == 9
+
+    def test_shield_timer_zero_deactivates(self, player: PlayerBase) -> None:
+        """Hit branch where shield is active but timer <= 0."""
+        player.shield_active = True
+        player.shield_timer = 0
+        player.update_timers()
+        assert player.shield_active is False
+        assert player.shield_recharge_delay == getattr(
+            player.C, "SHIELD_COOLDOWN_DEPLETED", 300
+        )
+
+    def test_shield_recharge_delay_zero_timer_increases(
+        self, player: PlayerBase
+    ) -> None:
+        """Hit branch where shield_recharge_delay <= 0 and shield_timer < shield_max."""
+        player.shield_active = False
+        player.shield_recharge_delay = 0
+        player.shield_timer = 10  # Less than max 600
+        player.update_timers()
+        assert player.shield_timer == 12
