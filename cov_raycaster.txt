@@ -1,0 +1,21 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.5, pytest-8.4.1, pluggy-1.6.0
+PySide6 6.10.2 -- Qt runtime 6.10.2 -- Qt compiled 6.10.2
+rootdir: C:\Users\diete\Repositories\Games
+configfile: pyproject.toml
+plugins: anyio-4.9.0, hypothesis-6.151.9, asyncio-1.3.0, cov-7.0.0, mock-3.15.1, qt-4.5.0, timeout-2.3.1, xdist-3.8.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 17 items
+
+tests\shared\test_raycaster.py .................                         [100%]
+
+=============================== tests coverage ================================
+_______________ coverage: platform win32, python 3.13.5-final-0 _______________
+
+Name                            Stmts   Miss Branch BrPart  Cover   Missing
+---------------------------------------------------------------------------
+src\games\shared\raycaster.py     647     52    228     42    89%   453->463, 497, 535->533, 558, 562, 582, 594->exit, 676-679, 685-687, 694->700, 701-703, 719-730, 777, 781, 788, 790, 792->770, 851, 855->860, 857, 864->exit, 870-871, 909, 919, 924, 930, 963-964, 994->997, 997->1000, 1001-1002, 1055, 1069, 1109-1110, 1112-1113, 1120-1121, 1123, 1125->1115, 1217->exit, 1222-1223, 1332-1336, 1354->1370, 1385->exit, 1441->1469, 1471->1481, 1482->1481, 1491->1481
+---------------------------------------------------------------------------
+TOTAL                             647     52    228     42    89%
+Required test coverage of 25.0% reached. Total coverage: 88.57%
+============================= 17 passed in 1.03s ==============================
