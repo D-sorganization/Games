@@ -74,7 +74,9 @@ class TestImageLoading:
 
         mock_surface = MagicMock()
         mock_surface.convert_alpha.return_value = mock_surface
-        with (patch("pygame.image.load", return_value=mock_surface),):
+        with (
+            patch("pygame.image.load", return_value=mock_surface),
+        ):
             catalog = AssetCatalog(tmp_path)
             result = catalog.load_image("sprite.png", alpha=True)
         assert result is mock_surface
