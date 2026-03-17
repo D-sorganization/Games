@@ -5,7 +5,7 @@ on:
 
 jobs:
   jules-address-feedback:
-    runs-on: d-sorg-fleet-4core
+    runs-on: ubuntu-latest
     permissions:
       pull-requests: read
       contents: write

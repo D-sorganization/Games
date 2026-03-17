@@ -7,7 +7,7 @@ on:
 jobs:
   cleanup:
     if: github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'jules:consolidation')
-    runs-on: d-sorg-fleet-4core
+    runs-on: ubuntu-latest
     permissions:
       pull-requests: write
       contents: write

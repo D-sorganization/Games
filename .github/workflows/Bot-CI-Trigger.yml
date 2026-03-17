@@ -39,7 +39,7 @@ concurrency:
 
 jobs:
   check-and-trigger:
-    runs-on: d-sorg-fleet-4core
+    runs-on: ubuntu-latest
     # Only run for bot-authored PRs or scheduled/manual runs
     if: |
       github.event_name == 'schedule' ||

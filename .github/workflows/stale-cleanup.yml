@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   stale:
-    runs-on: d-sorg-fleet-4core
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/stale@v9
         with:

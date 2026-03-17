@@ -33,7 +33,7 @@ concurrency:
 jobs:
   cleanup:
     name: Cleanup Stale Jules PRs
-    runs-on: d-sorg-fleet-4core
+    runs-on: ubuntu-latest
 
     steps:
       - name: Find Stale Jules PRs
