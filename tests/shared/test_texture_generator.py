@@ -95,3 +95,37 @@ class TestTextureGenerator:
     ):
         with pytest.raises(ContractViolation):
             TextureGenerator.generate_stone(width, height)
+
+    def test_generate_textures_already_init(
+        self, mock_pygame_surfarray, mock_pygame_surface
+    ):
+        with patch(
+            "games.shared.texture_generator.pygame.get_init",
+            return_value=True,
+            create=True,
+        ):
+            with patch(
+                "games.shared.texture_generator.pygame.init", create=True
+            ) as mock_init:
+                textures = TextureGenerator.generate_textures()
+                assert not mock_init.called
+                assert "brick" in textures
+
+    def test_generate_metal_small(self, mock_pygame_surfarray, mock_pygame_surface):
+        # Test small width/height to skip rivet shadows (rx+2 < width is false)
+        surf = TextureGenerator.generate_metal(4, 4)
+        assert surf is not None
+
+    @patch("games.shared.texture_generator.random.randint", return_value=500)
+    def test_generate_hidden_out_of_bounds(
+        self, mock_randint, mock_pygame_surfarray, mock_pygame_surface
+    ):
+        # Forces crack logic to evaluate out-of-bounds branches
+        surf = TextureGenerator.generate_hidden(32, 32)
+        assert surf is not None
+
+    def test_generate_hidden_thin(self, mock_pygame_surfarray, mock_pygame_surface):
+        # width=2, center_x=1. dx=1 -> nx=2. nx < width is false.
+        # height=22 -> range(10, 12) runs 2 times.
+        surf = TextureGenerator.generate_hidden(2, 22)
+        assert surf is not None
