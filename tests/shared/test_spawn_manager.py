@@ -8,7 +8,7 @@ from __future__ import annotations
 import random
 from types import SimpleNamespace
 from typing import Any
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -274,3 +274,32 @@ class TestSpawnAll:
         )
         # Should have called add_bot multiple times
         assert em.add_bot.call_count > 0
+
+    def test_base_make_bot_raises(self) -> None:
+        """SpawnManagerBase should raise NotImplementedError on _make_bot."""
+        base_sm = SpawnManagerBase(MagicMock(), _make_constants())
+        with pytest.raises(NotImplementedError):
+            base_sm._make_bot(0, 0, 1, "grunt")
+
+    def test_spawn_exhausts_attempts_on_full_map(self) -> None:
+        """Spawning should hit iteration limits and fail gracefully when map is entirely walls."""
+        em = MagicMock()
+        sm = ConcreteSpawnManager(em, _make_constants())
+
+        # A map where every spot is a wall
+        wall_map = SimpleNamespace(
+            size=30,
+            is_wall=MagicMock(return_value=True),
+        )
+
+        # Should trigger logger warnings and not add any bots
+        with patch("games.shared.spawn_manager.logger.warning") as mock_warn:
+            sm.spawn_enemies((15.0, 15.0, 0.0), wall_map, 1, "NORMAL")
+            assert mock_warn.call_count > 0  # Warning for exhausted attempts
+
+        sm.spawn_boss((15.0, 15.0, 0.0), wall_map, 1, "NORMAL")
+        sm.spawn_pickups(wall_map, 1)
+        sm.spawn_items(wall_map, 1)
+
+        # None of the spawn methods should have worked, so no add_bot calls
+        assert em.add_bot.call_count == 0
