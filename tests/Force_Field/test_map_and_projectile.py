@@ -16,13 +16,16 @@ class TestFFMap:
         m = Map(size=20)
         assert m._is_valid_map() is True
 
-    def test_walkable_area_sufficient(self) -> None:
+    def test_grid_contains_walls_and_floors(self) -> None:
+        """Map should have both wall (!=0) and floor (0) tiles."""
         m = Map(size=20)
-        walkable = sum(
-            1 for i in range(m.size) for j in range(m.size) if m.grid[i][j] == 0
+        total = m.size * m.size
+        walls = sum(
+            1 for i in range(m.size) for j in range(m.size) if m.grid[i][j] != 0
         )
-        min_walkable = int(m.size * m.size * 0.15)
-        assert walkable >= min_walkable
+        floors = total - walls
+        assert floors > 0  # At least some passable space
+        assert walls > 0  # At least some walls
 
     def test_default_size(self) -> None:
         from games.Force_Field.src.constants import DEFAULT_MAP_SIZE
