@@ -115,10 +115,32 @@ class TestImageLoading:
         images_dir.mkdir(parents=True)
         (images_dir / "bad.png").write_bytes(b"BAD_DATA")
 
-        with patch("pygame.image.load", side_effect=Exception("corrupt")):
-            catalog = AssetCatalog(tmp_path)
-            result = catalog.load_image("bad.png")
+        catalog = AssetCatalog(tmp_path)
+        with patch("pygame.image.load", side_effect=ValueError("image decode fail")):
+            result = catalog.load_image("bad_img.png")
+            assert result is None
+
+    def test_load_text_oserror(self, tmp_path) -> None:
+        """load_text should catch OSError (e.g. reading a directory) and return None."""
+        catalog = AssetCatalog(tmp_path)
+        assets_dir = tmp_path / "assets"
+        assets_dir.mkdir(exist_ok=True)
+        test_dir = assets_dir / "protected.txt"
+        test_dir.mkdir()
+        result = catalog.load_text("protected.txt")
         assert result is None
+
+    def test_load_image_exception(self, tmp_path) -> None:
+        """load_image should catch Exception and return None."""
+        catalog = AssetCatalog(tmp_path)
+        img_dir = tmp_path / "assets" / "images"
+        img_dir.mkdir(parents=True, exist_ok=True)
+        bad_img = img_dir / "bad_img.png"
+        bad_img.write_bytes(b"NOT A REAL IMAGE")
+
+        with patch("pygame.image.load", side_effect=Exception("decode error")):
+            result = catalog.load_image("bad_img.png")
+            assert result is None
 
 
 class TestTextCache:
