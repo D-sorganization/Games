@@ -75,3 +75,77 @@ class TestSetupLogging:
         """Default logging level should be INFO."""
         setup_logging()
         assert logging.getLogger().level == logging.INFO
+
+    def test_setup_game_path_frozen(self) -> None:
+        """Should use sys._MEIPASS when frozen=True."""
+        import sys
+        from unittest.mock import patch
+
+        with patch.object(sys, "frozen", True, create=True), \
+             patch.object(sys, "_MEIPASS", "/fake/mei/pass", create=True):
+
+            result = setup_game_path("dummy.py", use_frozen_path=True)
+            assert str(result) == str(Path("/fake/mei/pass"))
+
+        # Cleanup sys.path to not litter
+        if "/fake/mei/pass" in sys.path:
+            sys.path.remove("/fake/mei/pass")
+
+
+# ---------------------------------------------------------------------------
+# run_game
+# ---------------------------------------------------------------------------
+
+
+class TestRunGame:
+    """Tests for run_game."""
+
+    def test_run_game_success(self) -> None:
+        from unittest.mock import MagicMock, patch
+
+        from games.shared.game_launcher import run_game
+
+        mock_game_class = MagicMock()
+        mock_game_instance = MagicMock()
+        mock_game_class.return_value = mock_game_instance
+
+        with patch("games.shared.game_launcher.setup_game_path") as mock_setup_path, \
+             patch("games.shared.game_launcher.setup_logging") as mock_setup_logging, \
+             patch("games.shared.game_launcher.pygame.init") as mock_pg_init, \
+             patch("games.shared.game_launcher.pygame.quit") as mock_pg_quit, \
+             patch("games.shared.game_launcher.sys.exit") as mock_sys_exit, \
+             patch.dict("os.environ", {}, clear=True):
+
+            run_game(mock_game_class, "dummy_file.py", center_window=True)
+
+            mock_setup_path.assert_called_once_with("dummy_file.py", False)
+            mock_setup_logging.assert_called_once()
+            mock_pg_init.assert_called_once()
+            mock_game_class.assert_called_once()
+            mock_game_instance.run.assert_called_once()
+            mock_pg_quit.assert_called_once()
+            mock_sys_exit.assert_called_once()
+
+            import os
+            assert os.environ.get("SDL_VIDEO_CENTERED") == "1"
+
+    def test_run_game_keyboard_interrupt(self) -> None:
+        from unittest.mock import MagicMock, patch
+
+        from games.shared.game_launcher import run_game
+
+        mock_game_class = MagicMock()
+        mock_game_class.side_effect = KeyboardInterrupt()
+
+        with patch("games.shared.game_launcher.setup_game_path"), \
+             patch("games.shared.game_launcher.setup_logging"), \
+             patch("games.shared.game_launcher.pygame.init"), \
+             patch("games.shared.game_launcher.pygame.quit") as mock_pg_quit, \
+             patch("games.shared.game_launcher.sys.exit") as mock_sys_exit, \
+             patch("games.shared.game_launcher.logger.info") as mock_logger_info:
+
+            run_game(mock_game_class, "dummy_file.py")
+
+            mock_logger_info.assert_called_with("Game interrupted by user")
+            mock_pg_quit.assert_called_once()
+            mock_sys_exit.assert_called_once()
