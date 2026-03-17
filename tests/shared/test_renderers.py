@@ -133,6 +133,15 @@ class TestRenderers:
             mock_surface, mock_item, 100, 100, 50, 50, (0, 255, 0), base_config
         )
 
+    @patch("games.shared.renderers.item_renderer.random.random", return_value=0.9)
+    def test_item_renderer_no_spark(self, mock_random, mock_surface, mock_bot, base_config):
+        mock_item = MagicMock()
+        mock_item.enemy_type = "bomb_item"
+        renderer = ItemRenderer()
+        renderer.render(
+            mock_surface, mock_item, 100, 100, 50, 50, (0, 255, 0), base_config
+        )
+
     def test_minigunner_renderer(self, mock_surface, mock_bot, base_config):
         renderer = MinigunnerStyleRenderer()
         mock_bot.attack_frame = 0
