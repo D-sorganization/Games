@@ -284,3 +284,17 @@ class TestPersistence:
         notes = ws.list_notes()
         assert len(notes) == 1
         assert notes[0].title == "Good"
+
+    def test_load_note_corrupt(self, tmp_path):
+        ws_dir = tmp_path / ".games_workspace"
+        ws = NotesWorkspace(ws_dir)
+        nid = "corrupt_note"
+        path = ws_dir / "notes" / f"{nid}.json"
+        path.write_text("not json", encoding="utf-8")
+        assert ws.get(nid) is None
+
+    def test_delete_file_not_found(self, tmp_path):
+        ws_dir = tmp_path / ".games_workspace"
+        ws = NotesWorkspace(ws_dir)
+        # Attempt to delete file that does not exist to cover branch
+        ws._delete_file("nonexistent_id", ws._notes_dir)
