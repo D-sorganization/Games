@@ -30,23 +30,23 @@ from games.shared.contracts import validate_not_none
 class Scene(Protocol):
     """Protocol for a game scene (state)."""
 
-    def on_enter(self) -> None:
+    def on_enter(self) -> None:  # pragma: no cover
         """Called when this scene becomes active."""
         ...
 
-    def on_exit(self) -> None:
+    def on_exit(self) -> None:  # pragma: no cover
         """Called when this scene is deactivated."""
         ...
 
-    def handle_events(self, events: list[Any]) -> str | None:
+    def handle_events(self, events: list[Any]) -> str | None:  # pragma: no cover
         """Process input events. Return scene name to transition, or None."""
         ...
 
-    def update(self) -> str | None:
+    def update(self) -> str | None:  # pragma: no cover
         """Update scene logic. Return scene name to transition, or None."""
         ...
 
-    def render(self, screen: Any) -> None:
+    def render(self, screen: Any) -> None:  # pragma: no cover
         """Render the scene to the given surface."""
         ...
 

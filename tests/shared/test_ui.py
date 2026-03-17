@@ -218,3 +218,34 @@ class TestButtonDraw:
         assert pygame.draw.circle.called
         assert pygame.draw.line.called
         assert screen.blit.called
+
+    def test_blood_button_draw_hovered(self) -> None:
+        """BloodButton.draw should handle hovered state."""
+        import pygame
+
+        pygame.draw.rect = MagicMock()
+        pygame.draw.circle = MagicMock()
+        pygame.draw.line = MagicMock()
+        mock_surf = MagicMock()
+        mock_surf.get_rect.return_value = MockRect()
+        pygame.Surface = MagicMock(return_value=mock_surf)
+
+        btn = BloodButton(0, 0, 200, 50, "Play")
+        btn.hovered = True
+
+        screen = MagicMock()
+        font = MagicMock()
+        font.render.return_value = MagicMock()
+        font.render.return_value.get_rect.return_value = MockRect()
+        btn.draw(screen, font)
+
+        assert pygame.draw.rect.called
+
+    def test_generate_drips_out_of_bounds(self) -> None:
+        """BloodButton._generate_drips should skip drips that fall outside width."""
+        with patch("games.shared.ui.random") as mock_random:
+            # Force randint to return -1000 so x_offset is < 0 always
+            mock_random.randint.return_value = -1000
+
+            btn = BloodButton(0, 0, 200, 50, "Play")
+            assert len(btn.drips) == 0

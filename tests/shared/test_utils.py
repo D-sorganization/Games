@@ -185,6 +185,44 @@ class TestTryMoveEntity:
         assert entity.x == pytest.approx(1.5)
         assert entity.y == pytest.approx(6.0)
 
+    def test_ray_out_of_bounds(self, open_map: MockMap) -> None:
+        """Ray cast outside map boundaries should return as wall type 1."""
+        dist, wall_type, _, _, _, _, _ = cast_ray_dda(
+            -1.0, -1.0, 0.0, open_map, max_dist=10.0
+        )
+        assert wall_type == 1
+
+    def test_move_corner_obstacle(self, open_map: MockMap) -> None:
+        """Obstacle in corner of radius fails squared-distance check."""
+        entity = MockEntity(5.0, 5.0)
+        # new_x = 5.0, entity.y = 5.0.
+        # Obstacle at 5.4, 5.4.
+        # X-check dx: 0.0 -> new_x = 5.0.
+        # abs(new_x - ob.x) = 0.4 < radius(0.5)
+        # abs(entity.y - ob.y) = 0.4 < radius(0.5)
+        # Squared dist: 0.4^2 + 0.4^2 = 0.32 > 0.25
+        obstacle = MockEntity(5.4, 5.4)
+
+        # Test X
+        try_move_entity(entity, 0.0, 0.0, open_map, [obstacle], radius=0.5)
+        assert entity.x == 5.0
+
+        # Add another obstacle missing the `alive` attribute entirely
+        ob2 = type("PlainObject", (), {"x": 5.0, "y": 5.0})()
+        # Should collide, so entity doesn't move.
+        entity = MockEntity(4.0, 5.0)
+        try_move_entity(entity, 1.0, 0.0, open_map, [ob2], radius=0.5)
+        assert entity.x == 4.0
+
+    def test_move_ignores_far_obstacles(self, open_map: MockMap) -> None:
+        """Obstacles outside the radius quick check are ignored."""
+        entity = MockEntity(5.0, 5.0)
+        ob_far_x = MockEntity(7.0, 5.0)
+        ob_far_y = MockEntity(5.0, 7.0)
+        try_move_entity(entity, 0.1, 0.1, open_map, [ob_far_x, ob_far_y], radius=0.5)
+        assert entity.x == pytest.approx(5.1)
+        assert entity.y == pytest.approx(5.1)
+
 
 class TestUtilsContracts:
     """Tests for contract validation on utility functions."""

@@ -1,0 +1,238 @@
+........................................................................ [ 75%]
+.........FFFFFFFFFFFFFF                                                  [100%]
+================================== FAILURES ===================================
+___ TestDrawSingleSpriteEdgeCases.test_sprite_fully_off_screen_large_angle ____
+tests\shared\test_raycaster_extra.py:112: in test_sprite_fully_off_screen_large_angle
+    rc = Raycaster(mock_map, test_config)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\games\shared\raycaster.py:43: in __init__
+    self._init_textures()
+src\games\shared\raycaster.py:63: in _init_textures
+    self.textures = TextureGenerator.generate_textures()
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\games\shared\texture_generator.py:239: in generate_textures
+    textures["brick"] = TextureGenerator.generate_bricks(
+src\games\shared\texture_generator.py:49: in generate_bricks
+    arr = pygame.surfarray.pixels3d(surface)
+          ^^^^^^^^^^^^^^^^
+E   AttributeError: module 'pygame' has no attribute 'surfarray'
+__ TestDrawSingleSpriteEdgeCases.test_sprite_tiny_scale_far_dist_zero_width ___
+tests\shared\test_raycaster_extra.py:131: in test_sprite_tiny_scale_far_dist_zero_width
+    rc = Raycaster(mock_map, test_config)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\games\shared\raycaster.py:43: in __init__
+    self._init_textures()
+src\games\shared\raycaster.py:63: in _init_textures
+    self.textures = TextureGenerator.generate_textures()
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\games\shared\texture_generator.py:239: in generate_textures
+    textures["brick"] = TextureGenerator.generate_bricks(
+src\games\shared\texture_generator.py:49: in generate_bricks
+    arr = pygame.surfarray.pixels3d(surface)
+          ^^^^^^^^^^^^^^^^
+E   AttributeError: module 'pygame' has no attribute 'surfarray'
+_____ TestDrawSingleSpriteEdgeCases.test_sprite_all_rays_occluded_no_runs _____
+tests\shared\test_raycaster_extra.py:148: in test_sprite_all_rays_occluded_no_runs
+    rc = Raycaster(mock_map, test_config)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\games\shared\raycaster.py:43: in __init__
+    self._init_textures()
+src\games\shared\raycaster.py:63: in _init_textures
+    self.textures = TextureGenerator.generate_textures()
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\games\shared\texture_generator.py:239: in generate_textures
+    textures["brick"] = TextureGenerator.generate_bricks(
+src\games\shared\texture_generator.py:49: in generate_bricks
+    arr = pygame.surfarray.pixels3d(surface)
+          ^^^^^^^^^^^^^^^^
+E   AttributeError: module 'pygame' has no attribute 'surfarray'
+______ TestDrawSingleSpriteEdgeCases.test_sprite_fully_visible_full_path ______
+tests\shared\test_raycaster_extra.py:161: in test_sprite_fully_visible_full_path
+    rc = Raycaster(mock_map, test_config)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\games\shared\raycaster.py:43: in __init__
+    self._init_textures()
+src\games\shared\raycaster.py:63: in _init_textures
+    self.textures = TextureGenerator.generate_textures()
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\games\shared\texture_generator.py:239: in generate_textures
+    textures["brick"] = TextureGenerator.generate_bricks(
+src\games\shared\texture_generator.py:49: in generate_bricks
+    arr = pygame.surfarray.pixels3d(surface)
+          ^^^^^^^^^^^^^^^^
+E   AttributeError: module 'pygame' has no attribute 'surfarray'
+________________ TestRenderSpritesAngleWrap.test_positive_wrap ________________
+tests\shared\test_raycaster_extra.py:176: in test_positive_wrap
+    rc = Raycaster(mock_map, test_config)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\games\shared\raycaster.py:43: in __init__
+    self._init_textures()
+src\games\shared\raycaster.py:63: in _init_textures
+    self.textures = TextureGenerator.generate_textures()
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\games\shared\texture_generator.py:239: in generate_textures
+    textures["brick"] = TextureGenerator.generate_bricks(
+src\games\shared\texture_generator.py:49: in generate_bricks
+    arr = pygame.surfarray.pixels3d(surface)
+          ^^^^^^^^^^^^^^^^
+E   AttributeError: module 'pygame' has no attribute 'surfarray'
+________________ TestRenderSpritesAngleWrap.test_negative_wrap ________________
+tests\shared\test_raycaster_extra.py:186: in test_negative_wrap
+    rc = Raycaster(mock_map, test_config)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\games\shared\raycaster.py:43: in __init__
+    self._init_textures()
+src\games\shared\raycaster.py:63: in _init_textures
+    self.textures = TextureGenerator.generate_textures()
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\games\shared\texture_generator.py:239: in generate_textures
+    textures["brick"] = TextureGenerator.generate_bricks(
+src\games\shared\texture_generator.py:49: in generate_bricks
+    arr = pygame.surfarray.pixels3d(surface)
+          ^^^^^^^^^^^^^^^^
+E   AttributeError: module 'pygame' has no attribute 'surfarray'
+___ TestRenderSpritesEntityDispatch.test_alive_projectile_in_fov_dispatched ___
+tests\shared\test_raycaster_extra.py:203: in test_alive_projectile_in_fov_dispatched
+    rc = Raycaster(mock_map, test_config)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\games\shared\raycaster.py:43: in __init__
+    self._init_textures()
+src\games\shared\raycaster.py:63: in _init_textures
+    self.textures = TextureGenerator.generate_textures()
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\games\shared\texture_generator.py:239: in generate_textures
+    textures["brick"] = TextureGenerator.generate_bricks(
+src\games\shared\texture_generator.py:49: in generate_bricks
+    arr = pygame.surfarray.pixels3d(surface)
+          ^^^^^^^^^^^^^^^^
+E   AttributeError: module 'pygame' has no attribute 'surfarray'
+____ TestRenderSpritesEntityDispatch.test_alive_particle_in_fov_dispatched ____
+tests\shared\test_raycaster_extra.py:219: in test_alive_particle_in_fov_dispatched
+    rc = Raycaster(mock_map, test_config)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\games\shared\raycaster.py:43: in __init__
+    self._init_textures()
+src\games\shared\raycaster.py:63: in _init_textures
+    self.textures = TextureGenerator.generate_textures()
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\games\shared\texture_generator.py:239: in generate_textures
+    textures["brick"] = TextureGenerator.generate_bricks(
+src\games\shared\texture_generator.py:49: in generate_bricks
+    arr = pygame.surfarray.pixels3d(surface)
+          ^^^^^^^^^^^^^^^^
+E   AttributeError: module 'pygame' has no attribute 'surfarray'
+____________ TestParticleDrawException.test_value_error_swallowed _____________
+tests\shared\test_raycaster_extra.py:238: in test_value_error_swallowed
+    rc = Raycaster(mock_map, test_config)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\games\shared\raycaster.py:43: in __init__
+    self._init_textures()
+src\games\shared\raycaster.py:63: in _init_textures
+    self.textures = TextureGenerator.generate_textures()
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\games\shared\texture_generator.py:239: in generate_textures
+    textures["brick"] = TextureGenerator.generate_bricks(
+src\games\shared\texture_generator.py:49: in generate_bricks
+    arr = pygame.surfarray.pixels3d(surface)
+          ^^^^^^^^^^^^^^^^
+E   AttributeError: module 'pygame' has no attribute 'surfarray'
+________________ TestBlitWholeScaled.test_cache_miss_then_hit _________________
+tests\shared\test_raycaster_extra.py:258: in test_cache_miss_then_hit
+    rc = Raycaster(mock_map, test_config)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\games\shared\raycaster.py:43: in __init__
+    self._init_textures()
+src\games\shared\raycaster.py:63: in _init_textures
+    self.textures = TextureGenerator.generate_textures()
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\games\shared\texture_generator.py:239: in generate_textures
+    textures["brick"] = TextureGenerator.generate_bricks(
+src\games\shared\texture_generator.py:49: in generate_bricks
+    arr = pygame.surfarray.pixels3d(surface)
+          ^^^^^^^^^^^^^^^^
+E   AttributeError: module 'pygame' has no attribute 'surfarray'
+_________________ TestBlitWholeScaled.test_with_shade_overlay _________________
+tests\shared\test_raycaster_extra.py:268: in test_with_shade_overlay
+    rc = Raycaster(mock_map, test_config)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\games\shared\raycaster.py:43: in __init__
+    self._init_textures()
+src\games\shared\raycaster.py:63: in _init_textures
+    self.textures = TextureGenerator.generate_textures()
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\games\shared\texture_generator.py:239: in generate_textures
+    textures["brick"] = TextureGenerator.generate_bricks(
+src\games\shared\texture_generator.py:49: in generate_bricks
+    arr = pygame.surfarray.pixels3d(surface)
+          ^^^^^^^^^^^^^^^^
+E   AttributeError: module 'pygame' has no attribute 'surfarray'
+___________________ TestBlitStripScaled.test_strip_renders ____________________
+tests\shared\test_raycaster_extra.py:279: in test_strip_renders
+    rc = Raycaster(mock_map, test_config)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\games\shared\raycaster.py:43: in __init__
+    self._init_textures()
+src\games\shared\raycaster.py:63: in _init_textures
+    self.textures = TextureGenerator.generate_textures()
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\games\shared\texture_generator.py:239: in generate_textures
+    textures["brick"] = TextureGenerator.generate_bricks(
+src\games\shared\texture_generator.py:49: in generate_bricks
+    arr = pygame.surfarray.pixels3d(surface)
+          ^^^^^^^^^^^^^^^^
+E   AttributeError: module 'pygame' has no attribute 'surfarray'
+__________________ TestBlitStripScaled.test_strip_cache_hit ___________________
+tests\shared\test_raycaster_extra.py:289: in test_strip_cache_hit
+    rc = Raycaster(mock_map, test_config)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\games\shared\raycaster.py:43: in __init__
+    self._init_textures()
+src\games\shared\raycaster.py:63: in _init_textures
+    self.textures = TextureGenerator.generate_textures()
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\games\shared\texture_generator.py:239: in generate_textures
+    textures["brick"] = TextureGenerator.generate_bricks(
+src\games\shared\texture_generator.py:49: in generate_bricks
+    arr = pygame.surfarray.pixels3d(surface)
+          ^^^^^^^^^^^^^^^^
+E   AttributeError: module 'pygame' has no attribute 'surfarray'
+______ TestMapCacheEqualityBranchExtra.test_shallow_copy_triggers_update ______
+tests\shared\test_raycaster_extra.py:308: in test_shallow_copy_triggers_update
+    rc = Raycaster(mock_map, test_config)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\games\shared\raycaster.py:43: in __init__
+    self._init_textures()
+src\games\shared\raycaster.py:63: in _init_textures
+    self.textures = TextureGenerator.generate_textures()
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\games\shared\texture_generator.py:239: in generate_textures
+    textures["brick"] = TextureGenerator.generate_bricks(
+src\games\shared\texture_generator.py:49: in generate_bricks
+    arr = pygame.surfarray.pixels3d(surface)
+          ^^^^^^^^^^^^^^^^
+E   AttributeError: module 'pygame' has no attribute 'surfarray'
+=============================== tests coverage ================================
+_______________ coverage: platform win32, python 3.13.5-final-0 _______________
+
+Name                            Stmts   Miss Branch BrPart  Cover   Missing
+---------------------------------------------------------------------------
+src\games\shared\raycaster.py     650     35    230     29    92%   304-305, 429->466, 449-451, 454->464, 536->534, 693->699, 701->exit, 787, 789, 799-800, 804-805, 854->859, 863->exit, 869-870, 908, 918, 923, 929, 1000-1001, 1100-1101, 1108-1109, 1111-1112, 1119-1120, 1122, 1124->1114, 1161, 1170-1171, 1207->1212, 1216->exit, 1221-1222, 1331-1335, 1384->exit, 1440->1468
+---------------------------------------------------------------------------
+TOTAL                             650     35    230     29    92%
+Required test coverage of 25.0% reached. Total coverage: 92.27%
+=========================== short test summary info ===========================
+FAILED tests/shared/test_raycaster_extra.py::TestDrawSingleSpriteEdgeCases::test_sprite_fully_off_screen_large_angle
+FAILED tests/shared/test_raycaster_extra.py::TestDrawSingleSpriteEdgeCases::test_sprite_tiny_scale_far_dist_zero_width
+FAILED tests/shared/test_raycaster_extra.py::TestDrawSingleSpriteEdgeCases::test_sprite_all_rays_occluded_no_runs
+FAILED tests/shared/test_raycaster_extra.py::TestDrawSingleSpriteEdgeCases::test_sprite_fully_visible_full_path
+FAILED tests/shared/test_raycaster_extra.py::TestRenderSpritesAngleWrap::test_positive_wrap
+FAILED tests/shared/test_raycaster_extra.py::TestRenderSpritesAngleWrap::test_negative_wrap
+FAILED tests/shared/test_raycaster_extra.py::TestRenderSpritesEntityDispatch::test_alive_projectile_in_fov_dispatched
+FAILED tests/shared/test_raycaster_extra.py::TestRenderSpritesEntityDispatch::test_alive_particle_in_fov_dispatched
+FAILED tests/shared/test_raycaster_extra.py::TestParticleDrawException::test_value_error_swallowed
+FAILED tests/shared/test_raycaster_extra.py::TestBlitWholeScaled::test_cache_miss_then_hit
+FAILED tests/shared/test_raycaster_extra.py::TestBlitWholeScaled::test_with_shade_overlay
+FAILED tests/shared/test_raycaster_extra.py::TestBlitStripScaled::test_strip_renders
+FAILED tests/shared/test_raycaster_extra.py::TestBlitStripScaled::test_strip_cache_hit
+FAILED tests/shared/test_raycaster_extra.py::TestMapCacheEqualityBranchExtra::test_shallow_copy_triggers_update
+14 failed, 81 passed in 9.01s

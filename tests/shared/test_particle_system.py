@@ -184,8 +184,41 @@ class TestParticleSystem:
         ps.add_world_explosion(0, 0, 1, count=10)
         assert ps.particle_count == 10
 
-    def test_mixed_count(self):
         ps = ParticleSystem()
         ps.add_particle(0, 0)
         ps.add_world_particle(0, 0, 0, 0, 0, 0, (0, 0, 0))
         assert ps.particle_count == 2
+
+    def test_render_all_types(self):
+        from unittest.mock import MagicMock, patch
+
+        ps = ParticleSystem()
+        ps.add_particle(0, 0, size=5)
+        ps.add_particle(0, 0, size=0)  # Should not be rendered
+        ps.add_laser((0, 0), (10, 10), (255, 0, 0), timer=5, width=2)
+        ps.add_trace((0, 0), (10, 10), (0, 255, 0), timer=5, width=1)
+
+        screen = MagicMock()
+
+        with (
+            patch("pygame.draw.line", create=True) as mock_line,
+            patch("pygame.draw.rect", create=True) as mock_rect,
+        ):
+            ps.render(screen)
+            assert mock_line.call_count == 2
+            mock_rect.assert_called_once()
+
+    def test_zero_max_timer(self):
+        p = Particle(0, 0, timer=0)
+        assert p.update() is False
+        assert p.size == 2.0  # Unchanged initial size
+
+    def test_same_color_fade(self):
+        p = Particle(0, 0, color=(100, 100, 100), fade_color=(100, 100, 100), timer=10)
+        p.update()
+        rgba = p.get_current_color()
+        assert rgba[0] == 100
+        assert rgba[1] == 100
+        assert rgba[2] == 100
+        assert rgba[3] < 255
+        assert len(rgba) == 4

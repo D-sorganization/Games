@@ -1,0 +1,59 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.5, pytest-8.4.1, pluggy-1.6.0 -- C:\Users\diete\AppData\Local\Programs\Python\Python313\python.exe
+cachedir: .pytest_cache
+hypothesis profile 'default'
+PySide6 6.10.2 -- Qt runtime 6.10.2 -- Qt compiled 6.10.2
+rootdir: C:\Users\diete\Repositories\Games
+configfile: pyproject.toml
+plugins: anyio-4.9.0, hypothesis-6.151.9, asyncio-1.3.0, cov-7.0.0, mock-3.15.1, qt-4.5.0, timeout-2.3.1, xdist-3.8.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 37 items
+
+tests/shared/test_notes_workspace.py::TestNote::test_to_dict_roundtrip PASSED [  2%]
+tests/shared/test_notes_workspace.py::TestNote::test_from_dict_ignores_extra_keys PASSED [  5%]
+tests/shared/test_notes_workspace.py::TestNote::test_tags_default_empty PASSED [  8%]
+tests/shared/test_notes_workspace.py::TestCreate::test_create_returns_id PASSED [ 10%]
+tests/shared/test_notes_workspace.py::TestCreate::test_create_persists PASSED [ 13%]
+tests/shared/test_notes_workspace.py::TestCreate::test_create_strips_title PASSED [ 16%]
+tests/shared/test_notes_workspace.py::TestCreate::test_create_blank_title_raises PASSED [ 18%]
+tests/shared/test_notes_workspace.py::TestCreate::test_create_whitespace_title_raises PASSED [ 21%]
+tests/shared/test_notes_workspace.py::TestCreate::test_create_sets_timestamps PASSED [ 24%]
+tests/shared/test_notes_workspace.py::TestRead::test_get_nonexistent_returns_none PASSED [ 27%]
+tests/shared/test_notes_workspace.py::TestRead::test_list_notes_empty PASSED [ 29%]
+tests/shared/test_notes_workspace.py::TestRead::test_list_notes_order PASSED [ 32%]
+tests/shared/test_notes_workspace.py::TestRead::test_list_notes_excludes_deleted PASSED [ 35%]
+tests/shared/test_notes_workspace.py::TestUpdate::test_update_title PASSED [ 37%]
+tests/shared/test_notes_workspace.py::TestUpdate::test_update_content PASSED [ 40%]
+tests/shared/test_notes_workspace.py::TestUpdate::test_update_advances_timestamp PASSED [ 43%]
+tests/shared/test_notes_workspace.py::TestUpdate::test_update_nonexistent_returns_false PASSED [ 45%]
+tests/shared/test_notes_workspace.py::TestUpdate::test_update_blank_title_raises PASSED [ 48%]
+tests/shared/test_notes_workspace.py::TestUpdate::test_update_empty_id_raises PASSED [ 51%]
+tests/shared/test_notes_workspace.py::TestDelete::test_delete_moves_to_trash PASSED [ 54%]
+tests/shared/test_notes_workspace.py::TestDelete::test_delete_sets_deleted_at PASSED [ 56%]
+tests/shared/test_notes_workspace.py::TestDelete::test_delete_nonexistent_returns_false PASSED [ 59%]
+tests/shared/test_notes_workspace.py::TestDelete::test_delete_idempotent PASSED [ 62%]
+tests/shared/test_notes_workspace.py::TestRestore::test_restore_moves_back PASSED [ 64%]
+tests/shared/test_notes_workspace.py::TestRestore::test_restore_clears_deleted_at PASSED [ 67%]
+tests/shared/test_notes_workspace.py::TestRestore::test_restore_nonexistent_returns_false PASSED [ 70%]
+tests/shared/test_notes_workspace.py::TestPurge::test_purge_permanently_deletes PASSED [ 72%]
+tests/shared/test_notes_workspace.py::TestPurge::test_purge_nonexistent_returns_false PASSED [ 75%]
+tests/shared/test_notes_workspace.py::TestEmptyTrash::test_empty_trash PASSED [ 78%]
+tests/shared/test_notes_workspace.py::TestEmptyTrash::test_empty_trash_when_empty PASSED [ 81%]
+tests/shared/test_notes_workspace.py::TestClear::test_clear_moves_all_to_trash PASSED [ 83%]
+tests/shared/test_notes_workspace.py::TestClear::test_clear_empty_workspace PASSED [ 86%]
+tests/shared/test_notes_workspace.py::TestPersistence::test_survives_reinstantiation PASSED [ 89%]
+tests/shared/test_notes_workspace.py::TestPersistence::test_trash_survives_reinstantiation PASSED [ 91%]
+tests/shared/test_notes_workspace.py::TestPersistence::test_corrupt_file_skipped PASSED [ 94%]
+tests/shared/test_notes_workspace.py::TestPersistence::test_load_note_corrupt PASSED [ 97%]
+tests/shared/test_notes_workspace.py::TestPersistence::test_delete_file_not_found PASSED [100%]
+
+=============================== tests coverage ================================
+_______________ coverage: platform win32, python 3.13.5-final-0 _______________
+
+Name                                  Stmts   Miss Branch BrPart  Cover   Missing
+---------------------------------------------------------------------------------
+src\games\shared\notes_workspace.py     128      0     24      0   100%
+---------------------------------------------------------------------------------
+TOTAL                                   128      0     24      0   100%
+Required test coverage of 25.0% reached. Total coverage: 100.00%
+============================= 37 passed in 1.25s ==============================

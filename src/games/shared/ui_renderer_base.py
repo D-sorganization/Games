@@ -16,7 +16,7 @@ try:
     import cv2
 
     HAS_CV2 = True
-except ImportError:
+except ImportError:  # pragma: no cover
     HAS_CV2 = False
 
 if TYPE_CHECKING:
