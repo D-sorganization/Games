@@ -8,7 +8,7 @@ from __future__ import annotations
 import random
 from types import SimpleNamespace
 from typing import Any
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -274,3 +274,36 @@ class TestSpawnAll:
         )
         # Should have called add_bot multiple times
         assert em.add_bot.call_count > 0
+
+class TestEdgeCases:
+    def test_base_make_bot_raises(self, sm) -> None:
+        base_sm = SpawnManagerBase(sm.entity_manager, sm.C)
+        with pytest.raises(NotImplementedError, match="Subclasses must implement _make_bot"):
+            base_sm._make_bot(0.0, 0.0, 1, "grunt")
+
+    def test_spawn_enemies_fails_after_50_attempts(self, sm) -> None:
+        game_map = _make_game_map()
+        game_map.is_wall.return_value = True  # Always a wall
+        with patch("games.shared.spawn_manager.logger.warning") as mock_warn:
+            sm.spawn_enemies((15.0, 15.0, 0.0), game_map, 1, "NORMAL")
+            assert mock_warn.call_count > 0
+
+    def test_spawn_boss_fails_after_100_attempts(self, sm) -> None:
+        game_map = _make_game_map()
+        game_map.is_wall.return_value = True  # Always a wall
+        sm.spawn_boss((15.0, 15.0, 0.0), game_map, 1, "NORMAL")
+        # Ensure it didn't add a bot
+        assert len(sm.bots_created) == 0
+
+    def test_spawn_pickups_wall_skipped(self, sm) -> None:
+        game_map = _make_game_map()
+        game_map.is_wall.return_value = True
+        sm.PICKUP_CHANCE = 1.0  # Force attempt
+        sm.spawn_pickups(game_map, 1)
+        assert len(sm.bots_created) == 0
+
+    def test_spawn_items_wall_skipped(self, sm) -> None:
+        game_map = _make_game_map()
+        game_map.is_wall.return_value = True
+        sm.spawn_items(game_map, 1)
+        assert len(sm.bots_created) == 0
