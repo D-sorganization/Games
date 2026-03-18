@@ -37,8 +37,7 @@ class Player(PlayerBase):
         if self.shield_active or self.zoomed:
             if self.zoomed:
                 return
-            if self.shield_active:
-                speed *= 0.8
+            speed *= 0.8
 
         dx = math.cos(self.angle) * speed * (1 if forward else -1)
         dy = math.sin(self.angle) * speed * (1 if forward else -1)
@@ -81,6 +80,8 @@ class Player(PlayerBase):
         if dist_moved > 0.001:
             self.is_moving = True
             self.walk_distance += dist_moved * 0.8
+        else:
+            self.is_moving = False
 
     def take_damage(self, damage: int) -> None:
         """Take damage"""
