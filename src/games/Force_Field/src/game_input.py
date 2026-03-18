@@ -183,7 +183,7 @@ class GameInputHandler:
         ]
         max_text_width = 0
         for item in menu_items:
-            text_surf = self.game.ui_renderer.subtitle_font.render(item, True, C.WHITE)
+            text_surf = self.game.ui_renderer.render_subtitle_text(item, True, C.WHITE)
             max_text_width = max(max_text_width, text_surf.get_width())
 
         box_width = max_text_width + 60

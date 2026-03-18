@@ -175,3 +175,13 @@ class UIRendererBase:
             # Simple red line for drip
             if start_y < self.screen_height:
                 pygame.draw.line(self.screen, (139, 0, 0), (x, start_y), (x, end_y), 2)
+
+    def render_subtitle_text(
+        self, text: str, antialias: bool, color: tuple[int, int, int]
+    ) -> pygame.Surface:
+        """Render text using the subtitle font.
+
+        Encapsulates font access so callers don't need to reach
+        through to self.subtitle_font directly (Law of Demeter).
+        """
+        return self.subtitle_font.render(text, antialias, color)
