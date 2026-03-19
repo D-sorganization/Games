@@ -1,8 +1,12 @@
+> **Status (2026-03-18):** This review requires a fresh pass. The codebase has grown significantly (Tetris expanded to 84 tests, raycaster improvements). Schedule Jules Pragmatic Programmer workflow to regenerate.
+
 # Pragmatic Programmer Review: app
+
 **Date**: 2026-01-31
 **Files**: 152
 
 ## Findings
+
 - **DRY** [MAJOR]: Duplicate code block
   - Found in 2 locations
   - Files: /app/game_launcher.py
@@ -156,16 +160,16 @@
 - **ORTHOGONALITY** [MAJOR]: God function: render_hud
   - Length 82 > 50 lines
   - Files: /app/src/games/Zombie_Survival/src/ui_renderer.py
-- **ORTHOGONALITY** [MAJOR]: God function: __init__
+- **ORTHOGONALITY** [MAJOR]: God function: **init**
   - Length 56 > 50 lines
   - Files: /app/src/games/Zombie_Survival/src/game.py
-- **ORTHOGONALITY** [MAJOR]: God function: __init__
+- **ORTHOGONALITY** [MAJOR]: God function: **init**
   - Length 62 > 50 lines
   - Files: /app/src/games/Force_Field/src/game.py
 - **ORTHOGONALITY** [MAJOR]: God function: render_hud
   - Length 83 > 50 lines
   - Files: /app/src/games/Duum/src/ui_renderer.py
-- **ORTHOGONALITY** [MAJOR]: God function: __init__
+- **ORTHOGONALITY** [MAJOR]: God function: **init**
   - Length 60 > 50 lines
   - Files: /app/src/games/Duum/src/game.py
 - **TESTING** [MAJOR]: Low Test Coverage
