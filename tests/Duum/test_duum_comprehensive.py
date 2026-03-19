@@ -7,6 +7,7 @@ and combat_manager — modules that previously had only 1-3 tests each.
 from __future__ import annotations
 
 import math
+from typing import TYPE_CHECKING
 from unittest.mock import MagicMock
 
 import pygame
@@ -17,6 +18,9 @@ from games.Duum.src.map import Map
 from games.Duum.src.projectile import Projectile
 from games.Duum.src.sound import SoundManager
 from games.shared.contracts import ContractViolation
+
+if TYPE_CHECKING:
+    from games.Duum.src.spawn_manager import DuumSpawnManager
 
 # ─── Projectile Tests ─────────────────────────────────────────
 
@@ -257,34 +261,28 @@ class TestDuumSpawnManagerExpanded:
     """Expanded tests for Duum SpawnManager."""
 
     @pytest.fixture()
-    def manager(self) -> DuumSpawnManager:  # noqa: F821
+    def manager(self) -> DuumSpawnManager:
         from games.Duum.src.spawn_manager import DuumSpawnManager
 
         return DuumSpawnManager(MagicMock())
 
-    def test_boss_options_not_empty(
-        self, manager: DuumSpawnManager
-    ) -> None:  # noqa: F821
+    def test_boss_options_not_empty(self, manager: DuumSpawnManager) -> None:
         assert len(manager.BOSS_OPTIONS) > 0
 
-    def test_weapon_pickups_not_empty(
-        self, manager: DuumSpawnManager
-    ) -> None:  # noqa: F821
+    def test_weapon_pickups_not_empty(self, manager: DuumSpawnManager) -> None:
         assert len(manager.WEAPON_PICKUPS) > 0
 
-    def test_make_bot_creates_bot(
-        self, manager: DuumSpawnManager
-    ) -> None:  # noqa: F821
+    def test_make_bot_creates_bot(self, manager: DuumSpawnManager) -> None:
         from games.Duum.src.bot import Bot
 
         bot = manager._make_bot(5.0, 5.0, 1, "zombie")
         assert isinstance(bot, Bot)
 
-    def test_make_bot_position(self, manager: DuumSpawnManager) -> None:  # noqa: F821
+    def test_make_bot_position(self, manager: DuumSpawnManager) -> None:
         bot = manager._make_bot(3.0, 7.0, 2, "zombie")
         assert bot.x == 3.0
         assert bot.y == 7.0
 
-    def test_make_bot_level(self, manager: DuumSpawnManager) -> None:  # noqa: F821
+    def test_make_bot_level(self, manager: DuumSpawnManager) -> None:
         bot = manager._make_bot(1.0, 1.0, 4, "zombie")
         assert bot.level == 4

@@ -7,6 +7,7 @@ and combat_manager — modules that previously had only 1-3 tests each.
 from __future__ import annotations
 
 import math
+from typing import TYPE_CHECKING
 from unittest.mock import MagicMock
 
 import pygame
@@ -17,6 +18,10 @@ from games.Zombie_Survival.src.input_manager import InputManager
 from games.Zombie_Survival.src.map import Map
 from games.Zombie_Survival.src.projectile import Projectile
 from games.Zombie_Survival.src.sound import SoundManager
+
+if TYPE_CHECKING:
+    from games.Zombie_Survival.src.combat_manager import ZSCombatManager
+    from games.Zombie_Survival.src.spawn_manager import ZSSpawnManager
 
 # ─── Projectile Tests ─────────────────────────────────────────
 
@@ -345,39 +350,33 @@ class TestZSSpawnManagerExpanded:
     """Expanded tests for ZSSpawnManager."""
 
     @pytest.fixture()
-    def manager(self) -> ZSSpawnManager:  # noqa: F821
+    def manager(self) -> ZSSpawnManager:
         from games.Zombie_Survival.src.spawn_manager import ZSSpawnManager
 
         return ZSSpawnManager(MagicMock())
 
-    def test_boss_options_not_empty(
-        self, manager: ZSSpawnManager
-    ) -> None:  # noqa: F821
+    def test_boss_options_not_empty(self, manager: ZSSpawnManager) -> None:
         assert len(manager.BOSS_OPTIONS) > 0
 
-    def test_weapon_pickups_not_empty(
-        self, manager: ZSSpawnManager
-    ) -> None:  # noqa: F821
+    def test_weapon_pickups_not_empty(self, manager: ZSSpawnManager) -> None:
         assert len(manager.WEAPON_PICKUPS) > 0
 
-    def test_boss_options_are_strings(
-        self, manager: ZSSpawnManager
-    ) -> None:  # noqa: F821
+    def test_boss_options_are_strings(self, manager: ZSSpawnManager) -> None:
         for opt in manager.BOSS_OPTIONS:
             assert isinstance(opt, str)
 
-    def test_make_bot_returns_bot(self, manager: ZSSpawnManager) -> None:  # noqa: F821
+    def test_make_bot_returns_bot(self, manager: ZSSpawnManager) -> None:
         from games.Zombie_Survival.src.bot import Bot
 
         bot = manager._make_bot(5.0, 5.0, 1, "zombie")
         assert isinstance(bot, Bot)
 
-    def test_make_bot_position(self, manager: ZSSpawnManager) -> None:  # noqa: F821
+    def test_make_bot_position(self, manager: ZSSpawnManager) -> None:
         bot = manager._make_bot(3.0, 7.0, 2, "zombie")
         assert bot.x == 3.0
         assert bot.y == 7.0
 
-    def test_make_bot_level(self, manager: ZSSpawnManager) -> None:  # noqa: F821
+    def test_make_bot_level(self, manager: ZSSpawnManager) -> None:
         bot = manager._make_bot(1.0, 1.0, 5, "zombie")
         assert bot.level == 5
 
@@ -389,26 +388,26 @@ class TestZSCombatManagerExpanded:
     """Expanded tests for ZSCombatManager."""
 
     @pytest.fixture()
-    def cm(self) -> ZSCombatManager:  # noqa: F821
+    def cm(self) -> ZSCombatManager:
         from games.Zombie_Survival.src.combat_manager import ZSCombatManager
 
         return ZSCombatManager(MagicMock(), MagicMock(), MagicMock())
 
-    def test_instance_creation(self, cm: ZSCombatManager) -> None:  # noqa: F821
+    def test_instance_creation(self, cm: ZSCombatManager) -> None:
         assert cm is not None
 
-    def test_inherits_from_base(self, cm: ZSCombatManager) -> None:  # noqa: F821
+    def test_inherits_from_base(self, cm: ZSCombatManager) -> None:
         from games.shared.combat_manager import CombatManagerBase
 
         assert isinstance(cm, CombatManagerBase)
 
-    def test_has_entity_manager(self, cm: ZSCombatManager) -> None:  # noqa: F821
+    def test_has_entity_manager(self, cm: ZSCombatManager) -> None:
         assert hasattr(cm, "entity_manager")
 
-    def test_has_particle_system(self, cm: ZSCombatManager) -> None:  # noqa: F821
+    def test_has_particle_system(self, cm: ZSCombatManager) -> None:
         assert hasattr(cm, "particle_system")
 
-    def test_has_sound_manager(self, cm: ZSCombatManager) -> None:  # noqa: F821
+    def test_has_sound_manager(self, cm: ZSCombatManager) -> None:
         assert hasattr(cm, "sound_manager")
 
     def test_with_on_kill_callback(self) -> None:
