@@ -111,7 +111,7 @@ class TetrisGame:
         for (
             action_key,
             description,
-        ) in self.input_handler.controller_action_labels.items():
+        ) in self.input_handler.iter_action_labels():
             entries.append(
                 {
                     "label": description,
@@ -151,7 +151,7 @@ class TetrisGame:
                     current = getattr(self.logic, key)
                     setattr(self.logic, key, not current)
                     if key == "allow_rewind":
-                        self.logic.rewind_history.clear()
+                        self.logic.clear_rewind_history()
 
             elif (
                 entry["type"] == "mapping"
@@ -165,7 +165,7 @@ class TetrisGame:
         # Implementing draw_settings here as it was missing from
         # renderer and needs state access
         self.screen.fill(C.BLACK)
-        title = self.renderer.font_large.render("Settings", True, C.CYAN)
+        title = self.renderer.render_large_text("Settings", True, C.CYAN)
         title_rect = title.get_rect(center=(C.SCREEN_WIDTH // 2, 80))
         self.screen.blit(title, title_rect)
 
@@ -190,8 +190,8 @@ class TetrisGame:
             elif entry["type"] == "mapping":
                 value_text = self.input_handler.get_binding_label(entry["key"])
 
-            label_text = self.renderer.font.render(label, True, color)
-            value_render = self.renderer.small_font.render(
+            label_text = self.renderer.render_normal_text(label, True, color)
+            value_render = self.renderer.render_small_text(
                 value_text, True, C.LIGHT_GRAY
             )
 
@@ -200,7 +200,7 @@ class TetrisGame:
                 self.screen.blit(value_render, (520, y_offset + 6))
             y_offset += 40
 
-        hint = self.renderer.tiny_font.render(
+        hint = self.renderer.render_tiny_text(
             "Arrow keys to navigate, ENTER to toggle or remap, ESC to return",
             True,
             C.GRAY,
@@ -209,10 +209,10 @@ class TetrisGame:
         self.screen.blit(hint, hint_rect)
 
         if self.input_handler.awaiting_controller_action:
-            action_label = self.input_handler.controller_action_labels[
+            action_label = self.input_handler.get_action_label(
                 self.input_handler.awaiting_controller_action
-            ]
-            waiting = self.renderer.small_font.render(
+            )
+            waiting = self.renderer.render_small_text(
                 f"Waiting for input to bind {action_label}",
                 True,
                 C.YELLOW,
@@ -269,17 +269,16 @@ class TetrisGame:
                 if keys[pygame.K_LEFT] and self.logic.valid_move(
                     self.logic.current_piece, x_offset=-1
                 ):
-                    self.logic.current_piece.x -= 1
+                    self.logic.move_piece_left()
                     pygame.time.wait(100)
                 if keys[pygame.K_RIGHT] and self.logic.valid_move(
                     self.logic.current_piece, x_offset=1
                 ):
-                    self.logic.current_piece.x += 1
+                    self.logic.move_piece_right()
                     pygame.time.wait(100)
                 if keys[pygame.K_DOWN]:
                     if self.logic.valid_move(self.logic.current_piece, y_offset=1):
-                        self.logic.current_piece.y += 1
-                        self.logic.score += 1
+                        self.logic.move_piece_down()
                     pygame.time.wait(50)
 
                 self.input_handler.handle_controller_state(self.logic)
@@ -324,7 +323,7 @@ class TetrisGame:
                     overlay.fill(C.BLACK)
                     overlay.set_alpha(128)
                     self.screen.blit(overlay, (0, 0))
-                    pause_text = self.renderer.font_large.render(
+                    pause_text = self.renderer.render_large_text(
                         "PAUSED", True, C.YELLOW
                     )
                     center = (C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2)

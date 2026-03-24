@@ -289,6 +289,21 @@ class WizardOfWorGame:
         # Keep only player bullets when player dies
         self.bullets = [b for b in self.bullets if b.is_player_bullet]
 
+    def set_player_position(self, x: float, y: float) -> None:
+        """Move the player to (*x*, *y*) and keep the collision rect in sync.
+
+        Prefer this over accessing ``player.rect`` directly from outside the
+        game class (Law of Demeter).
+        """
+        if self.player is None:
+            return
+        self.player.x = x
+        self.player.y = y
+        from constants import PLAYER_SIZE  # noqa: PLC0415
+
+        self.player.rect.x = int(x) - PLAYER_SIZE // 2
+        self.player.rect.y = int(y) - PLAYER_SIZE // 2
+
     def handle_events(self) -> None:
         """Handle input events."""
         for event in pygame.event.get():

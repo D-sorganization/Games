@@ -827,20 +827,14 @@ class Game(FPSGameBase):
         """Handle intro screen events"""
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                if self.ui_renderer.intro_video:
-                    self.ui_renderer.intro_video.release()
-                    self.ui_renderer.intro_video = None
+                self.ui_renderer.release_intro_video()
                 self.running = False
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE or event.key == pygame.K_ESCAPE:
-                    if self.ui_renderer.intro_video:
-                        self.ui_renderer.intro_video.release()
-                        self.ui_renderer.intro_video = None
+                    self.ui_renderer.release_intro_video()
                     self.state = GameState.MENU
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                if self.ui_renderer.intro_video:
-                    self.ui_renderer.intro_video.release()
-                    self.ui_renderer.intro_video = None
+                self.ui_renderer.release_intro_video()
                 self.state = GameState.MENU
 
     def handle_menu_events(self) -> None:
@@ -858,7 +852,7 @@ class Game(FPSGameBase):
 
     def handle_map_select_events(self) -> None:
         """Handle map selection events"""
-        self.ui_renderer.start_button.update(pygame.mouse.get_pos())
+        self.ui_renderer.update_start_button(pygame.mouse.get_pos())
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
@@ -871,7 +865,7 @@ class Game(FPSGameBase):
                     pygame.mouse.set_visible(False)
                     pygame.event.set_grab(True)
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                if self.ui_renderer.start_button.is_clicked(event.pos):
+                if self.ui_renderer.is_start_button_clicked(event.pos):
                     self.start_game()
                     self.state = GameState.PLAYING
                     pygame.mouse.set_visible(False)
@@ -1004,9 +998,8 @@ class Game(FPSGameBase):
             if elapsed > duration:
                 self.intro_phase += 1
                 self.intro_start_time = 0
-                if self.intro_phase == 2 and self.ui_renderer.intro_video:
-                    self.ui_renderer.intro_video.release()
-                    self.ui_renderer.intro_video = None
+                if self.intro_phase == 2:
+                    self.ui_renderer.release_intro_video()
 
     def run(self) -> None:
         """Main game loop"""

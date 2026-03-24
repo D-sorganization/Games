@@ -53,6 +53,28 @@ class TetrisLogic:
         self.total_tetrises = 0
         self.rewind_history: list[dict[str, Any]] = []
 
+    # ------------------------------------------------------------------
+    # Law-of-Demeter delegate helpers — callers should not reach into
+    # current_piece or rewind_history directly; use these methods.
+    # ------------------------------------------------------------------
+
+    def move_piece_left(self) -> None:
+        """Move the current piece one cell to the left (no collision check)."""
+        self.current_piece.x -= 1
+
+    def move_piece_right(self) -> None:
+        """Move the current piece one cell to the right (no collision check)."""
+        self.current_piece.x += 1
+
+    def move_piece_down(self) -> None:
+        """Move the current piece one cell down and award a soft-drop point."""
+        self.current_piece.y += 1
+        self.score += 1
+
+    def clear_rewind_history(self) -> None:
+        """Discard all saved rewind snapshots."""
+        self.rewind_history.clear()
+
     def new_piece(self) -> Tetromino:
         """Create a new random tetromino"""
         shape_type = random.choice(list(SHAPES.keys()))

@@ -71,6 +71,25 @@ class UIRenderer(UIRendererBase):
             self.modern_small_font = self.small_font
             self.modern_tiny_font = self.tiny_font
 
+    # ------------------------------------------------------------------
+    # Law-of-Demeter delegate methods (avoid callers reaching into
+    # internal attributes like intro_video and start_button directly).
+    # ------------------------------------------------------------------
+
+    def release_intro_video(self) -> None:
+        """Release the intro video capture and clear the reference."""
+        if self.intro_video:
+            self.intro_video.release()
+            self.intro_video = None
+
+    def update_start_button(self, mouse_pos: tuple[int, int]) -> None:
+        """Forward hover-update to the start button."""
+        self.start_button.update(mouse_pos)
+
+    def is_start_button_clicked(self, pos: tuple[int, int]) -> bool:
+        """Return True if *pos* falls inside the start button."""
+        return self.start_button.is_clicked(pos)
+
     def _get_base_dir(self) -> Path:
         """Override to handle frozen executables."""
         if getattr(sys, "frozen", False):

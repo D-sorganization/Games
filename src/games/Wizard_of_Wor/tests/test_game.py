@@ -115,10 +115,8 @@ class TestWizardOfWorGame(unittest.TestCase):
 
     def test_check_collisions_player_hits_enemy(self) -> None:
         enemy = self.game.enemies[0]
-        self.game.player.x = enemy.x
-        self.game.player.y = enemy.y
-        self.game.player.rect.x = enemy.x - 11
-        self.game.player.rect.y = enemy.y - 11
+        # Use set_player_position so x/y and rect stay in sync (Law of Demeter).
+        self.game.set_player_position(enemy.x, enemy.y)
 
         self.game.player.invulnerable_timer = 0
 
