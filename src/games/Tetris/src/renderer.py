@@ -32,6 +32,35 @@ class TetrisRenderer:
         self.small_font = pygame.font.Font(None, 24)
         self.tiny_font = pygame.font.Font(None, 18)
 
+    # ------------------------------------------------------------------
+    # Law-of-Demeter delegate helpers — callers should not reach into
+    # internal font objects; use these methods instead.
+    # ------------------------------------------------------------------
+
+    def render_large_text(
+        self, text: str, antialias: bool, color: tuple[int, int, int]
+    ) -> pygame.Surface:
+        """Render *text* using the large heading font."""
+        return self.font_large.render(text, antialias, color)
+
+    def render_normal_text(
+        self, text: str, antialias: bool, color: tuple[int, int, int]
+    ) -> pygame.Surface:
+        """Render *text* using the normal body font."""
+        return self.font.render(text, antialias, color)
+
+    def render_small_text(
+        self, text: str, antialias: bool, color: tuple[int, int, int]
+    ) -> pygame.Surface:
+        """Render *text* using the small font."""
+        return self.small_font.render(text, antialias, color)
+
+    def render_tiny_text(
+        self, text: str, antialias: bool, color: tuple[int, int, int]
+    ) -> pygame.Surface:
+        """Render *text* using the tiny font."""
+        return self.tiny_font.render(text, antialias, color)
+
     def draw_background(self) -> None:
         """Draw a gradient background for the entire screen"""
         # Create a vertical gradient from dark blue/purple to black

@@ -1015,9 +1015,8 @@ class Game(FPSGameBase):
                 self.intro_phase += 1
                 self.intro_start_time = 0
                 # Only release video when transitioning from phase 1 to phase 2
-                if self.intro_phase == 2 and self.ui_renderer.intro_video:
-                    self.ui_renderer.intro_video.release()
-                    self.ui_renderer.intro_video = None
+                if self.intro_phase == 2:
+                    self.ui_renderer.release_intro_video()
 
     def run(self) -> None:
         """Main game loop"""

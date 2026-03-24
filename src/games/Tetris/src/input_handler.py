@@ -212,6 +212,17 @@ class InputHandler:
 
         return False
 
+    def get_action_label(self, action: str) -> str:
+        """Return the human-readable label for *action*.
+
+        Falls back to the key itself when the action is not found.
+        """
+        return self.controller_action_labels.get(action, action)
+
+    def iter_action_labels(self) -> list[tuple[str, str]]:
+        """Return a list of (action_key, description) pairs for all actions."""
+        return list(self.controller_action_labels.items())
+
     def get_binding_label(self, action: str) -> str:
         """Readable label for a controller binding"""
         binding = self.controller_mapping.get(action)

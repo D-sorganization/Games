@@ -47,6 +47,25 @@ class UIRenderer(UIRendererBase):
         # Generate vignette
         self._generate_vignette()
 
+    # ------------------------------------------------------------------
+    # Law-of-Demeter delegate methods (avoid callers reaching into
+    # internal attributes like intro_video and start_button directly).
+    # ------------------------------------------------------------------
+
+    def release_intro_video(self) -> None:
+        """Release the intro video capture and clear the reference."""
+        if self.intro_video:
+            self.intro_video.release()
+            self.intro_video = None
+
+    def update_start_button(self, mouse_pos: tuple[int, int]) -> None:
+        """Forward hover-update to the start button."""
+        self.start_button.update(mouse_pos)
+
+    def is_start_button_clicked(self, pos: tuple[int, int]) -> bool:
+        """Return True if *pos* falls inside the start button."""
+        return self.start_button.is_clicked(pos)
+
     def _generate_vignette(self) -> None:
         """Generate a static vignette surface."""
         w, h = C.SCREEN_WIDTH, C.SCREEN_HEIGHT
