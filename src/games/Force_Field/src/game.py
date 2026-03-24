@@ -147,7 +147,7 @@ class Game(FPSGameBase):
                 self.joystick = pygame.joystick.Joystick(0)
                 self.joystick.init()
                 logger.info("Controller detected: %s", self.joystick.get_name())
-            except Exception:  # noqa: BLE001
+            except Exception as e:  # noqa: BLE001
                 logger.exception("Controller init failed")
 
         # Fog of War
@@ -352,7 +352,7 @@ class Game(FPSGameBase):
 
         try:
             self.sound_manager.play_sound("shoot_shotgun")
-        except Exception:  # noqa: BLE001
+        except Exception as e:  # noqa: BLE001
             pass
 
         player_x, player_y = self.player.x, self.player.y
