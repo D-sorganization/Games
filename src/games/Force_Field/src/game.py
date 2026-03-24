@@ -119,7 +119,7 @@ class Game(FPSGameBase):
         self.combat_system = CombatSystem(self)
         self.raycaster: Raycaster | None = None
         self.portal: Portal | None = None
-        self.health = 100
+        self.health = C.PLAYER_HEALTH
         self.lives = C.DEFAULT_LIVES
 
         # Unlocked weapons tracking - start with basic weapons
@@ -661,8 +661,10 @@ class Game(FPSGameBase):
                     color = C.GREEN
 
                     if bot.enemy_type == "health_pack":
-                        if self.player.health < 100:
-                            self.player.health = min(100, self.player.health + 50)
+                        if self.player.health < C.PLAYER_HEALTH:
+                            self.player.health = min(
+                                C.PLAYER_HEALTH, self.player.health + 50
+                            )
                             pickup_msg = "HEALTH +50"
                     elif bot.enemy_type == "ammo_box":
                         for w in self.player.ammo:

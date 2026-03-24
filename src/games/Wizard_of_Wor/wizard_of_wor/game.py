@@ -33,7 +33,9 @@ from constants import (
     RESPAWN_SHIELD_FRAMES,
     SCREEN_HEIGHT,
     SCREEN_WIDTH,
+    SHIELD_BAR_WIDTH,
     WHITE,
+    WIZARD_ARRIVAL_BAR_WIDTH,
     YELLOW,
 )
 from dungeon import Dungeon
@@ -573,7 +575,7 @@ class WizardOfWorGame:
                     1.0,
                     self.player.invulnerable_timer / RESPAWN_SHIELD_FRAMES,
                 )
-            bar_width = 140
+            bar_width = SHIELD_BAR_WIDTH
             bar_height = 10
             bar_x = GAME_AREA_X
             bar_y = GAME_AREA_Y + GAME_AREA_HEIGHT + 16
@@ -595,7 +597,7 @@ class WizardOfWorGame:
         total_enemies = sum(1 for e in self.enemies)
         if total_enemies > 0:
             progress = 1 - (alive_enemies / max(1, total_enemies))
-            bar_width = 180
+            bar_width = WIZARD_ARRIVAL_BAR_WIDTH
             bar_height = 8
             bar_x = GAME_AREA_X + 220
             bar_y = GAME_AREA_Y + GAME_AREA_HEIGHT + 16
