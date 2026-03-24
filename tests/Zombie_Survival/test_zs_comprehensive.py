@@ -277,9 +277,9 @@ class TestSoundManager:
     def test_all_files_have_audio_extension(self) -> None:
         valid_extensions = (".wav", ".mp3", ".ogg")
         for key, filename in SoundManager.SOUND_FILES.items():
-            assert filename.endswith(valid_extensions), (
-                f"{key}: {filename} has invalid audio extension"
-            )
+            assert filename.endswith(
+                valid_extensions
+            ), f"{key}: {filename} has invalid audio extension"
 
     def test_minimum_sound_count(self) -> None:
         assert len(SoundManager.SOUND_FILES) > 20
