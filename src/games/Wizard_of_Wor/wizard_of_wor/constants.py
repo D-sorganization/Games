@@ -94,3 +94,7 @@ UP = (0, -1)
 DOWN = (0, 1)
 LEFT = (-1, 0)
 RIGHT = (1, 0)
+
+# UI bar widths (pixels)
+SHIELD_BAR_WIDTH = 140  # Width of the shield status bar
+WIZARD_ARRIVAL_BAR_WIDTH = 180  # Width of the wizard warmup progress bar

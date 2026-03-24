@@ -137,6 +137,7 @@ DEFAULT_MAP_SIZE = 40
 # Balancing
 BOT_SPEED = 0.02  # Slower enemies (was 0.03)
 PLAYER_HEALTH = 100
+CHEAT_AMMO_AMOUNT = 999  # Full ammo granted by IDFA cheat code
 BASE_BOT_HEALTH = 30
 BASE_BOT_DAMAGE = 2  # Reduced from 3
 BOT_ATTACK_RANGE = 5

@@ -110,7 +110,7 @@ class Game(FPSGameBase):
         self.entity_manager = EntityManager()
         self.raycaster: Raycaster | None = None
         self.portal: Portal | None = None
-        self.health = 100
+        self.health = C.PLAYER_HEALTH
         self.lives = C.DEFAULT_LIVES
 
         # Unlocked weapons tracking - start with basic weapons
@@ -375,7 +375,7 @@ class Game(FPSGameBase):
                             self.unlocked_weapons = set(C.WEAPONS.keys())
                             if self.player:
                                 for w in self.player.ammo:
-                                    self.player.ammo[w] = 999
+                                    self.player.ammo[w] = C.CHEAT_AMMO_AMOUNT
                             self.add_message("ALL WEAPONS UNLOCKED", C.YELLOW)
                             self.current_cheat_input = ""
                             self.cheat_mode_active = False
@@ -385,7 +385,7 @@ class Game(FPSGameBase):
                             msg = "GOD MODE ON" if self.god_mode else "GOD MODE OFF"
                             self.add_message(msg, C.YELLOW)
                             if self.player:
-                                self.player_health = 100
+                                self.player_health = C.PLAYER_HEALTH
                                 self.player.god_mode = self.god_mode
                             self.current_cheat_input = ""
                             self.cheat_mode_active = False
