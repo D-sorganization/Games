@@ -146,7 +146,7 @@ def main() -> None:
         logger.error("  stdout: %s", e.stdout)
         logger.error("  stderr: %s", e.stderr)
         sys.exit(1)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.error("Unexpected error: %s", e)
         sys.exit(1)
 

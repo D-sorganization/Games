@@ -34,7 +34,7 @@ def get_existing_issues() -> list[dict[str, Any]]:
             check=True,
         )
         return json.loads(result.stdout)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.warning(f"Could not fetch existing issues: {e}")
         return []
 
@@ -116,7 +116,7 @@ def process_assessment_findings(
     try:
         with open(summary_file) as f:
             summary = json.load(f)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.error(f"Could not load summary file: {e}")
         return 1
 

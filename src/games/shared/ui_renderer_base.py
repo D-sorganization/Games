@@ -133,7 +133,7 @@ class UIRendererBase:
                     img = pygame.transform.scale(img, new_size)
                 self.intro_images["deadfish"] = img
 
-        except Exception:
+        except Exception:  # noqa: BLE001
             logger.exception("Failed to load assets")
 
     def update_blood_drips(self, rect: pygame.Rect) -> None:

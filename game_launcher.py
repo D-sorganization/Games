@@ -66,7 +66,7 @@ def load_games() -> list[dict[str, Any]]:
                             game_entry["module_name"] = manifest["module_name"]
 
                     games.append(game_entry)
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001
                     logger.error(f"Failed to load manifest for {game_dir.name}: {e}")
 
     games.sort(key=lambda x: str(x["name"]))
@@ -88,7 +88,7 @@ def load_game_icons(games: list[dict[str, Any]]) -> None:
                     img = pygame.transform.smoothscale(img, ICON_SIZE)
                     game["img"] = img
                     icon_loaded = True
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001
                     logger.warning(f"Failed to load icon for {game['name']}: {e}")
 
         if not icon_loaded:
@@ -133,14 +133,14 @@ def launch_game(game: dict[str, Any]) -> None:
     if game["type"] == "python":
         try:
             subprocess.Popen([sys.executable, str(game["path"])], cwd=str(game["cwd"]))
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Error launching {game['name']}: {e}")
     elif game["type"] == "module":
         try:
             subprocess.Popen(
                 [sys.executable, "-m", game["module_name"]], cwd=str(game["cwd"])
             )
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Error launching {game['name']}: {e}")
     elif game["type"] == "web":
         webbrowser.open(str(game["path"]))

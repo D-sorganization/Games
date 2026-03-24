@@ -42,7 +42,7 @@ def run_game_tests(name: str, game_path: Path, root_dir: Path) -> bool:
         else:
             logger.info("Tests passed for %s", name)
             return True
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.error("Error running tests for %s: %s", name, e)
         return False
 
