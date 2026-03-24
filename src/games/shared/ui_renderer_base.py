@@ -67,7 +67,7 @@ class UIRendererBase:
             self.tiny_font = pygame.font.SysFont("consolas", 20)
             self.subtitle_font = pygame.font.SysFont("georgia", 36)
             self.chiller_font = pygame.font.SysFont("chiller", 70)
-        except Exception:  # noqa: BLE001
+        except Exception as e:  # noqa: BLE001
             self.title_font = pygame.font.Font(None, 80)
             self.font = pygame.font.Font(None, 48)
             self.small_font = pygame.font.Font(None, 32)
@@ -133,7 +133,7 @@ class UIRendererBase:
                     img = pygame.transform.scale(img, new_size)
                 self.intro_images["deadfish"] = img
 
-        except Exception:  # noqa: BLE001
+        except Exception as e:  # noqa: BLE001
             logger.exception("Failed to load assets")
 
     def update_blood_drips(self, rect: pygame.Rect) -> None:
