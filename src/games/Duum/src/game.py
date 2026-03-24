@@ -3,7 +3,6 @@ from __future__ import annotations
 import logging
 import math
 import random
-import traceback
 
 import pygame
 
@@ -1081,7 +1080,5 @@ class Game(FPSGameBase):
 
                 self.clock.tick(C.FPS)
         except Exception as e:
-            with open("crash_log.txt", "w") as f:
-                f.write(traceback.format_exc())
-            logger.critical("CRASH: %s", e)
+            logger.critical("CRASH: %s", e, exc_info=True)
             raise
