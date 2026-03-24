@@ -352,61 +352,133 @@ class Game(FPSGameBase):
         if hasattr(self, "sound_manager"):
             self.sound_manager.start_music(random.choice(music_tracks))
 
+    def _handle_cheat_input(self, event: pygame.event.Event) -> bool:
+        """Handle keyboard input while cheat mode is active.
+
+        Returns True to signal the caller should ``continue`` to the next event.
+        """
+        if event.key in (pygame.K_RETURN, pygame.K_ESCAPE):
+            self.cheat_mode_active = False
+            self.add_message("CHEAT INPUT CLOSED", C.GRAY)
+        elif event.key == pygame.K_BACKSPACE:
+            self.current_cheat_input = self.current_cheat_input[:-1]
+        else:
+            self.current_cheat_input += event.unicode
+            code = self.current_cheat_input.upper()
+            if code.endswith("IDFA"):
+                self.unlocked_weapons = set(C.WEAPONS.keys())
+                if self.player:
+                    for w in self.player.ammo:
+                        self.player.ammo[w] = C.CHEAT_AMMO_AMOUNT
+                self.add_message("ALL WEAPONS UNLOCKED", C.YELLOW)
+                self.current_cheat_input = ""
+                self.cheat_mode_active = False
+            elif code.endswith("IDDQD"):
+                self.god_mode = not self.god_mode
+                msg = "GOD MODE ON" if self.god_mode else "GOD MODE OFF"
+                self.add_message(msg, C.YELLOW)
+                if self.player:
+                    self.player_health = C.PLAYER_HEALTH
+                    self.player.god_mode = self.god_mode
+                self.current_cheat_input = ""
+                self.cheat_mode_active = False
+        return True  # caller should continue
+
+    def _handle_pause_toggle(self, event: pygame.event.Event) -> None:
+        """Toggle pause state and update timers/mouse grab accordingly."""
+        self.paused = not self.paused
+        if self.paused:
+            self.pause_start_time = pygame.time.get_ticks()
+            pygame.mouse.set_visible(True)
+            pygame.event.set_grab(False)
+        else:
+            if self.pause_start_time > 0:
+                now = pygame.time.get_ticks()
+                self.total_paused_time += now - self.pause_start_time
+                self.pause_start_time = 0
+            pygame.mouse.set_visible(False)
+            pygame.event.set_grab(True)
+
+    def _handle_weapon_keys(self, event: pygame.event.Event) -> None:
+        """Handle weapon-switch, reload, zoom, bomb and shoot key presses."""
+        if self.input_manager.is_action_just_pressed(event, "weapon_1"):
+            self.switch_weapon_with_message("pistol")
+        elif self.input_manager.is_action_just_pressed(event, "weapon_2"):
+            self.switch_weapon_with_message("rifle")
+        elif self.input_manager.is_action_just_pressed(event, "weapon_3"):
+            self.switch_weapon_with_message("shotgun")
+        elif self.input_manager.is_action_just_pressed(event, "weapon_4"):
+            self.switch_weapon_with_message("laser")
+        elif self.input_manager.is_action_just_pressed(event, "weapon_5"):
+            self.switch_weapon_with_message("plasma")
+        elif self.input_manager.is_action_just_pressed(event, "weapon_6"):
+            self.switch_weapon_with_message("rocket")
+        elif event.key == pygame.K_7:
+            self.switch_weapon_with_message("minigun")
+        elif self.input_manager.is_action_just_pressed(event, "reload"):
+            assert self.player is not None
+            self.player.reload()
+        elif self.input_manager.is_action_just_pressed(event, "zoom"):
+            assert self.player is not None
+            self.player.zoomed = not self.player.zoomed
+        elif self.input_manager.is_action_just_pressed(event, "bomb"):
+            assert self.player is not None
+            if self.player.activate_bomb():
+                self.handle_bomb_explosion()
+        elif self.input_manager.is_action_just_pressed(event, "shoot_alt"):
+            assert self.player is not None
+            if self.player.shoot():
+                self.fire_weapon()
+        elif event.key == pygame.K_m:
+            self.show_minimap = not self.show_minimap
+        elif event.key == pygame.K_F9:
+            self.cycle_render_scale()
+
+    def _handle_pause_menu_click(self, mx: int, my: int) -> None:
+        """Process a mouse click inside the pause menu."""
+        if 500 <= mx <= 700:
+            if 350 <= my <= 400:  # Resume
+                self.paused = False
+                if self.pause_start_time > 0:
+                    now = pygame.time.get_ticks()
+                    self.total_paused_time += now - self.pause_start_time
+                    self.pause_start_time = 0
+                pygame.mouse.set_visible(False)
+                pygame.event.set_grab(True)
+            elif 410 <= my <= 460:  # Save
+                self.save_game()
+                self.add_message("GAME SAVED", C.GREEN)
+            elif 470 <= my <= 520:  # Controls
+                self.state = GameState.KEY_CONFIG
+                self.binding_action = None
+            elif 530 <= my <= 580:  # Quit to Menu
+                self.state = GameState.MENU
+                self.paused = False
+                self.sound_manager.start_music("music_loop")
+
+    def _handle_gameplay_mouse_click(self, event: pygame.event.Event) -> None:
+        """Process a mouse button click during active gameplay (not paused)."""
+        assert self.player is not None
+        if event.button == 1:
+            if self.player.shoot():
+                self.fire_weapon()
+        elif event.button == 3:
+            if self.player.fire_secondary():
+                self.fire_weapon(is_secondary=True)
+
     def handle_game_events(self) -> None:
         """Handle events during gameplay"""
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
+
             elif event.type == pygame.KEYDOWN:
-                # Cheat Input Handling
                 if self.cheat_mode_active:
-                    if event.key == pygame.K_RETURN or event.key == pygame.K_ESCAPE:
-                        self.cheat_mode_active = False
-                        self.add_message("CHEAT INPUT CLOSED", C.GRAY)
-                    elif event.key == pygame.K_BACKSPACE:
-                        self.current_cheat_input = self.current_cheat_input[:-1]
-                    else:
-                        self.current_cheat_input += event.unicode
-                        # Check cheats
-                        code = self.current_cheat_input.upper()
-                        if code.endswith("IDFA"):
-                            # Unlock all weapons, full ammo
-                            self.unlocked_weapons = set(C.WEAPONS.keys())
-                            if self.player:
-                                for w in self.player.ammo:
-                                    self.player.ammo[w] = C.CHEAT_AMMO_AMOUNT
-                            self.add_message("ALL WEAPONS UNLOCKED", C.YELLOW)
-                            self.current_cheat_input = ""
-                            self.cheat_mode_active = False
-                        elif code.endswith("IDDQD"):
-                            # God Mode
-                            self.god_mode = not self.god_mode
-                            msg = "GOD MODE ON" if self.god_mode else "GOD MODE OFF"
-                            self.add_message(msg, C.YELLOW)
-                            if self.player:
-                                self.player_health = C.PLAYER_HEALTH
-                                self.player.god_mode = self.god_mode
-                            self.current_cheat_input = ""
-                            self.cheat_mode_active = False
+                    self._handle_cheat_input(event)
                     continue
 
-                # Pause Toggle
                 if self.input_manager.is_action_just_pressed(event, "pause"):
-                    self.paused = not self.paused
-                    if self.paused:
-                        self.pause_start_time = pygame.time.get_ticks()
-                        pygame.mouse.set_visible(True)
-                        pygame.event.set_grab(False)
-                    else:
-                        if self.pause_start_time > 0:
-                            now = pygame.time.get_ticks()
-                            pause_duration = now - self.pause_start_time
-                            self.total_paused_time += pause_duration
-                            self.pause_start_time = 0
-                        pygame.mouse.set_visible(False)
-                        pygame.event.set_grab(True)
-
-                # Activate Cheat Mode
+                    self._handle_pause_toggle(event)
                 elif event.key == pygame.K_c and (
                     pygame.key.get_mods() & pygame.KMOD_CTRL
                 ):
@@ -415,75 +487,15 @@ class Game(FPSGameBase):
                     self.add_message("CHEAT MODE: TYPE CODE", C.PURPLE)
                     continue
 
-                # Single press actions (switches, reload, etc)
                 if not self.paused:
-                    if self.input_manager.is_action_just_pressed(event, "weapon_1"):
-                        self.switch_weapon_with_message("pistol")
-                    elif self.input_manager.is_action_just_pressed(event, "weapon_2"):
-                        self.switch_weapon_with_message("rifle")
-                    elif self.input_manager.is_action_just_pressed(event, "weapon_3"):
-                        self.switch_weapon_with_message("shotgun")
-                    elif self.input_manager.is_action_just_pressed(event, "weapon_4"):
-                        self.switch_weapon_with_message("laser")
-                    elif self.input_manager.is_action_just_pressed(event, "weapon_5"):
-                        self.switch_weapon_with_message("plasma")
-                    elif self.input_manager.is_action_just_pressed(event, "weapon_6"):
-                        self.switch_weapon_with_message("rocket")
-                    elif event.key == pygame.K_7:
-                        self.switch_weapon_with_message("minigun")
-                    elif self.input_manager.is_action_just_pressed(event, "reload"):
-                        assert self.player is not None
-                        self.player.reload()
-                    elif self.input_manager.is_action_just_pressed(event, "zoom"):
-                        assert self.player is not None
-                        self.player.zoomed = not self.player.zoomed
-                    elif self.input_manager.is_action_just_pressed(event, "bomb"):
-                        assert self.player is not None
-                        if self.player.activate_bomb():
-                            self.handle_bomb_explosion()
-                    # Alt Shoot (e.g. Numpad 0)
-                    elif self.input_manager.is_action_just_pressed(event, "shoot_alt"):
-                        assert self.player is not None
-                        if self.player.shoot():
-                            self.fire_weapon()
-                    elif event.key == pygame.K_m:
-                        self.show_minimap = not self.show_minimap
-                    elif event.key == pygame.K_F9:
-                        self.cycle_render_scale()
+                    self._handle_weapon_keys(event)
 
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if self.paused:
-                    # Handle Pause Menu Clicks
                     mx, my = event.pos
-                    if 500 <= mx <= 700:
-                        if 350 <= my <= 400:  # Resume
-                            self.paused = False
-                            if self.pause_start_time > 0:
-                                now = pygame.time.get_ticks()
-                                pause_duration = now - self.pause_start_time
-                                self.total_paused_time += pause_duration
-                                self.pause_start_time = 0
-                            pygame.mouse.set_visible(False)
-                            pygame.event.set_grab(True)
-                        elif 410 <= my <= 460:  # Save
-                            self.save_game()
-                            self.add_message("GAME SAVED", C.GREEN)
-                        elif 470 <= my <= 520:  # Controls
-                            self.state = GameState.KEY_CONFIG
-                            self.binding_action = None  # Initialize binding state
-                        elif 530 <= my <= 580:  # Quit to Menu
-                            self.state = GameState.MENU
-                            self.paused = False
-                            self.sound_manager.start_music("music_loop")
-
+                    self._handle_pause_menu_click(mx, my)
                 elif not self.cheat_mode_active:
-                    assert self.player is not None
-                    if event.button == 1:
-                        if self.player.shoot():
-                            self.fire_weapon()
-                    elif event.button == 3:
-                        if self.player.fire_secondary():
-                            self.fire_weapon(is_secondary=True)
+                    self._handle_gameplay_mouse_click(event)
 
             elif event.type == pygame.MOUSEMOTION and not self.paused:
                 assert self.player is not None
@@ -648,32 +660,35 @@ class Game(FPSGameBase):
         )
         self._sync_combat_state()
 
-    def update_game(self) -> None:
-        """Update game state"""
-        if self.paused:
-            return
+    def _check_game_over(self) -> bool:
+        """Check if the player is dead and handle lives/game-over transitions.
 
-        assert self.player is not None
+        Returns True when the caller should stop further update processing.
+        """
         if not self.player_alive:
             if self.lives > 1:
                 self.lives -= 1
                 self.respawn_player()
-                return
+                return True
             level_time = (
                 pygame.time.get_ticks() - self.level_start_time - self.total_paused_time
             ) / 1000.0
             self.level_times.append(level_time)
             self.lives = 0
-
             self.state = GameState.GAME_OVER
             self.game_over_timer = 0
             self.sound_manager.play_sound("game_over1")
             pygame.mouse.set_visible(True)
             pygame.event.set_grab(False)
-            return
+            return True
+        return False
 
+    def _check_portal_completion(self) -> bool:
+        """Spawn portal when all enemies are dead; transition on portal entry.
+
+        Returns True when the caller should stop further update processing.
+        """
         enemies_alive = self.entity_manager.get_active_enemies()
-
         if not enemies_alive:
             if self.portal is None:
                 self.spawn_portal()
@@ -700,80 +715,79 @@ class Game(FPSGameBase):
                 self.state = GameState.LEVEL_COMPLETE
                 pygame.mouse.set_visible(True)
                 pygame.event.set_grab(False)
-                return
+                return True
+        return False
 
+    def _handle_joystick_input(self, shield_active: bool) -> bool:
+        """Process joystick axes and buttons; returns updated shield_active."""
         assert self.player is not None
         assert self.game_map is not None
-        keys = pygame.key.get_pressed()
+        axis_x = self.joystick.get_axis(0)
+        axis_y = self.joystick.get_axis(1)
 
-        shield_active = self.input_manager.is_action_pressed("shield")
+        if abs(axis_x) > C.JOYSTICK_DEADZONE:
+            self.player.strafe(
+                self.game_map,
+                self.bots,
+                right=(axis_x > 0),
+                speed=abs(axis_x) * C.PLAYER_SPEED,
+            )
+            self.player_is_moving = True
+        if abs(axis_y) > C.JOYSTICK_DEADZONE:
+            self.player.move(
+                self.game_map,
+                self.bots,
+                forward=(axis_y < 0),
+                speed=abs(axis_y) * C.PLAYER_SPEED,
+            )
+            self.player_is_moving = True
 
-        if self.joystick and not self.paused and self.player and self.player_alive:
-            axis_x = self.joystick.get_axis(0)
-            axis_y = self.joystick.get_axis(1)
+        look_x = 0.0
+        look_y = 0.0
+        if self.joystick.get_numaxes() >= 4:
+            look_x = self.joystick.get_axis(2)
+            look_y = self.joystick.get_axis(3)
 
-            if abs(axis_x) > C.JOYSTICK_DEADZONE:
-                self.player.strafe(
-                    self.game_map,
-                    self.bots,
-                    right=(axis_x > 0),
-                    speed=abs(axis_x) * C.PLAYER_SPEED,
-                )
-                self.player_is_moving = True
-            if abs(axis_y) > C.JOYSTICK_DEADZONE:
-                self.player.move(
-                    self.game_map,
-                    self.bots,
-                    forward=(axis_y < 0),
-                    speed=abs(axis_y) * C.PLAYER_SPEED,
-                )
-                self.player_is_moving = True
+        if abs(look_x) > C.JOYSTICK_DEADZONE:
+            self.player.rotate(look_x * C.PLAYER_ROT_SPEED * 15 * C.SENSITIVITY_X)
+        if abs(look_y) > C.JOYSTICK_DEADZONE:
+            self.player.pitch_view(-look_y * 10 * C.SENSITIVITY_Y)
 
-            look_x = 0.0
-            look_y = 0.0
-            if self.joystick.get_numaxes() >= 4:
-                look_x = self.joystick.get_axis(2)
-                look_y = self.joystick.get_axis(3)
+        if self.joystick.get_numbuttons() > 0 and self.joystick.get_button(0):
+            shield_active = True
+        if self.joystick.get_numbuttons() > 2 and self.joystick.get_button(2):
+            self.player.reload()
+        if self.joystick.get_numbuttons() > 5 and self.joystick.get_button(5):
+            if self.player.shoot():
+                self.fire_weapon()
+        if self.joystick.get_numbuttons() > 4 and self.joystick.get_button(4):
+            if self.player.fire_secondary():
+                self.fire_weapon(is_secondary=True)
 
-            if abs(look_x) > C.JOYSTICK_DEADZONE:
-                self.player.rotate(look_x * C.PLAYER_ROT_SPEED * 15 * C.SENSITIVITY_X)
-            if abs(look_y) > C.JOYSTICK_DEADZONE:
-                self.player.pitch_view(-look_y * 10 * C.SENSITIVITY_Y)
+        if self.joystick.get_numhats() > 0:
+            hat = self.joystick.get_hat(0)
+            if hat[0] == -1:
+                self.switch_weapon_with_message("pistol")
+            if hat[0] == 1:
+                self.switch_weapon_with_message("rifle")
+            if hat[1] == 1:
+                self.switch_weapon_with_message("shotgun")
+            if hat[1] == -1:
+                self.switch_weapon_with_message("plasma")
 
-            if self.joystick.get_numbuttons() > 0 and self.joystick.get_button(0):
-                shield_active = True
+        return shield_active
 
-            if self.joystick.get_numbuttons() > 2 and self.joystick.get_button(2):
-                self.player.reload()
-
-            if self.joystick.get_numbuttons() > 5 and self.joystick.get_button(5):
-                if self.player.shoot():
-                    self.fire_weapon()
-
-            if self.joystick.get_numbuttons() > 4 and self.joystick.get_button(4):
-                if self.player.fire_secondary():
-                    self.fire_weapon(is_secondary=True)
-
-            if self.joystick.get_numhats() > 0:
-                hat = self.joystick.get_hat(0)
-                if hat[0] == -1:
-                    self.switch_weapon_with_message("pistol")
-                if hat[0] == 1:
-                    self.switch_weapon_with_message("rifle")
-                if hat[1] == 1:
-                    self.switch_weapon_with_message("shotgun")
-                if hat[1] == -1:
-                    self.switch_weapon_with_message("plasma")
-
-        self.player.set_shield(shield_active)
-
-        self.particle_system.update()
-
+    def _update_damage_texts(self) -> None:
+        """Tick floating damage text positions and remove expired entries."""
         for t in self.damage_texts:
             t["y"] += t["vy"]
             t["timer"] -= 1
         self.damage_texts = [t for t in self.damage_texts if t["timer"] > 0]
 
+    def _handle_keyboard_movement(self, keys: pygame.key.ScancodeWrapper) -> None:
+        """Apply keyboard-driven player movement and camera rotation."""
+        assert self.player is not None
+        assert self.game_map is not None
         sprint_key = keys[pygame.K_RSHIFT]
         is_sprinting = self.input_manager.is_action_pressed("sprint") or sprint_key
         if is_sprinting and self.player_stamina > 0:
@@ -784,7 +798,6 @@ class Game(FPSGameBase):
             current_speed = C.PLAYER_SPEED
 
         moving = False
-
         if self.input_manager.is_action_pressed("move_forward"):
             self.player.move(
                 self.game_map, self.bots, forward=True, speed=current_speed
@@ -817,63 +830,62 @@ class Game(FPSGameBase):
         if self.input_manager.is_action_pressed("look_down"):
             self.player.pitch_view(-5)
 
-        self.player.update()
-
-        self.entity_manager.update_bots(self.game_map, self.player, self)
-
+    def _check_item_pickups(self) -> None:
+        """Detect player proximity to pickup items and apply their effects."""
+        assert self.player is not None
         for bot in self.bots:
             is_item = bot.enemy_type.startswith(("health", "ammo", "bomb", "pickup"))
-            if bot.alive and is_item:
-                dx = bot.x - self.player_x
-                dy = bot.y - self.player_y
-                dist_sq = dx * dx + dy * dy
-                if dist_sq < PICKUP_RADIUS_SQ:
-                    pickup_msg = ""
-                    color = C.GREEN
+            if not (bot.alive and is_item):
+                continue
+            dx = bot.x - self.player_x
+            dy = bot.y - self.player_y
+            if dx * dx + dy * dy >= PICKUP_RADIUS_SQ:
+                continue
 
-                    if bot.enemy_type == "health_pack":
-                        if self.player_health < 100:
-                            self.player_health = min(100, self.player_health + 50)
-                            pickup_msg = "HEALTH +50"
-                    elif bot.enemy_type == "ammo_box":
-                        for w in self.player.ammo:
-                            self.player.ammo[w] += 20
-                        pickup_msg = "AMMO FOUND"
-                        color = C.YELLOW
-                    elif bot.enemy_type == "bomb_item":
-                        self.player_bombs += 1
-                        pickup_msg = "BOMB +1"
-                        color = C.ORANGE
-                    elif bot.enemy_type.startswith("pickup_"):
-                        w_name = bot.enemy_type.replace("pickup_", "")
-                        if w_name not in self.unlocked_weapons:
-                            self.unlocked_weapons.add(w_name)
-                            self.player.switch_weapon(w_name)
-                            pickup_msg = f"{w_name.upper()} ACQUIRED!"
-                            color = C.CYAN
-                        else:
-                            if w_name in self.player.ammo:
-                                clip_size = int(C.WEAPONS[w_name]["clip_size"])
-                                self.player.ammo[w_name] += clip_size * 2
-                                pickup_msg = f"{w_name.upper()} AMMO"
-                                color = C.YELLOW
+            pickup_msg = ""
+            color = C.GREEN
+            if bot.enemy_type == "health_pack":
+                if self.player_health < 100:
+                    self.player_health = min(100, self.player_health + 50)
+                    pickup_msg = "HEALTH +50"
+            elif bot.enemy_type == "ammo_box":
+                for w in self.player.ammo:
+                    self.player.ammo[w] += 20
+                pickup_msg = "AMMO FOUND"
+                color = C.YELLOW
+            elif bot.enemy_type == "bomb_item":
+                self.player_bombs += 1
+                pickup_msg = "BOMB +1"
+                color = C.ORANGE
+            elif bot.enemy_type.startswith("pickup_"):
+                w_name = bot.enemy_type.replace("pickup_", "")
+                if w_name not in self.unlocked_weapons:
+                    self.unlocked_weapons.add(w_name)
+                    self.player.switch_weapon(w_name)
+                    pickup_msg = f"{w_name.upper()} ACQUIRED!"
+                    color = C.CYAN
+                elif w_name in self.player.ammo:
+                    clip_size = int(C.WEAPONS[w_name]["clip_size"])
+                    self.player.ammo[w_name] += clip_size * 2
+                    pickup_msg = f"{w_name.upper()} AMMO"
+                    color = C.YELLOW
 
-                    if pickup_msg:
-                        bot.alive = False
-                        bot.removed = True
-                        self.damage_texts.append(
-                            {
-                                "x": C.SCREEN_WIDTH // 2,
-                                "y": C.SCREEN_HEIGHT // 2 - 50,
-                                "text": pickup_msg,
-                                "color": color,
-                                "timer": 60,
-                                "vy": -1,
-                            }
-                        )
+            if pickup_msg:
+                bot.alive = False
+                bot.removed = True
+                self.damage_texts.append(
+                    {
+                        "x": C.SCREEN_WIDTH // 2,
+                        "y": C.SCREEN_HEIGHT // 2 - 50,
+                        "text": pickup_msg,
+                        "color": color,
+                        "timer": 60,
+                        "vy": -1,
+                    }
+                )
 
-        self.entity_manager.update_projectiles(self.game_map, self.player, self)
-
+    def _update_fog_reveal(self) -> None:
+        """Expand the visited-cells fog-of-war set around the player."""
         cx, cy = int(self.player_x), int(self.player_y)
         reveal_radius = FOG_REVEAL_RADIUS
         for r_i in range(-reveal_radius, reveal_radius + 1):
@@ -881,6 +893,8 @@ class Game(FPSGameBase):
                 if r_i * r_i + r_j * r_j <= reveal_radius * reveal_radius:
                     self.visited_cells.add((cx + r_j, cy + r_i))
 
+    def _update_atmosphere(self) -> None:
+        """Update proximity-based ambient sounds (heartbeat, beast, groan)."""
         min_dist_sq = float("inf")
         for bot in self.bots:
             if bot.alive:
@@ -914,6 +928,8 @@ class Game(FPSGameBase):
                 self.sound_manager.play_sound("groan")
                 self.groan_timer = GROAN_TIMER_DELAY
 
+    def _check_kill_combo(self) -> None:
+        """Tick the kill-combo timer and trigger combo announcement if earned."""
         if self.kill_combo_timer > 0:
             self.kill_combo_timer -= 1
             if self.kill_combo_timer <= 0:
@@ -932,9 +948,38 @@ class Game(FPSGameBase):
                         }
                     )
                 self.kill_combo_count = 0
-            # Push combo state back to the combat manager
-            self.kill_combo_timer = self.kill_combo_timer
-            self.kill_combo_count = self.kill_combo_count
+
+    def update_game(self) -> None:
+        """Update game state"""
+        if self.paused:
+            return
+
+        assert self.player is not None
+        assert self.game_map is not None
+        if self._check_game_over():
+            return
+        if self._check_portal_completion():
+            return
+
+        keys = pygame.key.get_pressed()
+        shield_active = self.input_manager.is_action_pressed("shield")
+
+        if self.joystick and self.player_alive:
+            shield_active = self._handle_joystick_input(shield_active)
+
+        self.player.set_shield(shield_active)
+        self.particle_system.update()
+        self._update_damage_texts()
+        self._handle_keyboard_movement(keys)
+        self.player.update()
+
+        self.entity_manager.update_bots(self.game_map, self.player, self)
+        self._check_item_pickups()
+        self.entity_manager.update_projectiles(self.game_map, self.player, self)
+
+        self._update_fog_reveal()
+        self._update_atmosphere()
+        self._check_kill_combo()
 
     def handle_intro_events(self) -> None:
         """Handle intro screen events"""
