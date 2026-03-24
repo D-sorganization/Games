@@ -2,8 +2,8 @@
 # Configuration for the Ruff linter
 # Matches standards defined in ci-standard.yml
 
-# Target Python 3.11 (matches your CI environment)
-target-version = "py311"
+# Target Python 3.10 (actual CI environment; see issue #574)
+target-version = "py310"
 line-length = 88  # Matches Black standard (88 chars)
 
 # Exclude generated code and standard noise
