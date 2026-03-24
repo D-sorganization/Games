@@ -23,7 +23,7 @@ def main():
     try:
         with open(summary_path) as f:
             data = json.load(f)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.error("Error loading JSON: %s", e)
         return
 

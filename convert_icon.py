@@ -12,5 +12,5 @@ try:
     img = Image.open(src)
     img.save(dst, format="ICO", sizes=[(256, 256)])
     logger.info("Converted %s to %s", src, dst)
-except Exception as e:
+except Exception as e:  # noqa: BLE001
     logger.error("Error: %s", e)

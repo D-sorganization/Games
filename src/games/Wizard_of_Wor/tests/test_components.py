@@ -180,5 +180,5 @@ class TestRadar(unittest.TestCase):
         # Just ensure it runs without error
         try:
             self.radar.draw(self.screen, enemies, player)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             self.fail(f"Radar.draw raised exception: {e}")

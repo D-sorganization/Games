@@ -108,7 +108,7 @@ def check_dry_violations(files: list[Path]) -> list[dict]:
     for file_path in files:
         try:
             content = file_path.read_text(encoding="utf-8", errors="ignore")
-        except Exception:
+        except Exception:  # noqa: BLE001
             continue
 
         lines = content.split("\n")
@@ -159,7 +159,7 @@ def check_orthogonality(files: list[Path]) -> list[dict]:
                             "recommendation": "Split function",
                         }
                     )
-        except Exception:
+        except Exception:  # noqa: BLE001
             pass
     return issues
 
@@ -181,7 +181,7 @@ def check_reversibility(root_path: Path) -> list[dict]:
                         "recommendation": "Use env vars",
                     }
                 )
-        except Exception:
+        except Exception:  # noqa: BLE001
             pass
     return issues
 
@@ -194,7 +194,7 @@ def check_quality(files: list[Path]) -> list[dict]:
             content = file_path.read_text(encoding="utf-8", errors="ignore")
             if "TO" + "DO" in content:
                 todos.append(str(file_path))
-        except Exception:
+        except Exception:  # noqa: BLE001
             pass
 
     if len(todos) > 10:

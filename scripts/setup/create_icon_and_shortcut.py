@@ -41,7 +41,7 @@ def get_desktop_path() -> Path:
             desktop_path = result.stdout.strip()
             if desktop_path:
                 return Path(desktop_path)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.warning("Failed to get Desktop path via PowerShell: %s", e)
 
     # Fallback to home/Desktop if PowerShell fails
@@ -83,7 +83,7 @@ def create_ico_from_png(png_path: Path, ico_path: Path) -> bool:
             logger.info("Successfully created ICO file: %s", ico_path)
             return True
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.error("Error creating ICO file: %s", e)
         return False
 
@@ -175,7 +175,7 @@ def main() -> None:
             PIL_Image = _PIL_Image
             PIL_AVAILABLE = True
             logger.info("Pillow imported successfully!")
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error("Failed to install Pillow: %s", e)
             logger.warning("Continuing without custom icon conversion...")
 
