@@ -72,7 +72,11 @@ jobs:
 
       - run: pip install mypy types-PyYAML types-requests
       - run: pip install -r requirements.txt
-      - run: mypy scripts/ tools/ *.py --ignore-missing-imports || echo "::warning::Type checking has issues - fix type annotations"
+      # Type checking is advisory while the codebase is being annotated.
+      # Tracked for enforcement in a future sprint.
+      - name: Type Check (advisory)
+        continue-on-error: true
+        run: mypy scripts/ tools/ *.py --ignore-missing-imports
 
       # Placeholder detection
       - name: Verify No Placeholders
@@ -137,7 +141,7 @@ jobs:
         env:
           SDL_VIDEODRIVER: dummy
           SDL_AUDIODRIVER: disk
-        run: xvfb-run -a pytest . --ignore=.venv --cov=src/games/shared --cov-branch --cov-report=xml --cov-report=term-missing --timeout=60 || echo "::warning::Some tests failed"
+        run: xvfb-run -a pytest tests/ --cov=src/games/shared --cov-branch --cov-report=xml --cov-report=term-missing --timeout=60
       - uses: codecov/codecov-action@v4
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
