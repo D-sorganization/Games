@@ -11,6 +11,12 @@ import pygame
 
 from .bot_renderer import BotRenderer
 from .contracts import validate_positive
+from .raycaster_math import (
+    finalize_ray_data,
+    get_ray_directions,
+    init_dda_params,
+    perform_dda_loop,
+)
 from .texture_generator import TextureGenerator
 from .utils import cast_ray_dda
 
@@ -72,9 +78,13 @@ class Raycaster:
                 strips.append(tex.subsurface((x, 0, 1, h)))
             self.texture_strips[name] = strips
 
+        # Bounded LRU cache -- eviction handled by update_cache() each frame.
+        # 512 entries keeps memory bounded (see issue #583).
         self._strip_cache: OrderedDict[tuple[str, int, int], pygame.Surface] = (
             OrderedDict()
         )
+        self._STRIP_CACHE_MAX: int = 512
+        self._STRIP_CACHE_EVICT: int = 64
 
     def _init_atmosphere(self) -> None:
         """Initialize sky backgrounds and stars."""
@@ -95,8 +105,14 @@ class Raycaster:
 
     def _init_buffers(self) -> None:
         """Initialize rendering buffers and surfaces."""
+        # Bounded LRU caches -- eviction handled by update_cache() each frame.
+        # Limits chosen to bound peak VRAM (see issue #583).
         self.sprite_cache: OrderedDict[tuple, pygame.Surface] = OrderedDict()
+        self._SPRITE_CACHE_MAX: int = 128
+        self._SPRITE_CACHE_EVICT: int = 16
         self._scaled_sprite_cache: OrderedDict[tuple, pygame.Surface] = OrderedDict()
+        self._SCALED_SPRITE_CACHE_MAX: int = 64
+        self._SCALED_SPRITE_CACHE_EVICT: int = 8
 
         self.minimap_surface: pygame.Surface | None = None
         self.minimap_size = 200
@@ -167,25 +183,42 @@ class Raycaster:
         self.z_buffer = np.full(self.num_rays, float("inf"), dtype=np.float64)
         self._update_ray_angles()
 
+    @staticmethod
+    def _evict_lru(
+        cache: OrderedDict[Any, Any],
+        max_size: int,
+        evict_count: int,
+    ) -> None:
+        """Pop up to *evict_count* LRU entries when *cache* exceeds *max_size*.
+
+        Static helper keeps ``update_cache`` free of nested loops and makes
+        the eviction policy independently testable.
+        """
+        if len(cache) > max_size:
+            for _ in range(min(evict_count, len(cache))):
+                cache.popitem(last=False)
+
     def update_cache(self) -> None:
         """Perform cache maintenance once per frame.
 
         Caches use OrderedDict with LRU eviction: on hit, entries are
         moved to the end via ``move_to_end``; on eviction, the *least*
         recently used entries are popped from the front.
+
+        Hard limits are intentionally conservative to bound peak VRAM.
+        See issue #583.
         """
-        # Limit cache size to prevent memory issues
-        if len(self._strip_cache) > 10000:
-            for _ in range(1000):
-                self._strip_cache.popitem(last=False)
-
-        if len(self.sprite_cache) > 400:
-            for _ in range(40):
-                self.sprite_cache.popitem(last=False)
-
-        if len(self._scaled_sprite_cache) > 200:
-            for _ in range(20):
-                self._scaled_sprite_cache.popitem(last=False)
+        self._evict_lru(
+            self._strip_cache, self._STRIP_CACHE_MAX, self._STRIP_CACHE_EVICT
+        )
+        self._evict_lru(
+            self.sprite_cache, self._SPRITE_CACHE_MAX, self._SPRITE_CACHE_EVICT
+        )
+        self._evict_lru(
+            self._scaled_sprite_cache,
+            self._SCALED_SPRITE_CACHE_MAX,
+            self._SCALED_SPRITE_CACHE_EVICT,
+        )
 
     def _get_cached_strip(
         self, texture_name: str, strip_x: int, height: int
@@ -353,20 +386,14 @@ class Raycaster:
     def _get_ray_directions(
         self, player: Player
     ) -> tuple[np.ndarray[Any, Any], np.ndarray[Any, Any]]:
-        """Calculate ray direction vectors."""
-        if player.zoomed:
-            cos_deltas, sin_deltas = self.cos_deltas_zoomed, self.sin_deltas_zoomed
-        else:
-            cos_deltas, sin_deltas = self.cos_deltas, self.sin_deltas
-
-        p_cos, p_sin = math.cos(player.angle), math.sin(player.angle)
-        ray_dir_x = p_cos * cos_deltas - p_sin * sin_deltas
-        ray_dir_y = p_sin * cos_deltas + p_cos * sin_deltas
-
-        # Avoid division by zero
-        ray_dir_x[ray_dir_x == 0] = 1e-30
-        ray_dir_y[ray_dir_y == 0] = 1e-30
-        return ray_dir_x, ray_dir_y
+        """Calculate ray direction vectors (delegates to raycaster_math)."""
+        return get_ray_directions(
+            player,
+            self.cos_deltas,
+            self.sin_deltas,
+            self.cos_deltas_zoomed,
+            self.sin_deltas_zoomed,
+        )
 
     def _init_dda_params(
         self,
@@ -374,36 +401,8 @@ class Raycaster:
         ray_dir_x: np.ndarray[Any, Any],
         ray_dir_y: np.ndarray[Any, Any],
     ) -> tuple[Any, ...]:
-        """Initialize parameters for DDA algorithm."""
-        map_x = np.full(self.num_rays, int(player.x), dtype=np.int32)
-        map_y = np.full(self.num_rays, int(player.y), dtype=np.int32)
-
-        delta_dist_x = np.abs(1.0 / ray_dir_x)
-        delta_dist_y = np.abs(1.0 / ray_dir_y)
-
-        step_x = np.where(ray_dir_x < 0, -1, 1).astype(np.int32)
-        step_y = np.where(ray_dir_y < 0, -1, 1).astype(np.int32)
-
-        side_dist_x = np.where(
-            ray_dir_x < 0,
-            (player.x - map_x) * delta_dist_x,
-            (map_x + 1.0 - player.x) * delta_dist_x,
-        )
-        side_dist_y = np.where(
-            ray_dir_y < 0,
-            (player.y - map_y) * delta_dist_y,
-            (map_y + 1.0 - player.y) * delta_dist_y,
-        )
-        return (
-            map_x,
-            map_y,
-            delta_dist_x,
-            delta_dist_y,
-            side_dist_x,
-            side_dist_y,
-            step_x,
-            step_y,
-        )
+        """Initialize DDA stepping parameters (delegates to raycaster_math)."""
+        return init_dda_params(player, self.num_rays, ray_dir_x, ray_dir_y)
 
     def _perform_dda_loop(
         self,
@@ -416,51 +415,22 @@ class Raycaster:
         step_x: np.ndarray[Any, Any],
         step_y: np.ndarray[Any, Any],
     ) -> tuple[Any, ...]:
-        """Perform the main DDA hit detection loop."""
-        hits = np.zeros(self.num_rays, dtype=bool)
-        side = np.zeros(self.num_rays, dtype=np.int32)
-        wall_types = np.zeros(self.num_rays, dtype=np.int32)
-        active = np.ones(self.num_rays, dtype=bool)
-
-        max_steps = int(self.config.MAX_DEPTH * 1.5)
-        for _ in range(max_steps):
-            mask_x = (side_dist_x < side_dist_y) & active
-            mask_y = (~mask_x) & active
-
-            side_dist_x[mask_x] += delta_dist_x[mask_x]
-            map_x[mask_x] += step_x[mask_x]
-            side[mask_x] = 0
-
-            side_dist_y[mask_y] += delta_dist_y[mask_y]
-            map_y[mask_y] += step_y[mask_y]
-            side[mask_y] = 1
-
-            in_bounds = (
-                (map_x >= 0)
-                & (map_x < self.map_width)
-                & (map_y >= 0)
-                & (map_y < self.map_height)
-            )
-            out_of_bounds = (~in_bounds) & active
-            if np.any(out_of_bounds):
-                hits[out_of_bounds] = True
-                wall_types[out_of_bounds] = 1
-                active[out_of_bounds] = False
-
-            check_mask = in_bounds & active
-            if np.any(check_mask):
-                grid_vals = self.np_grid[map_y[check_mask], map_x[check_mask]]
-                wall_hit_mask = grid_vals > 0
-
-                indices = np.nonzero(check_mask)[0][wall_hit_mask]
-                if len(indices) > 0:
-                    hits[indices] = True
-                    wall_types[indices] = grid_vals[wall_hit_mask]
-                    active[indices] = False
-
-            if not np.any(active):
-                break
-        return hits, wall_types, side
+        """Perform the main DDA hit detection loop (delegates to raycaster_math)."""
+        return perform_dda_loop(
+            self.num_rays,
+            self.map_width,
+            self.map_height,
+            self.np_grid,
+            int(self.config.MAX_DEPTH * 1.5),
+            map_x,
+            map_y,
+            side_dist_x,
+            side_dist_y,
+            delta_dist_x,
+            delta_dist_y,
+            step_x,
+            step_y,
+        )
 
     def _finalize_ray_data(
         self,
@@ -475,19 +445,25 @@ class Raycaster:
         ray_dir_x: np.ndarray[Any, Any],
         ray_dir_y: np.ndarray[Any, Any],
     ) -> tuple[Any, ...]:
-        """Calculate final distances and wall hit X coordinates."""
-        perp_wall_dist = np.zeros(self.num_rays, dtype=np.float64)
-        mask_0, mask_1 = side == 0, side == 1
-        perp_wall_dist[mask_0] = side_dist_x[mask_0] - delta_dist_x[mask_0]
-        perp_wall_dist[mask_1] = side_dist_y[mask_1] - delta_dist_y[mask_1]
+        """Calculate final distances and wall-hit X coordinates.
 
-        wall_x_hit = np.zeros(self.num_rays, dtype=np.float64)
-        wall_x_hit[mask_0] = player.y + perp_wall_dist[mask_0] * ray_dir_y[mask_0]
-        wall_x_hit[mask_1] = player.x + perp_wall_dist[mask_1] * ray_dir_x[mask_1]
-        wall_x_hit -= np.floor(wall_x_hit)
-
-        cos_deltas = self.cos_deltas_zoomed if player.zoomed else self.cos_deltas
-        return perp_wall_dist, wall_types, wall_x_hit, side, cos_deltas
+        Delegates to raycaster_math.finalize_ray_data.
+        """
+        return finalize_ray_data(
+            player,
+            self.num_rays,
+            hits,
+            wall_types,
+            side,
+            side_dist_x,
+            side_dist_y,
+            delta_dist_x,
+            delta_dist_y,
+            ray_dir_x,
+            ray_dir_y,
+            self.cos_deltas,
+            self.cos_deltas_zoomed,
+        )
 
     def _blit_view_to_screen(self, screen: pygame.Surface) -> None:
         """Blit the rendered view to the main screen."""
@@ -995,9 +971,9 @@ class Raycaster:
         if bot.frozen:
             sprite_surface.fill((150, 200, 255), special_flags=pygame.BLEND_MULT)
 
-        if len(self.sprite_cache) > 400:
-            for _ in range(40):
-                self.sprite_cache.popitem(last=False)
+        self._evict_lru(
+            self.sprite_cache, self._SPRITE_CACHE_MAX, self._SPRITE_CACHE_EVICT
+        )
         self.sprite_cache[cache_key] = sprite_surface
         return sprite_surface, cache_key, distance_shade
 
@@ -1103,9 +1079,11 @@ class Raycaster:
                 scaled_sprite = pygame.transform.scale(
                     sprite_surface, (final_w, final_h)
                 )
-                if len(self._scaled_sprite_cache) > 200:
-                    for _ in range(20):
-                        self._scaled_sprite_cache.popitem(last=False)
+                self._evict_lru(
+                    self._scaled_sprite_cache,
+                    self._SCALED_SPRITE_CACHE_MAX,
+                    self._SCALED_SPRITE_CACHE_EVICT,
+                )
                 self._scaled_sprite_cache[scaled_cache_key] = scaled_sprite
             except (ValueError, pygame.error):
                 return
