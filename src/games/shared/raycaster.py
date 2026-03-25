@@ -189,12 +189,16 @@ class Raycaster:
         max_size: int,
         evict_count: int,
     ) -> None:
-        """Pop up to *evict_count* LRU entries when *cache* exceeds *max_size*.
+        """Evict LRU entries in batches until *cache* is within *max_size*.
+
+        Each pass pops up to *evict_count* entries from the front (oldest).
+        Using a batch size rather than evicting one-at-a-time amortises the
+        cost of the length check across many insertions.
 
         Static helper keeps ``update_cache`` free of nested loops and makes
         the eviction policy independently testable.
         """
-        if len(cache) > max_size:
+        while len(cache) > max_size:
             for _ in range(min(evict_count, len(cache))):
                 cache.popitem(last=False)
 
