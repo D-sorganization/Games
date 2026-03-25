@@ -17,6 +17,25 @@ from .raycaster_math import (
     init_dda_params,
     perform_dda_loop,
 )
+from .raycaster_rendering import (
+    blit_strip_scaled,
+    blit_whole_scaled,
+    collect_visible_runs,
+    draw_projectile_effect,
+    generate_minimap_cache,
+    prepare_wall_render_data,
+    render_solid_wall_column,
+    render_textured_wall_column,
+)
+from .raycaster_rendering import (
+    generate_background_surface as _generate_background_surface_fn,
+)
+from .raycaster_rendering import (
+    render_floor_ceiling as _render_floor_ceiling_fn,
+)
+from .raycaster_rendering import (
+    render_minimap as _render_minimap_fn,
+)
 from .texture_generator import TextureGenerator
 from .utils import cast_ray_dda
 
@@ -599,35 +618,14 @@ class Raycaster:
         Returns:
             (wall_heights_int_list, wall_tops_list, shades_list, fog_factors_list)
         """
-        corrected_dists = distances * fisheye_factors
-        safe_dists = np.maximum(0.01, corrected_dists)
-
-        wall_heights = np.minimum(
-            self.config.SCREEN_HEIGHT * 4, (self.config.SCREEN_HEIGHT / safe_dists)
-        )
-        wall_tops = (
-            (self.config.SCREEN_HEIGHT - wall_heights) // 2
-            + player.pitch
-            + view_offset_y
-        ).astype(np.int32)
-        wall_heights_int = wall_heights.astype(np.int32)
-
-        shades = np.maximum(0.2, 1.0 - distances / 50.0)
-
-        fog_factors = np.clip(
-            (distances - self.config.MAX_DEPTH * self.config.FOG_START)
-            / (self.config.MAX_DEPTH * (1 - self.config.FOG_START)),
-            0.0,
-            1.0,
-        )
-
-        # Convert to Python lists: these feed a per-ray Python loop where list
-        # indexing outperforms numpy scalar indexing.  See issue #477 for details.
-        return (
-            wall_heights_int.tolist(),
-            wall_tops.tolist(),
-            shades.tolist(),
-            fog_factors.tolist(),
+        return prepare_wall_render_data(
+            distances,
+            fisheye_factors,
+            self.config.SCREEN_HEIGHT,
+            self.config.MAX_DEPTH,
+            self.config.FOG_START,
+            float(player.pitch),
+            view_offset_y,
         )
 
     def _render_textured_wall(  # noqa: PLR0913
@@ -645,42 +643,24 @@ class Raycaster:
         blits_sequence: list[Any],
     ) -> None:
         """Render a single textured wall column with shading and fog."""
-        strips = wall_strips[wt]
-        tex_w = len(strips)
-        tex_x = int(np.clip(int(wall_x_hit * tex_w), 0, tex_w - 1))
-
-        if h >= 8000:
-            # Solid colour fallback for extreme close-up
-            col = wall_colors.get(wt, self.config.GRAY)
-            col = (int(col[0] * shade), int(col[1] * shade), int(col[2] * shade))
-            pygame.draw.rect(view_surface, col, (i, top, 1, h))
-            return
-
-        tname = self.texture_map.get(wt, "brick")
-        scaled_strip = self._get_cached_strip(tname, tex_x, int(h))
-
-        if not scaled_strip:
-            col = wall_colors.get(wt, self.config.GRAY)
-            pygame.draw.rect(view_surface, col, (i, top, 1, h))
-            return
-
-        blits_sequence.append((scaled_strip, (i, top)))
-
-        # Shading overlay
-        if shade < 1.0:
-            alpha = max(0, min(255, int(255 * (1.0 - shade))))
-            if alpha > 0:
-                blits_sequence.append(
-                    (self.shading_surfaces[alpha], (i, top), (0, 0, 1, h))
-                )
-
-        # Fog overlay
-        if fog > 0:
-            fog_alpha = max(0, min(255, int(255 * fog)))
-            if fog_alpha > 0:
-                blits_sequence.append(
-                    (self.fog_surfaces[fog_alpha], (i, top), (0, 0, 1, h))
-                )
+        render_textured_wall_column(
+            i,
+            wt,
+            h,
+            top,
+            wall_x_hit,
+            shade,
+            fog,
+            wall_strips,
+            wall_colors,
+            view_surface,
+            blits_sequence,
+            self.config.GRAY,
+            self.texture_map,
+            self.shading_surfaces,
+            self.fog_surfaces,
+            self._get_cached_strip,
+        )
 
     def _render_solid_wall(
         self,
@@ -694,18 +674,18 @@ class Raycaster:
         view_surface: pygame.Surface,
     ) -> None:
         """Render a single wall column as a solid shaded/fogged colour."""
-        col = wall_colors.get(wt, self.config.GRAY)
-
-        r = col[0] * shade
-        g = col[1] * shade
-        b = col[2] * shade
-
-        fr = r * (1 - fog) + self.config.FOG_COLOR[0] * fog
-        fg = g * (1 - fog) + self.config.FOG_COLOR[1] * fog
-        fb = b * (1 - fog) + self.config.FOG_COLOR[2] * fog
-
-        final_col = (int(fr), int(fg), int(fb))
-        pygame.draw.rect(view_surface, final_col, (i, top, 1, h))
+        render_solid_wall_column(
+            i,
+            wt,
+            h,
+            top,
+            shade,
+            fog,
+            wall_colors,
+            view_surface,
+            self.config.GRAY,
+            self.config.FOG_COLOR,
+        )
 
     def _render_sprites(
         self,
@@ -992,23 +972,7 @@ class Raycaster:
         Returns:
             (visible_runs, total_visible_pixels)
         """
-        visible_runs: list[tuple[int, int]] = []
-        total_visible_pixels = 0
-        z_buffer = self.z_buffer
-        r = start_r
-
-        while r < end_r:
-            if dist > z_buffer[r]:
-                r += 1
-                continue
-            run_start = r
-            r += 1
-            while r < end_r and dist <= z_buffer[r]:
-                r += 1
-            visible_runs.append((run_start, r))
-            total_visible_pixels += r - run_start
-
-        return visible_runs, total_visible_pixels
+        return collect_visible_runs(start_r, end_r, dist, self.z_buffer)
 
     def _blit_sprite_runs(  # noqa: PLR0913
         self,
@@ -1067,48 +1031,21 @@ class Raycaster:
         visual_scale: float,
     ) -> None:
         """Blit visible runs using a whole-surface scale strategy."""
-        bucket_step = 8
-        raw_final_w = int(target_width * visual_scale)
-        final_w = max(bucket_step, (raw_final_w // bucket_step) * bucket_step)
-
-        aspect_ratio = sprite_surface.get_height() / sprite_surface.get_width()
-        final_h = int(final_w * aspect_ratio)
-
-        scaled_cache_key = (cache_key, final_w, final_h)
-        if scaled_cache_key in self._scaled_sprite_cache:
-            self._scaled_sprite_cache.move_to_end(scaled_cache_key)
-            scaled_sprite = self._scaled_sprite_cache[scaled_cache_key]
-        else:
-            try:
-                scaled_sprite = pygame.transform.scale(
-                    sprite_surface, (final_w, final_h)
-                )
-                self._evict_lru(
-                    self._scaled_sprite_cache,
-                    self._SCALED_SPRITE_CACHE_MAX,
-                    self._SCALED_SPRITE_CACHE_EVICT,
-                )
-                self._scaled_sprite_cache[scaled_cache_key] = scaled_sprite
-            except (ValueError, pygame.error):
-                return
-
-        for run_start, run_end in visible_runs:
-            x_offset = int(run_start - sprite_ray_x)
-            width = run_end - run_start
-
-            if x_offset < 0:
-                width += x_offset
-                x_offset = 0
-            if x_offset + width > target_width:
-                width = target_width - x_offset
-
-            if width > 0:
-                padding_x = (final_w - target_width) // 2
-                src_x = int(padding_x + (run_start - sprite_ray_x))
-                area = pygame.Rect(src_x, 0, width, final_h)
-                logical_top_edge_y = (final_h - target_height) // 2
-                dst_y = int(sprite_y - logical_top_edge_y)
-                self.view_surface.blit(scaled_sprite, (run_start, dst_y), area)
+        blit_whole_scaled(
+            sprite_surface,
+            cache_key,
+            visible_runs,
+            target_width,
+            target_height,
+            sprite_ray_x,
+            sprite_y,
+            visual_scale,
+            self._scaled_sprite_cache,
+            self._SCALED_SPRITE_CACHE_MAX,
+            self._SCALED_SPRITE_CACHE_EVICT,
+            self._evict_lru,
+            self.view_surface,
+        )
 
     def _blit_strip_scaled(  # noqa: PLR0913
         self,
@@ -1122,34 +1059,17 @@ class Raycaster:
         visual_scale: float,
     ) -> None:
         """Blit visible runs using per-strip scaling (fallback for large sprites)."""
-        tex_width = sprite_surface.get_width()
-        tex_height = sprite_surface.get_height()
-        logical_tex_width = tex_width / visual_scale
-        tex_scale = logical_tex_width / sprite_ray_width
-        tex_padding = (tex_width - logical_tex_width) / 2
-
-        for run_start, run_end in visible_runs:
-            run_width = run_end - run_start
-
-            tex_x_start = int(tex_padding + (run_start - sprite_ray_x) * tex_scale)
-            tex_x_end = int(tex_padding + (run_end - sprite_ray_x) * tex_scale)
-
-            tex_x_start = max(0, min(tex_width, tex_x_start))
-            tex_x_end = max(0, min(tex_width, tex_x_end))
-
-            w = tex_x_end - tex_x_start
-            if w <= 0:
-                continue
-
-            area = pygame.Rect(tex_x_start, 0, w, tex_height)
-            try:
-                slice_surf = sprite_surface.subsurface(area)
-                scaled_slice = pygame.transform.scale(
-                    slice_surf, (run_width, target_height)
-                )
-                self.view_surface.blit(scaled_slice, (run_start, int(sprite_y)))
-            except (ValueError, pygame.error):
-                continue
+        blit_strip_scaled(
+            sprite_surface,
+            visible_runs,
+            target_width,
+            target_height,
+            sprite_ray_x,
+            sprite_ray_width,
+            sprite_y,
+            visual_scale,
+            self.view_surface,
+        )
 
     def _draw_single_projectile(
         self,
@@ -1208,82 +1128,22 @@ class Raycaster:
         rect: pygame.Rect,
     ) -> None:
         """Draw weapon-type-specific visual effects for a projectile."""
-        surface = self.view_surface
-        weapon = proj.weapon_type
-
-        if weapon == "plasma":
-            pygame.draw.circle(surface, (255, 255, 255), rect.center, rect.width // 4)
-        elif weapon == "rocket":
-            pygame.draw.circle(surface, (255, 100, 0), rect.center, rect.width // 3)
-        elif weapon == "bfg":
-            pygame.draw.circle(surface, (200, 255, 200), rect.center, rect.width // 3)
-        elif weapon == "bomb":
-            pygame.draw.circle(surface, (255, 0, 0), (rect.centerx, rect.top), 2)
-        elif weapon == "flamethrower":
-            flame_color = (255, random.randint(100, 200), 0)
-            pygame.draw.circle(surface, flame_color, rect.center, rect.width // 2)
-            pygame.draw.circle(
-                surface, (255, 50, 0), (rect.centerx, rect.centery), rect.width // 3
-            )
-        elif weapon == "pulse":
-            pygame.draw.circle(surface, (200, 200, 255), rect.center, rect.width // 2)
-            pygame.draw.circle(surface, (100, 100, 255), rect.center, rect.width // 3)
-        elif weapon == "freezer":
-            pygame.draw.circle(surface, (200, 255, 255), rect.center, rect.width // 2)
-            pygame.draw.circle(surface, (150, 200, 255), rect.center, rect.width // 3)
+        draw_projectile_effect(proj, rect, self.view_surface)
 
     def _generate_background_surface(self, level: int) -> None:
         """Pre-generate a high quality background surface for the level theme."""
-        level_themes = self.config.LEVEL_THEMES or []
-        theme_idx = (level - 1) % len(level_themes) if level_themes else 0
-        theme = level_themes[theme_idx] if level_themes else None
-
-        h = self.config.SCREEN_HEIGHT
-        self._background_surface = pygame.Surface((1, h * 2))
-
-        ceiling_color = theme["ceiling"] if theme else self.config.GRAY
-        floor_color = theme["floor"] if theme else self.config.DARK_GRAY
-
-        # Sky Gradient (Top half)
-        # Top of surface is Zenith (darker?), Middle is Horizon (lighter/ceiling_color)
-        top_sky = (
-            max(0, ceiling_color[0] - 30),
-            max(0, ceiling_color[1] - 30),
-            max(0, ceiling_color[2] - 30),
+        (
+            self._background_surface,
+            self._scaled_background_surface,
+            self._cached_background_theme_idx,
+        ) = _generate_background_surface_fn(
+            level,
+            self.config.LEVEL_THEMES or [],
+            self.config.SCREEN_WIDTH,
+            self.config.SCREEN_HEIGHT,
+            self.config.GRAY,
+            self.config.DARK_GRAY,
         )
-        bottom_sky = ceiling_color
-
-        # Floor Gradient (Bottom half)
-        near_floor = floor_color
-        far_floor = (
-            max(0, floor_color[0] - 40),
-            max(0, floor_color[1] - 40),
-            max(0, floor_color[2] - 40),
-        )
-
-        # Draw gradients
-        for y in range(h):
-            ratio = y / h
-            r = top_sky[0] + (bottom_sky[0] - top_sky[0]) * ratio
-            g = top_sky[1] + (bottom_sky[1] - top_sky[1]) * ratio
-            b = top_sky[2] + (bottom_sky[2] - top_sky[2]) * ratio
-            self._background_surface.set_at((0, y), (int(r), int(g), int(b)))
-
-        for y in range(h):
-            ratio = y / h
-            r = far_floor[0] + (near_floor[0] - far_floor[0]) * ratio
-            g = far_floor[1] + (near_floor[1] - far_floor[1]) * ratio
-            b = far_floor[2] + (near_floor[2] - far_floor[2]) * ratio
-
-            self._background_surface.set_at((0, h + y), (int(r), int(g), int(b)))
-
-        # Cache scaled version
-        # (Optimization: Do this once per level load, not per frame)
-        self._scaled_background_surface = pygame.transform.scale(
-            self._background_surface, (self.config.SCREEN_WIDTH, h * 2)
-        )
-
-        self._cached_background_theme_idx = theme_idx
 
     def render_floor_ceiling(
         self,
@@ -1292,104 +1152,39 @@ class Raycaster:
         level: int,
         view_offset_y: float = 0.0,
     ) -> None:
-        """Render floor and sky with stars"""
-        level_themes = self.config.LEVEL_THEMES or []
-        theme_idx = (level - 1) % len(level_themes) if level_themes else 0
-        theme = level_themes[theme_idx] if level_themes else None
-        player_angle = player.angle
-
-        if (
-            self._cached_background_theme_idx != theme_idx
-            or self._background_surface is None
-        ):
-            self._generate_background_surface(level)
-
-        horizon = self.config.SCREEN_HEIGHT // 2 + int(player.pitch + view_offset_y)
-
-        bg = self._scaled_background_surface
-        # Fallback if scaling failed or wasn't generated
-        if bg is None and self._background_surface is not None:
-            self._scaled_background_surface = pygame.transform.scale(
-                self._background_surface,
-                (self.config.SCREEN_WIDTH, self.config.SCREEN_HEIGHT * 2),
-            )
-            bg = self._scaled_background_surface
-
-        assert bg is not None
-
-        # Fill screen with appropriate sections
-        # Sky
-        if horizon > 0:
-            # Optimized: Use pre-scaled surface
-            # We want the top half (Sky)
-            # Source area is entire top half: (0, 0, W, H)
-            # Dest Y is horizon - H.
-            screen.blit(
-                bg,
-                (0, horizon - self.config.SCREEN_HEIGHT),
-                (0, 0, self.config.SCREEN_WIDTH, self.config.SCREEN_HEIGHT),
-            )
-
-        # Floor
-        if horizon < self.config.SCREEN_HEIGHT:
-            # Optimized: Use pre-scaled surface
-            # We want the bottom half (Floor)
-            # Source area starts at Y=H
-            screen.blit(
-                bg,
-                (0, horizon),
-                (
-                    0,
-                    self.config.SCREEN_HEIGHT,
-                    self.config.SCREEN_WIDTH,
-                    self.config.SCREEN_HEIGHT,
-                ),
-            )
-
-        # Stars
-        star_offset = int(player_angle * 200) % self.config.SCREEN_WIDTH
-
-        for sx, sy, size, color in self.stars:
-            x = (sx + star_offset) % self.config.SCREEN_WIDTH
-            y = int(sy + player.pitch + view_offset_y)
-
-            if 0 <= y < horizon:
-                pygame.draw.circle(screen, color, (x, int(y)), int(size))
-
-        # Moon
-        moon_x = (self.config.SCREEN_WIDTH - 200 - int(player_angle * 100)) % (
-            self.config.SCREEN_WIDTH * 2
-        ) - self.config.SCREEN_WIDTH // 2
-        moon_y = 100 + int(player.pitch + view_offset_y)
-
-        if -100 < moon_x < self.config.SCREEN_WIDTH + 100:
-            if 0 <= moon_y < horizon + 40:
-                pygame.draw.circle(screen, (220, 220, 200), (int(moon_x), moon_y), 40)
-                shadow_pos = (int(moon_x) - 10, moon_y)
-                moon_color = theme["ceiling"] if theme else self.config.GRAY
-                pygame.draw.circle(screen, moon_color, shadow_pos, 40)
+        """Render floor and sky with stars."""
+        (
+            self._background_surface,
+            self._scaled_background_surface,
+            self._cached_background_theme_idx,
+        ) = _render_floor_ceiling_fn(
+            screen,
+            player,
+            level,
+            self.config.LEVEL_THEMES or [],
+            self.config.SCREEN_WIDTH,
+            self.config.SCREEN_HEIGHT,
+            self.stars,
+            self._cached_background_theme_idx,
+            self._background_surface,
+            self._scaled_background_surface,
+            self.config.GRAY,
+            self.config.DARK_GRAY,
+            view_offset_y,
+        )
 
     def _generate_minimap_cache(self) -> None:
         """Generate static minimap surface."""
-        self.minimap_surface = pygame.Surface((self.minimap_size, self.minimap_size))
-        self.minimap_surface.fill(self.config.DARK_GRAY)
-
-        wall_colors = self.config.WALL_COLORS or {}
-        for y in range(self.map_height):
-            for x in range(self.map_width):
-                w_type = self.grid[y][x]
-                if w_type > 0:
-                    color = wall_colors.get(w_type, self.config.GRAY)
-                    pygame.draw.rect(
-                        self.minimap_surface,
-                        color,
-                        (
-                            x * self.minimap_scale,
-                            y * self.minimap_scale,
-                            self.minimap_scale,
-                            self.minimap_scale,
-                        ),
-                    )
+        self.minimap_surface = generate_minimap_cache(
+            self.minimap_size,
+            self.minimap_scale,
+            self.grid,
+            self.map_width,
+            self.map_height,
+            self.config.WALL_COLORS or {},
+            self.config.DARK_GRAY,
+            self.config.GRAY,
+        )
 
     def render_minimap(
         self,
@@ -1406,81 +1201,22 @@ class Raycaster:
         minimap_x = self.config.SCREEN_WIDTH - self.minimap_size - 20
         minimap_y = 20
 
-        # Draw Border
-        pygame.draw.rect(
+        self._fog_surface, self._fog_visited_count = _render_minimap_fn(
             screen,
+            player,
+            bots,
+            self.minimap_surface,
+            self.minimap_size,
+            self.minimap_scale,
+            minimap_x,
+            minimap_y,
+            self._fog_surface,
+            self._fog_visited_count,
+            visited_cells,
+            portal,
+            self.config.ENEMY_TYPES,
             self.config.BLACK,
-            (
-                minimap_x - 2,
-                minimap_y - 2,
-                self.minimap_size + 4,
-                self.minimap_size + 4,
-            ),
-        )
-
-        if self.minimap_surface:
-            if visited_cells is not None:
-                visited_count = len(visited_cells)
-                if (
-                    self._fog_surface is None
-                    or self._fog_visited_count != visited_count
-                ):
-                    self._fog_surface = pygame.Surface(
-                        (self.minimap_size, self.minimap_size), pygame.SRCALPHA
-                    )
-                    self._fog_surface.fill((0, 0, 0, 255))
-
-                    for vx, vy in visited_cells:
-                        self._fog_surface.fill(
-                            (0, 0, 0, 0),
-                            rect=(
-                                vx * self.minimap_scale,
-                                vy * self.minimap_scale,
-                                self.minimap_scale,
-                                self.minimap_scale,
-                            ),
-                        )
-                    self._fog_visited_count = visited_count
-                screen.blit(self.minimap_surface, (minimap_x, minimap_y))
-                screen.blit(self._fog_surface, (minimap_x, minimap_y))
-            else:
-                screen.blit(self.minimap_surface, (minimap_x, minimap_y))
-
-        if portal is not None:
-            px, py = int(portal["x"]), int(portal["y"])
-            if visited_cells is None or (px, py) in visited_cells:
-                portal_map_x = minimap_x + px * self.minimap_scale
-                portal_map_y = minimap_y + py * self.minimap_scale
-                pygame.draw.circle(
-                    screen,
-                    self.config.CYAN,
-                    (int(portal_map_x), int(portal_map_y)),
-                    int(self.minimap_scale * 2),
-                )
-
-        for bot in bots:
-            if (
-                bot.alive
-                and bot.enemy_type != "health_pack"
-                and self.config.ENEMY_TYPES is not None
-                and self.config.ENEMY_TYPES[bot.enemy_type].get("visual_style")
-                != "item"
-            ):
-                bot_cell_x = int(bot.x)
-                bot_cell_y = int(bot.y)
-                if visited_cells is None or (bot_cell_x, bot_cell_y) in visited_cells:
-                    bot_x = minimap_x + bot.x * self.minimap_scale
-                    bot_y = minimap_y + bot.y * self.minimap_scale
-                    pygame.draw.circle(
-                        screen, self.config.RED, (int(bot_x), int(bot_y)), 3
-                    )
-
-        player_x = minimap_x + player.x * self.minimap_scale
-        player_y = minimap_y + player.y * self.minimap_scale
-        pygame.draw.circle(screen, self.config.GREEN, (int(player_x), int(player_y)), 3)
-
-        dir_x = player_x + math.cos(player.angle) * 10
-        dir_y = player_y + math.sin(player.angle) * 10
-        pygame.draw.line(
-            screen, self.config.GREEN, (player_x, player_y), (dir_x, dir_y), 2
+            self.config.RED,
+            self.config.GREEN,
+            self.config.CYAN,
         )
