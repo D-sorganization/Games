@@ -160,62 +160,76 @@ class Game(FPSGameBase):
     # --- Law of Demeter (LOD) Flattened Properties ---
     @property
     def player_x(self) -> float:
+        """Player world X position, or 0.0 if no player exists."""
         return self.player.x if self.player else 0.0
 
     @property
     def player_y(self) -> float:
+        """Player world Y position, or 0.0 if no player exists."""
         return self.player.y if self.player else 0.0
 
     @property
     def player_angle(self) -> float:
+        """Player facing angle in radians, or 0.0 if no player exists."""
         return self.player.angle if self.player else 0.0
 
     @property
     def player_health(self) -> int:
+        """Current player health points, or 0 if no player exists."""
         return self.player.health if self.player else 0
 
     @player_health.setter
     def player_health(self, value: int) -> None:
+        """Set player health, no-op if no player exists."""
         if self.player:
             self.player.health = value
 
     @property
     def player_alive(self) -> bool:
+        """True if the player is alive, False if dead or absent."""
         return self.player.alive if self.player else False
 
     @property
     def player_is_moving(self) -> bool:
+        """True if the player is currently in motion."""
         return self.player.is_moving if self.player else False
 
     @player_is_moving.setter
     def player_is_moving(self, value: bool) -> None:
+        """Set the player movement flag, no-op if no player exists."""
         if self.player:
             self.player.is_moving = value
 
     @property
     def player_current_weapon(self) -> str:
+        """Name of the player's currently equipped weapon."""
         return self.player.current_weapon if self.player else "pistol"
 
     @player_current_weapon.setter
     def player_current_weapon(self, value: str) -> None:
+        """Switch the player's active weapon, no-op if no player exists."""
         if self.player:
             self.player.current_weapon = value
 
     @property
     def player_stamina(self) -> float:
+        """Player stamina level (0.0–1.0), or 0.0 if no player exists."""
         return self.player.stamina if self.player else 0.0
 
     @player_stamina.setter
     def player_stamina(self, value: float) -> None:
+        """Set player stamina, no-op if no player exists."""
         if self.player:
             self.player.stamina = value
 
     @property
     def player_bombs(self) -> int:
+        """Number of bombs the player is carrying, or 0 if no player exists."""
         return self.player.bombs if self.player else 0
 
     @player_bombs.setter
     def player_bombs(self, value: int) -> None:
+        """Set player bomb count, no-op if no player exists."""
         if self.player:
             self.player.bombs = value
 

@@ -52,8 +52,11 @@ def precondition(
     """
 
     def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
+        """Wrap *func* with the precondition check."""
+
         @functools.wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
+            """Run the precondition then delegate to the original function."""
             if not check(*args, **kwargs):
                 raise ContractViolation(
                     f"Precondition failed for {func.__qualname__}: {message}"
@@ -84,8 +87,11 @@ def postcondition(
     """
 
     def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
+        """Wrap *func* with the postcondition check."""
+
         @functools.wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
+            """Run the original function then verify its return value."""
             result = func(*args, **kwargs)
             if not check(result):
                 raise ContractViolation(
@@ -117,6 +123,7 @@ def invariant(
     """
 
     def class_decorator(cls: type) -> type:
+        """Patch each public method of *cls* with the invariant check."""
         for attr_name in list(vars(cls)):
             if attr_name.startswith("_"):
                 continue
@@ -132,6 +139,7 @@ def invariant(
                 _orig: Any = original,
                 **kwargs: Any,
             ) -> Any:
+                """Call the original method then verify the invariant holds."""
                 result = _orig(*args, **kwargs)
                 instance = args[0] if args else None
                 if instance is not None and not check(instance):

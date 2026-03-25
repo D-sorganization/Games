@@ -39,10 +39,12 @@ class Note:
     tags: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict:
+        """Serialize this note to a plain dictionary for JSON storage."""
         return asdict(self)
 
     @classmethod
     def from_dict(cls, data: dict) -> Note:
+        """Deserialize a note from a dictionary, ignoring unknown keys."""
         return cls(**{k: v for k, v in data.items() if k in cls.__dataclass_fields__})
 
 

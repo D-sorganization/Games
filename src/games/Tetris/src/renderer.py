@@ -24,6 +24,8 @@ from .tetromino import Tetromino
 
 
 class TetrisRenderer:
+    """Handles all drawing for Tetris, including the grid, pieces, and HUD."""
+
     def __init__(self, screen: pygame.Surface) -> None:
         """Initialize the renderer with target screen"""
         self.screen = screen

@@ -6,6 +6,8 @@ from games.shared.interfaces import EnemyData, LevelTheme, Portal, WeaponData
 
 
 class DamageText(TypedDict):
+    """Floating damage-number overlay drawn above a world position."""
+
     x: float
     y: float
     text: str
