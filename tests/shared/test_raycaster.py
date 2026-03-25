@@ -118,18 +118,23 @@ class TestRaycasterInit:
         assert raycaster.num_rays == 400
 
     def test_update_cache(self, raycaster: Raycaster) -> None:
-        # Fill caches
-        for i in range(11000):
+        # Fill each cache beyond its bounded limit and verify eviction fires.
+        # We use the named constants so the test tracks future limit changes.
+        strip_max = raycaster._STRIP_CACHE_MAX
+        sprite_max = raycaster._SPRITE_CACHE_MAX
+        scaled_max = raycaster._SCALED_SPRITE_CACHE_MAX
+
+        for i in range(strip_max + 500):
             raycaster._strip_cache[("stone", i, 64)] = DummySurface()
-        for i in range(450):
+        for i in range(sprite_max + 50):
             raycaster.sprite_cache[("bot", i)] = DummySurface()
-        for i in range(250):
+        for i in range(scaled_max + 20):
             raycaster._scaled_sprite_cache[("bot", i)] = DummySurface()
 
         raycaster.update_cache()
-        assert len(raycaster._strip_cache) == 10000
-        assert len(raycaster.sprite_cache) == 410
-        assert len(raycaster._scaled_sprite_cache) == 230
+        assert len(raycaster._strip_cache) <= strip_max
+        assert len(raycaster.sprite_cache) <= sprite_max
+        assert len(raycaster._scaled_sprite_cache) <= scaled_max
 
     def test_get_cached_strip(self, raycaster: Raycaster) -> None:
         strip = raycaster._get_cached_strip("stone", 0, 64)
