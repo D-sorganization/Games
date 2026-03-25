@@ -4,6 +4,8 @@ from typing import TypedDict
 
 
 class WeaponData(TypedDict, total=False):
+    """Configuration data for a weapon, covering damage, ammo, and fire mode."""
+
     name: str
     damage: int
     range: int
@@ -29,6 +31,8 @@ class WeaponData(TypedDict, total=False):
 
 
 class EnemyData(TypedDict, total=False):
+    """Configuration data for an enemy type, controlling stats and appearance."""
+
     color: tuple[int, int, int]
     health_mult: float
     speed_mult: float
@@ -38,6 +42,8 @@ class EnemyData(TypedDict, total=False):
 
 
 class LevelTheme(TypedDict):
+    """Color palette for a level's floor, ceiling, and wall types."""
+
     floor: tuple[int, int, int]
     ceiling: tuple[int, int, int]
     walls: dict[int, tuple[int, int, int]]

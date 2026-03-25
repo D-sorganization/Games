@@ -4,6 +4,8 @@ from typing import Protocol, TypedDict, runtime_checkable
 
 
 class EnemyData(TypedDict, total=False):
+    """Configuration data for an enemy type, controlling stats and appearance."""
+
     color: tuple[int, int, int]
     health_mult: float
     speed_mult: float
@@ -13,6 +15,8 @@ class EnemyData(TypedDict, total=False):
 
 
 class WeaponData(TypedDict, total=False):
+    """Configuration data for a weapon, covering damage, ammo, and fire mode."""
+
     name: str
     damage: int
     range: int
@@ -38,12 +42,16 @@ class WeaponData(TypedDict, total=False):
 
 
 class Portal(TypedDict):
+    """World position of a level portal or teleporter."""
+
     x: float
     y: float
 
 
 @runtime_checkable
 class Map(Protocol):
+    """Protocol for tile-based game maps supporting wall queries."""
+
     grid: list[list[int]]
     size: int
 
@@ -58,6 +66,8 @@ class Map(Protocol):
 
 
 class LevelTheme(TypedDict):
+    """Color palette for a level's floor, ceiling, and wall types."""
+
     floor: tuple[int, int, int]
     ceiling: tuple[int, int, int]
     walls: dict[int, tuple[int, int, int]]
@@ -65,6 +75,8 @@ class LevelTheme(TypedDict):
 
 @runtime_checkable
 class Bot(Protocol):
+    """Protocol for enemy bots with position, state, and damage interface."""
+
     x: float
     y: float
     z: float = 0.0
@@ -87,6 +99,8 @@ class Bot(Protocol):
 
 @runtime_checkable
 class WorldParticle(Protocol):
+    """Protocol for 3D particles positioned in world space."""
+
     x: float
     y: float
     z: float
@@ -97,6 +111,8 @@ class WorldParticle(Protocol):
 
 @runtime_checkable
 class Projectile(Protocol):
+    """Protocol for in-flight projectiles with position, damage, and weapon metadata."""
+
     x: float
     y: float
     z: float
@@ -109,6 +125,8 @@ class Projectile(Protocol):
 
 @runtime_checkable
 class Player(Protocol):
+    """Protocol for the player character, exposing position, orientation, and state."""
+
     x: float
     y: float
     angle: float

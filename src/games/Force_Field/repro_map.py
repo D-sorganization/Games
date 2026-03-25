@@ -11,6 +11,7 @@ from src.map import Map  # noqa: E402
 
 
 def test_map_size() -> None:
+    """Run 100 map generations and log counts with fewer than 200 walkable tiles."""
     logger.info("Testing Map Generation for Small Areas...")
     small_maps = 0
     total = 100

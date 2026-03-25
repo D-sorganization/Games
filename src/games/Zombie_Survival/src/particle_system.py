@@ -8,6 +8,8 @@ from . import constants as C  # noqa: N812
 
 
 class Particle:
+    """2D screen-space particle for HUD effects such as hits and laser beams."""
+
     def __init__(
         self,
         x: float,
@@ -59,6 +61,8 @@ class Particle:
 
 
 class ParticleSystem:
+    """Manages a collection of 2D particles for in-game visual effects."""
+
     def __init__(self) -> None:
         """Initialize the particle system."""
         self.particles: list[Particle] = []

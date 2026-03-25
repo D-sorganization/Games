@@ -26,6 +26,7 @@ class CombatSystem:
 
     @property
     def player(self) -> Player:
+        """Return the active player, raising ValueError if none exists."""
         if self.game.player is None:
             raise ValueError("Player is None")
         return self.game.player
@@ -590,14 +591,18 @@ class CombatSystem:
                     bot.freeze(180)  # Freeze for 3 seconds
 
     def explode_plasma(self, projectile: Projectile) -> None:
+        """Trigger a plasma AoE explosion at the projectile's position."""
         self._explode_generic(projectile, C.PLASMA_AOE_RADIUS, "plasma")
 
     def explode_pulse(self, projectile: Projectile) -> None:
+        """Trigger a pulse AoE explosion at the projectile's position."""
         self._explode_generic(projectile, C.PULSE_AOE_RADIUS, "pulse")
 
     def explode_rocket(self, projectile: Projectile) -> None:
+        """Trigger a rocket AoE explosion using the configured blast radius."""
         radius = float(C.WEAPONS["rocket"].get("aoe_radius", 6.0))
         self._explode_generic(projectile, radius, "rocket")
 
     def explode_freezer(self, projectile: Projectile) -> None:
+        """Trigger a freezer AoE explosion, slowing enemies within range."""
         self._explode_generic(projectile, 4.0, "freezer")  # Custom radius for freezer

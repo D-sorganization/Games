@@ -10,6 +10,12 @@ if TYPE_CHECKING:
 
 @dataclass
 class RaycasterConfig:
+    """Immutable configuration for the raycaster renderer.
+
+    Stores screen dimensions, FOV settings, fog parameters, and color tables
+    used by the raycasting engine and level themes.
+    """
+
     SCREEN_WIDTH: int
     SCREEN_HEIGHT: int
     FOV: float

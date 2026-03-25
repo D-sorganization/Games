@@ -56,6 +56,8 @@ class WorldParticle:
 
 
 class Particle:
+    """2D screen-space particle for HUD effects such as hits and laser beams."""
+
     def __init__(
         self,
         x: float,
@@ -107,6 +109,8 @@ class Particle:
 
 
 class ParticleSystem:
+    """Manages collections of 2D and 3D particles for visual effects."""
+
     def __init__(self) -> None:
         """Initialize the particle system."""
         self.particles: list[Particle] = []
