@@ -308,13 +308,7 @@ class Game(FPSGameBase):
         if hasattr(self, "sound_manager"):
             self.sound_manager.start_music(random.choice(music_tracks))
 
-    def save_game(self, filename: str = "savegame.txt") -> None:
-        """Save game state to file."""
-        try:
-            with open(filename, "w") as f:
-                f.write(f"{self.level}")
-        except OSError:
-            logger.exception("Save failed")
+    # save_game is inherited from FPSGameBase.
 
     def explode_bomb(self, projectile: Projectile) -> None:
         """Handle bomb explosion logic"""
