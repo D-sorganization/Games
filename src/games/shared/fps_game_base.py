@@ -16,12 +16,19 @@ Usage:
 
 from __future__ import annotations
 
+import logging
 import math
 import random
 from typing import TYPE_CHECKING, Any
 
+import pygame
+
+from games.shared.constants import GameState
+
 if TYPE_CHECKING:
     pass
+
+logger = logging.getLogger(__name__)
 
 
 class FPSGameBase:
@@ -40,6 +47,19 @@ class FPSGameBase:
         - self.portal: dict | None
         - self.last_death_pos: tuple | None
         - self.entity_manager: EntityManager
+        - self.running: bool
+        - self.state: GameState
+        - self.paused: bool
+        - self.pause_start_time: int
+        - self.total_paused_time: int
+        - self.cheat_mode_active: bool
+        - self.current_cheat_input: str
+        - self.god_mode: bool
+        - self.input_manager: InputManager
+        - self.binding_action: str | None
+        - self.sound_manager: SoundManager
+        - self.show_minimap: bool
+        - self.show_damage: bool
     """
 
     C: Any
@@ -53,6 +73,19 @@ class FPSGameBase:
     portal: dict[str, Any] | None
     last_death_pos: tuple[float, float] | None
     entity_manager: Any
+    running: bool
+    state: Any  # GameState
+    paused: bool
+    pause_start_time: int
+    total_paused_time: int
+    cheat_mode_active: bool
+    current_cheat_input: str
+    god_mode: bool
+    input_manager: Any
+    binding_action: str | None
+    sound_manager: Any
+    show_minimap: bool
+    show_damage: bool
 
     # --- Properties ---
 
@@ -234,3 +267,170 @@ class FPSGameBase:
                 "vy": -0.5,
             }
         )
+
+    # --- Shared event-handling methods (identical across all 3 FPS games) ---
+
+    def _handle_cheat_input(self, event: pygame.event.Event) -> bool:
+        """Handle keyboard input while cheat mode is active.
+
+        Returns True to signal the caller should ``continue`` to the next event.
+        """
+        if event.key in (pygame.K_RETURN, pygame.K_ESCAPE):
+            self.cheat_mode_active = False
+            self.add_message("CHEAT INPUT CLOSED", self.C.GRAY)
+        elif event.key == pygame.K_BACKSPACE:
+            self.current_cheat_input = self.current_cheat_input[:-1]
+        else:
+            self.current_cheat_input += event.unicode
+            code = self.current_cheat_input.upper()
+            if code.endswith("IDFA"):
+                self.unlocked_weapons = set(self.C.WEAPONS.keys())
+                if self.player:
+                    for w in self.player.ammo:
+                        self.player.ammo[w] = self.C.CHEAT_AMMO_AMOUNT
+                self.add_message("ALL WEAPONS UNLOCKED", self.C.YELLOW)
+                self.current_cheat_input = ""
+                self.cheat_mode_active = False
+            elif code.endswith("IDDQD"):
+                self.god_mode = not self.god_mode
+                msg = "GOD MODE ON" if self.god_mode else "GOD MODE OFF"
+                self.add_message(msg, self.C.YELLOW)
+                if self.player:
+                    self.player.health = self.C.PLAYER_HEALTH
+                    self.player.god_mode = self.god_mode
+                self.current_cheat_input = ""
+                self.cheat_mode_active = False
+        return True  # caller should continue
+
+    def _handle_pause_toggle(self, event: pygame.event.Event) -> None:
+        """Toggle pause state and update timers/mouse grab accordingly."""
+        self.paused = not self.paused
+        if self.paused:
+            self.pause_start_time = pygame.time.get_ticks()
+            pygame.mouse.set_visible(True)
+            pygame.event.set_grab(False)
+        else:
+            if self.pause_start_time > 0:
+                now = pygame.time.get_ticks()
+                self.total_paused_time += now - self.pause_start_time
+                self.pause_start_time = 0
+            pygame.mouse.set_visible(False)
+            pygame.event.set_grab(True)
+
+    def _handle_weapon_keys(self, event: pygame.event.Event) -> None:
+        """Handle weapon-switch, reload, zoom, bomb and shoot key presses."""
+        if self.input_manager.is_action_just_pressed(event, "weapon_1"):
+            self.switch_weapon_with_message("pistol")
+        elif self.input_manager.is_action_just_pressed(event, "weapon_2"):
+            self.switch_weapon_with_message("rifle")
+        elif self.input_manager.is_action_just_pressed(event, "weapon_3"):
+            self.switch_weapon_with_message("shotgun")
+        elif self.input_manager.is_action_just_pressed(event, "weapon_4"):
+            self.switch_weapon_with_message("laser")
+        elif self.input_manager.is_action_just_pressed(event, "weapon_5"):
+            self.switch_weapon_with_message("plasma")
+        elif self.input_manager.is_action_just_pressed(event, "weapon_6"):
+            self.switch_weapon_with_message("rocket")
+        elif event.key == pygame.K_7:
+            self.switch_weapon_with_message("minigun")
+        elif self.input_manager.is_action_just_pressed(event, "reload"):
+            assert self.player is not None
+            self.player.reload()
+        elif self.input_manager.is_action_just_pressed(event, "zoom"):
+            assert self.player is not None
+            self.player.zoomed = not self.player.zoomed
+        elif self.input_manager.is_action_just_pressed(event, "bomb"):
+            assert self.player is not None
+            if self.player.activate_bomb():
+                self.handle_bomb_explosion()
+        elif self.input_manager.is_action_just_pressed(event, "shoot_alt"):
+            assert self.player is not None
+            if self.player.shoot():
+                self.fire_weapon()
+        elif event.key == pygame.K_m:
+            self.show_minimap = not self.show_minimap
+        elif event.key == pygame.K_F9:
+            self.cycle_render_scale()
+
+    def _handle_pause_menu_click(self, mx: int, my: int) -> None:
+        """Process a mouse click inside the pause menu."""
+        if 500 <= mx <= 700:
+            if 350 <= my <= 400:  # Resume
+                self.paused = False
+                if self.pause_start_time > 0:
+                    now = pygame.time.get_ticks()
+                    self.total_paused_time += now - self.pause_start_time
+                    self.pause_start_time = 0
+                pygame.mouse.set_visible(False)
+                pygame.event.set_grab(True)
+            elif 410 <= my <= 460:  # Save
+                self.save_game()
+                self.add_message("GAME SAVED", self.C.GREEN)
+            elif 470 <= my <= 520:  # Controls
+                self.state = GameState.KEY_CONFIG
+                self.binding_action = None
+            elif 530 <= my <= 580:  # Quit to Menu
+                self.state = GameState.MENU
+                self.paused = False
+                self.sound_manager.start_music("music_loop")
+
+    def _handle_gameplay_mouse_click(self, event: pygame.event.Event) -> None:
+        """Process a mouse button click during active gameplay (not paused)."""
+        assert self.player is not None
+        if event.button == 1:
+            if self.player.shoot():
+                self.fire_weapon()
+        elif event.button == 3:
+            if self.player.fire_secondary():
+                self.fire_weapon(is_secondary=True)
+
+    def handle_game_events(self) -> None:
+        """Handle events during gameplay."""
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.running = False
+
+            elif event.type == pygame.KEYDOWN:
+                if self.cheat_mode_active:
+                    self._handle_cheat_input(event)
+                    continue
+
+                if self.input_manager.is_action_just_pressed(event, "pause"):
+                    self._handle_pause_toggle(event)
+                elif event.key == pygame.K_c and (
+                    pygame.key.get_mods() & pygame.KMOD_CTRL
+                ):
+                    self.cheat_mode_active = True
+                    self.current_cheat_input = ""
+                    self.add_message("CHEAT MODE: TYPE CODE", self.C.PURPLE)
+                    continue
+
+                if not self.paused:
+                    self._handle_weapon_keys(event)
+
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if self.paused:
+                    mx, my = event.pos
+                    self._handle_pause_menu_click(mx, my)
+                elif not self.cheat_mode_active:
+                    self._handle_gameplay_mouse_click(event)
+
+            elif event.type == pygame.MOUSEMOTION and not self.paused:
+                assert self.player is not None
+                self.player.rotate(
+                    event.rel[0] * self.C.PLAYER_ROT_SPEED * self.C.SENSITIVITY_X
+                )
+                self.player.pitch_view(-event.rel[1] * self.C.PLAYER_ROT_SPEED * 200)
+
+    def save_game(self, filename: str = "savegame.txt") -> None:
+        """Save game state to file.
+
+        Args:
+            filename (str): The file path to save the game state.
+                Defaults to "savegame.txt".
+        """
+        try:
+            with open(filename, "w") as f:
+                f.write(f"{self.level}")
+        except OSError:
+            logger.exception("Save failed")
