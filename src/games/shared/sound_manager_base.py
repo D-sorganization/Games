@@ -47,7 +47,7 @@ class SoundManagerBase:
                     # Lower volume for ambient to be background
                     if "music" in name or name == "ambient":
                         self.sounds[name].set_volume(0.5)
-                except Exception as e:  # noqa: BLE001
+                except Exception:  # noqa: BLE001
                     msg = "Failed to load sound %s (probably codec issue?)"
                     logger.exception(msg, filename)
             else:
