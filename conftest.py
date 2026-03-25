@@ -22,6 +22,7 @@ for _attr in (
     "register_quit",
     "encode_string",
     "encode_file_path",
+    "get_init",
 ):
     setattr(_pg, _attr, MagicMock())
 
@@ -181,6 +182,15 @@ _pg.BUTTON_LEFT = 1  # type: ignore[attr-defined]
 _pg.BUTTON_MIDDLE = 2  # type: ignore[attr-defined]
 _pg.BUTTON_RIGHT = 3  # type: ignore[attr-defined]
 
+# Display flag constants (real pygame values; needed when Game.__init__ uses them)
+_pg.SCALED = 512  # type: ignore[attr-defined]
+_pg.RESIZABLE = 16  # type: ignore[attr-defined]
+_pg.NOFRAME = 32  # type: ignore[attr-defined]
+_pg.FULLSCREEN = 1  # type: ignore[attr-defined]
+_pg.HWSURFACE = 2  # type: ignore[attr-defined]
+_pg.DOUBLEBUF = 4  # type: ignore[attr-defined]
+_pg.HIDDEN = 32768  # type: ignore[attr-defined]
+
 # display helpers
 _pg.display.set_mode = MagicMock(return_value=MagicMock())  # type: ignore[attr-defined]
 _pg.display.flip = MagicMock()  # type: ignore[attr-defined]
@@ -212,6 +222,8 @@ _pg.time.Clock = MagicMock(  # type: ignore[attr-defined]
 
 # event helpers
 _pg.event.get = MagicMock(return_value=[])  # type: ignore[attr-defined]
+_pg.event.set_grab = MagicMock()  # type: ignore[attr-defined]
+_pg.event.get_grab = MagicMock(return_value=False)  # type: ignore[attr-defined]
 
 # joystick helpers
 _pg.joystick.init = MagicMock()  # type: ignore[attr-defined]
@@ -236,6 +248,7 @@ _pg.mixer.unpause = MagicMock()  # type: ignore[attr-defined]
 _pg.mouse.get_pos = MagicMock(return_value=(0, 0))  # type: ignore[attr-defined]
 _pg.mouse.get_rel = MagicMock(return_value=(0, 0))  # type: ignore[attr-defined]
 _pg.mouse.set_visible = MagicMock()  # type: ignore[attr-defined]
+_pg.mouse.get_pressed = MagicMock(return_value=(False, False, False))  # type: ignore[attr-defined]
 
 # image helpers
 _pg.image.load = MagicMock(return_value=MagicMock())  # type: ignore[attr-defined]
@@ -245,6 +258,9 @@ _pg.transform.scale = MagicMock(  # type: ignore[attr-defined]
     return_value=MagicMock(),
 )
 _pg.transform.rotate = MagicMock(  # type: ignore[attr-defined]
+    return_value=MagicMock(),
+)
+_pg.transform.smoothscale = MagicMock(  # type: ignore[attr-defined]
     return_value=MagicMock(),
 )
 
