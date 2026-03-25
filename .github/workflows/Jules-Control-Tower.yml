@@ -27,7 +27,6 @@ on:
           - documentation-auditor
           - sentinel
           - auto-refactor
-          - auto-rebase
           - issue-resolver
           - pr-compiler
 
@@ -140,9 +139,6 @@ jobs:
                   case "0 12 */3 * *":
                     target = "pr-compiler";
                     break;
-                  case "0 13 */3 * *":
-                    target = "auto-rebase";
-                    break;
                   default:
                     target = "none";
                 }
@@ -170,34 +166,14 @@ jobs:
                   target = "issue-resolver";
                 } else if (hour === 12) {
                   target = "pr-compiler";
-                } else if (hour === 13) {
-                  target = "auto-rebase";
                 } else {
                   target = "none";
                 }
               }
             }
-            // 3. PUSH TO MAIN -> DOCS
-            else if (event === "push" && context.ref === "refs/heads/main") {
-              if (actor === 'jules-bot' || actor === 'jules-ai[bot]') {
-                 console.log("Ignoring push by bot to prevent doc-scribe loops.");
-                 target = "none";
-              } else {
-                 target = "doc-scribe";
-              }
-            }
-            // 4. NEW PR -> TEST GENERATOR
-            else if (event === "pull_request" && context.payload.action === 'opened') {
-               if (actor === 'jules-bot' || actor === 'jules-ai[bot]') {
-                  console.log("Ignoring PR open by bot.");
-                  target = "none";
-               } else {
-                  target = "test-generator";
-               }
-            }
-            // 5. PR CLOSED -> ARCHIVIST
-            else if (event === "pull_request" && context.payload.action === 'closed' && context.payload.pull_request.merged) {
-               target = "archivist";
+            // 3. PUSH TO MAIN / NEW PR / PR CLOSED -> no-op (workers archived)
+            else if (event === "push" || event === "pull_request") {
+              target = "none";
             }
 
             console.log(`Decision: Dispatching [${target}]`);
@@ -223,34 +199,10 @@ jobs:
       failed_branch: ${{ github.event.workflow_run.head_branch || '' }}
     secrets: inherit
 
-  call-scribe:
-    needs: triage
-    if: needs.triage.outputs.target == 'doc-scribe'
-    uses: ./.github/workflows/Jules-Documentation-Scribe.yml
-    secrets: inherit
-
-  call-tests:
-    needs: triage
-    if: needs.triage.outputs.target == 'test-generator'
-    uses: ./.github/workflows/Jules-Test-Generator.yml
-    secrets: inherit
-
   call-auto-refactor:
     needs: triage
     if: needs.triage.outputs.target == 'auto-refactor'
     uses: ./.github/workflows/Jules-Auto-Refactor.yml
-    secrets: inherit
-
-  call-auto-rebase:
-    needs: triage
-    if: needs.triage.outputs.target == 'auto-rebase'
-    uses: ./.github/workflows/Jules-Auto-Rebase.yml
-    secrets: inherit
-
-  call-archivist:
-    needs: triage
-    if: needs.triage.outputs.target == 'archivist'
-    uses: ./.github/workflows/Jules-Archivist.yml
     secrets: inherit
 
   call-sentinel:
