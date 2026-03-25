@@ -81,10 +81,7 @@ _pg.transform = sys.modules["pygame.transform"]
 _pg.locals = sys.modules["pygame.locals"]
 
 # Common pygame top-level classes/constants
-# Use a MagicMock *instance* so that calling pygame.Surface(...)
-# returns a new MagicMock with auto-created attributes (fill, set_at, etc.)
-# rather than instantiating a new MagicMock *class*.
-_pg.Surface = MagicMock()  # type: ignore[attr-defined]
+_pg.Surface = MagicMock  # type: ignore[attr-defined]
 
 
 class MockRect:

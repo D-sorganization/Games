@@ -141,6 +141,11 @@ def _fps_game_fixture(game_pkg: str):
     lifetime of the fixture (construction AND all test method calls like
     start_game()).
 
+    Also patches ``pygame.Surface`` in the ui_renderer and ui_renderer_base
+    modules so that ``_generate_vignette()`` and similar methods receive a
+    proper MagicMock instance (with ``fill`` / ``set_at`` auto-stubs) rather
+    than the class-level ``MagicMock`` that is installed by conftest.
+
     Args:
         game_pkg: Dotted package path, e.g. "games.Duum.src.game".
 
@@ -155,11 +160,24 @@ def _fps_game_fixture(game_pkg: str):
         k: _make_dummy_surface() for k in ("stone", "brick", "metal", "tech", "hidden")
     }
 
+    # Derive the game name (e.g. "Duum") from the package path so we can patch
+    # the correct module-level pygame.Surface reference.
+    game_name = game_pkg.split(".")[1]  # "games.Duum.src.game" -> "Duum"
+    ui_renderer_pkg = f"games.{game_name}.src.ui_renderer"
+
+    surf_factory = MagicMock(return_value=_make_dummy_surface())
+
     with (
         patch(f"{game_pkg}.SoundManager", NullSoundManager),
         patch(
             "games.shared.raycaster.TextureGenerator.generate_textures",
             return_value=stub_textures,
+        ),
+        patch(f"{ui_renderer_pkg}.pygame.Surface", surf_factory),
+        patch("games.shared.ui_renderer_base.pygame.Surface", surf_factory),
+        patch(
+            f"{ui_renderer_pkg}.pygame.transform.smoothscale",
+            return_value=_make_dummy_surface(),
         ),
     ):
         mod = importlib.import_module(game_pkg)
