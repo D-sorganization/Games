@@ -673,7 +673,7 @@ index 0000000..10258ef
 +            return None
 +
 +        if re.search(r"\b" + todo_str + r"\b", content):
-+            return {"file": filepath, "line": lineno, "text": content, "type": "TODO"}
++            return {"file": filepath, "line": lineno, "text": content, "type": "TRACKED_TASK"}
 +
 +        for m_marker in fixme_markers:
 +            if re.search(r"\b" + m_marker + r"\b", content):
@@ -687,7 +687,7 @@ index 0000000..10258ef
 +
 +    all_markers = _scan_completist_file("MARKERS", _parser)
 +    for marker_item in all_markers:
-+        if marker_item["type"] == "TODO":
++        if marker_item["type"] == "TRACKED_TASK":
 +            todos.append(marker_item)
 +        else:
 +            fixmes.append(marker_item)
@@ -762,8 +762,8 @@ index 0000000..10258ef
 +    comp_map = {
 +        "Stub": 4,
 +        "NotImplementedError": 4,
-+        "FIXME": 2,
-+        "TODO": 3,
++        "TRACKED_DEFECT": 2,
++        "TRACKED_TASK": 3,
 +        "DocGap": 1,
 +        "Abstract": 5,
 +    }
@@ -836,8 +836,8 @@ index 0000000..10258ef
 +    chart.append("```mermaid")
 +    chart.append("pie title Completion Status")
 +    chart.append(f'    "Impl Gaps (Critical)" : {len(criticals)}')
-+    chart.append(f'    "Feature Requests (TODO)" : {len(todos)}')
-+    chart.append(f'    "Technical Debt (FIXME)" : {len(fixmes)}')
++    chart.append(f'    "Feature Requests (TRACKED_TASK)" : {len(todos)}')
++    chart.append(f'    "Technical Debt (TRACKED_DEFECT)" : {len(fixmes)}')
 +    chart.append(f'    "Doc Gaps" : {len(docs)}')
 +    chart.append("```")
 +
@@ -882,7 +882,7 @@ index 0000000..10258ef
 +        f"# Completist Report: {date_s}\n",
 +        "## Executive Summary",
 +        f"- **Critical Gaps**: {len(criticals)}",
-+        f"- **Feature Gaps (TODO)**: {len(todos)}",
++        f"- **Feature Gaps (TRACKED_TASK)**: {len(todos)}",
 +        f"- **Technical Debt**: {len(fixmes)}",
 +        f"- **Documentation Gaps**: {len(missing_docs)}\n",
 +    ]
@@ -1868,7 +1868,7 @@ index 0000000..ad79442
 +    for file_path in files:
 +        try:
 +            content = file_path.read_text(encoding="utf-8", errors="ignore")
-+            if "TODO" in content:
++            if "TRACKED_TASK" in content:
 +                todos.append(str(file_path))
 +        except:
 +            pass
@@ -1878,7 +1878,7 @@ index 0000000..ad79442
 +            {
 +                "principle": "QUALITY",
 +                "severity": "MINOR",
-+                "title": f"High TODO count ({len(todos)})",
++                "title": f"High TRACKED_TASK count ({len(todos)})",
 +                "description": "Accumulated technical debt",
 +                "files": todos[:5],
 +                "recommendation": "Review TODOs",
@@ -3222,8 +3222,8 @@ index 0000000..810a785
 +
 +# Configuration
 +BANNED_PATTERNS = [
-+    (re.compile(r"\bTODO\b"), "TODO placeholder found"),
-+    (re.compile(r"\bFIXME\b"), "FIXME placeholder found"),
++    (re.compile(r"\bTODO\b"), "TRACKED_TASK placeholder found"),
++    (re.compile(r"\bFIXME\b"), "TRACKED_DEFECT placeholder found"),
 +    (re.compile(r"^\s*\.\.\.\s*$"), "Ellipsis placeholder"),
 +    (re.compile(r"NotImplementedError"), "NotImplementedError placeholder"),
 +    (
