@@ -62,7 +62,7 @@ class UIRenderer(UIRendererBase):
             self.modern_font = pygame.font.SysFont("exo", 40, bold=True)
             self.modern_small_font = pygame.font.SysFont("exo", 28, bold=True)
             self.modern_tiny_font = pygame.font.SysFont("rajdhani", 20, bold=True)
-        except Exception as e:  # noqa: BLE001
+        except Exception:  # noqa: BLE001
             # Fallback to base fonts
             self.retro_title_font = self.title_font
             self.retro_subtitle_font = self.subtitle_font
