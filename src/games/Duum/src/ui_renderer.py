@@ -222,8 +222,10 @@ class UIRenderer(UIRendererBase):
 
     def render_hud(self, game: Game) -> None:
         """Render the heads-up display including health, ammo, and game stats."""
-        assert game.player is not None
-        assert game.raycaster is not None
+        if not (game.player is not None):
+            raise ValueError('DbC Blocked: Precondition failed.')
+        if not (game.raycaster is not None):
+            raise ValueError('DbC Blocked: Precondition failed.')
 
         # Render overlays first
         self.overlay_surface.fill((0, 0, 0, 0))

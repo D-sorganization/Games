@@ -17,14 +17,14 @@ def mock_pygame_surfarray():
         def fake_pixels(surf):
             try:
                 w, h = surf.get_width() or 32, surf.get_height() or 32
-            except Exception:  # noqa: BLE001
+            except Exception as e:  # noqa: BLE001
                 w, h = 32, 32
             return np.zeros((w, h, 3), dtype=np.uint8)
 
         def fake_pixels2d(surf):
             try:
                 w, h = surf.get_width() or 32, surf.get_height() or 32
-            except Exception:  # noqa: BLE001
+            except Exception as e:  # noqa: BLE001
                 w, h = 32, 32
             return np.zeros((w, h), dtype=np.uint8)
 

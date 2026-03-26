@@ -147,7 +147,7 @@ class Game(FPSGameBase):
                 self.joystick = pygame.joystick.Joystick(0)
                 self.joystick.init()
                 logger.info("Controller detected: %s", self.joystick.get_name())
-            except Exception:  # noqa: BLE001
+            except Exception as e:  # noqa: BLE001
                 logger.exception("Controller init failed")
 
         # Fog of War
@@ -243,7 +243,8 @@ class Game(FPSGameBase):
 
     def start_level(self) -> None:
         """Start a new level"""
-        assert self.game_map is not None
+        if not (self.game_map is not None):
+            raise ValueError('DbC Blocked: Precondition failed.')
         self.level_start_time = pygame.time.get_ticks()
         self.total_paused_time = 0
         self.pause_start_time = 0
@@ -336,7 +337,8 @@ class Game(FPSGameBase):
 
     def execute_melee_attack(self) -> None:
         """Execute melee attack - wide sweeping damage in front of player"""
-        assert self.player is not None
+        if not (self.player is not None):
+            raise ValueError('DbC Blocked: Precondition failed.')
 
         melee_range = 3.0
         melee_damage = 75
@@ -346,7 +348,7 @@ class Game(FPSGameBase):
 
         try:
             self.sound_manager.play_sound("shoot_shotgun")
-        except Exception:  # noqa: BLE001
+        except Exception as e:  # noqa: BLE001
             pass
 
         player_x, player_y = self.player.x, self.player.y
@@ -399,7 +401,8 @@ class Game(FPSGameBase):
 
     def create_melee_sweep_effect(self) -> None:
         """Create enhanced visual sweep effect for melee attack"""
-        assert self.player is not None
+        if not (self.player is not None):
+            raise ValueError('DbC Blocked: Precondition failed.')
 
         player_angle = self.player.angle
         arc_start = player_angle - math.pi / 4
@@ -782,7 +785,8 @@ class Game(FPSGameBase):
         if self.paused:
             return
 
-        assert self.player is not None
+        if not (self.player is not None):
+            raise ValueError('DbC Blocked: Precondition failed.')
 
         if self._check_game_over():
             return

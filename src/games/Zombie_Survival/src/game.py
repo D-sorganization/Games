@@ -146,7 +146,7 @@ class Game(FPSGameBase):
                 self.joystick = pygame.joystick.Joystick(0)
                 self.joystick.init()
                 logger.info("Controller detected: %s", self.joystick.get_name())
-            except Exception:  # noqa: BLE001
+            except Exception as e:  # noqa: BLE001
                 logger.exception("Controller init failed")
 
         # Fog of War
@@ -308,7 +308,8 @@ class Game(FPSGameBase):
 
     def start_level(self) -> None:
         """Start a new level"""
-        assert self.game_map is not None
+        if not (self.game_map is not None):
+            raise ValueError('DbC Blocked: Precondition failed.')
         self.level_start_time = pygame.time.get_ticks()
         self.total_paused_time = 0
         self.pause_start_time = 0
@@ -471,8 +472,10 @@ class Game(FPSGameBase):
 
     def _handle_joystick_input(self, shield_active: bool) -> bool:
         """Process joystick axes and buttons; returns updated shield_active."""
-        assert self.player is not None
-        assert self.game_map is not None
+        if not (self.player is not None):
+            raise ValueError('DbC Blocked: Precondition failed.')
+        if not (self.game_map is not None):
+            raise ValueError('DbC Blocked: Precondition failed.')
         axis_x = self.joystick.get_axis(0)
         axis_y = self.joystick.get_axis(1)
 
@@ -537,8 +540,10 @@ class Game(FPSGameBase):
 
     def _handle_keyboard_movement(self, keys: pygame.key.ScancodeWrapper) -> None:
         """Apply keyboard-driven player movement and camera rotation."""
-        assert self.player is not None
-        assert self.game_map is not None
+        if not (self.player is not None):
+            raise ValueError('DbC Blocked: Precondition failed.')
+        if not (self.game_map is not None):
+            raise ValueError('DbC Blocked: Precondition failed.')
         sprint_key = keys[pygame.K_RSHIFT]
         is_sprinting = self.input_manager.is_action_pressed("sprint") or sprint_key
         if is_sprinting and self.player_stamina > 0:
@@ -583,7 +588,8 @@ class Game(FPSGameBase):
 
     def _check_item_pickups(self) -> None:
         """Detect player proximity to pickup items and apply their effects."""
-        assert self.player is not None
+        if not (self.player is not None):
+            raise ValueError('DbC Blocked: Precondition failed.')
         for bot in self.bots:
             is_item = bot.enemy_type.startswith(("health", "ammo", "bomb", "pickup"))
             if not (bot.alive and is_item):
@@ -640,8 +646,10 @@ class Game(FPSGameBase):
         if self.paused:
             return
 
-        assert self.player is not None
-        assert self.game_map is not None
+        if not (self.player is not None):
+            raise ValueError('DbC Blocked: Precondition failed.')
+        if not (self.game_map is not None):
+            raise ValueError('DbC Blocked: Precondition failed.')
         if self._check_game_over():
             return
         if self._check_portal_completion():
