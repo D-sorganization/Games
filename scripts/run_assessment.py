@@ -117,7 +117,7 @@ def grep_in_files(pattern: str, files: list[Path]) -> int:
             content = file.read_text(encoding="utf-8")
             if re.search(pattern, content):
                 count += 1
-        except Exception:  # noqa: BLE001
+        except Exception as e:  # noqa: BLE001
             pass
     return count
 
@@ -445,7 +445,7 @@ def run_assessment(assessment_id: str, output_path: Path) -> int:
                 total_lines += line_count
                 if line_count > 1500:
                     long_files += 1
-            except Exception:  # noqa: BLE001
+            except Exception as e:  # noqa: BLE001
                 pass
 
         avg_lines = total_lines / file_count if file_count > 0 else 0
