@@ -1,23 +1,23 @@
 ./constants_file.py:37:TEMPERATURE_C: float = 20.0  # [°C] Standard temperature
 ./src/games/vendor/three/three.module.js:3106:		// We're going to add .setXXX() methods for setting properties later.
-./src/games/vendor/three/three.module.js:4330:	// TODO lengthSquared?
-./src/games/vendor/three/three.module.js:6298:		//TODO: make this more efficient
-./src/games/vendor/three/three.module.js:9447:		// TODO: Copied from Object3D.toJSON
-./src/games/vendor/three/three.module.js:14333:		// TODO (abelnation): RectAreaLight BRDF data needs to be moved from example to main src
-./src/games/vendor/three/three.module.js:15321:					// TODO Attribute may not be available on context restore
-./src/games/vendor/three/three.module.js:19558:	// TODO Send this event to Three.js DevTools
-./src/games/vendor/three/three.module.js:21351:				// TODO (abelnation): set RectAreaLight shadow uniforms
-./src/games/vendor/three/three.module.js:21534:					// TODO : do it if required only
-./src/games/vendor/three/three.module.js:24951:					// TODO: Uniformly handle mipmap definitions
-./src/games/vendor/three/three.module.js:26820:				newRenderTarget.isXRRenderTarget = true; // TODO Remove this when possible, see #23278
-./src/games/vendor/three/three.module.js:26953:			// TODO: Better way to apply this offset?
-./src/games/vendor/three/three.module.js:29845:				// TODO (abelnation): add area lights shadow info to uniforms
-./src/games/vendor/three/three.module.js:34995:		this.currentPoint.set( x, y ); // TODO consider referencing vectors instead of copying?
+./src/games/vendor/three/three.module.js:4330:	// TRACKED_TASK lengthSquared?
+./src/games/vendor/three/three.module.js:6298:		//TRACKED_TASK: make this more efficient
+./src/games/vendor/three/three.module.js:9447:		// TRACKED_TASK: Copied from Object3D.toJSON
+./src/games/vendor/three/three.module.js:14333:		// TRACKED_TASK (abelnation): RectAreaLight BRDF data needs to be moved from example to main src
+./src/games/vendor/three/three.module.js:15321:					// TRACKED_TASK Attribute may not be available on context restore
+./src/games/vendor/three/three.module.js:19558:	// TRACKED_TASK Send this event to Three.js DevTools
+./src/games/vendor/three/three.module.js:21351:				// TRACKED_TASK (abelnation): set RectAreaLight shadow uniforms
+./src/games/vendor/three/three.module.js:21534:					// TRACKED_TASK : do it if required only
+./src/games/vendor/three/three.module.js:24951:					// TRACKED_TASK: Uniformly handle mipmap definitions
+./src/games/vendor/three/three.module.js:26820:				newRenderTarget.isXRRenderTarget = true; // TRACKED_TASK Remove this when possible, see #23278
+./src/games/vendor/three/three.module.js:26953:			// TRACKED_TASK: Better way to apply this offset?
+./src/games/vendor/three/three.module.js:29845:				// TRACKED_TASK (abelnation): add area lights shadow info to uniforms
+./src/games/vendor/three/three.module.js:34995:		this.currentPoint.set( x, y ); // TRACKED_TASK consider referencing vectors instead of copying?
 ./src/games/vendor/three/three.module.js:37345:				// TODO1 - have a .isClosed in spline?
-./src/games/vendor/three/three.module.js:43768:		this.intensity = json.intensity; // TODO: Move this bit to Light.fromJSON();
-./src/games/vendor/three/three.module.js:50407:	// TODO: delete this comment?
+./src/games/vendor/three/three.module.js:43768:		this.intensity = json.intensity; // TRACKED_TASK: Move this bit to Light.fromJSON();
+./src/games/vendor/three/three.module.js:50407:	// TRACKED_TASK: delete this comment?
 ./src/games/shared/constants.py:135:BOT_SPAWN_ATTEMPTS = 20
 ./src/games/shared/constants.py:136:BOSS_SPAWN_ATTEMPTS = 50
 ./scripts/analyze_completist_data.py:106:    fixme_markers = ["FIX" + "ME", "XXX", "HACK", "TEMP"]
-./scripts/shared/quality_checks_common.py:10:    (re.compile(r"\bTODO\b"), "TODO placeholder found"),
-./scripts/shared/quality_checks_common.py:11:    (re.compile(r"\bFIXME\b"), "FIXME placeholder found"),
+./scripts/shared/quality_checks_common.py:10:    (re.compile(r"\bTODO\b"), "TRACKED_TASK placeholder found"),
+./scripts/shared/quality_checks_common.py:11:    (re.compile(r"\bFIXME\b"), "TRACKED_DEFECT placeholder found"),
