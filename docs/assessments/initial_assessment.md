@@ -9,9 +9,9 @@
 ## Repository Overview
 
 **Codebase Size:**
-- Source: ~30028 lines across 149 Python files
-- Tests: ~16870 lines across 112 test files
-- Test Ratio: 56%
+- Source: ~30667 lines across 154 Python files
+- Tests: ~17664 lines across 115 test files
+- Test Ratio: 57%
 
 ---
 
@@ -24,7 +24,7 @@
 - `README.md` present: True
 
 ### C - Testing: B
-- Test coverage ratio: 56%
+- Test coverage ratio: 57%
 
 ### D - Security: A
 - Checked via AST, no obvious hardcoded keys.
@@ -33,7 +33,7 @@
 - Assumed B globally based on Python usage.
 
 ### F - Code Quality: C
-- God modules (>1000 lines): raycaster.py, game.py, game.py, game.py
+- God modules (>1000 lines): raycaster.py, game.py
 
 ### G - Error Handling: F
 - Bare `except Exception:` catches: 48
@@ -61,7 +61,7 @@
 
 ### O - Technical Debt: B
 - TODO/FIXME markers: 2
-- `assert` in src (DbC violations): 65
+- `assert` in src (DbC violations): 59
 
 ---
 
@@ -84,7 +84,7 @@ Design decisions abstraction.
 End-to-end functionality present.
 
 ### Design by Contract: C
-65 uses of `assert` in business logic instead of `ValueError`.
+59 uses of `assert` in business logic instead of `ValueError`.
 
 ### Broken Windows: C
 48 bare exceptions and 2 TODOs.
@@ -99,6 +99,6 @@ Functionally operable.
 
 ## Summary of Issues to Fix (Issues created automatically)
 
-- **Refactor God Modules: raycaster.py, game.py, game.py, game.py**: God modules detected: raycaster.py, game.py, game.py, game.py
+- **Refactor God Modules: raycaster.py, game.py**: God modules detected: raycaster.py, game.py
 - **Remediate 48 bare exceptions**: 48 bare exceptions identified
-- **Replace 65 assert statements with ValueErrors**: 65 assert statements masking as DbC
+- **Replace 59 assert statements with ValueErrors**: 59 assert statements masking as DbC
