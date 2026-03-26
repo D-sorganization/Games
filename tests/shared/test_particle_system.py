@@ -78,9 +78,7 @@ class TestParticle:
 
 class TestWorldParticle:
     def test_position_updates(self):
-        wp = WorldParticle(
-            0, 0, 1, dx=1, dy=0, dz=0, color=(255, 0, 0), timer=10, size=0.1
-        )
+        wp = WorldParticle(0, 0, 1, dx=1, dy=0, dz=0, color=(255, 0, 0), timer=10, size=0.1)
         wp.update()
         assert abs(wp.x - 1.0) < 1e-6
 
@@ -119,9 +117,7 @@ class TestWorldParticle:
         assert wp.dz > 0  # Reversed
 
     def test_dies_at_zero_timer(self):
-        wp = WorldParticle(
-            0, 0, 0, dx=0, dy=0, dz=0, color=(255, 0, 0), timer=1, size=0.1
-        )
+        wp = WorldParticle(0, 0, 0, dx=0, dy=0, dz=0, color=(255, 0, 0), timer=1, size=0.1)
         alive = wp.update()
         assert not alive
         assert not wp.alive

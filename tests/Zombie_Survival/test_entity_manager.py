@@ -61,9 +61,7 @@ class TestEntityManagerInit:
         assert em.bots == []
         assert em.projectiles == []
 
-    def test_reset_clears_entities(
-        self, em: EntityManager, mock_bot: MagicMock
-    ) -> None:
+    def test_reset_clears_entities(self, em: EntityManager, mock_bot: MagicMock) -> None:
         em.bots.append(mock_bot)
         proj = MagicMock()
         em.projectiles.append(proj)

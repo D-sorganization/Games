@@ -97,9 +97,7 @@ class Bot:
         self.z = 0.5  # Sprite height
         self.frozen = False
 
-    def update(
-        self, game_map: Map, player: Player, other_bots: list[Bot]
-    ) -> Projectile | None:
+    def update(self, game_map: Map, player: Player, other_bots: list[Bot]) -> Projectile | None:
         """Update bot AI"""
         if self.dead:
             self._update_death_animation()

@@ -129,8 +129,4 @@ class EntityManager:
 
     def get_active_enemies(self) -> list[Bot]:
         """Return list of alive enemies (excluding items)."""
-        return [
-            b
-            for b in self.bots
-            if b.alive and b.type_data.get("visual_style") != "item"
-        ]
+        return [b for b in self.bots if b.alive and b.type_data.get("visual_style") != "item"]

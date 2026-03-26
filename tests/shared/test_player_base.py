@@ -682,13 +682,9 @@ class TestPlayerTimersAdvanced:
         player.shield_timer = 0
         player.update_timers()
         assert player.shield_active is False
-        assert player.shield_recharge_delay == getattr(
-            player.C, "SHIELD_COOLDOWN_DEPLETED", 300
-        )
+        assert player.shield_recharge_delay == getattr(player.C, "SHIELD_COOLDOWN_DEPLETED", 300)
 
-    def test_shield_recharge_delay_zero_timer_increases(
-        self, player: PlayerBase
-    ) -> None:
+    def test_shield_recharge_delay_zero_timer_increases(self, player: PlayerBase) -> None:
         """Hit branch where shield_recharge_delay <= 0 and shield_timer < shield_max."""
         player.shield_active = False
         player.shield_recharge_delay = 0

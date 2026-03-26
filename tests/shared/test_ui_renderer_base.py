@@ -32,9 +32,7 @@ class TestUIRendererBase:
 
     def test_load_assets_success(self, mock_pygame_surface):
         with patch("games.shared.ui_renderer_base.pygame") as mock_pg:
-            with patch(
-                "games.shared.ui_renderer_base.os.path.exists", return_value=True
-            ):
+            with patch("games.shared.ui_renderer_base.os.path.exists", return_value=True):
                 with patch("games.shared.ui_renderer_base.cv2"):
                     surf_mock = MagicMock()
                     surf_mock.get_width.return_value = 800
@@ -88,9 +86,7 @@ class TestUIRendererBase:
     def test_load_assets_no_scaling(self, mock_pygame_surface):
         """Test load assets where image shouldn't be scaled (scale >= 1)."""
         with patch("games.shared.ui_renderer_base.pygame") as mock_pg:
-            with patch(
-                "games.shared.ui_renderer_base.os.path.exists", return_value=True
-            ):
+            with patch("games.shared.ui_renderer_base.os.path.exists", return_value=True):
                 with patch("games.shared.ui_renderer_base.cv2"):
                     surf_mock = MagicMock()
                     surf_mock.get_width.return_value = 100
@@ -107,9 +103,7 @@ class TestUIRendererBase:
     def test_load_assets_exception(self, mock_pygame_surface):
         """Test load assets throwing an exception."""
         with patch("games.shared.ui_renderer_base.pygame"):
-            with patch.object(
-                DummyRenderer, "_get_base_dir", side_effect=Exception("Disk Error")
-            ):
+            with patch.object(DummyRenderer, "_get_base_dir", side_effect=Exception("Disk Error")):
                 # Should not raise exception
                 renderer = DummyRenderer(mock_pygame_surface, 800, 600)
                 assert "willy" not in renderer.intro_images

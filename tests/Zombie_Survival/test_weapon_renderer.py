@@ -45,9 +45,7 @@ class TestWeaponRenderer:
         renderer = WeaponRenderer(mock_screen)
         assert renderer.screen == mock_screen
 
-    @pytest.mark.parametrize(
-        "weapon_name", ["pistol", "shotgun", "rifle", "minigun", "plasma"]
-    )
+    @pytest.mark.parametrize("weapon_name", ["pistol", "shotgun", "rifle", "minigun", "plasma"])
     def test_render_weapons(self, mock_screen, mock_player, weapon_name):
         renderer = WeaponRenderer(mock_screen)
         mock_player.current_weapon = weapon_name
@@ -55,9 +53,7 @@ class TestWeaponRenderer:
         assert cx > 0
         assert cy > 0
 
-    @pytest.mark.parametrize(
-        "weapon_name", ["pistol", "shotgun", "rifle", "minigun", "plasma"]
-    )
+    @pytest.mark.parametrize("weapon_name", ["pistol", "shotgun", "rifle", "minigun", "plasma"])
     def test_render_weapons_shooting(self, mock_screen, mock_player, weapon_name):
         renderer = WeaponRenderer(mock_screen)
         mock_player.current_weapon = weapon_name

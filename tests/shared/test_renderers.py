@@ -64,49 +64,33 @@ def mock_pygame_draw():
 class TestRenderers:
     def test_ball_renderer(self, mock_surface, mock_bot, base_config):
         renderer = BallStyleRenderer()
-        renderer.render(
-            mock_surface, mock_bot, 100, 100, 50, 50, (255, 0, 0), base_config
-        )
+        renderer.render(mock_surface, mock_bot, 100, 100, 50, 50, (255, 0, 0), base_config)
 
     def test_baby_renderer(self, mock_surface, mock_bot, base_config):
         renderer = BabyStyleRenderer()
         # Test normal
-        renderer.render(
-            mock_surface, mock_bot, 100, 100, 50, 50, (255, 0, 0), base_config
-        )
+        renderer.render(mock_surface, mock_bot, 100, 100, 50, 50, (255, 0, 0), base_config)
         # Test mouth open
         mock_bot.mouth_open = True
-        renderer.render(
-            mock_surface, mock_bot, 100, 100, 50, 50, (255, 0, 0), base_config
-        )
+        renderer.render(mock_surface, mock_bot, 100, 100, 50, 50, (255, 0, 0), base_config)
 
     def test_beast_renderer(self, mock_surface, mock_bot, base_config):
         renderer = BeastStyleRenderer()
         mock_bot.attack_frame = 1  # test different attacks
-        renderer.render(
-            mock_surface, mock_bot, 100, 100, 50, 50, (255, 0, 0), base_config
-        )
+        renderer.render(mock_surface, mock_bot, 100, 100, 50, 50, (255, 0, 0), base_config)
         mock_bot.moving = True
-        renderer.render(
-            mock_surface, mock_bot, 100, 100, 50, 50, (255, 0, 0), base_config
-        )
+        renderer.render(mock_surface, mock_bot, 100, 100, 50, 50, (255, 0, 0), base_config)
 
     def test_cyber_demon_renderer(self, mock_surface, mock_bot, base_config):
         renderer = CyberDemonStyleRenderer()
         mock_bot.attack_frame = 2
-        renderer.render(
-            mock_surface, mock_bot, 100, 100, 50, 50, (255, 0, 0), base_config
-        )
+        renderer.render(mock_surface, mock_bot, 100, 100, 50, 50, (255, 0, 0), base_config)
         mock_bot.shoot_animation = 1
-        renderer.render(
-            mock_surface, mock_bot, 100, 100, 50, 50, (255, 0, 0), base_config
-        )
+        renderer.render(mock_surface, mock_bot, 100, 100, 50, 50, (255, 0, 0), base_config)
 
     def test_ghost_renderer(self, mock_surface, mock_bot, base_config):
         renderer = GhostStyleRenderer()
-        renderer.render(
-            mock_surface, mock_bot, 100, 100, 50, 50, (255, 0, 0), base_config
-        )
+        renderer.render(mock_surface, mock_bot, 100, 100, 50, 50, (255, 0, 0), base_config)
 
     @patch("games.shared.renderers.item_renderer.random.random", return_value=0.1)
     def test_item_renderer(self, mock_random, mock_surface, mock_bot, base_config):
@@ -114,88 +98,56 @@ class TestRenderers:
         mock_item = MagicMock()
         mock_item.enemy_type = "health_pack"
         renderer = ItemRenderer()
-        renderer.render(
-            mock_surface, mock_item, 100, 100, 50, 50, (0, 255, 0), base_config
-        )
+        renderer.render(mock_surface, mock_item, 100, 100, 50, 50, (0, 255, 0), base_config)
 
         mock_item.enemy_type = "ammo_box"
-        renderer.render(
-            mock_surface, mock_item, 100, 100, 50, 50, (0, 255, 0), base_config
-        )
+        renderer.render(mock_surface, mock_item, 100, 100, 50, 50, (0, 255, 0), base_config)
 
         mock_item.enemy_type = "bomb_item"
         mock_random.return_value = 0.1
-        renderer.render(
-            mock_surface, mock_item, 100, 100, 50, 50, (0, 255, 0), base_config
-        )
+        renderer.render(mock_surface, mock_item, 100, 100, 50, 50, (0, 255, 0), base_config)
         mock_random.return_value = 0.9
-        renderer.render(
-            mock_surface, mock_item, 100, 100, 50, 50, (0, 255, 0), base_config
-        )
+        renderer.render(mock_surface, mock_item, 100, 100, 50, 50, (0, 255, 0), base_config)
 
         mock_item.enemy_type = "unknown"
-        renderer.render(
-            mock_surface, mock_item, 100, 100, 50, 50, (0, 255, 0), base_config
-        )
+        renderer.render(mock_surface, mock_item, 100, 100, 50, 50, (0, 255, 0), base_config)
 
     def test_minigunner_renderer(self, mock_surface, mock_bot, base_config):
         renderer = MinigunnerStyleRenderer()
         mock_bot.attack_frame = 0
-        renderer.render(
-            mock_surface, mock_bot, 100, 100, 50, 50, (255, 0, 0), base_config
-        )
+        renderer.render(mock_surface, mock_bot, 100, 100, 50, 50, (255, 0, 0), base_config)
         mock_bot.shoot_animation = 1
-        renderer.render(
-            mock_surface, mock_bot, 100, 100, 50, 50, (255, 0, 0), base_config
-        )
+        renderer.render(mock_surface, mock_bot, 100, 100, 50, 50, (255, 0, 0), base_config)
 
     def test_monster_renderer(self, mock_surface, mock_bot, base_config):
         renderer = MonsterStyleRenderer()
-        renderer.render(
-            mock_surface, mock_bot, 100, 100, 50, 50, (255, 0, 0), base_config
-        )
+        renderer.render(mock_surface, mock_bot, 100, 100, 50, 50, (255, 0, 0), base_config)
         mock_bot.moving = True
-        renderer.render(
-            mock_surface, mock_bot, 100, 100, 50, 50, (255, 0, 0), base_config
-        )
+        renderer.render(mock_surface, mock_bot, 100, 100, 50, 50, (255, 0, 0), base_config)
         mock_bot.enemy_type = "boss"
         mock_bot.mouth_open = True
         mock_bot.shoot_animation = 1
-        renderer.render(
-            mock_surface, mock_bot, 100, 100, 50, 50, (255, 0, 0), base_config
-        )
+        renderer.render(mock_surface, mock_bot, 100, 100, 50, 50, (255, 0, 0), base_config)
         mock_bot.dead = True
         mock_bot.death_timer = 20
-        renderer.render(
-            mock_surface, mock_bot, 100, 100, 50, 50, (255, 0, 0), base_config
-        )
+        renderer.render(mock_surface, mock_bot, 100, 100, 50, 50, (255, 0, 0), base_config)
         mock_bot.death_timer = 40
-        renderer.render(
-            mock_surface, mock_bot, 100, 100, 50, 50, (255, 0, 0), base_config
-        )
+        renderer.render(mock_surface, mock_bot, 100, 100, 50, 50, (255, 0, 0), base_config)
 
     def test_weapon_pickup_renderer(self, mock_surface, mock_bot, base_config):
         mock_item = MagicMock()
         mock_item.enemy_type = "pickup_shotgun"
         renderer = WeaponPickupRenderer()
-        renderer.render(
-            mock_surface, mock_item, 100, 100, 50, 50, (255, 255, 255), base_config
-        )
+        renderer.render(mock_surface, mock_item, 100, 100, 50, 50, (255, 255, 255), base_config)
 
         mock_item.enemy_type = "pickup_minigun"
-        renderer.render(
-            mock_surface, mock_item, 100, 100, 50, 50, (255, 255, 255), base_config
-        )
+        renderer.render(mock_surface, mock_item, 100, 100, 50, 50, (255, 255, 255), base_config)
 
         mock_item.enemy_type = "pickup_plasma"
-        renderer.render(
-            mock_surface, mock_item, 100, 100, 50, 50, (255, 255, 255), base_config
-        )
+        renderer.render(mock_surface, mock_item, 100, 100, 50, 50, (255, 255, 255), base_config)
 
         mock_item.enemy_type = "pickup_rocket"
-        renderer.render(
-            mock_surface, mock_item, 100, 100, 50, 50, (255, 255, 255), base_config
-        )
+        renderer.render(mock_surface, mock_item, 100, 100, 50, 50, (255, 255, 255), base_config)
 
 
 class TestRendererFactory:
@@ -217,6 +169,4 @@ class TestRendererFactory:
                 super().render(*args, **kwargs)
 
         renderer = DummyRenderer()
-        renderer.render(
-            mock_surface, mock_bot, 100, 100, 50, 50, (255, 0, 0), base_config
-        )
+        renderer.render(mock_surface, mock_bot, 100, 100, 50, 50, (255, 0, 0), base_config)
