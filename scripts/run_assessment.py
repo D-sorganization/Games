@@ -157,9 +157,7 @@ def run_assessment(assessment_id: str, output_path: Path) -> int:
             or (file_count > 0 and count_test_files() > 0)
         )
         findings.append(f"- Python files found: {file_count}")
-        findings.append(
-            f"- Source directory structure (src/): {'✓' if has_src else '✗'}"
-        )
+        findings.append(f"- Source directory structure (src/): {'✓' if has_src else '✗'}")
         findings.append(f"- Tests directory/files: {'✓' if has_tests else '✗'}")
         if not has_src:
             score -= 2
@@ -229,9 +227,7 @@ def run_assessment(assessment_id: str, output_path: Path) -> int:
                         score -= 1
                         findings.append("- Note: Moderate test coverage (< 80%)")
             else:
-                findings.append(
-                    f"- Pytest execution: ✗ Failed (Exit code {result.returncode})"
-                )
+                findings.append(f"- Pytest execution: ✗ Failed (Exit code {result.returncode})")
                 score -= 2
         except Exception as e:  # noqa: BLE001
             findings.append(f"- Pytest execution failed to start: {e}")
@@ -247,9 +243,7 @@ def run_assessment(assessment_id: str, output_path: Path) -> int:
 
     elif assessment_id == "E":  # Performance
         # Check for profilers or common optimization patterns
-        perf_imports = grep_in_files(
-            r"import cProfile|import timeit|import pstats", python_files
-        )
+        perf_imports = grep_in_files(r"import cProfile|import timeit|import pstats", python_files)
         findings.append(f"- Files with performance tools: {perf_imports}")
 
         # Check for time.sleep which is often an anti-pattern
@@ -257,9 +251,7 @@ def run_assessment(assessment_id: str, output_path: Path) -> int:
         findings.append(f"- Files using time.sleep: {time_sleep}")
 
         if perf_imports == 0:
-            findings.append(
-                "- Note: No explicit performance profiling tools found in code"
-            )
+            findings.append("- Note: No explicit performance profiling tools found in code")
             score -= 1
 
         if time_sleep > 2:
@@ -273,8 +265,7 @@ def run_assessment(assessment_id: str, output_path: Path) -> int:
         subprocess_shell = grep_in_files(r"subprocess\..*shell=True", python_files)
         if subprocess_shell > 0:
             findings.append(
-                f"- Critical: subprocess with shell=True found in "
-                f"{subprocess_shell} files"
+                f"- Critical: subprocess with shell=True found in " f"{subprocess_shell} files"
             )
             score -= 3
         else:
@@ -284,17 +275,13 @@ def run_assessment(assessment_id: str, output_path: Path) -> int:
         secrets_pattern = r"api_key|password|secret|token"
         secrets_found = grep_in_files(secrets_pattern, python_files)
         if secrets_found > 0:
-            findings.append(
-                f"- Warning: Potential secrets found in {secrets_found} files (vars)"
-            )
+            findings.append(f"- Warning: Potential secrets found in {secrets_found} files (vars)")
             score -= 1
 
         # Check for eval/exec
         unsafe_eval = grep_in_files(r"eval\(|exec\(", python_files)
         if unsafe_eval > 0:
-            findings.append(
-                f"- Critical: Unsafe eval/exec detected in {unsafe_eval} files"
-            )
+            findings.append(f"- Critical: Unsafe eval/exec detected in {unsafe_eval} files")
             score -= 3
 
     elif assessment_id == "G":  # Dependencies
@@ -338,9 +325,7 @@ def run_assessment(assessment_id: str, output_path: Path) -> int:
         black_result = run_black_check_wrapper()
         ruff_status = "✓ passed" if ruff_result["exit_code"] == 0 else "✗ issues found"
         findings.append(f"- Ruff check: {ruff_status}")
-        black_status = (
-            "✓ formatted" if black_result["exit_code"] == 0 else "✗ needs formatting"
-        )
+        black_status = "✓ formatted" if black_result["exit_code"] == 0 else "✗ needs formatting"
         findings.append(f"- Black formatting: {black_status}")
         if ruff_result["exit_code"] != 0:
             score -= 3
@@ -348,9 +333,7 @@ def run_assessment(assessment_id: str, output_path: Path) -> int:
             score -= 2
 
     elif assessment_id == "L":  # Logging
-        logging_imports = grep_in_files(
-            r"import logging|from logging import", python_files
-        )
+        logging_imports = grep_in_files(r"import logging|from logging import", python_files)
         findings.append(f"- Files importing logging: {logging_imports}")
         if logging_imports < 2 and file_count > 5:
             score -= 2
@@ -399,9 +382,7 @@ def run_assessment(assessment_id: str, output_path: Path) -> int:
 
         if data_imports == 0 and dataclass_usage == 0 and file_count > 5:
             score -= 2
-            findings.append(
-                "- Note: Limited explicit data handling structures detected"
-            )
+            findings.append("- Note: Limited explicit data handling structures detected")
 
     elif assessment_id == "M":  # Configuration
         config_files = (
@@ -417,8 +398,7 @@ def run_assessment(assessment_id: str, output_path: Path) -> int:
     elif assessment_id == "N":  # Scalability
         # Check for concurrency patterns
         concurrency_usage = grep_in_files(
-            r"import asyncio|import multiprocessing|import threading|concurrent"
-            r"\.futures",
+            r"import asyncio|import multiprocessing|import threading|concurrent" r"\.futures",
             python_files,
         )
         findings.append(f"- Files with concurrency imports: {concurrency_usage}")
@@ -429,8 +409,7 @@ def run_assessment(assessment_id: str, output_path: Path) -> int:
 
         if concurrency_usage == 0 and cache_usage == 0:
             findings.append(
-                "- Note: No explicit concurrency or caching detected "
-                "(may affect scalability)"
+                "- Note: No explicit concurrency or caching detected " "(may affect scalability)"
             )
             # Neutral score impact unless context implies high scale needed
 
@@ -454,9 +433,7 @@ def run_assessment(assessment_id: str, output_path: Path) -> int:
 
         if long_files > 0:
             score -= min(3, long_files)
-            findings.append(
-                f"- Warning: {long_files} large files detected (> 1500 lines)"
-            )
+            findings.append(f"- Warning: {long_files} large files detected (> 1500 lines)")
 
         if avg_lines > 500:
             score -= 1
@@ -466,9 +443,7 @@ def run_assessment(assessment_id: str, output_path: Path) -> int:
         # Fallback for unexpected assessment IDs
         score = None  # type: ignore [assignment]
         findings.append(f"- Python files analyzed: {file_count}")
-        findings.append(
-            "- **REQUIRES REVIEW**: No automated checks available for this category"
-        )
+        findings.append("- **REQUIRES REVIEW**: No automated checks available for this category")
         findings.append("- Score must be assigned by Jules bot or manual code review")
 
     # Format score display

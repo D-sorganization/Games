@@ -19,6 +19,4 @@ class ZSCombatManager(CombatManagerBase):
         sound_manager: Any,
         on_kill: Any | None = None,
     ) -> None:
-        super().__init__(
-            entity_manager, particle_system, sound_manager, C, on_kill=on_kill
-        )
+        super().__init__(entity_manager, particle_system, sound_manager, C, on_kill=on_kill)

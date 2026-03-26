@@ -538,9 +538,7 @@ class TestCombatManagerEdgeCases:
         mgr = CombatManagerBase(
             entity_manager=em,
             particle_system=MagicMock(),
-            sound_manager=MagicMock(
-                play_sound=MagicMock(side_effect=Exception("no sound"))
-            ),
+            sound_manager=MagicMock(play_sound=MagicMock(side_effect=Exception("no sound"))),
             constants=_make_constants(BOMB_RADIUS=10.0),
         )
         player = SimpleNamespace(x=0.0, y=0.0)
@@ -553,9 +551,7 @@ class TestCombatManagerEdgeCases:
             particle_system=MagicMock(
                 add_world_explosion=MagicMock(side_effect=Exception("error"))
             ),
-            sound_manager=MagicMock(
-                play_sound=MagicMock(side_effect=Exception("no sound"))
-            ),
+            sound_manager=MagicMock(play_sound=MagicMock(side_effect=Exception("no sound"))),
             constants=_make_constants(),
         )
         mgr.explode_laser(0.0, 0.0, [])
@@ -576,9 +572,7 @@ class TestCombatManagerEdgeCases:
         mgr = CombatManagerBase(
             entity_manager=_make_entity_manager([bot_tank, bot_dead, bot_far]),
             particle_system=MagicMock(),
-            sound_manager=MagicMock(
-                play_sound=MagicMock(side_effect=Exception("no sound"))
-            ),
+            sound_manager=MagicMock(play_sound=MagicMock(side_effect=Exception("no sound"))),
             constants=_make_constants(),
         )
         projectile = SimpleNamespace(x=1.0, y=1.0, damage=10, z=0.5)

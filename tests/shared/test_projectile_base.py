@@ -186,18 +186,14 @@ class TestProjectilePhysics:
 
     def test_gravity_reduces_z(self, open_map: MockMap) -> None:
         """Gravity should reduce vertical velocity and height."""
-        p = ProjectileBase(
-            5.0, 5.0, 0.0, damage=10, speed=0.3, z=1.0, vz=-0.05, gravity=0.1
-        )
+        p = ProjectileBase(5.0, 5.0, 0.0, damage=10, speed=0.3, z=1.0, vz=-0.05, gravity=0.1)
         p.update(open_map)
         assert p.z < 1.0
         assert p.vz < -0.05
 
     def test_vz_adds_height(self, open_map: MockMap) -> None:
         """Positive vz should increase height."""
-        p = ProjectileBase(
-            5.0, 5.0, 0.0, damage=10, speed=0.3, z=0.5, vz=0.2, gravity=0.0
-        )
+        p = ProjectileBase(5.0, 5.0, 0.0, damage=10, speed=0.3, z=0.5, vz=0.2, gravity=0.0)
         p.update(open_map)
         assert p.z == pytest.approx(0.7)
 

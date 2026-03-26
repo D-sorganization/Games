@@ -116,9 +116,7 @@ class Game(FPSGameBase):
         self.game_over_timer = 0
 
         # Audio (must be initialized before managers that depend on it)
-        self.sound_manager = (
-            sound_manager if sound_manager is not None else SoundManager()
-        )
+        self.sound_manager = sound_manager if sound_manager is not None else SoundManager()
         self.sound_manager.start_music()
 
         # Event Bus -- lightweight pub/sub for decoupling subsystems
@@ -555,24 +553,16 @@ class Game(FPSGameBase):
 
         moving = False
         if self.input_manager.is_action_pressed("move_forward"):
-            self.player.move(
-                self.game_map, self.bots, forward=True, speed=current_speed
-            )
+            self.player.move(self.game_map, self.bots, forward=True, speed=current_speed)
             moving = True
         if self.input_manager.is_action_pressed("move_backward"):
-            self.player.move(
-                self.game_map, self.bots, forward=False, speed=current_speed
-            )
+            self.player.move(self.game_map, self.bots, forward=False, speed=current_speed)
             moving = True
         if self.input_manager.is_action_pressed("strafe_left"):
-            self.player.strafe(
-                self.game_map, self.bots, right=False, speed=current_speed
-            )
+            self.player.strafe(self.game_map, self.bots, right=False, speed=current_speed)
             moving = True
         if self.input_manager.is_action_pressed("strafe_right"):
-            self.player.strafe(
-                self.game_map, self.bots, right=True, speed=current_speed
-            )
+            self.player.strafe(self.game_map, self.bots, right=True, speed=current_speed)
             moving = True
 
         self.player_is_moving = moving
@@ -717,9 +707,7 @@ class Game(FPSGameBase):
                         self.intro_start_time = pygame.time.get_ticks()
                     elapsed = pygame.time.get_ticks() - self.intro_start_time
 
-                    self.ui_renderer.render_intro(
-                        self.intro_phase, self.intro_step, elapsed
-                    )
+                    self.ui_renderer.render_intro(self.intro_phase, self.intro_step, elapsed)
                     self._update_intro_logic(elapsed)
 
                 elif self.state == GameState.MENU:

@@ -70,9 +70,7 @@ class WeaponRenderer:
 
         return cx, cy
 
-    def render_muzzle_flash(
-        self, weapon_name: str, weapon_pos: tuple[int, int]
-    ) -> None:
+    def render_muzzle_flash(self, weapon_name: str, weapon_pos: tuple[int, int]) -> None:
         """Render weapon-specific muzzle flash effects."""
         flash_x = weapon_pos[0]
         flash_y = weapon_pos[1] - 210
@@ -88,12 +86,8 @@ class WeaponRenderer:
         elif weapon_name == "minigun":
             offset_x = random.randint(-10, 10)
             offset_y = random.randint(-10, 10)
-            pygame.draw.circle(
-                self.screen, C.YELLOW, (flash_x + offset_x, flash_y + offset_y), 30
-            )
-            pygame.draw.circle(
-                self.screen, C.WHITE, (flash_x + offset_x, flash_y + offset_y), 15
-            )
+            pygame.draw.circle(self.screen, C.YELLOW, (flash_x + offset_x, flash_y + offset_y), 30)
+            pygame.draw.circle(self.screen, C.WHITE, (flash_x + offset_x, flash_y + offset_y), 15)
         else:
             pygame.draw.circle(self.screen, C.YELLOW, (flash_x, flash_y), 25)
             pygame.draw.circle(self.screen, C.ORANGE, (flash_x, flash_y), 15)
@@ -217,9 +211,7 @@ class WeaponRenderer:
 
         pygame.draw.rect(self.screen, (30, 30, 30), (cx - 50, cy - 80, 100, 30))
 
-    def _render_plasma(
-        self, cx: int, cy: int, player: Player, w_state: dict[str, Any]
-    ) -> None:
+    def _render_plasma(self, cx: int, cy: int, player: Player, w_state: dict[str, Any]) -> None:
         pygame.draw.polygon(
             self.screen,
             (40, 40, 60),
