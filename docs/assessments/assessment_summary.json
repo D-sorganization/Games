@@ -1,6 +1,6 @@
 {
-  "timestamp": "2026-03-19T08:20:52.192406",
-  "overall_score": 9.77,
+  "timestamp": "2026-03-26T08:33:50.236633",
+  "overall_score": 9.85,
   "category_scores": {
     "I": {
       "score": 10.0,
@@ -18,7 +18,7 @@
       "weight": 2.5
     },
     "O": {
-      "score": 9.0,
+      "score": 10.0,
       "name": "Maintainability",
       "weight": 8.34
     },
@@ -81,15 +81,10 @@
   "top_recommendations": [
     {
       "severity": "WARNING",
-      "description": "1 large files detected (> 1500 lines)",
-      "source": "Assessment_O_Maintainability"
-    },
-    {
-      "severity": "WARNING",
       "description": "Potential secrets found in 3 files (vars)",
       "source": "Assessment_F_Security"
     }
   ],
-  "total_issues": 2,
+  "total_issues": 1,
   "reports_analyzed": 15
 }
