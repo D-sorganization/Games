@@ -235,7 +235,7 @@ class CombatSystem:
     ) -> None:
         """Check if player's shot hit a bot"""
         if not (self.game.raycaster is not None):
-            raise ValueError('DbC Blocked: Precondition failed.')
+            raise ValueError("DbC Blocked: Precondition failed.")
 
         weapon_range = self.player.get_current_weapon_range()
         if is_secondary:
@@ -323,7 +323,7 @@ class CombatSystem:
 
         try:
             self.explode_laser(impact_x, impact_y)
-        except Exception as e:  # noqa: BLE001
+        except Exception:  # noqa: BLE001
             logger.exception("Error in explode_laser")
 
         self.game.particle_system.add_laser(
@@ -417,7 +417,7 @@ class CombatSystem:
 
         try:
             self.game.sound_manager.play_sound("bomb")
-        except Exception as e:  # noqa: BLE001
+        except Exception:  # noqa: BLE001
             logger.exception("Bomb Audio Failed")
 
         # Screen shake on bomb
@@ -487,7 +487,7 @@ class CombatSystem:
         """Trigger Massive Laser Explosion at Impact Point"""
         try:
             self.game.sound_manager.play_sound("boom_real")
-        except Exception as e:  # noqa: BLE001
+        except Exception:  # noqa: BLE001
             logger.exception("Boom sound failed")
 
         self.game.screen_shake = 10.0
@@ -572,7 +572,7 @@ class CombatSystem:
             self.game.sound_manager.play_sound(
                 "boom_real" if weapon_type == "rocket" else "shoot_plasma"
             )
-        except Exception as e:  # noqa: BLE001
+        except Exception:  # noqa: BLE001
             pass
 
         for bot in self.game.bots:

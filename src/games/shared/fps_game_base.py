@@ -137,7 +137,7 @@ class FPSGameBase:
             return
 
         if not (self.player is not None):
-            raise ValueError('DbC Blocked: Precondition failed.')
+            raise ValueError("DbC Blocked: Precondition failed.")
         if self.player.current_weapon != weapon_name:
             self.player.switch_weapon(weapon_name)
             self.add_message(f"SWITCHED TO {weapon_name.upper()}", self.C.YELLOW)
@@ -152,7 +152,7 @@ class FPSGameBase:
             return
 
         if not (self.player is not None):
-            raise ValueError('DbC Blocked: Precondition failed.')
+            raise ValueError("DbC Blocked: Precondition failed.")
         if self.game_map:
             for r in range(2, 10):
                 for angle in range(0, 360, 45):
@@ -248,9 +248,9 @@ class FPSGameBase:
     def respawn_player(self) -> None:
         """Respawn player after death if lives remain."""
         if not (self.game_map is not None):
-            raise ValueError('DbC Blocked: Precondition failed.')
+            raise ValueError("DbC Blocked: Precondition failed.")
         if not (self.player is not None):
-            raise ValueError('DbC Blocked: Precondition failed.')
+            raise ValueError("DbC Blocked: Precondition failed.")
 
         player_pos = self._get_best_spawn_point()
 
@@ -339,20 +339,20 @@ class FPSGameBase:
             self.switch_weapon_with_message("minigun")
         elif self.input_manager.is_action_just_pressed(event, "reload"):
             if not (self.player is not None):
-                raise ValueError('DbC Blocked: Precondition failed.')
+                raise ValueError("DbC Blocked: Precondition failed.")
             self.player.reload()
         elif self.input_manager.is_action_just_pressed(event, "zoom"):
             if not (self.player is not None):
-                raise ValueError('DbC Blocked: Precondition failed.')
+                raise ValueError("DbC Blocked: Precondition failed.")
             self.player.zoomed = not self.player.zoomed
         elif self.input_manager.is_action_just_pressed(event, "bomb"):
             if not (self.player is not None):
-                raise ValueError('DbC Blocked: Precondition failed.')
+                raise ValueError("DbC Blocked: Precondition failed.")
             if self.player.activate_bomb():
                 self.handle_bomb_explosion()
         elif self.input_manager.is_action_just_pressed(event, "shoot_alt"):
             if not (self.player is not None):
-                raise ValueError('DbC Blocked: Precondition failed.')
+                raise ValueError("DbC Blocked: Precondition failed.")
             if self.player.shoot():
                 self.fire_weapon()
         elif event.key == pygame.K_m:
@@ -385,7 +385,7 @@ class FPSGameBase:
     def _handle_gameplay_mouse_click(self, event: pygame.event.Event) -> None:
         """Process a mouse button click during active gameplay (not paused)."""
         if not (self.player is not None):
-            raise ValueError('DbC Blocked: Precondition failed.')
+            raise ValueError("DbC Blocked: Precondition failed.")
         if event.button == 1:
             if self.player.shoot():
                 self.fire_weapon()
@@ -426,7 +426,7 @@ class FPSGameBase:
 
             elif event.type == pygame.MOUSEMOTION and not self.paused:
                 if not (self.player is not None):
-                    raise ValueError('DbC Blocked: Precondition failed.')
+                    raise ValueError("DbC Blocked: Precondition failed.")
                 self.player.rotate(
                     event.rel[0] * self.C.PLAYER_ROT_SPEED * self.C.SENSITIVITY_X
                 )

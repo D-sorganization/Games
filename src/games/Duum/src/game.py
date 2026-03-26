@@ -152,7 +152,7 @@ class Game(FPSGameBase):
                 self.joystick = pygame.joystick.Joystick(0)
                 self.joystick.init()
                 logger.info("Controller detected: %s", self.joystick.get_name())
-            except Exception as e:  # noqa: BLE001
+            except Exception:  # noqa: BLE001
                 logger.exception("Controller init failed")
 
         # Fog of War
@@ -247,7 +247,7 @@ class Game(FPSGameBase):
     def start_level(self) -> None:
         """Start a new level"""
         if not (self.game_map is not None):
-            raise ValueError('DbC Blocked: Precondition failed.')
+            raise ValueError("DbC Blocked: Precondition failed.")
         self.level_start_time = pygame.time.get_ticks()
         self.total_paused_time = 0
         self.pause_start_time = 0
@@ -377,7 +377,7 @@ class Game(FPSGameBase):
     def fire_weapon(self, is_secondary: bool = False) -> None:
         """Handle weapon firing via data-driven dispatch."""
         if not (self.player is not None):
-            raise ValueError('DbC Blocked: Precondition failed.')
+            raise ValueError("DbC Blocked: Precondition failed.")
         weapon_name = self.player.current_weapon
         weapon_data = C.WEAPONS[weapon_name]
 
@@ -459,9 +459,9 @@ class Game(FPSGameBase):
     ) -> None:
         """Delegate hitscan hit detection to the combat manager."""
         if not (self.player is not None):
-            raise ValueError('DbC Blocked: Precondition failed.')
+            raise ValueError("DbC Blocked: Precondition failed.")
         if not (self.raycaster is not None):
-            raise ValueError('DbC Blocked: Precondition failed.')
+            raise ValueError("DbC Blocked: Precondition failed.")
         self.damage_texts = self.combat_manager.check_shot_hit(
             player=self.player,
             raycaster=self.raycaster,
@@ -477,7 +477,7 @@ class Game(FPSGameBase):
     def handle_bomb_explosion(self) -> None:
         """Delegate bomb explosion to the combat manager."""
         if not (self.player is not None):
-            raise ValueError('DbC Blocked: Precondition failed.')
+            raise ValueError("DbC Blocked: Precondition failed.")
         self.damage_texts = self.combat_manager.handle_bomb_explosion(
             player=self.player,
             bots=self.bots,
@@ -495,7 +495,7 @@ class Game(FPSGameBase):
     def explode_plasma(self, projectile: Projectile) -> None:
         """Delegate plasma explosion to the combat manager."""
         if not (self.player is not None):
-            raise ValueError('DbC Blocked: Precondition failed.')
+            raise ValueError("DbC Blocked: Precondition failed.")
         self.damage_flash_timer = self.combat_manager.explode_generic(
             projectile,
             C.PLASMA_AOE_RADIUS,
@@ -508,7 +508,7 @@ class Game(FPSGameBase):
     def explode_rocket(self, projectile: Projectile) -> None:
         """Delegate rocket explosion to the combat manager."""
         if not (self.player is not None):
-            raise ValueError('DbC Blocked: Precondition failed.')
+            raise ValueError("DbC Blocked: Precondition failed.")
         radius = float(C.WEAPONS["rocket"].get("aoe_radius", 6.0))
         self.damage_flash_timer = self.combat_manager.explode_generic(
             projectile,
@@ -802,7 +802,7 @@ class Game(FPSGameBase):
             return
 
         if not (self.player is not None):
-            raise ValueError('DbC Blocked: Precondition failed.')
+            raise ValueError("DbC Blocked: Precondition failed.")
         if self._check_game_over():
             return
 

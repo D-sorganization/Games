@@ -47,7 +47,7 @@ class WeaponSystem:
         """Handle weapon firing via data-driven dispatch."""
         game = self._game
         if not (game.player is not None):
-            raise ValueError('DbC Blocked: Precondition failed.')
+            raise ValueError("DbC Blocked: Precondition failed.")
         weapon_name = game.player_current_weapon
         weapon_data = C.WEAPONS[weapon_name]
 
@@ -70,9 +70,9 @@ class WeaponSystem:
         """Delegate hitscan hit detection to the combat manager."""
         game = self._game
         if not (game.player is not None):
-            raise ValueError('DbC Blocked: Precondition failed.')
+            raise ValueError("DbC Blocked: Precondition failed.")
         if not (game.raycaster is not None):
-            raise ValueError('DbC Blocked: Precondition failed.')
+            raise ValueError("DbC Blocked: Precondition failed.")
         game.damage_texts = game.combat_manager.check_shot_hit(
             player=game.player,
             raycaster=game.raycaster,
@@ -89,7 +89,7 @@ class WeaponSystem:
         """Delegate bomb explosion to the combat manager."""
         game = self._game
         if not (game.player is not None):
-            raise ValueError('DbC Blocked: Precondition failed.')
+            raise ValueError("DbC Blocked: Precondition failed.")
         game.damage_texts = game.combat_manager.handle_bomb_explosion(
             player=game.player,
             bots=game.bots,
@@ -109,7 +109,7 @@ class WeaponSystem:
         """Delegate plasma explosion to the combat manager."""
         game = self._game
         if not (game.player is not None):
-            raise ValueError('DbC Blocked: Precondition failed.')
+            raise ValueError("DbC Blocked: Precondition failed.")
         game.damage_flash_timer = game.combat_manager.explode_generic(
             projectile,
             C.PLASMA_AOE_RADIUS,
@@ -123,7 +123,7 @@ class WeaponSystem:
         """Delegate rocket explosion to the combat manager."""
         game = self._game
         if not (game.player is not None):
-            raise ValueError('DbC Blocked: Precondition failed.')
+            raise ValueError("DbC Blocked: Precondition failed.")
         radius = float(C.WEAPONS["rocket"].get("aoe_radius", 6.0))
         game.damage_flash_timer = game.combat_manager.explode_generic(
             projectile,

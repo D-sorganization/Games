@@ -37,7 +37,7 @@ class GameInputHandler:
                 elif not self.game.cheat_mode_active:
                     # Gameplay Clicks (Shooting)
                     if not (self.game.player is not None):
-                        raise ValueError('DbC Blocked: Precondition failed.')
+                        raise ValueError("DbC Blocked: Precondition failed.")
                     if event.button == 1:
                         if self.game.player.shoot():
                             self.game.combat_system.fire_weapon()
@@ -53,7 +53,7 @@ class GameInputHandler:
                     self._handle_speed_slider(event)
                 elif not self.game.paused:
                     if not (self.game.player is not None):
-                        raise ValueError('DbC Blocked: Precondition failed.')
+                        raise ValueError("DbC Blocked: Precondition failed.")
                     self.game.player.rotate(
                         event.rel[0] * C.PLAYER_ROT_SPEED * C.SENSITIVITY_X
                     )
@@ -135,20 +135,20 @@ class GameInputHandler:
                 self.game.switch_weapon_with_message("flamethrower")
             elif self.game.input_manager.is_action_just_pressed(event, "reload"):
                 if not (self.game.player is not None):
-                    raise ValueError('DbC Blocked: Precondition failed.')
+                    raise ValueError("DbC Blocked: Precondition failed.")
                 self.game.player.reload()
             elif self.game.input_manager.is_action_just_pressed(event, "zoom"):
                 if not (self.game.player is not None):
-                    raise ValueError('DbC Blocked: Precondition failed.')
+                    raise ValueError("DbC Blocked: Precondition failed.")
                 self.game.player.zoomed = not self.game.player.zoomed
             elif event.key == pygame.K_q:
                 if not (self.game.player is not None):
-                    raise ValueError('DbC Blocked: Precondition failed.')
+                    raise ValueError("DbC Blocked: Precondition failed.")
                 if self.game.player.melee_attack():
                     self.game.execute_melee_attack()
             elif self.game.input_manager.is_action_just_pressed(event, "bomb"):
                 if not (self.game.player is not None):
-                    raise ValueError('DbC Blocked: Precondition failed.')
+                    raise ValueError("DbC Blocked: Precondition failed.")
                 if self.game.player.activate_bomb():
                     bomb = Projectile(
                         self.game.player.x,
@@ -167,7 +167,7 @@ class GameInputHandler:
                     self.game.entity_manager.add_projectile(bomb)
             elif self.game.input_manager.is_action_just_pressed(event, "shoot_alt"):
                 if not (self.game.player is not None):
-                    raise ValueError('DbC Blocked: Precondition failed.')
+                    raise ValueError("DbC Blocked: Precondition failed.")
                 if self.game.player.shoot():
                     self.game.combat_system.fire_weapon()
             elif event.key == pygame.K_m:
@@ -176,7 +176,7 @@ class GameInputHandler:
                 self.game.cycle_render_scale()
             elif self.game.input_manager.is_action_just_pressed(event, "dash"):
                 if not (self.game.player is not None):
-                    raise ValueError('DbC Blocked: Precondition failed.')
+                    raise ValueError("DbC Blocked: Precondition failed.")
                 self.game.player.dash()
 
     def _handle_pause_menu_click(self, event: pygame.event.Event) -> None:

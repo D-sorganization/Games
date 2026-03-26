@@ -421,7 +421,7 @@ def render_floor_ceiling(  # noqa: PLR0913
         bg = scaled_background_surface
 
     if not (bg is not None):
-        raise ValueError('DbC Blocked: Precondition failed.')
+        raise ValueError("DbC Blocked: Precondition failed.")
 
     if horizon > 0:
         screen.blit(
