@@ -234,7 +234,8 @@ class CombatSystem:
         is_laser: bool = False,
     ) -> None:
         """Check if player's shot hit a bot"""
-        assert self.game.raycaster is not None
+        if not (self.game.raycaster is not None):
+            raise ValueError("DbC Blocked: Precondition failed.")
 
         weapon_range = self.player.get_current_weapon_range()
         if is_secondary:

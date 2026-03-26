@@ -143,7 +143,8 @@ def run_assessment(assessment_id: str, output_path: Path) -> int:
     # Gather metrics based on assessment type
     findings = []
     score: int | None = 10  # Start with perfect score
-    assert score is not None
+    if not (score is not None):
+        raise ValueError("DbC Blocked: Precondition failed.")
 
     python_files: list[Path] = find_python_files()
     file_count = len(python_files)
@@ -237,7 +238,7 @@ def run_assessment(assessment_id: str, output_path: Path) -> int:
 
     elif assessment_id == "D":  # Error Handling
         try_count = grep_in_files(r"try:", python_files)
-        except_count = grep_in_files(r"except:", python_files)
+        except_count = grep_in_files(r"except Exception as e:", python_files)
         findings.append(f"- Files with try blocks: {try_count}")
         findings.append(f"- Files with except blocks: {except_count}")
         if try_count == 0:

@@ -36,8 +36,10 @@ class GameRenderer:
 
     def render_game(self, game: Game) -> None:
         """Render gameplay"""
-        assert game.raycaster is not None
-        assert game.player is not None
+        if not (game.raycaster is not None):
+            raise ValueError("DbC Blocked: Precondition failed.")
+        if not (game.player is not None):
+            raise ValueError("DbC Blocked: Precondition failed.")
 
         # Calculate Head Bob
         # Use player's bob_phase for consistent movement
