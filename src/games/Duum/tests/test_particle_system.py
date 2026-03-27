@@ -1,10 +1,9 @@
-from typing import Any
 from unittest.mock import MagicMock, patch
 
 from src.particle_system import Particle, ParticleSystem, WorldParticle
 
 
-def test_world_particle_update() -> Any:
+def test_world_particle_update():
     wp = WorldParticle(0, 0, 10, 1, 1, 0, (255, 0, 0), 2, 0.1, gravity=2.0)
     assert wp.update() is True  # timer drops to 1
     assert wp.x == 1
@@ -21,7 +20,7 @@ def test_world_particle_update() -> Any:
     assert not wp.alive
 
 
-def test_particle_update() -> Any:
+def test_particle_update():
     p = Particle(0, 0, 1, 1, timer=2)
     assert p.update() is True
     assert p.x == 1
@@ -34,7 +33,7 @@ def test_particle_update() -> Any:
     assert p2.x == 0  # Does not move
 
 
-def test_particle_render() -> Any:
+def test_particle_render():
     p = Particle(0, 0, ptype="normal")
     screen = MagicMock()
     p.render(screen)
@@ -54,7 +53,7 @@ def test_particle_render() -> Any:
         mock_line.assert_called_with(screen, (255, 0, 0), (0, 0), (10, 10), 2)
 
 
-def test_particle_system_adds() -> Any:
+def test_particle_system_adds():
     sys = ParticleSystem()
     sys.add_world_particle(0, 0, 0, 1, 1, 1, (255, 255, 255))
     assert len(sys.world_particles) == 1
@@ -91,7 +90,7 @@ def test_particle_system_adds() -> Any:
         assert len(sys.particles) == 7
 
 
-def test_particle_system_update_render() -> Any:
+def test_particle_system_update_render():
     sys = ParticleSystem()
 
     sys.world_particles.append(WorldParticle(0, 0, 0, 0, 0, 0, (255, 0, 0), 1, 0.1))

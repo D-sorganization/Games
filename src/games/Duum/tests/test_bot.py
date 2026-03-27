@@ -1,18 +1,17 @@
 import math
-from typing import Any
 from unittest.mock import MagicMock, patch
 
 from games.shared.constants import DEATH_ANIMATION_FRAMES, DISINTEGRATE_FRAMES
 from src.bot import Bot
 
 
-def test_bot_init_no_type() -> Any:
+def test_bot_init_no_type():
     with patch("src.bot.random.choice", return_value="ninja"):
         bot = Bot(0, 0, 1)
         assert bot.enemy_type == "ninja"
 
 
-def test_bot_update_dead() -> Any:
+def test_bot_update_dead():
     bot = Bot(0, 0, 1, enemy_type="ninja")
     bot.dead = True
     bot.death_timer = 0
@@ -32,12 +31,12 @@ def test_bot_update_dead() -> Any:
     assert bot.removed is True
 
 
-def test_bot_update_health_pack() -> Any:
+def test_bot_update_health_pack():
     bot = Bot(0, 0, 1, enemy_type="health_pack")
     assert bot.update(MagicMock(), MagicMock(), []) is None
 
 
-def test_bot_visual_animations() -> Any:
+def test_bot_visual_animations():
     bot = Bot(0, 0, 1, enemy_type="ninja")
     bot.shoot_animation = 0.15
     bot.mouth_timer = 30
@@ -48,7 +47,7 @@ def test_bot_visual_animations() -> Any:
     assert bot.mouth_timer == 0
 
 
-def test_behavior_ball() -> Any:
+def test_behavior_ball():
     bot = Bot(0, 0, 1, enemy_type="ball")
     player = MagicMock()
     player.x = 10.0
@@ -68,7 +67,7 @@ def test_behavior_ball() -> Any:
     bot.vx = 0.1
     bot.speed = 100.0
 
-    def wall_mock(x, y) -> Any:
+    def wall_mock(x, y):
         return x > 0.05
 
     game_map.is_wall.side_effect = wall_mock
@@ -81,7 +80,7 @@ def test_behavior_ball() -> Any:
     bot.vy = 0.1
     bot.speed = 100.0
 
-    def wall_mock_y(x, y) -> Any:
+    def wall_mock_y(x, y):
         return y > 0.05
 
     game_map.is_wall.side_effect = wall_mock_y
@@ -132,7 +131,7 @@ def test_behavior_ball() -> Any:
     assert bot.vx < 0
 
 
-def test_behavior_ninja() -> Any:
+def test_behavior_ninja():
     bot = Bot(0, 0, 1, enemy_type="ninja")
     bot.attack_timer = 5
 
@@ -173,7 +172,7 @@ def test_behavior_ninja() -> Any:
     assert bot.attack_timer == 0
 
 
-def test_behavior_beast() -> Any:
+def test_behavior_beast():
     bot = Bot(0, 0, 1, enemy_type="beast")
     bot.attack_timer = 0
 
@@ -198,7 +197,7 @@ def test_behavior_beast() -> Any:
     assert bot.attack_timer == 0
 
 
-def test_behavior_minigunner() -> Any:
+def test_behavior_minigunner():
     bot = Bot(0, 0, 1, enemy_type="minigunner")
     bot.attack_timer = 0
 
@@ -235,7 +234,7 @@ def test_behavior_minigunner() -> Any:
         assert bot.update(game_map, player, []) is None
 
 
-def test_behavior_standard() -> Any:
+def test_behavior_standard():
     bot = Bot(0, 0, 1, enemy_type="zombie")
     bot.attack_timer = 0
 
@@ -268,7 +267,7 @@ def test_behavior_standard() -> Any:
         assert bot.update(game_map, player, []) is None
 
 
-def test_update_default_movement_collisions() -> Any:
+def test_update_default_movement_collisions():
     bot = Bot(0, 0, 1, enemy_type="zombie")
 
     player = MagicMock()
@@ -321,7 +320,7 @@ def test_update_default_movement_collisions() -> Any:
     bot.update(game_map, player, [other])
 
 
-def test_beast_pushing_other_bots() -> Any:
+def test_beast_pushing_other_bots():
     bot = Bot(0, 0, 1, enemy_type="beast")
     player = MagicMock()
     player.x = 10.0
@@ -345,7 +344,7 @@ def test_beast_pushing_other_bots() -> Any:
     assert other.x == bot.speed and other.y == bot.speed
 
 
-def test_take_damage() -> Any:
+def test_take_damage():
     bot = Bot(0, 0, 1, enemy_type="zombie")
 
     # Dead bot take damage
@@ -365,7 +364,7 @@ def test_take_damage() -> Any:
     assert bot.alive is False
 
 
-def test_has_line_of_sight() -> Any:
+def test_has_line_of_sight():
     bot = Bot(0, 0, 1, enemy_type="zombie")
     player = MagicMock()
     game_map = MagicMock()
