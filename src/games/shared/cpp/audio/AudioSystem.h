@@ -43,7 +43,7 @@ public:
         for (auto& s : sys->playing_sounds) {
             if (!s.active) continue;
 
-            Uint32 mix_len = (len > (int)s.remaining) ? s.remaining : len;
+            Uint32 mix_len = (len > static_cast<int>(s).remaining) ? s.remaining : len;
             SDL_MixAudioFormat(stream, s.position, sys->deviceSpec.format, mix_len, SDL_MIX_MAXVOLUME / 2);
             
             s.position += mix_len;
