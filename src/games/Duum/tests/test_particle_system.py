@@ -1,9 +1,10 @@
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 from src.particle_system import Particle, ParticleSystem, WorldParticle
 
 
-def test_world_particle_update():
+def test_world_particle_update() -> Any:
     wp = WorldParticle(0, 0, 10, 1, 1, 0, (255, 0, 0), 2, 0.1, gravity=2.0)
     assert wp.update() is True  # timer drops to 1
     assert wp.x == 1
@@ -20,7 +21,7 @@ def test_world_particle_update():
     assert not wp.alive
 
 
-def test_particle_update():
+def test_particle_update() -> Any:
     p = Particle(0, 0, 1, 1, timer=2)
     assert p.update() is True
     assert p.x == 1
@@ -33,7 +34,7 @@ def test_particle_update():
     assert p2.x == 0  # Does not move
 
 
-def test_particle_render():
+def test_particle_render() -> Any:
     p = Particle(0, 0, ptype="normal")
     screen = MagicMock()
     p.render(screen)
@@ -53,7 +54,7 @@ def test_particle_render():
         mock_line.assert_called_with(screen, (255, 0, 0), (0, 0), (10, 10), 2)
 
 
-def test_particle_system_adds():
+def test_particle_system_adds() -> Any:
     sys = ParticleSystem()
     sys.add_world_particle(0, 0, 0, 1, 1, 1, (255, 255, 255))
     assert len(sys.world_particles) == 1
@@ -90,7 +91,7 @@ def test_particle_system_adds():
         assert len(sys.particles) == 7
 
 
-def test_particle_system_update_render():
+def test_particle_system_update_render() -> Any:
     sys = ParticleSystem()
 
     sys.world_particles.append(WorldParticle(0, 0, 0, 0, 0, 0, (255, 0, 0), 1, 0.1))
@@ -98,9 +99,7 @@ def test_particle_system_update_render():
 
     sys.particles.append(Particle(0, 0, 0, 0, timer=1))
     sys.particles.append(Particle(0, 0, 0, 0, timer=2))
-    sys.particles.append(
-        Particle(0, 0, timer=2, ptype="laser", start_pos=(0, 0), end_pos=(1, 1))
-    )
+    sys.particles.append(Particle(0, 0, timer=2, ptype="laser", start_pos=(0, 0), end_pos=(1, 1)))
 
     sys.update()
     assert len(sys.world_particles) == 1

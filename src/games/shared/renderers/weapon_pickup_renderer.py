@@ -29,9 +29,7 @@ class WeaponPickupRenderer(BaseBotStyleRenderer):
         rect_w = rw * 0.8
         rect_h = rh * 0.3
         py = ry + rh * 0.7
-        pygame.draw.rect(
-            screen, color, (int(cx - rect_w / 2), int(py), int(rect_w), int(rect_h))
-        )
+        pygame.draw.rect(screen, color, (int(cx - rect_w / 2), int(py), int(rect_w), int(rect_h)))
         # Details
         pygame.draw.line(
             screen,

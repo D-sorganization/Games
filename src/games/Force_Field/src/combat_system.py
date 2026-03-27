@@ -1,3 +1,7 @@
+# ARCHITECTURE_DEBT:
+# This module historically exceeds standard length metrics and accumulates excessive domain responsibility.
+# It requires domain-aware structural extraction to isolate its internal classes appropriately.
+
 from __future__ import annotations
 
 import logging
@@ -306,9 +310,7 @@ class CombatSystem:
             )
 
         if closest_bot:
-            self._apply_damage(
-                closest_bot, closest_dist, weapon_range, weapon_damage, is_headshot
-            )
+            self._apply_damage(closest_bot, closest_dist, weapon_range, weapon_damage, is_headshot)
 
     def _handle_secondary_hit(
         self, closest_bot: Bot | None, closest_dist: float, wall_dist: float
@@ -372,9 +374,7 @@ class CombatSystem:
                 }
             )
 
-        self.game.particle_system.add_explosion(
-            C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2, count=5
-        )
+        self.game.particle_system.add_explosion(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2, count=5)
 
         # Improved Blood Feedback
         blood_color = (200, 0, 0)
@@ -534,9 +534,7 @@ class CombatSystem:
                 }
             )
 
-    def _explode_generic(
-        self, projectile: Projectile, radius: float, weapon_type: str
-    ) -> None:
+    def _explode_generic(self, projectile: Projectile, radius: float, weapon_type: str) -> None:
         """Generic explosion logic"""
         dist_to_player = math.sqrt(
             (projectile.x - self.player.x) ** 2 + (projectile.y - self.player.y) ** 2

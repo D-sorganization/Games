@@ -139,9 +139,7 @@ class MonsterStyleRenderer(BaseBotStyleRenderer):
                 (int(weapon_x + 15), int(arm_y + 30)),
                 6,
             )
-            pygame.draw.rect(
-                screen, (30, 30, 30), (int(weapon_x + 10), int(arm_y + 25), 25, 10)
-            )
+            pygame.draw.rect(screen, (30, 30, 30), (int(weapon_x + 10), int(arm_y + 25), 25, 10))
             if getattr(bot, "shoot_animation", 0) > 0.5:
                 pygame.draw.circle(
                     screen,
@@ -155,9 +153,7 @@ class MonsterStyleRenderer(BaseBotStyleRenderer):
             leg_w = rw * 0.3
             leg_h = rh * 0.25
             leg_y = ry + rh * 0.75
-            pygame.draw.rect(
-                screen, color, (int(body_x + 5), int(leg_y), int(leg_w), int(leg_h))
-            )
+            pygame.draw.rect(screen, color, (int(body_x + 5), int(leg_y), int(leg_w), int(leg_h)))
             pygame.draw.rect(
                 screen,
                 color,

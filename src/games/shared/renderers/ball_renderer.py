@@ -39,6 +39,4 @@ class BallStyleRenderer(BaseBotStyleRenderer):
             int(r * 0.3),
         )
         # Stripes
-        pygame.draw.line(
-            screen, (0, 0, 0), (int(cx - r), int(cy)), (int(cx + r), int(cy)), 3
-        )
+        pygame.draw.line(screen, (0, 0, 0), (int(cx - r), int(cy)), (int(cx + r), int(cy)), 3)

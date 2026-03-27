@@ -114,9 +114,7 @@ class TestFFEntityManagerGetActive:
         dist = em.get_nearest_enemy_distance(5.0, 5.0)
         assert dist == 0.0
 
-    def test_get_nearest_enemy_skips_dead(
-        self, em: EntityManager, mock_bot: MagicMock
-    ) -> None:
+    def test_get_nearest_enemy_skips_dead(self, em: EntityManager, mock_bot: MagicMock) -> None:
         import math
 
         mock_bot.alive = False

@@ -100,9 +100,7 @@ class TestWizardOfWorGame(unittest.TestCase):
         # Place bullet on player
         from wizard_of_wor.bullet import Bullet
 
-        bullet = Bullet(
-            self.game.player.x, self.game.player.y, (1, 0), is_player_bullet=False
-        )
+        bullet = Bullet(self.game.player.x, self.game.player.y, (1, 0), is_player_bullet=False)
         self.game.bullets.append(bullet)
 
         # Ensure player is not invulnerable

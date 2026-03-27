@@ -202,9 +202,7 @@ class TestBotBaseStats:
         ],
         ids=["easy", "normal", "hard", "nightmare"],
     )
-    def test_health_scaled_by_difficulty(
-        self, difficulty: str, health_mult: float
-    ) -> None:
+    def test_health_scaled_by_difficulty(self, difficulty: str, health_mult: float) -> None:
         """Health should scale with difficulty multiplier."""
         bot = _make_bot(enemy_type="zombie", level=1, difficulty=difficulty)
         expected = int(100 * health_mult)

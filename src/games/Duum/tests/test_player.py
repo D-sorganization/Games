@@ -1,4 +1,5 @@
 import unittest
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 from src.player import Player
@@ -22,7 +23,7 @@ class TestPlayerExtra(unittest.TestCase):
         """Test move with shield active reduces speed."""
         self.player.shield_active = True
 
-        def fake_move(entity, dx, dy, gm, b, radius=0.5):
+        def fake_move(entity, dx, dy, gm, b, radius=0.5) -> Any:
             entity.x += dx
             entity.y += dy
 
@@ -64,7 +65,7 @@ class TestPlayerExtra(unittest.TestCase):
         """Test strafe right with shield."""
         self.player.shield_active = True
 
-        def fake_move(entity, dx, dy, gm, b, radius=0.5):
+        def fake_move(entity, dx, dy, gm, b, radius=0.5) -> Any:
             entity.x += dx
             entity.y += dy
 
@@ -75,7 +76,7 @@ class TestPlayerExtra(unittest.TestCase):
     def test_strafe_left(self) -> None:
         """Test strafe left."""
 
-        def fake_move(entity, dx, dy, gm, b, radius=0.5):
+        def fake_move(entity, dx, dy, gm, b, radius=0.5) -> Any:
             entity.x += dx
             entity.y += dy
 

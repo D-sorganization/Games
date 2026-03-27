@@ -70,9 +70,7 @@ class PlayerBase:
             }
 
         # Ammo reserves
-        self.ammo: dict[str, int] = {
-            w: int(weapons_config[w]["ammo"]) for w in weapons_config
-        }
+        self.ammo: dict[str, int] = {w: int(weapons_config[w]["ammo"]) for w in weapons_config}
 
         # Current weapon and shooting state
         self.current_weapon = "rifle"

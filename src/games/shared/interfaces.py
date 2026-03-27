@@ -92,9 +92,7 @@ class Bot(Protocol):
     frozen: bool
     mouth_open: bool
 
-    def take_damage(
-        self, damage: int, is_headshot: bool = False
-    ) -> bool: ...  # pragma: no cover
+    def take_damage(self, damage: int, is_headshot: bool = False) -> bool: ...  # pragma: no cover
 
 
 @runtime_checkable

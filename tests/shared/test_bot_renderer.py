@@ -51,9 +51,7 @@ class TestBotRenderer:
         mock_bot.type_data = {"color": (0, 255, 0), "visual_style": "pickup_shotgun"}
         BotRenderer.render_sprite(mock_screen, mock_bot, 100, 100, 50, base_config)
 
-    def test_render_sprite_unhandled_item_type(
-        self, mock_screen, mock_bot, base_config
-    ):
+    def test_render_sprite_unhandled_item_type(self, mock_screen, mock_bot, base_config):
         mock_bot.enemy_type = "unknown_item"
         mock_bot.type_data = {"color": (0, 255, 0), "visual_style": "unknown_item"}
         BotRenderer.render_sprite(mock_screen, mock_bot, 100, 100, 50, base_config)
@@ -63,17 +61,13 @@ class TestBotRenderer:
         mock_bot.death_timer = 30
         BotRenderer.render_sprite(mock_screen, mock_bot, 100, 100, 50, base_config)
 
-    def test_render_sprite_dead_disintegrating(
-        self, mock_screen, mock_bot, base_config
-    ):
+    def test_render_sprite_dead_disintegrating(self, mock_screen, mock_bot, base_config):
         mock_bot.dead = True
         mock_bot.death_timer = 60
         mock_bot.disintegrate_timer = 50
         BotRenderer.render_sprite(mock_screen, mock_bot, 100, 100, 50, base_config)
 
-    def test_render_sprite_dead_fully_disintegrated(
-        self, mock_screen, mock_bot, base_config
-    ):
+    def test_render_sprite_dead_fully_disintegrated(self, mock_screen, mock_bot, base_config):
         mock_bot.dead = True
         mock_bot.death_timer = 60
         mock_bot.disintegrate_timer = 100

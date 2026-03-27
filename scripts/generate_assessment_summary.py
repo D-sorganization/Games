@@ -164,9 +164,7 @@ def generate_summary(
     # Priority: BLOCKER > CRITICAL > MAJOR > WARNING
     severity_order = {"BLOCKER": 0, "CRITICAL": 1, "MAJOR": 2, "WARNING": 3}
 
-    sorted_issues = sorted(
-        all_issues, key=lambda x: severity_order.get(x["severity"], 4)
-    )
+    sorted_issues = sorted(all_issues, key=lambda x: severity_order.get(x["severity"], 4))
 
     top_5_recommendations = sorted_issues[:5]
 

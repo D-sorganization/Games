@@ -285,9 +285,7 @@ if __name__ == "__main__":
     parser.add_argument("--json-output", type=Path)
     args = parser.parse_args()
 
-    logging.basicConfig(
-        level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-    )
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
     repo_root = Path.cwd()
     results = run_review(repo_root)

@@ -8,9 +8,7 @@ logger = logging.getLogger(__name__)
 # Try to find Tools repo relative to this script
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 # Assuming standard layout: Repositories/Games/tools/../../Tools/src/shared/python
-TOOLS_REL_PATH = os.path.join(
-    SCRIPT_DIR, "..", "..", "Tools", "src", "shared", "python"
-)
+TOOLS_REL_PATH = os.path.join(SCRIPT_DIR, "..", "..", "Tools", "src", "shared", "python")
 
 if os.path.exists(TOOLS_REL_PATH):
     sys.path.append(TOOLS_REL_PATH)
@@ -36,9 +34,7 @@ except ImportError as e:
     sys.exit(1)
 
 # Output to src/games/QuatGolf/assets/enemies relative to this script
-OUTPUT_DIR = os.path.join(
-    SCRIPT_DIR, "..", "src", "games", "QuatGolf", "assets", "enemies"
-)
+OUTPUT_DIR = os.path.join(SCRIPT_DIR, "..", "src", "games", "QuatGolf", "assets", "enemies")
 
 
 def generate_enemy(name, params):

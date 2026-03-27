@@ -27,9 +27,7 @@ class Button:
         self.rect = pygame.Rect(x, y, width, height)
         self.text = text
         self._color = color
-        self.hover_color = tuple(
-            min(255, c + self.HOVER_BRIGHTNESS_OFFSET) for c in color
-        )
+        self.hover_color = tuple(min(255, c + self.HOVER_BRIGHTNESS_OFFSET) for c in color)
         self.hovered = False
 
     @property
@@ -41,9 +39,7 @@ class Button:
     def color(self, value: tuple[int, int, int]) -> None:
         """Set button color and update hover color"""
         self._color = value
-        self.hover_color = tuple(
-            min(255, c + self.HOVER_BRIGHTNESS_OFFSET) for c in value
-        )
+        self.hover_color = tuple(min(255, c + self.HOVER_BRIGHTNESS_OFFSET) for c in value)
 
     def draw(self, screen: pygame.Surface, font: pygame.font.Font) -> None:
         """Draw button"""
