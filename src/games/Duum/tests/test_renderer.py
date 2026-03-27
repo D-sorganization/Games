@@ -1,3 +1,4 @@
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pygame
@@ -7,7 +8,7 @@ from src.renderer import GameRenderer
 
 
 @pytest.fixture
-def screen():
+def screen() -> Any:
     # Start pygame engine to allow Surface creation
     pygame.init()
     s = pygame.Surface((1200, 800))
@@ -15,7 +16,7 @@ def screen():
 
 
 @pytest.fixture
-def game():
+def game() -> Any:
     g = MagicMock()
     g.player = MagicMock()
     g.player.is_moving = True
@@ -64,13 +65,13 @@ def game():
     return g
 
 
-def test_game_renderer_init(screen):
+def test_game_renderer_init(screen) -> Any:
     r = GameRenderer(screen)
     assert r.screen == screen
     assert r.effects_surface is not None
 
 
-def test_render_game(screen, game):
+def test_render_game(screen, game) -> Any:
     r = GameRenderer(screen)
     r.screen = MagicMock()
     r.effects_surface = MagicMock()
@@ -89,7 +90,7 @@ def test_render_game(screen, game):
             mock_wr.render_muzzle_flash.assert_called_once()
 
 
-def test_render_particles(screen, game):
+def test_render_particles(screen, game) -> Any:
     r = GameRenderer(screen)
     r.effects_surface = MagicMock()
     with (
@@ -101,7 +102,7 @@ def test_render_particles(screen, game):
         assert mock_circle.call_count == 1
 
 
-def test_render_portal_visible(screen, game):
+def test_render_portal_visible(screen, game) -> Any:
     r = GameRenderer(screen)
     # Put portal directly in front of player
     game.portal = {"x": 15.0, "y": 10.0, "radius": 1.0}
@@ -110,7 +111,7 @@ def test_render_portal_visible(screen, game):
         assert mock_circle.call_count == 2
 
 
-def test_render_portal_invisible(screen, game):
+def test_render_portal_invisible(screen, game) -> Any:
     r = GameRenderer(screen)
     # Put portal behind player
     game.portal = {"x": 5.0, "y": 10.0, "radius": 1.0}

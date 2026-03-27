@@ -1,3 +1,4 @@
+from typing import Any
 from unittest.mock import MagicMock
 
 import pygame
@@ -8,22 +9,22 @@ from src.sound import SoundManager
 from src.spawn_manager import DuumSpawnManager
 
 
-def test_map():
+def test_map() -> Any:
     m = Map(10)
     assert m.size == 10
 
 
-def test_sound_manager():
+def test_sound_manager() -> Any:
     sm = SoundManager()
     assert sm.SOUND_FILES["shoot"] == "shoot.wav"
 
 
-def test_input_manager():
+def test_input_manager() -> Any:
     im = InputManager()
     assert im.DEFAULT_BINDINGS["shoot"] == pygame.K_SPACE
 
 
-def test_spawn_manager():
+def test_spawn_manager() -> Any:
     em = MagicMock()
     sm = DuumSpawnManager(em)
     bot = sm._make_bot(1.0, 1.0, 1, "ninja", "HARD")
