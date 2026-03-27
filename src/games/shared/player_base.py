@@ -1,3 +1,5 @@
+from numba import jit
+
 """Base class for game players with common state management."""
 
 from __future__ import annotations
@@ -244,6 +246,7 @@ class PlayerBase:
             return True
         return False
 
+    @jit(nopython=True, fastmath=True)
     def update_weapon_state(self) -> None:
         """Update weapon timers and state (reloading, heat, etc)."""
         weapons = getattr(self.C, "WEAPONS", {})

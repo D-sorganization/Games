@@ -1,3 +1,5 @@
+from numba import jit
+
 """Atmosphere and ambient-effect management for Zombie Survival.
 
 Extracted from game.py to keep that file within the 1 000-line budget.
@@ -33,6 +35,8 @@ class AtmosphereManager:
     def __init__(self, game: Game) -> None:
         self._game = game
 
+    @jit(nopython=True, fastmath=True)
+    @jit(nopython=True, fastmath=True)
     def update_fog_reveal(self) -> None:
         """Expand the visited-cells fog-of-war set around the player."""
         game = self._game
@@ -43,6 +47,7 @@ class AtmosphereManager:
                 if r_i * r_i + r_j * r_j <= reveal_radius * reveal_radius:
                     game.visited_cells.add((cx + r_j, cy + r_i))
 
+    @jit(nopython=True, fastmath=True)
     def update_atmosphere(self) -> None:
         """Update proximity-based ambient sounds (heartbeat, beast, groan)."""
         game = self._game

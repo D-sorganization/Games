@@ -3,6 +3,8 @@ from __future__ import annotations
 import math
 import random
 
+from numba import jit
+
 from . import constants as C  # noqa: N812
 
 
@@ -114,6 +116,7 @@ class ParticleSystem:
             )
         )
 
+    @jit(nopython=True, fastmath=True)
     def add_plasma_particle(
         self,
         x: float,
@@ -151,6 +154,7 @@ class ParticleSystem:
                 fade_color=(0, 50, 100),
             )
 
+    @jit(nopython=True, fastmath=True)
     def add_spark_burst(
         self,
         x: float,

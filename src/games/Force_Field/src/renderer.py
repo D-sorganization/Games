@@ -6,6 +6,7 @@ import random
 from typing import TYPE_CHECKING, Any
 
 import pygame
+from numba import jit
 
 from games.shared.interfaces import Portal
 
@@ -138,6 +139,8 @@ class GameRenderer:
 
         pygame.display.flip()
 
+    @jit(nopython=True, fastmath=True)
+    @jit(nopython=True, fastmath=True)
     def _render_particles(self, particles: list[Any], offset: tuple[int, int] = (0, 0)) -> None:
         """Render particle effects including lasers and explosion particles.
 
@@ -180,6 +183,8 @@ class GameRenderer:
                     int(p.size),
                 )
 
+    @jit(nopython=True, fastmath=True)
+    @jit(nopython=True, fastmath=True)
     def _render_portal(self, portal: Portal | None, player: Player) -> None:
         """Render portal visual effects if active.
 

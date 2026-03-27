@@ -3,6 +3,7 @@ import random
 import numpy as np
 import pygame
 import pygame.surfarray
+from numba import jit
 
 from games.shared.contracts import validate_non_negative, validate_positive
 
@@ -34,6 +35,7 @@ class TextureGenerator:
         surface = pygame.surfarray.make_surface(arr)
         return surface
 
+    @jit(nopython=True, fastmath=True)
     @staticmethod
     def generate_bricks(
         width: int,
@@ -78,6 +80,9 @@ class TextureGenerator:
         del arr  # Unlock surface
         return surface
 
+    @jit(nopython=True, fastmath=True)
+    @jit(nopython=True, fastmath=True)
+    @jit(nopython=True, fastmath=True)
     @staticmethod
     def generate_stone(width: int, height: int) -> pygame.Surface:
         """Generates a large slate blocks pattern."""
@@ -113,6 +118,7 @@ class TextureGenerator:
         del arr
         return surface
 
+    @jit(nopython=True, fastmath=True)
     @staticmethod
     def generate_metal(width: int, height: int) -> pygame.Surface:
         """Generates a metal panel pattern with rivets."""
@@ -155,6 +161,7 @@ class TextureGenerator:
         del arr
         return surface
 
+    @jit(nopython=True, fastmath=True)
     @staticmethod
     def generate_tech(width: int, height: int) -> pygame.Surface:
         """Generates a sci-fi tech pattern with clean grid and glow."""
@@ -196,6 +203,7 @@ class TextureGenerator:
         return surface
 
     @staticmethod
+    @jit(nopython=True, fastmath=True)
     def generate_hidden(width: int, height: int) -> pygame.Surface:
         """Generates a hidden wall (cracked)."""
         validate_positive(width, "width")

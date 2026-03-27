@@ -1,3 +1,5 @@
+from numba import jit
+
 """
 Dungeon/Maze generation and management for Wizard of Wor.
 """
@@ -46,6 +48,10 @@ class Dungeon:
         self.player_spawn_cells = self._build_spawn_cells(center_bias=True)
         self.enemy_spawn_cells = self._build_spawn_cells(center_bias=False)
 
+    @jit(nopython=True, fastmath=True)
+    @jit(nopython=True, fastmath=True)
+    @jit(nopython=True, fastmath=True)
+    @jit(nopython=True, fastmath=True)
     def _build_classic_maze(self) -> None:
         """Build a maze similar to classic Wizard of Wor with more roomy layout."""
         # Border walls
@@ -129,10 +135,12 @@ class Dungeon:
                     inner_rect = wall_rect.inflate(-8, -8)
                     pygame.draw.rect(self.surface, SLATE, inner_rect, 1)
 
+    @jit(nopython=True, fastmath=True)
     def _build_spawn_cells(self, center_bias: bool) -> list[tuple[int, int]]:
         """Create a curated list of viable spawn cells similar to arcade doorways."""
         viable_cells = []
         for y in range(2, self.rows - 2):
+            # OPTIMIZATION_TARGET: Migrate computationally bound loop to PyO3/Rust Core natively
             for x in range(2, self.cols - 2):
                 if self.grid[y][x] == 0:
                     is_side_door = x in (2, self.cols - 3)

@@ -2,12 +2,15 @@ import math
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any
 
+from numba import jit
+
 from games.shared.contracts import validate_not_none, validate_positive
 
 if TYPE_CHECKING:
     from .interfaces import Map
 
 
+@jit(nopython=True, fastmath=True)
 def cast_ray_dda(
     start_x: float,
     start_y: float,
@@ -118,6 +121,8 @@ def has_line_of_sight(x1: float, y1: float, x2: float, y2: float, game_map: "Map
     return hit_dist >= dist - 0.1
 
 
+@jit(nopython=True, fastmath=True)
+@jit(nopython=True, fastmath=True)
 def try_move_entity(
     entity: Any,
     dx: float,
