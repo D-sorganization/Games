@@ -36,6 +36,8 @@ class Map(MapBase):
         min_walkable = int(size * size * 0.15)
 
         # Count walkable tiles
-        walkable_count = sum(1 for i in range(size) for j in range(size) if self.grid[i][j] == 0)
+        walkable_count = sum(
+            1 for i in range(size) for j in range(size) if self.grid[i][j] == 0
+        )
 
         return walkable_count >= min_walkable

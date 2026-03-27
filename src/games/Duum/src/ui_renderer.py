@@ -1,6 +1,3 @@
-# ARCHITECTURE_DEBT:
-# This module historically exceeds standard length metrics and accumulates excessive domain responsibility.
-# It requires domain-aware structural extraction to isolate its internal classes appropriately.
 from __future__ import annotations
 
 import logging
@@ -9,7 +6,6 @@ import random
 from typing import TYPE_CHECKING, Any, cast
 
 import pygame
-from numba import jit
 
 from games.shared.ui import Button
 from games.shared.ui_renderer_base import UIRendererBase
@@ -70,8 +66,6 @@ class UIRenderer(UIRendererBase):
         """Return True if *pos* falls inside the start button."""
         return self.start_button.is_clicked(pos)
 
-    @jit(nopython=True, fastmath=True)
-    @jit(nopython=True, fastmath=True)
     def _generate_vignette(self) -> None:
         """Generate a static vignette surface."""
         w, h = C.SCREEN_WIDTH, C.SCREEN_HEIGHT
@@ -167,8 +161,6 @@ class UIRenderer(UIRendererBase):
                 drip["size"] + 1,
             )
 
-    @jit(nopython=True, fastmath=True)
-    @jit(nopython=True, fastmath=True)
     def render_map_select(self, game: Game) -> None:
         """Render map select screen"""
         self.screen.fill(C.BLACK)
@@ -470,7 +462,9 @@ class UIRenderer(UIRendererBase):
         """Render red screen flash effect when player takes damage."""
         if timer > 0:
             alpha = int(100 * (timer / 10.0))
-            self.overlay_surface.fill((255, 0, 0, alpha), special_flags=pygame.BLEND_RGBA_ADD)
+            self.overlay_surface.fill(
+                (255, 0, 0, alpha), special_flags=pygame.BLEND_RGBA_ADD
+            )
 
     def _render_shield_effect(self, player: Player) -> None:
         """Render shield activation visual effects and status."""
@@ -509,7 +503,10 @@ class UIRenderer(UIRendererBase):
                     (0, 0, C.SCREEN_WIDTH, C.SCREEN_HEIGHT),
                 )
 
-        elif player.shield_timer == C.SHIELD_MAX_DURATION and player.shield_recharge_delay <= 0:
+        elif (
+            player.shield_timer == C.SHIELD_MAX_DURATION
+            and player.shield_recharge_delay <= 0
+        ):
             ready_text = self.tiny_font.render("SHIELD READY", True, C.CYAN)
             self.screen.blit(ready_text, (20, C.SCREEN_HEIGHT - 120))
 
@@ -517,7 +514,9 @@ class UIRenderer(UIRendererBase):
         """Render red screen tint when health is low."""
         if player.health < 50:
             alpha = int(100 * (1.0 - (player.health / 50.0)))
-            self.overlay_surface.fill((255, 0, 0, alpha), special_flags=pygame.BLEND_RGBA_ADD)
+            self.overlay_surface.fill(
+                (255, 0, 0, alpha), special_flags=pygame.BLEND_RGBA_ADD
+            )
 
     def _render_crosshair(self) -> None:
         """Render the aiming crosshair at the center of the screen."""
@@ -554,14 +553,15 @@ class UIRenderer(UIRendererBase):
             bar_w = 40
             bar_h = 4
             cx, cy = C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 30
-            pygame.draw.rect(self.screen, C.DARK_GRAY, (cx - bar_w // 2, cy, bar_w, bar_h))
+            pygame.draw.rect(
+                self.screen, C.DARK_GRAY, (cx - bar_w // 2, cy, bar_w, bar_h)
+            )
             pygame.draw.rect(
                 self.screen,
                 C.CYAN,
                 (cx - bar_w // 2, cy, int(bar_w * charge_pct), bar_h),
             )
 
-    @jit(nopython=True, fastmath=True)
     def _render_pause_menu(self) -> None:
         """Render the pause menu overlay."""
         overlay = pygame.Surface((C.SCREEN_WIDTH, C.SCREEN_HEIGHT), pygame.SRCALPHA)
@@ -623,7 +623,8 @@ class UIRenderer(UIRendererBase):
 
         stats = [
             (
-                f"You survived {completed_levels} " f"level{'s' if completed_levels != 1 else ''}",
+                f"You survived {completed_levels} "
+                f"level{'s' if completed_levels != 1 else ''}",
                 C.WHITE,
             ),
             (f"Total Kills: {game.kills}", C.WHITE),
@@ -657,11 +658,15 @@ class UIRenderer(UIRendererBase):
         self.screen.fill(C.BLACK)
 
         if intro_phase == 0:
-            text = self.subtitle_font.render("A Willy Wonk Production", True, (255, 182, 193))
+            text = self.subtitle_font.render(
+                "A Willy Wonk Production", True, (255, 182, 193)
+            )
             self.screen.blit(text, text.get_rect(center=(C.SCREEN_WIDTH // 2, 100)))
             if "willy" in self.intro_images:
                 img = self.intro_images["willy"]
-                r = img.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 30))
+                r = img.get_rect(
+                    center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 30)
+                )
                 self.screen.blit(img, r)
                 pygame.draw.rect(self.screen, (255, 192, 203), r, 4, border_radius=10)
 
@@ -696,7 +701,9 @@ class UIRenderer(UIRendererBase):
                     )
                     self.screen.blit(
                         surf,
-                        surf.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 50)),
+                        surf.get_rect(
+                            center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 50)
+                        ),
                     )
                 else:
                     self.intro_video.set(cv2.CAP_PROP_POS_FRAMES, 0)
@@ -704,7 +711,9 @@ class UIRenderer(UIRendererBase):
                 img = self.intro_images["deadfish"]
                 self.screen.blit(
                     img,
-                    img.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 50)),
+                    img.get_rect(
+                        center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 50)
+                    ),
                 )
 
         elif intro_phase == 2:
@@ -712,7 +721,6 @@ class UIRenderer(UIRendererBase):
 
         pygame.display.flip()
 
-    @jit(nopython=True, fastmath=True)
     def _render_intro_slide(self, step: int, elapsed: int) -> None:
         """Render intro slides."""
         slides = [
@@ -763,7 +771,6 @@ class UIRenderer(UIRendererBase):
                     total_w = sum([font.size(c)[0] for c in text])
                     start_x = (C.SCREEN_WIDTH - total_w) // 2
                     y = start_y + i * 100
-                    # OPTIMIZATION_TARGET: Migrate computationally bound loop to PyO3/Rust Core natively
                     x_off = 0
                     for idx, char in enumerate(text):
                         tf = pygame.time.get_ticks() * 0.003 + idx * 0.2
@@ -806,7 +813,12 @@ class UIRenderer(UIRendererBase):
                     rect.centery = 100  # Match Main Menu title position
                 self.screen.blit(txt, rect)
 
-                if slide["text"] == "DUUM" and color[0] > 250 and color[1] < 10 and color[2] < 10:
+                if (
+                    slide["text"] == "DUUM"
+                    and color[0] > 250
+                    and color[1] < 10
+                    and color[2] < 10
+                ):
                     self.update_blood_drips(rect)
                     self._draw_blood_drips(self.title_drips)
 
@@ -814,10 +826,11 @@ class UIRenderer(UIRendererBase):
                     sub = self.subtitle_font.render(str(slide["sub"]), True, C.RED)
                     self.screen.blit(
                         sub,
-                        sub.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 60)),
+                        sub.get_rect(
+                            center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 60)
+                        ),
                     )
 
-    @jit(nopython=True, fastmath=True)
     def render_key_config(self, game: Any) -> None:
         """Render the key configuration menu."""
         self.screen.fill(C.BLACK)
@@ -855,7 +868,9 @@ class UIRenderer(UIRendererBase):
             self.screen.blit(key_txt, (x + 20, y))
 
         back_txt = self.subtitle_font.render("BACK", True, C.WHITE)
-        back_rect = back_txt.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT - 60))
+        back_rect = back_txt.get_rect(
+            center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT - 60)
+        )
         self.screen.blit(back_txt, back_rect)
         if back_rect.collidepoint(pygame.mouse.get_pos()):
             pygame.draw.rect(self.screen, C.RED, back_rect, 2)

@@ -1,5 +1,3 @@
-from numba import jit
-
 """Base class for game players with common state management."""
 
 from __future__ import annotations
@@ -72,7 +70,9 @@ class PlayerBase:
             }
 
         # Ammo reserves
-        self.ammo: dict[str, int] = {w: int(weapons_config[w]["ammo"]) for w in weapons_config}
+        self.ammo: dict[str, int] = {
+            w: int(weapons_config[w]["ammo"]) for w in weapons_config
+        }
 
         # Current weapon and shooting state
         self.current_weapon = "rifle"
@@ -246,7 +246,6 @@ class PlayerBase:
             return True
         return False
 
-    @jit(nopython=True, fastmath=True)
     def update_weapon_state(self) -> None:
         """Update weapon timers and state (reloading, heat, etc)."""
         weapons = getattr(self.C, "WEAPONS", {})

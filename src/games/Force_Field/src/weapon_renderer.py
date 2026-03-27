@@ -5,7 +5,6 @@ import random
 from typing import TYPE_CHECKING, Any
 
 import pygame
-from numba import jit
 
 from . import constants as C  # noqa: N812
 
@@ -82,15 +81,18 @@ class WeaponRenderer:
             self._render_pulse(cx, cy, player, w_state)
 
         elif weapon == "rocket":
-            self._render_rocket_launcher(cx, cy, player, gun_metal, gun_highlight, gun_dark)
+            self._render_rocket_launcher(
+                cx, cy, player, gun_metal, gun_highlight, gun_dark
+            )
 
         elif weapon == "bfg":
             self._render_bfg(cx, cy, player, gun_metal, gun_highlight, gun_dark)
 
         return cx, cy
 
-    @jit(nopython=True, fastmath=True)
-    def render_muzzle_flash(self, weapon_name: str, weapon_pos: tuple[int, int]) -> None:
+    def render_muzzle_flash(
+        self, weapon_name: str, weapon_pos: tuple[int, int]
+    ) -> None:
         """Render weapon-specific muzzle flash effects."""
         flash_x = weapon_pos[0]
         flash_y = weapon_pos[1] - 210
@@ -109,8 +111,12 @@ class WeaponRenderer:
         elif weapon_name == "minigun":
             offset_x = random.randint(-10, 10)
             offset_y = random.randint(-10, 10)
-            pygame.draw.circle(self.screen, C.YELLOW, (flash_x + offset_x, flash_y + offset_y), 30)
-            pygame.draw.circle(self.screen, C.WHITE, (flash_x + offset_x, flash_y + offset_y), 15)
+            pygame.draw.circle(
+                self.screen, C.YELLOW, (flash_x + offset_x, flash_y + offset_y), 30
+            )
+            pygame.draw.circle(
+                self.screen, C.WHITE, (flash_x + offset_x, flash_y + offset_y), 15
+            )
         elif weapon_name == "bfg":
             # Big Green Flash
             pygame.draw.circle(self.screen, (0, 255, 0), (flash_x, flash_y), 60)
@@ -122,13 +128,14 @@ class WeaponRenderer:
                 dist = random.randint(50, 100)
                 end_x = flash_x + math.cos(angle) * dist
                 end_y = flash_y + math.sin(angle) * dist
-                pygame.draw.line(self.screen, (0, 255, 0), (flash_x, flash_y), (end_x, end_y), 3)
+                pygame.draw.line(
+                    self.screen, (0, 255, 0), (flash_x, flash_y), (end_x, end_y), 3
+                )
         else:
             pygame.draw.circle(self.screen, C.YELLOW, (flash_x, flash_y), 25)
             pygame.draw.circle(self.screen, C.ORANGE, (flash_x, flash_y), 15)
             pygame.draw.circle(self.screen, C.WHITE, (flash_x, flash_y), 8)
 
-    @jit(nopython=True, fastmath=True)
     def _render_pistol(
         self,
         cx: int,
@@ -192,7 +199,6 @@ class WeaponRenderer:
             [(cx - 60, cy - 50), (cx + 60, cy - 50), (cx + 50, cy), (cx - 50, cy)],
         )
 
-    @jit(nopython=True, fastmath=True)
     def _render_rifle(
         self,
         cx: int,
@@ -231,7 +237,6 @@ class WeaponRenderer:
             )
             pygame.draw.line(self.screen, C.RED, (cx, cy - 195), (cx, cy - 145), 1)
 
-    @jit(nopython=True, fastmath=True)
     def _render_minigun(self, cx: int, cy: int, player: Player) -> None:
         # Rotate barrels
         rot = 0
@@ -249,9 +254,9 @@ class WeaponRenderer:
 
         pygame.draw.rect(self.screen, (30, 30, 30), (cx - 50, cy - 80, 100, 30))
 
-    @jit(nopython=True, fastmath=True)
-    @jit(nopython=True, fastmath=True)
-    def _render_plasma(self, cx: int, cy: int, player: Player, w_state: dict[str, Any]) -> None:
+    def _render_plasma(
+        self, cx: int, cy: int, player: Player, w_state: dict[str, Any]
+    ) -> None:
         pygame.draw.polygon(
             self.screen,
             (40, 40, 60),
@@ -303,7 +308,9 @@ class WeaponRenderer:
                 ly2 = random.randint(cy - 250, cy - 150)
                 pygame.draw.line(self.screen, C.WHITE, (lx1, ly1), (lx2, ly2), 2)
 
-    def _render_pulse(self, cx: int, cy: int, player: Player, w_state: dict[str, Any]) -> None:
+    def _render_pulse(
+        self, cx: int, cy: int, player: Player, w_state: dict[str, Any]
+    ) -> None:
         # Futuristic Pulse Rifle Design
         # Base
         pygame.draw.rect(self.screen, (30, 30, 50), (cx - 40, cy - 150, 80, 150))
@@ -333,9 +340,6 @@ class WeaponRenderer:
         if player.shooting:
             pygame.draw.circle(self.screen, (200, 200, 255), (cx, cy - 280), 20)
 
-    @jit(nopython=True, fastmath=True)
-    @jit(nopython=True, fastmath=True)
-    @jit(nopython=True, fastmath=True)
     def _render_rocket_launcher(
         self,
         cx: int,
@@ -357,7 +361,9 @@ class WeaponRenderer:
         body_rect = (cx - body_width // 2, cy - 200, body_width, body_height)
 
         # Draw glow around launcher
-        glow_surface = pygame.Surface((body_width + 40, body_height + 40), pygame.SRCALPHA)
+        glow_surface = pygame.Surface(
+            (body_width + 40, body_height + 40), pygame.SRCALPHA
+        )
         glow_color = (255, 100, 0, int(30 * glow_pulse))
         pygame.draw.rect(
             glow_surface,
@@ -395,7 +401,9 @@ class WeaponRenderer:
 
         # Targeting system with glowing elements
         scope_y = cy - 280
-        pygame.draw.rect(self.screen, gun_dark, (cx - 40, scope_y, 80, 30), border_radius=5)
+        pygame.draw.rect(
+            self.screen, gun_dark, (cx - 40, scope_y, 80, 30), border_radius=5
+        )
 
         # Glowing targeting reticle
         reticle_brightness = int(150 + 105 * math.sin(time_ms * 0.015))
@@ -435,7 +443,9 @@ class WeaponRenderer:
             vent_y = cy - 160
             vent_heat = max(0, min(255, int(100 + 155 * math.sin(time_ms * 0.01 + i))))
             vent_color = (int(vent_heat), int(vent_heat // 3), 0)
-            pygame.draw.rect(self.screen, vent_color, (vent_x, vent_y, 8, 20), border_radius=4)
+            pygame.draw.rect(
+                self.screen, vent_color, (vent_x, vent_y, 8, 20), border_radius=4
+            )
 
         # Ammo counter display
         ammo_count = player.weapon_state["rocket"]["clip"]
@@ -476,7 +486,6 @@ class WeaponRenderer:
                 6,
             )
 
-    @jit(nopython=True, fastmath=True)
     def _render_laser(self, cx: int, cy: int, player: Player) -> None:
         """Render a black gun model for the Laser"""
         # A sleek, black, futuristic rifle
@@ -505,7 +514,6 @@ class WeaponRenderer:
         if player.shooting:
             pygame.draw.circle(self.screen, (255, 255, 255), (cx, cy - 255), 15)
 
-    @jit(nopython=True, fastmath=True)
     def _render_bfg(
         self,
         cx: int,
@@ -520,7 +528,9 @@ class WeaponRenderer:
 
         # Massive bulk
         pygame.draw.rect(self.screen, gun_metal, (cx - 60, cy - 150, 120, 150))
-        pygame.draw.rect(self.screen, gun_dark, (cx - 70, cy - 100, 140, 100), border_radius=10)
+        pygame.draw.rect(
+            self.screen, gun_dark, (cx - 70, cy - 100, 140, 100), border_radius=10
+        )
 
         # Glowing Energy Core
         pulse = int(127 + 127 * math.sin(time_ms * 0.005))
@@ -534,7 +544,9 @@ class WeaponRenderer:
 
         # Energy buildup
         if player.shooting:
-            pygame.draw.circle(self.screen, (0, 255, 0), (cx, cy - 220), 30 + random.randint(-5, 5))
+            pygame.draw.circle(
+                self.screen, (0, 255, 0), (cx, cy - 220), 30 + random.randint(-5, 5)
+            )
 
         # Side Vents
         for i in range(3):

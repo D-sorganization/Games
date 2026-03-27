@@ -1,5 +1,3 @@
-from numba import jit
-
 """
 Pure math/DDA helpers for the raycasting engine.
 
@@ -90,7 +88,6 @@ def init_dda_params(
     )
 
 
-@jit(nopython=True, fastmath=True)
 def perform_dda_loop(
     num_rays: int,
     map_width: int,
@@ -128,7 +125,9 @@ def perform_dda_loop(
         map_y[mask_y] += step_y[mask_y]
         side[mask_y] = 1
 
-        in_bounds = (map_x >= 0) & (map_x < map_width) & (map_y >= 0) & (map_y < map_height)
+        in_bounds = (
+            (map_x >= 0) & (map_x < map_width) & (map_y >= 0) & (map_y < map_height)
+        )
         out_of_bounds = (~in_bounds) & active
         if np.any(out_of_bounds):
             hits[out_of_bounds] = True

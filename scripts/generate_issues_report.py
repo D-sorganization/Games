@@ -47,16 +47,23 @@ def main():
     if issues:
         content += "## Found Categories with Score < 5\n\n"
         content += "\n".join(issues)
-        content += "\n\n## Instructions\n\nRun the following command to create issues:\n"
+        content += (
+            "\n\n## Instructions\n\nRun the following command to create issues:\n"
+        )
         # Potential future command integration
-        content += "```bash\n# Example command (requires gh cli)\n# gh issue create ...\n```\n"
+        content += (
+            "```bash\n# Example command (requires gh cli)\n# gh issue create ...\n```\n"
+        )
         logger.info(
             "Found %d categories with score < 5. Report saved to %s",
             len(issues),
             output_path,
         )
     else:
-        content += "## Status: All Good\n\n" "No categories scored below 5. No issues to create.\n"
+        content += (
+            "## Status: All Good\n\n"
+            "No categories scored below 5. No issues to create.\n"
+        )
         logger.info("No categories scored below 5. Report saved to %s", output_path)
 
     with open(output_path, "w") as f:

@@ -4,7 +4,6 @@ import math
 from typing import TYPE_CHECKING
 
 import pygame
-from numba import jit
 
 from .base import BaseBotStyleRenderer
 
@@ -16,7 +15,6 @@ if TYPE_CHECKING:
 class GhostStyleRenderer(BaseBotStyleRenderer):
     """Ghost visual style renderer."""
 
-    @jit(nopython=True, fastmath=True)
     def render(
         self,
         screen: pygame.Surface,
@@ -44,7 +42,9 @@ class GhostStyleRenderer(BaseBotStyleRenderer):
         pygame.draw.circle(screen, ghost_color, center, int(rw / 2))
 
         # Body (Rect)
-        body_rect = pygame.Rect(int(cx - rw / 2), int(gy + rw / 2), int(rw), int(rh * 0.6))
+        body_rect = pygame.Rect(
+            int(cx - rw / 2), int(gy + rw / 2), int(rw), int(rh * 0.6)
+        )
         pygame.draw.rect(screen, ghost_color, body_rect)
 
         # Tattered bottom

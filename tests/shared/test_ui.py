@@ -160,7 +160,9 @@ class MockRect:
 
     def collidepoint(self, pos):
         px, py = pos
-        return self.x <= px <= self.x + self.width and self.y <= py <= self.y + self.height
+        return (
+            self.x <= px <= self.x + self.width and self.y <= py <= self.y + self.height
+        )
 
     def copy(self):
         return MockRect(self.x, self.y, self.width, self.height)

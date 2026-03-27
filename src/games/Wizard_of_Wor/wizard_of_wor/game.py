@@ -1,9 +1,3 @@
-from numba import jit
-
-# ARCHITECTURE_DEBT:
-# This module historically exceeds standard length metrics and accumulates excessive domain responsibility.
-# It requires domain-aware structural extraction to isolate its internal classes appropriately.
-
 """
 Main game file for Wizard of Wor remake.
 """
@@ -82,8 +76,9 @@ class SoundBoard:
             self.sounds = {}
             # We don't create intro_melody if mixer is not initialized
 
-    @jit(nopython=True, fastmath=True)
-    def _build_tone(self, frequency: int, duration_ms: int) -> pygame.mixer.Sound | None:
+    def _build_tone(
+        self, frequency: int, duration_ms: int
+    ) -> pygame.mixer.Sound | None:
         """Build a tone sound effect with the given frequency and duration."""
         if not self.enabled:
             # Create a dummy Sound object if mixer is not initialized
@@ -102,8 +97,6 @@ class SoundBoard:
             waveform.append(value)
         return pygame.mixer.Sound(buffer=waveform.tobytes())
 
-    @jit(nopython=True, fastmath=True)
-    @jit(nopython=True, fastmath=True)
     def _build_intro_melody(self) -> pygame.mixer.Sound | None:
         """Build a retro-style intro melody reminiscent of classic arcade games."""
         if not self.enabled:
@@ -446,7 +439,11 @@ class WizardOfWorGame:
 
         # Enemy bullets hitting player
         for bullet in self.bullets:
-            if bullet.is_player_bullet or not bullet.active or bullet in bullets_to_remove:
+            if (
+                bullet.is_player_bullet
+                or not bullet.active
+                or bullet in bullets_to_remove
+            ):
                 continue
 
             if (
@@ -712,7 +709,9 @@ class WizardOfWorGame:
         y_offset = SCREEN_HEIGHT // 2
         for line in instructions:
             instruction_text = self.font_small.render(line, True, WHITE)
-            instruction_rect = instruction_text.get_rect(center=(SCREEN_WIDTH // 2, y_offset))
+            instruction_rect = instruction_text.get_rect(
+                center=(SCREEN_WIDTH // 2, y_offset)
+            )
             self.screen.blit(instruction_text, instruction_rect)
             y_offset += 30
 

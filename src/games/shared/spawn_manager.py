@@ -1,5 +1,3 @@
-from numba import jit
-
 """Base class for spawn managers.
 
 Encapsulates enemy spawning, position validation, and level scaling
@@ -120,8 +118,6 @@ class SpawnManagerBase:
             return True
         return False
 
-    @jit(nopython=True, fastmath=True)
-    @jit(nopython=True, fastmath=True)
     def spawn_enemies(
         self,
         player_pos: tuple[float, float, float],
@@ -149,7 +145,9 @@ class SpawnManagerBase:
                 if not game_map.is_wall(bx, by):
                     enemy_type = self._get_enemy_type()
                     self.entity_manager.add_bot(
-                        self._make_bot(bx + 0.5, by + 0.5, level, enemy_type, difficulty)
+                        self._make_bot(
+                            bx + 0.5, by + 0.5, level, enemy_type, difficulty
+                        )
                     )
                     placed = True
                     break
@@ -157,7 +155,6 @@ class SpawnManagerBase:
             if not placed:
                 logger.warning("Failed to spawn enemy after 50 attempts.")
 
-    @jit(nopython=True, fastmath=True)
     def spawn_boss(
         self,
         player_pos: tuple[float, float, float],
@@ -174,7 +171,9 @@ class SpawnManagerBase:
             cx = random.randint(2, upper_bound)
             cy = random.randint(2, upper_bound)
 
-            min_boss_dist_sq = min_boss_dist**2 if attempt < 70 else (min_boss_dist * 0.7) ** 2
+            min_boss_dist_sq = (
+                min_boss_dist**2 if attempt < 70 else (min_boss_dist * 0.7) ** 2
+            )
             dist_sq = (cx - player_pos[0]) ** 2 + (cy - player_pos[1]) ** 2
 
             if not game_map.is_wall(cx, cy) and dist_sq > min_boss_dist_sq:
@@ -183,7 +182,6 @@ class SpawnManagerBase:
                 )
                 break
 
-    @jit(nopython=True, fastmath=True)
     def spawn_pickups(self, game_map: Any, level: int) -> None:
         """Spawn weapon pickups on the map."""
         for w_pickup in self.WEAPON_PICKUPS:
@@ -191,9 +189,10 @@ class SpawnManagerBase:
                 rx = random.randint(5, game_map.size - 5)
                 ry = random.randint(5, game_map.size - 5)
                 if not game_map.is_wall(rx, ry):
-                    self.entity_manager.add_bot(self._make_bot(rx + 0.5, ry + 0.5, level, w_pickup))
+                    self.entity_manager.add_bot(
+                        self._make_bot(rx + 0.5, ry + 0.5, level, w_pickup)
+                    )
 
-    @jit(nopython=True, fastmath=True)
     def spawn_items(self, game_map: Any, level: int) -> None:
         """Spawn health packs, ammo boxes, and bombs."""
         for _ in range(self.ITEM_COUNT):
@@ -207,4 +206,6 @@ class SpawnManagerBase:
                     item_type = "ammo_box"
                 else:
                     item_type = "health_pack"
-                self.entity_manager.add_bot(self._make_bot(rx + 0.5, ry + 0.5, level, item_type))
+                self.entity_manager.add_bot(
+                    self._make_bot(rx + 0.5, ry + 0.5, level, item_type)
+                )

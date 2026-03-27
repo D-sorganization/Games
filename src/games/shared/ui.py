@@ -4,7 +4,6 @@ import math
 import random
 
 import pygame
-from numba import jit
 
 # Constants used by UI components
 WHITE = (255, 255, 255)
@@ -28,7 +27,9 @@ class Button:
         self.rect = pygame.Rect(x, y, width, height)
         self.text = text
         self._color = color
-        self.hover_color = tuple(min(255, c + self.HOVER_BRIGHTNESS_OFFSET) for c in color)
+        self.hover_color = tuple(
+            min(255, c + self.HOVER_BRIGHTNESS_OFFSET) for c in color
+        )
         self.hovered = False
 
     @property
@@ -40,7 +41,9 @@ class Button:
     def color(self, value: tuple[int, int, int]) -> None:
         """Set button color and update hover color"""
         self._color = value
-        self.hover_color = tuple(min(255, c + self.HOVER_BRIGHTNESS_OFFSET) for c in value)
+        self.hover_color = tuple(
+            min(255, c + self.HOVER_BRIGHTNESS_OFFSET) for c in value
+        )
 
     def draw(self, screen: pygame.Surface, font: pygame.font.Font) -> None:
         """Draw button"""
@@ -79,7 +82,6 @@ class BloodButton(Button):
         self._generate_drips()
         self.pulse_timer = 0.0
 
-    @jit(nopython=True, fastmath=True)
     def _generate_drips(self) -> None:
         """Generate random blood drips"""
         self.drips = []
@@ -102,7 +104,6 @@ class BloodButton(Button):
                     }
                 )
 
-    @jit(nopython=True, fastmath=True)
     def update(self, mouse_pos: tuple[int, int]) -> None:
         """Update button state and animation"""
         super().update(mouse_pos)
@@ -115,7 +116,6 @@ class BloodButton(Button):
             factor = 0.7 + 0.3 * math.sin(phase)
             drip["length"] = drip["max_length"] * factor
 
-    @jit(nopython=True, fastmath=True)
     def draw(self, screen: pygame.Surface, font: pygame.font.Font) -> None:
         """Draw blood button"""
         # Determine color (pulse if hovered)

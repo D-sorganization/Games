@@ -52,7 +52,9 @@ class TestJsonLoading:
     def test_load_json_from_data_subdir(self, tmp_path):
         data_dir = tmp_path / "assets" / "data"
         data_dir.mkdir(parents=True)
-        (data_dir / "config.json").write_text(json.dumps({"key": "value"}), encoding="utf-8")
+        (data_dir / "config.json").write_text(
+            json.dumps({"key": "value"}), encoding="utf-8"
+        )
         catalog = AssetCatalog(tmp_path)
         result = catalog.load_json("config.json")
         assert result == {"key": "value"}

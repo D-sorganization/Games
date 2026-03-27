@@ -2,15 +2,12 @@ import math
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any
 
-from numba import jit
-
 from games.shared.contracts import validate_not_none, validate_positive
 
 if TYPE_CHECKING:
     from .interfaces import Map
 
 
-@jit(nopython=True, fastmath=True)
 def cast_ray_dda(
     start_x: float,
     start_y: float,
@@ -104,7 +101,9 @@ def cast_ray_dda(
     return max_dist, 0, hit_x, hit_y, side, map_x, map_y
 
 
-def has_line_of_sight(x1: float, y1: float, x2: float, y2: float, game_map: "Map") -> bool:
+def has_line_of_sight(
+    x1: float, y1: float, x2: float, y2: float, game_map: "Map"
+) -> bool:
     """Check if there is a clear line of sight between two points."""
     validate_not_none(game_map, "game_map")
     dx = x2 - x1
@@ -115,14 +114,14 @@ def has_line_of_sight(x1: float, y1: float, x2: float, y2: float, game_map: "Map
 
     angle = math.atan2(dy, dx)
 
-    hit_dist, wall_type, _, _, _, _, _ = cast_ray_dda(x1, y1, angle, game_map, max_dist=dist)
+    hit_dist, wall_type, _, _, _, _, _ = cast_ray_dda(
+        x1, y1, angle, game_map, max_dist=dist
+    )
 
     # Allow small epsilon error
     return hit_dist >= dist - 0.1
 
 
-@jit(nopython=True, fastmath=True)
-@jit(nopython=True, fastmath=True)
 def try_move_entity(
     entity: Any,
     dx: float,

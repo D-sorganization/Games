@@ -60,7 +60,9 @@ class TestSetupGamePath:
         finally:
             sys.path[:] = original_path
 
-    def test_frozen_path(self, monkeypatch: pytest.MonkeyPatch, tmp_path: object) -> None:
+    def test_frozen_path(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: object
+    ) -> None:
         """Should use sys._MEIPASS if execution is frozen."""
         monkeypatch.setattr(sys, "frozen", True, raising=False)
         meipass_dir = Path(str(tmp_path)) / "meipass"
@@ -118,7 +120,9 @@ class TestRunGame:
         if "SDL_VIDEO_CENTERED" in os.environ:
             del os.environ["SDL_VIDEO_CENTERED"]
 
-        run_game(mock_game_class, "test_file.py", center_window=True, use_frozen_path=True)
+        run_game(
+            mock_game_class, "test_file.py", center_window=True, use_frozen_path=True
+        )
 
         mock_setup_path.assert_called_with("test_file.py", True)
         mock_setup_log.assert_called()

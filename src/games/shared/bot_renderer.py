@@ -36,7 +36,9 @@ class BotRenderer:
             return
 
         render_height = sprite_size
-        render_width = sprite_size * 0.55 if visual_style == "monster" else sprite_size * 0.7
+        render_width = (
+            sprite_size * 0.55 if visual_style == "monster" else sprite_size * 0.7
+        )
         render_y = sprite_y
 
         if bot.dead:

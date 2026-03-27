@@ -67,7 +67,9 @@ def cs(game: MagicMock) -> CombatSystem:
 
 
 class TestCombatSystemPlayerProperty:
-    def test_player_property_returns_player(self, cs: CombatSystem, game: MagicMock) -> None:
+    def test_player_property_returns_player(
+        self, cs: CombatSystem, game: MagicMock
+    ) -> None:
         assert cs.player is game.player
 
     def test_player_property_raises_when_none(self, game: MagicMock) -> None:
@@ -152,23 +154,31 @@ class TestFireMethods:
             cs._fire_projectile({}, "plasma")
             mock_p.assert_called_once()
 
-    def test_fire_projectile_generic_fallback(self, cs: CombatSystem, game: MagicMock) -> None:
+    def test_fire_projectile_generic_fallback(
+        self, cs: CombatSystem, game: MagicMock
+    ) -> None:
         with patch.object(cs, "_fire_generic_projectile") as mock_gp:
             cs._fire_projectile({"fire_mode": "projectile"}, "unknown_weapon")
             mock_gp.assert_called_once()
 
-    def test_fire_plasma_adds_projectile(self, cs: CombatSystem, game: MagicMock) -> None:
+    def test_fire_plasma_adds_projectile(
+        self, cs: CombatSystem, game: MagicMock
+    ) -> None:
         cs._fire_plasma()
         game.entity_manager.add_projectile.assert_called_once()
         proj = game.entity_manager.add_projectile.call_args[0][0]
         assert isinstance(proj, Projectile)
         assert proj.weapon_type == "plasma"
 
-    def test_fire_pulse_adds_projectile(self, cs: CombatSystem, game: MagicMock) -> None:
+    def test_fire_pulse_adds_projectile(
+        self, cs: CombatSystem, game: MagicMock
+    ) -> None:
         cs._fire_pulse()
         game.entity_manager.add_projectile.assert_called_once()
 
-    def test_fire_rocket_adds_projectile(self, cs: CombatSystem, game: MagicMock) -> None:
+    def test_fire_rocket_adds_projectile(
+        self, cs: CombatSystem, game: MagicMock
+    ) -> None:
         cs._fire_rocket()
         game.entity_manager.add_projectile.assert_called_once()
         proj = game.entity_manager.add_projectile.call_args[0][0]
@@ -180,13 +190,17 @@ class TestFireMethods:
         cs._fire_flamethrower()
         assert game.entity_manager.add_projectile.call_count == 2
 
-    def test_fire_freezer_adds_projectile(self, cs: CombatSystem, game: MagicMock) -> None:
+    def test_fire_freezer_adds_projectile(
+        self, cs: CombatSystem, game: MagicMock
+    ) -> None:
         cs._fire_freezer()
         game.entity_manager.add_projectile.assert_called_once()
         proj = game.entity_manager.add_projectile.call_args[0][0]
         assert proj.weapon_type == "freezer"
 
-    def test_fire_minigun_adds_three_projectiles(self, cs: CombatSystem, game: MagicMock) -> None:
+    def test_fire_minigun_adds_three_projectiles(
+        self, cs: CombatSystem, game: MagicMock
+    ) -> None:
         cs._fire_minigun()
         assert game.entity_manager.add_projectile.call_count == 3
 
@@ -245,7 +259,9 @@ class TestCheckShotHit:
         cs.check_shot_hit(angle_offset=0.001)
         game.sound_manager.play_sound.assert_any_call("scream")
 
-    def test_laser_adds_particle_effect(self, cs: CombatSystem, game: MagicMock) -> None:
+    def test_laser_adds_particle_effect(
+        self, cs: CombatSystem, game: MagicMock
+    ) -> None:
         game.bots = []
         cs.check_shot_hit(is_laser=True)
         game.particle_system.add_laser.assert_called_once()
@@ -258,7 +274,9 @@ class TestCheckShotHit:
             cs.check_shot_hit(is_secondary=True)
             mock_sh.assert_called_once()
 
-    def test_angle_offset_used_when_provided(self, cs: CombatSystem, game: MagicMock) -> None:
+    def test_angle_offset_used_when_provided(
+        self, cs: CombatSystem, game: MagicMock
+    ) -> None:
         game.bots = []
         # Should not crash with explicit angle_offset
         cs.check_shot_hit(angle_offset=0.1)
@@ -281,7 +299,9 @@ class TestExplosions:
         # Should cause screen shake
         assert game.screen_shake > 0
 
-    def test_explode_bomb_kills_nearby_bot(self, cs: CombatSystem, game: MagicMock) -> None:
+    def test_explode_bomb_kills_nearby_bot(
+        self, cs: CombatSystem, game: MagicMock
+    ) -> None:
         proj = MagicMock(spec=Projectile)
         proj.x = game.player.x + 50  # Far from player
         proj.y = game.player.y
@@ -295,7 +315,9 @@ class TestExplosions:
         cs.explode_bomb(proj)
         bot.take_damage.assert_called_once()
 
-    def test_explode_laser_hits_nearby_bots(self, cs: CombatSystem, game: MagicMock) -> None:
+    def test_explode_laser_hits_nearby_bots(
+        self, cs: CombatSystem, game: MagicMock
+    ) -> None:
         bot = MagicMock()
         bot.alive = True
         bot.x = 5.0
@@ -346,7 +368,9 @@ class TestExplosions:
         game.bots = []
         cs.explode_pulse(proj)
 
-    def test_explode_freezer_freezes_bot(self, cs: CombatSystem, game: MagicMock) -> None:
+    def test_explode_freezer_freezes_bot(
+        self, cs: CombatSystem, game: MagicMock
+    ) -> None:
         proj = MagicMock(spec=Projectile)
         proj.x = 5.0
         proj.y = 5.0
@@ -400,7 +424,9 @@ class TestApplyDamage:
         cs._apply_damage(bot, 1.0, 20.0, 100, False)
         game.sound_manager.play_sound.assert_any_call("scream")
 
-    def test_apply_damage_headshot_color(self, cs: CombatSystem, game: MagicMock) -> None:
+    def test_apply_damage_headshot_color(
+        self, cs: CombatSystem, game: MagicMock
+    ) -> None:
         game.show_damage = True
         bot = MagicMock()
         bot.alive = True
@@ -412,7 +438,9 @@ class TestApplyDamage:
         assert len(game.damage_texts) > 0
         assert game.damage_texts[0]["text"].endswith("!")
 
-    def test_apply_damage_ball_blood_color(self, cs: CombatSystem, game: MagicMock) -> None:
+    def test_apply_damage_ball_blood_color(
+        self, cs: CombatSystem, game: MagicMock
+    ) -> None:
         bot = MagicMock()
         bot.alive = True
         bot.x = game.player.x + 1.0
@@ -422,7 +450,9 @@ class TestApplyDamage:
         cs._apply_damage(bot, 1.0, 20.0, 50, False)
         # No crash — blood color changes for ball type
 
-    def test_apply_damage_demon_blood_color(self, cs: CombatSystem, game: MagicMock) -> None:
+    def test_apply_damage_demon_blood_color(
+        self, cs: CombatSystem, game: MagicMock
+    ) -> None:
         bot = MagicMock()
         bot.alive = True
         bot.x = game.player.x + 1.0

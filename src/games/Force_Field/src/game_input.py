@@ -4,7 +4,6 @@ import logging
 from typing import TYPE_CHECKING
 
 import pygame
-from numba import jit
 
 from . import constants as C  # noqa: N812
 from .projectile import Projectile
@@ -21,7 +20,6 @@ class GameInputHandler:
     def __init__(self, game: Game):
         self.game = game
 
-    @jit(nopython=True, fastmath=True)
     def handle_game_events(self) -> None:
         """Handle events during gameplay"""
         for event in pygame.event.get():
@@ -56,8 +54,12 @@ class GameInputHandler:
                 elif not self.game.paused:
                     if not (self.game.player is not None):
                         raise ValueError("DbC Blocked: Precondition failed.")
-                    self.game.player.rotate(event.rel[0] * C.PLAYER_ROT_SPEED * C.SENSITIVITY_X)
-                    self.game.player.pitch_view(-event.rel[1] * C.PLAYER_ROT_SPEED * 200)
+                    self.game.player.rotate(
+                        event.rel[0] * C.PLAYER_ROT_SPEED * C.SENSITIVITY_X
+                    )
+                    self.game.player.pitch_view(
+                        -event.rel[1] * C.PLAYER_ROT_SPEED * 200
+                    )
 
     def _handle_cheat_input(self, event: pygame.event.Event) -> None:
         """Handle input when cheat mode is active."""
@@ -177,7 +179,6 @@ class GameInputHandler:
                     raise ValueError("DbC Blocked: Precondition failed.")
                 self.game.player.dash()
 
-    @jit(nopython=True, fastmath=True)
     def _handle_pause_menu_click(self, event: pygame.event.Event) -> None:
         """Handle clicks in pause menu."""
         mx, my = event.pos

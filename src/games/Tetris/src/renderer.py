@@ -1,5 +1,4 @@
 import pygame
-from numba import jit
 
 from .constants import (
     BLACK,
@@ -64,7 +63,6 @@ class TetrisRenderer:
         """Render *text* using the tiny font."""
         return self.tiny_font.render(text, antialias, color)
 
-    @jit(nopython=True, fastmath=True)
     def draw_background(self) -> None:
         """Draw a gradient background for the entire screen"""
         # Create a vertical gradient from dark blue/purple to black
@@ -77,7 +75,9 @@ class TetrisRenderer:
             r = int(top_color[0] * (1 - ratio) + bottom_color[0] * ratio)
             g = int(top_color[1] * (1 - ratio) + bottom_color[1] * ratio)
             b = int(top_color[2] * (1 - ratio) + bottom_color[2] * ratio)
-            pygame.draw.line(self.screen, (r, g, b), (0, y), (self.screen.get_width(), y))
+            pygame.draw.line(
+                self.screen, (r, g, b), (0, y), (self.screen.get_width(), y)
+            )
 
     def draw_bevel_rect(
         self, surface: pygame.Surface, color: tuple[int, int, int], rect: pygame.Rect
@@ -102,10 +102,6 @@ class TetrisRenderer:
             center_color = tuple(min(255, c + 20) for c in color)
             pygame.draw.rect(surface, center_color, inner_rect)
 
-    @jit(nopython=True, fastmath=True)
-    @jit(nopython=True, fastmath=True)
-    @jit(nopython=True, fastmath=True)
-    @jit(nopython=True, fastmath=True)
     def draw_grid(self, logic: TetrisLogic) -> None:
         """Draw the game grid"""
         # Draw the play area background with a subtle grid pattern
@@ -154,7 +150,6 @@ class TetrisRenderer:
             2,
         )
 
-    @jit(nopython=True, fastmath=True)
     def draw_piece(
         self,
         piece: Tetromino,
@@ -165,7 +160,6 @@ class TetrisRenderer:
         """Draw a tetromino piece"""
         shape = piece.get_rotated_shape()
 
-        # OPTIMIZATION_TARGET: Migrate computationally bound loop to PyO3/Rust Core natively
         for y, row in enumerate(shape):
             for x, cell in enumerate(row):
                 if cell:
@@ -187,7 +181,9 @@ class TetrisRenderer:
                         )
                     else:
                         # Glow effect for active piece
-                        glow_surf = pygame.Surface((GRID_SIZE + 4, GRID_SIZE + 4), pygame.SRCALPHA)
+                        glow_surf = pygame.Surface(
+                            (GRID_SIZE + 4, GRID_SIZE + 4), pygame.SRCALPHA
+                        )
                         glow_color = (*piece.color, 100)
                         pygame.draw.rect(
                             glow_surf,
@@ -200,8 +196,6 @@ class TetrisRenderer:
                         rect = pygame.Rect(px, py, GRID_SIZE - 1, GRID_SIZE - 1)
                         self.draw_bevel_rect(self.screen, piece.color, rect)
 
-    @jit(nopython=True, fastmath=True)
-    @jit(nopython=True, fastmath=True)
     def draw_ghost_piece(self, logic: TetrisLogic) -> None:
         """Draw a ghost piece showing where the current piece will land"""
         ghost = Tetromino(
@@ -227,9 +221,9 @@ class TetrisRenderer:
                         2,
                     )
 
-    @jit(nopython=True, fastmath=True)
-    @jit(nopython=True, fastmath=True)
-    def draw_mini_piece(self, shape_type: str | None, x: int, y: int, size: int = 20) -> None:
+    def draw_mini_piece(
+        self, shape_type: str | None, x: int, y: int, size: int = 20
+    ) -> None:
         """Draw a small preview piece"""
         if shape_type is None:
             return
@@ -260,7 +254,9 @@ class TetrisRenderer:
         text = self.font.render("Next", True, WHITE)
         self.screen.blit(text, (panel_x + 10, panel_y + 10))
 
-        self.draw_mini_piece(logic.next_piece.shape_type, panel_x + 60, panel_y + 50, 25)
+        self.draw_mini_piece(
+            logic.next_piece.shape_type, panel_x + 60, panel_y + 50, 25
+        )
 
     def draw_held_piece(self, logic: TetrisLogic) -> None:
         """Draw the held piece preview"""
@@ -317,7 +313,6 @@ class TetrisRenderer:
         text_rect = text.get_rect(center=rect.center)
         self.screen.blit(text, text_rect)
 
-    @jit(nopython=True, fastmath=True)
     def draw_controls(self, show_controls_panel: bool) -> None:
         """Draw control instructions"""
         if not show_controls_panel:
@@ -382,7 +377,6 @@ class TetrisRenderer:
                 )
                 self.screen.blit(text_surf, text_rect)
 
-    @jit(nopython=True, fastmath=True)
     def draw_menu(self, starting_level: int) -> None:
         """Draw the level selection menu"""
         self.screen.fill(BLACK)
@@ -432,7 +426,9 @@ class TetrisRenderer:
         self.screen.blit(settings_text, settings_rect)
 
         # Controls hint
-        hint_text = self.tiny_font.render("Use UP/DOWN arrows to select level", True, GRAY)
+        hint_text = self.tiny_font.render(
+            "Use UP/DOWN arrows to select level", True, GRAY
+        )
         hint_rect = hint_text.get_rect(center=(SCREEN_WIDTH // 2, 600))
         self.screen.blit(hint_text, hint_rect)
 

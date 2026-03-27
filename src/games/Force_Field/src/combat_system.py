@@ -1,14 +1,9 @@
-# ARCHITECTURE_DEBT:
-# This module historically exceeds standard length metrics and accumulates excessive domain responsibility.
-# It requires domain-aware structural extraction to isolate its internal classes appropriately.
 from __future__ import annotations
 
 import logging
 import math
 import random
 from typing import TYPE_CHECKING
-
-from numba import jit
 
 from games.shared.constants import COMBO_TIMER_FRAMES
 
@@ -232,7 +227,6 @@ class CombatSystem:
             C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2, count=8, color=(255, 255, 0)
         )
 
-    @jit(nopython=True, fastmath=True)
     def check_shot_hit(
         self,
         is_secondary: bool = False,
@@ -312,7 +306,9 @@ class CombatSystem:
             )
 
         if closest_bot:
-            self._apply_damage(closest_bot, closest_dist, weapon_range, weapon_damage, is_headshot)
+            self._apply_damage(
+                closest_bot, closest_dist, weapon_range, weapon_damage, is_headshot
+            )
 
     def _handle_secondary_hit(
         self, closest_bot: Bot | None, closest_dist: float, wall_dist: float
@@ -338,7 +334,6 @@ class CombatSystem:
             width=C.LASER_WIDTH,
         )
 
-    @jit(nopython=True, fastmath=True)
     def _apply_damage(
         self,
         bot: Bot,
@@ -377,7 +372,9 @@ class CombatSystem:
                 }
             )
 
-        self.game.particle_system.add_explosion(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2, count=5)
+        self.game.particle_system.add_explosion(
+            C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2, count=5
+        )
 
         # Improved Blood Feedback
         blood_color = (200, 0, 0)
@@ -412,8 +409,6 @@ class CombatSystem:
         self.game.sound_manager.play_sound("scream")
         self.game.event_bus.emit("bot_killed", x=bot.x, y=bot.y)
 
-    @jit(nopython=True, fastmath=True)
-    @jit(nopython=True, fastmath=True)
     def explode_bomb(self, projectile: Projectile) -> None:
         """Handle bomb explosion logic"""
         dist_to_player = math.sqrt(
@@ -488,7 +483,6 @@ class CombatSystem:
             }
         )
 
-    @jit(nopython=True, fastmath=True)
     def explode_laser(self, impact_x: float, impact_y: float) -> None:
         """Trigger Massive Laser Explosion at Impact Point"""
         try:
@@ -540,8 +534,9 @@ class CombatSystem:
                 }
             )
 
-    @jit(nopython=True, fastmath=True)
-    def _explode_generic(self, projectile: Projectile, radius: float, weapon_type: str) -> None:
+    def _explode_generic(
+        self, projectile: Projectile, radius: float, weapon_type: str
+    ) -> None:
         """Generic explosion logic"""
         dist_to_player = math.sqrt(
             (projectile.x - self.player.x) ** 2 + (projectile.y - self.player.y) ** 2

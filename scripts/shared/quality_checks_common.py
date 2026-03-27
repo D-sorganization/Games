@@ -209,4 +209,6 @@ def get_python_files(
         return [Path(arg) for arg in file_args]
 
     python_files = list(Path().rglob("*.py"))
-    return [f for f in python_files if not any(part in exclude_dirs for part in f.parts)]
+    return [
+        f for f in python_files if not any(part in exclude_dirs for part in f.parts)
+    ]

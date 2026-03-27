@@ -84,10 +84,14 @@ class TestUnsubscribe:
         bus.emit("test")
         assert calls == []
 
-    def test_unsubscribe_nonexistent_callback_does_not_raise(self, bus: EventBus) -> None:
+    def test_unsubscribe_nonexistent_callback_does_not_raise(
+        self, bus: EventBus
+    ) -> None:
         bus.unsubscribe("test", lambda **kw: None)
 
-    def test_unsubscribe_from_nonexistent_event_does_not_raise(self, bus: EventBus) -> None:
+    def test_unsubscribe_from_nonexistent_event_does_not_raise(
+        self, bus: EventBus
+    ) -> None:
         bus.unsubscribe("never_registered", lambda **kw: None)
 
     def test_unsubscribe_only_removes_target(self, bus: EventBus) -> None:
@@ -107,7 +111,9 @@ class TestUnsubscribe:
         assert calls_a == []
         assert calls_b == ["b"]
 
-    def test_unsubscribe_duplicate_removes_first_occurrence(self, bus: EventBus) -> None:
+    def test_unsubscribe_duplicate_removes_first_occurrence(
+        self, bus: EventBus
+    ) -> None:
         calls: list[str] = []
 
         def cb(**kw: object) -> None:

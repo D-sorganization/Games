@@ -1,6 +1,3 @@
-# ARCHITECTURE_DEBT:
-# This module historically exceeds standard length metrics and accumulates excessive domain responsibility.
-# It requires domain-aware structural extraction to isolate its internal classes appropriately.
 from __future__ import annotations
 
 import logging
@@ -8,7 +5,6 @@ import math
 import random
 
 import pygame
-from numba import jit
 
 from games.shared.config import RaycasterConfig
 
@@ -131,7 +127,9 @@ class Game(FPSGameBase):
         self.game_over_timer = 0
 
         # Audio (must be initialized before managers that depend on it)
-        self.sound_manager = sound_manager if sound_manager is not None else SoundManager()
+        self.sound_manager = (
+            sound_manager if sound_manager is not None else SoundManager()
+        )
         self.sound_manager.start_music()
 
         # Event Bus -- lightweight pub/sub for decoupling subsystems
@@ -489,7 +487,9 @@ class Game(FPSGameBase):
 
     def explode_laser(self, impact_x: float, impact_y: float) -> None:
         """Delegate laser explosion to the combat manager."""
-        self.damage_texts = self.combat_manager.explode_laser(impact_x, impact_y, self.damage_texts)
+        self.damage_texts = self.combat_manager.explode_laser(
+            impact_x, impact_y, self.damage_texts
+        )
         self._sync_combat_state()
 
     def explode_plasma(self, projectile: Projectile) -> None:
@@ -648,16 +648,24 @@ class Game(FPSGameBase):
         moving = False
 
         if self.input_manager.is_action_pressed("move_forward"):
-            self.player.move(self.game_map, self.bots, forward=True, speed=current_speed)
+            self.player.move(
+                self.game_map, self.bots, forward=True, speed=current_speed
+            )
             moving = True
         if self.input_manager.is_action_pressed("move_backward"):
-            self.player.move(self.game_map, self.bots, forward=False, speed=current_speed)
+            self.player.move(
+                self.game_map, self.bots, forward=False, speed=current_speed
+            )
             moving = True
         if self.input_manager.is_action_pressed("strafe_left"):
-            self.player.strafe(self.game_map, self.bots, right=False, speed=current_speed)
+            self.player.strafe(
+                self.game_map, self.bots, right=False, speed=current_speed
+            )
             moving = True
         if self.input_manager.is_action_pressed("strafe_right"):
-            self.player.strafe(self.game_map, self.bots, right=True, speed=current_speed)
+            self.player.strafe(
+                self.game_map, self.bots, right=True, speed=current_speed
+            )
             moving = True
 
         self.player.is_moving = moving
@@ -671,7 +679,6 @@ class Game(FPSGameBase):
         if self.input_manager.is_action_pressed("look_down"):
             self.player.pitch_view(-5)
 
-    @jit(nopython=True, fastmath=True)
     def _check_item_pickups(self) -> None:
         for bot in self.bots:
             is_item = bot.enemy_type.startswith(("health", "ammo", "bomb", "pickup"))
@@ -724,8 +731,6 @@ class Game(FPSGameBase):
                             }
                         )
 
-    @jit(nopython=True, fastmath=True)
-    @jit(nopython=True, fastmath=True)
     def _update_large_fog_reveal(self) -> None:
         cx, cy = int(self.player.x), int(self.player.y)
         reveal_radius = FOG_REVEAL_RADIUS
@@ -734,7 +739,6 @@ class Game(FPSGameBase):
                 if r_i * r_i + r_j * r_j <= reveal_radius * reveal_radius:
                     self.visited_cells.add((cx + r_j, cy + r_i))
 
-    @jit(nopython=True, fastmath=True)
     def _update_atmosphere(self) -> None:
         min_dist_sq = float("inf")
         for bot in self.bots:
@@ -745,7 +749,9 @@ class Game(FPSGameBase):
                 if d_sq < min_dist_sq:
                     min_dist_sq = d_sq
 
-        min_dist = math.sqrt(min_dist_sq) if min_dist_sq != float("inf") else float("inf")
+        min_dist = (
+            math.sqrt(min_dist_sq) if min_dist_sq != float("inf") else float("inf")
+        )
 
         if min_dist < 15:
             self.beast_timer -= 1
@@ -882,7 +888,9 @@ class Game(FPSGameBase):
                         self.intro_start_time = pygame.time.get_ticks()
                     elapsed = pygame.time.get_ticks() - self.intro_start_time
 
-                    self.ui_renderer.render_intro(self.intro_phase, self.intro_step, elapsed)
+                    self.ui_renderer.render_intro(
+                        self.intro_phase, self.intro_step, elapsed
+                    )
                     self._update_intro_logic(elapsed)
 
                 elif self.state == GameState.MENU:

@@ -4,8 +4,6 @@ import math
 import random
 from typing import TYPE_CHECKING
 
-from numba import jit
-
 from games.shared.constants import DEATH_ANIMATION_FRAMES, DISINTEGRATE_FRAMES
 from games.shared.utils import has_line_of_sight
 
@@ -136,7 +134,9 @@ class Bot:
         self.frozen = False
         self.frozen_timer = 0
 
-    def update(self, game_map: Map, player: Player, other_bots: list[Bot]) -> Projectile | None:
+    def update(
+        self, game_map: Map, player: Player, other_bots: list[Bot]
+    ) -> Projectile | None:
         """Update bot AI"""
         if self._check_status_effects():
             return None
@@ -396,7 +396,6 @@ class Bot:
         self._update_default_movement(game_map, player, other_bots)
         return None
 
-    @jit(nopython=True, fastmath=True)
     def _update_default_movement(
         self, game_map: Map, player: Player, other_bots: list[Bot]
     ) -> None:

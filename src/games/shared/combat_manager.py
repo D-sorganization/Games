@@ -1,5 +1,3 @@
-from numba import jit
-
 """Base class for combat managers.
 
 Encapsulates hit detection, damage application, kill tracking,
@@ -81,7 +79,7 @@ class CombatManagerBase:
     # ------------------------------------------------------------------
     # Hitscan shot detection
     # ------------------------------------------------------------------
-    @jit(nopython=True, fastmath=True)
+
     def check_shot_hit(
         self,
         player: Any,
@@ -198,7 +196,9 @@ class CombatManagerBase:
                 )
 
             # Visual traces
-            self._add_shot_visuals(player, aim_angle, closest_bot, closest_dist, wall_dist)
+            self._add_shot_visuals(
+                player, aim_angle, closest_bot, closest_dist, wall_dist
+            )
 
         except Exception:  # noqa: BLE001
             logger.exception("Error in check_shot_hit")
@@ -353,8 +353,7 @@ class CombatManagerBase:
     # ------------------------------------------------------------------
     # Explosion helpers
     # ------------------------------------------------------------------
-    @jit(nopython=True, fastmath=True)
-    @jit(nopython=True, fastmath=True)
+
     def handle_bomb_explosion(
         self,
         player: Any,
@@ -441,7 +440,6 @@ class CombatManagerBase:
         )
         return damage_texts
 
-    @jit(nopython=True, fastmath=True)
     def explode_laser(
         self,
         impact_x: float,
@@ -511,7 +509,6 @@ class CombatManagerBase:
 
         return damage_texts
 
-    @jit(nopython=True, fastmath=True)
     def explode_generic(
         self,
         projectile: Any,
@@ -524,7 +521,9 @@ class CombatManagerBase:
 
         Returns the updated damage_flash_timer value.
         """
-        dist_to_player = math.sqrt((projectile.x - player.x) ** 2 + (projectile.y - player.y) ** 2)
+        dist_to_player = math.sqrt(
+            (projectile.x - player.x) ** 2 + (projectile.y - player.y) ** 2
+        )
         if dist_to_player < 15:
             damage_flash_timer = 15
 

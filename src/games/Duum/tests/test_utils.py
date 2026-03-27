@@ -109,7 +109,9 @@ class TestUtils(unittest.TestCase):
     def test_projectile_bounds_handling(self) -> None:
         """Test that projectiles handle map boundaries correctly."""
         # Create projectile near boundary
-        projectile = Projectile(x=18.5, y=10.0, angle=0.0, damage=10, speed=1.0, is_player=True)
+        projectile = Projectile(
+            x=18.5, y=10.0, angle=0.0, damage=10, speed=1.0, is_player=True
+        )
 
         # Update projectile (should move toward boundary)
         projectile.update(self.map)
@@ -119,7 +121,9 @@ class TestUtils(unittest.TestCase):
         self.assertTrue(isinstance(projectile.alive, bool))
 
         # Test projectile going out of bounds in negative direction
-        projectile2 = Projectile(x=1.5, y=10.0, angle=math.pi, damage=10, speed=1.0, is_player=True)
+        projectile2 = Projectile(
+            x=1.5, y=10.0, angle=math.pi, damage=10, speed=1.0, is_player=True
+        )
 
         projectile2.update(self.map)
 

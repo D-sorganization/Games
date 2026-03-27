@@ -58,7 +58,9 @@ class TetrisGame:
         """Toggle game pause state"""
         if self.state in [C.GameState.PLAYING, C.GameState.PAUSED]:
             self.state = (
-                C.GameState.PAUSED if self.state == C.GameState.PLAYING else C.GameState.PLAYING
+                C.GameState.PAUSED
+                if self.state == C.GameState.PLAYING
+                else C.GameState.PLAYING
             )
 
     def restart_game(self) -> None:
@@ -81,7 +83,9 @@ class TetrisGame:
             elif event.key == pygame.K_DOWN:
                 levels = [1, 5, 10, 15, 20]
                 current_idx = levels.index(self.logic.starting_level)
-                self.logic.starting_level = levels[min(len(levels) - 1, current_idx + 1)]
+                self.logic.starting_level = levels[
+                    min(len(levels) - 1, current_idx + 1)
+                ]
             elif event.key == pygame.K_RETURN:
                 self.logic.reset_game()
                 self.state = C.GameState.PLAYING
@@ -104,12 +108,17 @@ class TetrisGame:
             {"label": "Controller Mappings", "type": "header", "key": ""},
         ]
 
-        entries.extend(
-            [
-                {"label": description, "key": action_key, "type": "mapping"}
-                for (action_key, description) in self.input_handler.iter_action_labels()
-            ]
-        )
+        for (
+            action_key,
+            description,
+        ) in self.input_handler.iter_action_labels():
+            entries.append(
+                {
+                    "label": description,
+                    "key": action_key,
+                    "type": "mapping",
+                },
+            )
 
         return entries
 
@@ -182,7 +191,9 @@ class TetrisGame:
                 value_text = self.input_handler.get_binding_label(entry["key"])
 
             label_text = self.renderer.render_normal_text(label, True, color)
-            value_render = self.renderer.render_small_text(value_text, True, C.LIGHT_GRAY)
+            value_render = self.renderer.render_small_text(
+                value_text, True, C.LIGHT_GRAY
+            )
 
             self.screen.blit(label_text, (140, y_offset))
             if value_text:
@@ -312,7 +323,9 @@ class TetrisGame:
                     overlay.fill(C.BLACK)
                     overlay.set_alpha(128)
                     self.screen.blit(overlay, (0, 0))
-                    pause_text = self.renderer.render_large_text("PAUSED", True, C.YELLOW)
+                    pause_text = self.renderer.render_large_text(
+                        "PAUSED", True, C.YELLOW
+                    )
                     center = (C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2)
                     pause_rect = pause_text.get_rect(center=center)
                     self.screen.blit(pause_text, pause_rect)

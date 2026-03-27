@@ -6,7 +6,6 @@ import random
 from typing import TYPE_CHECKING, Any
 
 import pygame
-from numba import jit
 
 from games.shared.interfaces import Portal
 
@@ -95,7 +94,9 @@ class GameRenderer:
         # Damage Flash
         if game.player.damage_flash_timer > 0:
             alpha = int((game.player.damage_flash_timer / 15.0) * 128)
-            flash_surf = pygame.Surface((C.SCREEN_WIDTH, C.SCREEN_HEIGHT), pygame.SRCALPHA)
+            flash_surf = pygame.Surface(
+                (C.SCREEN_WIDTH, C.SCREEN_HEIGHT), pygame.SRCALPHA
+            )
             flash_surf.fill((255, 0, 0, alpha))
             self.effects_surface.blit(flash_surf, (0, 0))
 
@@ -122,7 +123,9 @@ class GameRenderer:
         # I'll leave weapon as is for now, head bob is already there.
 
         if game.player.shooting:
-            self.weapon_renderer.render_muzzle_flash(game.player.current_weapon, weapon_pos)
+            self.weapon_renderer.render_muzzle_flash(
+                game.player.current_weapon, weapon_pos
+            )
 
         # 5. UI / HUD
         if game.show_minimap:
@@ -139,9 +142,9 @@ class GameRenderer:
 
         pygame.display.flip()
 
-    @jit(nopython=True, fastmath=True)
-    @jit(nopython=True, fastmath=True)
-    def _render_particles(self, particles: list[Any], offset: tuple[int, int] = (0, 0)) -> None:
+    def _render_particles(
+        self, particles: list[Any], offset: tuple[int, int] = (0, 0)
+    ) -> None:
         """Render particle effects including lasers and explosion particles.
 
         Args:
@@ -183,8 +186,6 @@ class GameRenderer:
                     int(p.size),
                 )
 
-    @jit(nopython=True, fastmath=True)
-    @jit(nopython=True, fastmath=True)
     def _render_portal(self, portal: Portal | None, player: Player) -> None:
         """Render portal visual effects if active.
 

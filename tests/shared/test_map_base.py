@@ -166,7 +166,9 @@ class TestMapBaseGeneration:
                     queue.append((nx, ny))
 
         # Count total open cells
-        total_open = sum(1 for i in range(m.size) for j in range(m.size) if m.grid[i][j] == 0)
+        total_open = sum(
+            1 for i in range(m.size) for j in range(m.size) if m.grid[i][j] == 0
+        )
 
         assert (
             len(visited) == total_open

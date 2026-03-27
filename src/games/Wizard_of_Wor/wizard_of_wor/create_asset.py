@@ -3,14 +3,10 @@ import os
 import random
 
 import pygame
-from numba import jit
 
 logger = logging.getLogger(__name__)
 
 
-@jit(nopython=True, fastmath=True)
-@jit(nopython=True, fastmath=True)
-@jit(nopython=True, fastmath=True)
 def create_title_image() -> None:
     """Create a title image for Wizard of Wor game."""
     pygame.init()

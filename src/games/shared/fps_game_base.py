@@ -1,4 +1,3 @@
-from numba import jit
 """Base class for FPS raycaster games (Duum, Force_Field, Zombie_Survival).
 
 Consolidates identical methods shared across FPS games to eliminate
@@ -142,8 +141,6 @@ class FPSGameBase:
         if self.player.current_weapon != weapon_name:
             self.player.switch_weapon(weapon_name)
             self.add_message(f"SWITCHED TO {weapon_name.upper()}", self.C.YELLOW)
-    @jit(nopython=True, fastmath=True)
-    @jit(nopython=True, fastmath=True)
 
     def spawn_portal(self) -> None:
         """Spawn exit portal at last death position or near player."""
@@ -165,7 +162,6 @@ class FPSGameBase:
                     if not self.game_map.is_wall(tx, ty):
                         self.portal = {"x": tx + 0.5, "y": ty + 0.5}
                         return
-    @jit(nopython=True, fastmath=True)
 
     def find_safe_spawn(
         self,
@@ -180,7 +176,6 @@ class FPSGameBase:
             return (base_x, base_y, angle)
 
         for attempt in range(10):
-            # OPTIMIZATION_TARGET: Migrate computationally bound loop to PyO3/Rust Core natively
             radius = attempt * 2
             for angle_offset in [
                 0,
@@ -224,7 +219,8 @@ class FPSGameBase:
             ),
         ]
 
-        safe_corners.extend([self.find_safe_spawn(x, y, angle) for (x, y, angle) in corners])
+        safe_corners = []
+        for x, y, angle in corners:
             safe_corners.append(self.find_safe_spawn(x, y, angle))
 
         return safe_corners
@@ -397,7 +393,6 @@ class FPSGameBase:
             if self.player.fire_secondary():
                 self.fire_weapon(is_secondary=True)
 
-    @jit(nopython=True, fastmath=True)
     def handle_game_events(self) -> None:
         """Handle events during gameplay."""
         for event in pygame.event.get():
@@ -411,7 +406,9 @@ class FPSGameBase:
 
                 if self.input_manager.is_action_just_pressed(event, "pause"):
                     self._handle_pause_toggle(event)
-                elif event.key == pygame.K_c and (pygame.key.get_mods() & pygame.KMOD_CTRL):
+                elif event.key == pygame.K_c and (
+                    pygame.key.get_mods() & pygame.KMOD_CTRL
+                ):
                     self.cheat_mode_active = True
                     self.current_cheat_input = ""
                     self.add_message("CHEAT MODE: TYPE CODE", self.C.PURPLE)
@@ -430,7 +427,9 @@ class FPSGameBase:
             elif event.type == pygame.MOUSEMOTION and not self.paused:
                 if not (self.player is not None):
                     raise ValueError("DbC Blocked: Precondition failed.")
-                self.player.rotate(event.rel[0] * self.C.PLAYER_ROT_SPEED * self.C.SENSITIVITY_X)
+                self.player.rotate(
+                    event.rel[0] * self.C.PLAYER_ROT_SPEED * self.C.SENSITIVITY_X
+                )
                 self.player.pitch_view(-event.rel[1] * self.C.PLAYER_ROT_SPEED * 200)
 
     def save_game(self, filename: str = "savegame.txt") -> None:
