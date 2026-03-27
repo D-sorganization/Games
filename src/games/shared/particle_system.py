@@ -1,3 +1,5 @@
+from numba import jit
+
 """Shared 2D/3D particle system for Pygame games.
 
 Consolidates common particle logic from Force_Field, Duum, and
@@ -205,6 +207,7 @@ class ParticleSystem:
             )
         )
 
+    @jit(nopython=True, fastmath=True)
     def add_explosion(
         self,
         x: float,
@@ -297,6 +300,7 @@ class ParticleSystem:
         """Add a single 3D world-space particle."""
         self.world_particles.append(WorldParticle(x, y, z, dx, dy, dz, color, timer, size, gravity))
 
+    @jit(nopython=True, fastmath=True)
     def add_world_explosion(
         self,
         x: float,

@@ -3,6 +3,8 @@ from __future__ import annotations
 import random
 from typing import Any
 
+from numba import jit
+
 from .constants import (
     BLACK,
     GRID_HEIGHT,
@@ -229,6 +231,7 @@ class TetrisLogic:
         if not self.valid_move(self.current_piece):
             self.game_over = True
 
+    @jit(nopython=True, fastmath=True)
     def create_particles(self, row: int) -> None:
         """Create particle effects for cleared line"""
         for x in range(GRID_WIDTH):

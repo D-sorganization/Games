@@ -1,3 +1,5 @@
+from numba import jit
+
 """Pure rendering helpers for the raycasting engine.
 
 Extracted from raycaster.py (issue #568) to reduce that module's size.
@@ -183,6 +185,7 @@ def collect_visible_runs(
     return visible_runs, total_visible_pixels
 
 
+@jit(nopython=True, fastmath=True)
 def blit_whole_scaled(  # noqa: PLR0913
     sprite_surface: pygame.Surface,
     cache_key: tuple[Any, ...],
@@ -237,6 +240,7 @@ def blit_whole_scaled(  # noqa: PLR0913
             view_surface.blit(scaled_sprite, (run_start, dst_y), area)
 
 
+@jit(nopython=True, fastmath=True)
 def blit_strip_scaled(  # noqa: PLR0913
     sprite_surface: pygame.Surface,
     visible_runs: list[tuple[int, int]],
@@ -310,6 +314,8 @@ def draw_projectile_effect(
 # ---------------------------------------------------------------------------
 
 
+@jit(nopython=True, fastmath=True)
+@jit(nopython=True, fastmath=True)
 def generate_background_surface(
     level: int,
     level_themes: list[dict[str, Any]],
@@ -366,6 +372,7 @@ def generate_background_surface(
     return background_surface, scaled_background_surface, theme_idx
 
 
+@jit(nopython=True, fastmath=True)
 def render_floor_ceiling(  # noqa: PLR0913
     screen: pygame.Surface,
     player: Player,
@@ -486,6 +493,7 @@ def generate_minimap_cache(
     return surface
 
 
+@jit(nopython=True, fastmath=True)
 def render_minimap(  # noqa: PLR0913
     screen: pygame.Surface,
     player: Player,

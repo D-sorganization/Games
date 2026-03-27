@@ -5,6 +5,7 @@ import math
 from typing import TYPE_CHECKING, Any
 
 import pygame
+from numba import jit
 
 from . import constants as C  # noqa: N812
 from .weapon_renderer import WeaponRenderer
@@ -71,6 +72,8 @@ class GameRenderer:
 
         pygame.display.flip()
 
+    @jit(nopython=True, fastmath=True)
+    @jit(nopython=True, fastmath=True)
     def _render_particles(self, particles: list[Any]) -> None:
         """Render particle effects including lasers and explosion particles.
 

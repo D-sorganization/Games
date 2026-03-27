@@ -1,3 +1,5 @@
+from numba import jit
+
 """Base class for game maps with pluggable generation strategies."""
 
 from __future__ import annotations
@@ -72,6 +74,9 @@ class MapBase:
         # 4. Ensure connectivity (Flood fill)
         self._ensure_connectivity()
 
+    @jit(nopython=True, fastmath=True)
+    @jit(nopython=True, fastmath=True)
+    @jit(nopython=True, fastmath=True)
     def _add_rooms(self) -> None:
         """Add rectangular rooms to the map."""
         size = self.size
@@ -102,6 +107,8 @@ class MapBase:
                 self.grid[y][j] = wall_type
                 self.grid[y + h - 1][j] = wall_type
 
+    @jit(nopython=True, fastmath=True)
+    @jit(nopython=True, fastmath=True)
     def _ensure_connectivity(self) -> None:
         """Ensure map connectivity using flood fill."""
         size = self.size

@@ -1,3 +1,5 @@
+from numba import jit
+
 """
 Enemy characters for Wizard of Wor.
 """
@@ -79,6 +81,7 @@ class Enemy:
         self.invisibility_time = 0
         self.spawn_flash = 36
 
+    @jit(nopython=True, fastmath=True)
     def update(self, dungeon: Any, player_pos: tuple[float, float]) -> None:
         """Update enemy position and behavior."""
         if not self.alive:

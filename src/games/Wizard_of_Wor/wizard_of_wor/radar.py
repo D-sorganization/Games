@@ -1,3 +1,5 @@
+from numba import jit
+
 """
 Radar system for Wizard of Wor.
 """
@@ -41,6 +43,7 @@ class Radar:
         if self.ping_timer <= 0:
             self.ping_timer = RADAR_PING_INTERVAL
 
+    @jit(nopython=True, fastmath=True)
     def draw(self, screen: pygame.Surface, enemies: list[Any], player: Any) -> None:
         """Draw the radar with enemy positions."""
         # Draw radar background with cross hairs

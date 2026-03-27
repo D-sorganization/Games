@@ -1,3 +1,5 @@
+from numba import jit
+
 """Visual effects helpers for the Wizard of Wor remake."""
 
 from __future__ import annotations
@@ -173,6 +175,8 @@ class Vignette:
 
     _surface_cache: ClassVar[dict[tuple[int, int], pygame.Surface]] = {}
 
+    @jit(nopython=True, fastmath=True)
+    @jit(nopython=True, fastmath=True)
     def __init__(
         self,
         size: tuple[int, int],

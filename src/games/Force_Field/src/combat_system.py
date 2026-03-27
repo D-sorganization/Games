@@ -1,13 +1,14 @@
 # ARCHITECTURE_DEBT:
 # This module historically exceeds standard length metrics and accumulates excessive domain responsibility.
 # It requires domain-aware structural extraction to isolate its internal classes appropriately.
-
 from __future__ import annotations
 
 import logging
 import math
 import random
 from typing import TYPE_CHECKING
+
+from numba import jit
 
 from games.shared.constants import COMBO_TIMER_FRAMES
 
@@ -231,6 +232,7 @@ class CombatSystem:
             C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2, count=8, color=(255, 255, 0)
         )
 
+    @jit(nopython=True, fastmath=True)
     def check_shot_hit(
         self,
         is_secondary: bool = False,
@@ -336,6 +338,7 @@ class CombatSystem:
             width=C.LASER_WIDTH,
         )
 
+    @jit(nopython=True, fastmath=True)
     def _apply_damage(
         self,
         bot: Bot,
@@ -409,6 +412,8 @@ class CombatSystem:
         self.game.sound_manager.play_sound("scream")
         self.game.event_bus.emit("bot_killed", x=bot.x, y=bot.y)
 
+    @jit(nopython=True, fastmath=True)
+    @jit(nopython=True, fastmath=True)
     def explode_bomb(self, projectile: Projectile) -> None:
         """Handle bomb explosion logic"""
         dist_to_player = math.sqrt(
@@ -483,6 +488,7 @@ class CombatSystem:
             }
         )
 
+    @jit(nopython=True, fastmath=True)
     def explode_laser(self, impact_x: float, impact_y: float) -> None:
         """Trigger Massive Laser Explosion at Impact Point"""
         try:
@@ -534,6 +540,7 @@ class CombatSystem:
                 }
             )
 
+    @jit(nopython=True, fastmath=True)
     def _explode_generic(self, projectile: Projectile, radius: float, weapon_type: str) -> None:
         """Generic explosion logic"""
         dist_to_player = math.sqrt(

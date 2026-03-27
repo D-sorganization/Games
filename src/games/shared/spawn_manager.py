@@ -1,3 +1,5 @@
+from numba import jit
+
 """Base class for spawn managers.
 
 Encapsulates enemy spawning, position validation, and level scaling
@@ -118,6 +120,8 @@ class SpawnManagerBase:
             return True
         return False
 
+    @jit(nopython=True, fastmath=True)
+    @jit(nopython=True, fastmath=True)
     def spawn_enemies(
         self,
         player_pos: tuple[float, float, float],
@@ -153,6 +157,7 @@ class SpawnManagerBase:
             if not placed:
                 logger.warning("Failed to spawn enemy after 50 attempts.")
 
+    @jit(nopython=True, fastmath=True)
     def spawn_boss(
         self,
         player_pos: tuple[float, float, float],
@@ -178,6 +183,7 @@ class SpawnManagerBase:
                 )
                 break
 
+    @jit(nopython=True, fastmath=True)
     def spawn_pickups(self, game_map: Any, level: int) -> None:
         """Spawn weapon pickups on the map."""
         for w_pickup in self.WEAPON_PICKUPS:
@@ -187,6 +193,7 @@ class SpawnManagerBase:
                 if not game_map.is_wall(rx, ry):
                     self.entity_manager.add_bot(self._make_bot(rx + 0.5, ry + 0.5, level, w_pickup))
 
+    @jit(nopython=True, fastmath=True)
     def spawn_items(self, game_map: Any, level: int) -> None:
         """Spawn health packs, ammo boxes, and bombs."""
         for _ in range(self.ITEM_COUNT):

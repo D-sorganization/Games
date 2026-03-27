@@ -3,6 +3,7 @@ from __future__ import annotations
 import random
 
 import pygame
+from numba import jit
 
 from . import constants as C  # noqa: N812
 
@@ -130,6 +131,7 @@ class ParticleSystem:
         """Add a 3D world particle."""
         self.world_particles.append(WorldParticle(x, y, z, dx, dy, dz, color, timer, size, gravity))
 
+    @jit(nopython=True, fastmath=True)
     def add_world_explosion(
         self,
         x: float,

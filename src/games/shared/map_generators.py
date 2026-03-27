@@ -1,3 +1,5 @@
+from numba import jit
+
 """Pluggable map generation strategies.
 
 Provides a Protocol-based strategy pattern for map generation,
@@ -96,6 +98,8 @@ class CellularAutomataGenerator:
 # ---------------------------------------------------------------------------
 
 
+@jit(nopython=True, fastmath=True)
+@jit(nopython=True, fastmath=True)
 def _count_wall_neighbors(grid: list[list[int]], row: int, col: int) -> int:
     """Count how many of the 8 neighbours of (row, col) are walls (> 0)."""
     count = 0

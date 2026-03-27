@@ -104,17 +104,12 @@ class TetrisGame:
             {"label": "Controller Mappings", "type": "header", "key": ""},
         ]
 
-        for (
-            action_key,
-            description,
-        ) in self.input_handler.iter_action_labels():
-            entries.append(
-                {
-                    "label": description,
-                    "key": action_key,
-                    "type": "mapping",
-                },
-            )
+        entries.extend(
+            [
+                {"label": description, "key": action_key, "type": "mapping"}
+                for (action_key, description) in self.input_handler.iter_action_labels()
+            ]
+        )
 
         return entries
 

@@ -1,3 +1,5 @@
+from numba import jit
+
 """Base class for combat managers.
 
 Encapsulates hit detection, damage application, kill tracking,
@@ -79,7 +81,7 @@ class CombatManagerBase:
     # ------------------------------------------------------------------
     # Hitscan shot detection
     # ------------------------------------------------------------------
-
+    @jit(nopython=True, fastmath=True)
     def check_shot_hit(
         self,
         player: Any,
@@ -351,7 +353,8 @@ class CombatManagerBase:
     # ------------------------------------------------------------------
     # Explosion helpers
     # ------------------------------------------------------------------
-
+    @jit(nopython=True, fastmath=True)
+    @jit(nopython=True, fastmath=True)
     def handle_bomb_explosion(
         self,
         player: Any,
@@ -438,6 +441,7 @@ class CombatManagerBase:
         )
         return damage_texts
 
+    @jit(nopython=True, fastmath=True)
     def explode_laser(
         self,
         impact_x: float,
@@ -507,6 +511,7 @@ class CombatManagerBase:
 
         return damage_texts
 
+    @jit(nopython=True, fastmath=True)
     def explode_generic(
         self,
         projectile: Any,
