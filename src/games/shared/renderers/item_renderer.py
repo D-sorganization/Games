@@ -35,9 +35,7 @@ class ItemRenderer(BaseBotStyleRenderer):
             self._render_bomb_item(screen, cx, ry, rw, rh)
         else:
             # Fallback
-            pygame.draw.rect(
-                screen, color, (int(cx - rw / 2), int(ry), int(rw), int(rh))
-            )
+            pygame.draw.rect(screen, color, (int(cx - rw / 2), int(ry), int(rw), int(rh)))
 
     def _render_health_pack(
         self, screen: pygame.Surface, cx: float, y: float, rw: float, rh: float

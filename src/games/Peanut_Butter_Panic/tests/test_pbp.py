@@ -2,9 +2,7 @@ import os
 import sys
 import unittest
 
-sys.path.append(
-    os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-)  # noqa: PTH100
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))  # noqa: PTH100
 
 from peanut_butter_panic.core import GameWorld, InputState, PowerUp
 

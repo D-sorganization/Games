@@ -1,3 +1,4 @@
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -7,12 +8,12 @@ from src.weapon_renderer import WeaponRenderer
 
 
 @pytest.fixture
-def screen():
+def screen() -> Any:
     return MagicMock()
 
 
 @pytest.fixture
-def player():
+def player() -> Any:
     p = MagicMock()
     p.sway_amount = 0.0
     p.is_moving = False
@@ -31,7 +32,7 @@ def player():
     return p
 
 
-def test_render_weapon_pistol_idle(screen, player):
+def test_render_weapon_pistol_idle(screen, player) -> Any:
     wr = WeaponRenderer(screen)
     with patch("pygame.time.get_ticks", return_value=0):
         with patch("pygame.draw.rect", create=True) as mock_rect:
@@ -45,7 +46,7 @@ def test_render_weapon_pistol_idle(screen, player):
                     mock_line.assert_called()
 
 
-def test_render_weapon_moving_bob_and_sway(screen, player):
+def test_render_weapon_moving_bob_and_sway(screen, player) -> Any:
     wr = WeaponRenderer(screen)
     player.is_moving = True
     player.bob_phase = 1.0
@@ -60,7 +61,7 @@ def test_render_weapon_moving_bob_and_sway(screen, player):
         assert cy == C.SCREEN_HEIGHT + 10
 
 
-def test_render_weapon_shooting_pistol(screen, player):
+def test_render_weapon_shooting_pistol(screen, player) -> Any:
     wr = WeaponRenderer(screen)
     player.shooting = True
     with (
@@ -72,7 +73,7 @@ def test_render_weapon_shooting_pistol(screen, player):
         mock_poly.assert_called()
 
 
-def test_render_weapon_rifle(screen, player):
+def test_render_weapon_rifle(screen, player) -> Any:
     wr = WeaponRenderer(screen)
     player.current_weapon = "rifle"
     player.zoomed = True
@@ -99,7 +100,7 @@ def test_render_weapon_rifle(screen, player):
         cx, cy = wr.render_weapon(player)
 
 
-def test_render_weapon_shotgun(screen, player):
+def test_render_weapon_shotgun(screen, player) -> Any:
     wr = WeaponRenderer(screen)
     player.current_weapon = "shotgun"
     with (
@@ -111,7 +112,7 @@ def test_render_weapon_shotgun(screen, player):
         mock_circle.assert_called()
 
 
-def test_render_weapon_minigun(screen, player):
+def test_render_weapon_minigun(screen, player) -> Any:
     wr = WeaponRenderer(screen)
     player.current_weapon = "minigun"
     player.shooting = True
@@ -126,7 +127,7 @@ def test_render_weapon_minigun(screen, player):
             wr.render_weapon(player)
 
 
-def test_render_weapon_plasma(screen, player):
+def test_render_weapon_plasma(screen, player) -> Any:
     wr = WeaponRenderer(screen)
     player.current_weapon = "plasma"
     player.shooting = True
@@ -149,7 +150,7 @@ def test_render_weapon_plasma(screen, player):
         wr.render_weapon(player)
 
 
-def test_render_weapon_unknown_zero_reload_max(screen, player):
+def test_render_weapon_unknown_zero_reload_max(screen, player) -> Any:
     wr = WeaponRenderer(screen)
     player.current_weapon = "unknown"
     player.weapon_state["unknown"]["reloading"] = True
@@ -160,28 +161,28 @@ def test_render_weapon_unknown_zero_reload_max(screen, player):
     assert cx == C.SCREEN_WIDTH // 2
 
 
-def test_render_muzzle_flash_plasma(screen):
+def test_render_muzzle_flash_plasma(screen) -> Any:
     wr = WeaponRenderer(screen)
     with patch("pygame.draw.circle", create=True) as mock_circle:
         wr.render_muzzle_flash("plasma", (400, 600))
         assert mock_circle.call_count == 3
 
 
-def test_render_muzzle_flash_shotgun(screen):
+def test_render_muzzle_flash_shotgun(screen) -> Any:
     wr = WeaponRenderer(screen)
     with patch("pygame.draw.circle", create=True) as mock_circle:
         wr.render_muzzle_flash("shotgun", (400, 600))
         assert mock_circle.call_count == 3
 
 
-def test_render_muzzle_flash_minigun(screen):
+def test_render_muzzle_flash_minigun(screen) -> Any:
     wr = WeaponRenderer(screen)
     with patch("pygame.draw.circle", create=True) as mock_circle:
         wr.render_muzzle_flash("minigun", (400, 600))
         assert mock_circle.call_count == 2
 
 
-def test_render_muzzle_flash_default(screen):
+def test_render_muzzle_flash_default(screen) -> Any:
     wr = WeaponRenderer(screen)
     with patch("pygame.draw.circle", create=True) as mock_circle:
         wr.render_muzzle_flash("pistol", (400, 600))

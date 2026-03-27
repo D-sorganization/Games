@@ -31,9 +31,7 @@ class MinigunnerStyleRenderer(BaseBotStyleRenderer):
         # Body armor
         body_x = cx - rw / 2
         body_y = ry + rh * 0.2
-        pygame.draw.rect(
-            screen, (50, 50, 70), (int(body_x), int(body_y), int(rw), int(rh * 0.5))
-        )
+        pygame.draw.rect(screen, (50, 50, 70), (int(body_x), int(body_y), int(rw), int(rh * 0.5)))
 
         # Helmet
         head_size = rw * 0.7
@@ -56,9 +54,7 @@ class MinigunnerStyleRenderer(BaseBotStyleRenderer):
         weapon_h = rh * 0.2
         wx = cx - weapon_w / 2
         wy = body_y + rh * 0.2
-        pygame.draw.rect(
-            screen, (20, 20, 20), (int(wx), int(wy), int(weapon_w), int(weapon_h))
-        )
+        pygame.draw.rect(screen, (20, 20, 20), (int(wx), int(wy), int(weapon_w), int(weapon_h)))
 
         # Barrels
         if getattr(bot, "shoot_animation", 0) > 0:

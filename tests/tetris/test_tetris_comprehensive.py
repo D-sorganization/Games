@@ -429,16 +429,12 @@ class TestSnapshotRewind:
     def test_rewind_disabled_by_default(self, logic: TetrisLogic) -> None:
         assert not logic.allow_rewind
 
-    def test_update_rewind_history_clears_when_disabled(
-        self, logic: TetrisLogic
-    ) -> None:
+    def test_update_rewind_history_clears_when_disabled(self, logic: TetrisLogic) -> None:
         logic.rewind_history = [logic.create_snapshot()]
         logic.update_rewind_history()
         assert len(logic.rewind_history) == 0
 
-    def test_update_rewind_history_appends_when_enabled(
-        self, logic: TetrisLogic
-    ) -> None:
+    def test_update_rewind_history_appends_when_enabled(self, logic: TetrisLogic) -> None:
         logic.allow_rewind = True
         logic.update_rewind_history()
         assert len(logic.rewind_history) == 1

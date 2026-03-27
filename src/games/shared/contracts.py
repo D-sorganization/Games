@@ -58,9 +58,7 @@ def precondition(
         def wrapper(*args: Any, **kwargs: Any) -> Any:
             """Run the precondition then delegate to the original function."""
             if not check(*args, **kwargs):
-                raise ContractViolation(
-                    f"Precondition failed for {func.__qualname__}: {message}"
-                )
+                raise ContractViolation(f"Precondition failed for {func.__qualname__}: {message}")
             return func(*args, **kwargs)
 
         return wrapper
@@ -94,9 +92,7 @@ def postcondition(
             """Run the original function then verify its return value."""
             result = func(*args, **kwargs)
             if not check(result):
-                raise ContractViolation(
-                    f"Postcondition failed for {func.__qualname__}: {message}"
-                )
+                raise ContractViolation(f"Postcondition failed for {func.__qualname__}: {message}")
             return result
 
         return wrapper
@@ -201,9 +197,7 @@ def validate_range(
         ContractViolation: If value is outside the range.
     """
     if value < min_val or value > max_val:
-        raise ContractViolation(
-            f"{name} must be in [{min_val}, {max_val}], got {value}"
-        )
+        raise ContractViolation(f"{name} must be in [{min_val}, {max_val}], got {value}")
 
 
 def validate_not_none(value: Any, name: str = "value") -> None:

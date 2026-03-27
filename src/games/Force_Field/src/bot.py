@@ -134,9 +134,7 @@ class Bot:
         self.frozen = False
         self.frozen_timer = 0
 
-    def update(
-        self, game_map: Map, player: Player, other_bots: list[Bot]
-    ) -> Projectile | None:
+    def update(self, game_map: Map, player: Player, other_bots: list[Bot]) -> Projectile | None:
         """Update bot AI"""
         if self._check_status_effects():
             return None

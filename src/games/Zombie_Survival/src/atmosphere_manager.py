@@ -55,9 +55,7 @@ class AtmosphereManager:
                 if d_sq < min_dist_sq:
                     min_dist_sq = d_sq
 
-        min_dist = (
-            math.sqrt(min_dist_sq) if min_dist_sq != float("inf") else float("inf")
-        )
+        min_dist = math.sqrt(min_dist_sq) if min_dist_sq != float("inf") else float("inf")
 
         if min_dist < 15:
             game.beast_timer -= 1

@@ -63,9 +63,7 @@ class TestDuumPlayerMove:
     def test_move_updates_is_moving_when_entity_moves(
         self, player: Player, mock_map: MagicMock
     ) -> None:
-        def move_entity(
-            entity: object, dx: float, dy: float, *args: object, **kw: object
-        ) -> None:
+        def move_entity(entity: object, dx: float, dy: float, *args: object, **kw: object) -> None:
             player.x += 0.1  # Simulate actual movement
 
         with patch("games.shared.utils.try_move_entity", side_effect=move_entity):
@@ -93,28 +91,20 @@ class TestDuumPlayerStrafe:
             player.strafe(mock_map, [], right=False)
             mock_move.assert_called_once()
 
-    def test_strafe_skips_when_zoomed(
-        self, player: Player, mock_map: MagicMock
-    ) -> None:
+    def test_strafe_skips_when_zoomed(self, player: Player, mock_map: MagicMock) -> None:
         player.zoomed = True
         with patch("games.shared.utils.try_move_entity") as mock_move:
             player.strafe(mock_map, [])
             mock_move.assert_not_called()
 
-    def test_strafe_allows_shield_active(
-        self, player: Player, mock_map: MagicMock
-    ) -> None:
+    def test_strafe_allows_shield_active(self, player: Player, mock_map: MagicMock) -> None:
         player.shield_active = True
         with patch("games.shared.utils.try_move_entity") as mock_move:
             player.strafe(mock_map, [])
             mock_move.assert_called_once()
 
-    def test_strafe_updates_walk_distance(
-        self, player: Player, mock_map: MagicMock
-    ) -> None:
-        def move_entity(
-            entity: object, dx: float, dy: float, *args: object, **kw: object
-        ) -> None:
+    def test_strafe_updates_walk_distance(self, player: Player, mock_map: MagicMock) -> None:
+        def move_entity(entity: object, dx: float, dy: float, *args: object, **kw: object) -> None:
             player.x += 0.1
 
         with patch("games.shared.utils.try_move_entity", side_effect=move_entity):
