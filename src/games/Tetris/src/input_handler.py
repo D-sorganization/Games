@@ -78,7 +78,9 @@ class InputHandler:
                     logic.score += 1
                 pygame.time.wait(50)
 
-    def trigger_action(self, action: str, logic: TetrisLogic, game_state_manager: Any) -> None:
+    def trigger_action(
+        self, action: str, logic: TetrisLogic, game_state_manager: Any
+    ) -> None:
         """Execute an action from controller or keyboard"""
         if action == "pause":
             game_state_manager.toggle_pause()
@@ -98,13 +100,17 @@ class InputHandler:
 
         if action == "move_left" and logic.valid_move(logic.current_piece, x_offset=-1):
             logic.current_piece.x -= 1
-        elif action == "move_right" and logic.valid_move(logic.current_piece, x_offset=1):
+        elif action == "move_right" and logic.valid_move(
+            logic.current_piece, x_offset=1
+        ):
             logic.current_piece.x += 1
         elif action == "soft_drop":
             if logic.valid_move(logic.current_piece, y_offset=1):
                 logic.current_piece.y += 1
                 logic.score += 1
-        elif action == "rotate" and logic.valid_move(logic.current_piece, rotation_offset=1):
+        elif action == "rotate" and logic.valid_move(
+            logic.current_piece, rotation_offset=1
+        ):
             logic.current_piece.rotate()
         elif action == "hard_drop":
             logic.hard_drop()
@@ -170,7 +176,10 @@ class InputHandler:
 
         if event.type == pygame.JOYBUTTONDOWN:
             for action, binding in self.controller_mapping.items():
-                if binding.get("type") == "button" and binding.get("index") == event.button:
+                if (
+                    binding.get("type") == "button"
+                    and binding.get("index") == event.button
+                ):
                     self.trigger_action(action, logic, game_state_manager)
         elif event.type == pygame.JOYHATMOTION:
             for action, binding in self.controller_mapping.items():

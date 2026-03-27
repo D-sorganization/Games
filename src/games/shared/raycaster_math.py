@@ -125,7 +125,9 @@ def perform_dda_loop(
         map_y[mask_y] += step_y[mask_y]
         side[mask_y] = 1
 
-        in_bounds = (map_x >= 0) & (map_x < map_width) & (map_y >= 0) & (map_y < map_height)
+        in_bounds = (
+            (map_x >= 0) & (map_x < map_width) & (map_y >= 0) & (map_y < map_height)
+        )
         out_of_bounds = (~in_bounds) & active
         if np.any(out_of_bounds):
             hits[out_of_bounds] = True

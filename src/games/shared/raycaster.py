@@ -99,7 +99,9 @@ class Raycaster:
 
         # Bounded LRU cache -- eviction handled by update_cache() each frame.
         # 512 entries keeps memory bounded (see issue #583).
-        self._strip_cache: OrderedDict[tuple[str, int, int], pygame.Surface] = OrderedDict()
+        self._strip_cache: OrderedDict[tuple[str, int, int], pygame.Surface] = (
+            OrderedDict()
+        )
         self._STRIP_CACHE_MAX: int = 512
         self._STRIP_CACHE_EVICT: int = 64
 
@@ -175,7 +177,9 @@ class Raycaster:
     def _update_ray_angles(self) -> None:
         """Pre-calculate relative ray angles."""
         # Normal FOV
-        self.deltas = np.linspace(-self.config.HALF_FOV, self.config.HALF_FOV, self.num_rays)
+        self.deltas = np.linspace(
+            -self.config.HALF_FOV, self.config.HALF_FOV, self.num_rays
+        )
         self.cos_deltas = np.cos(self.deltas)
         self.sin_deltas = np.sin(self.deltas)
 
@@ -227,8 +231,12 @@ class Raycaster:
         Hard limits are intentionally conservative to bound peak VRAM.
         See issue #583.
         """
-        self._evict_lru(self._strip_cache, self._STRIP_CACHE_MAX, self._STRIP_CACHE_EVICT)
-        self._evict_lru(self.sprite_cache, self._SPRITE_CACHE_MAX, self._SPRITE_CACHE_EVICT)
+        self._evict_lru(
+            self._strip_cache, self._STRIP_CACHE_MAX, self._STRIP_CACHE_EVICT
+        )
+        self._evict_lru(
+            self.sprite_cache, self._SPRITE_CACHE_MAX, self._SPRITE_CACHE_EVICT
+        )
         self._evict_lru(
             self._scaled_sprite_cache,
             self._SCALED_SPRITE_CACHE_MAX,
@@ -295,7 +303,9 @@ class Raycaster:
         self._update_map_cache_if_needed()
 
         # Determine current FOV
-        current_fov = self.config.FOV * (self.config.ZOOM_FOV_MULT if player.zoomed else 1.0)
+        current_fov = self.config.FOV * (
+            self.config.ZOOM_FOV_MULT if player.zoomed else 1.0
+        )
 
         # Clear view surface
         self.view_surface.fill((0, 0, 0, 0))
@@ -509,7 +519,9 @@ class Raycaster:
             wall_tops_list,
             shades_list,
             fog_factors_list,
-        ) = self._prepare_wall_render_data(distances, player, fisheye_factors, view_offset_y)
+        ) = self._prepare_wall_render_data(
+            distances, player, fisheye_factors, view_offset_y
+        )
 
         use_textures = self.use_textures and len(self.textures) > 0
 
@@ -587,7 +599,9 @@ class Raycaster:
         level_themes = self.config.LEVEL_THEMES or []
         theme_idx = (level - 1) % len(level_themes) if level_themes else 0
         theme = level_themes[theme_idx] if level_themes else None
-        wall_colors: dict[int, tuple[int, int, int]] = theme.get("walls", {}) if theme else {}
+        wall_colors: dict[int, tuple[int, int, int]] = (
+            theme.get("walls", {}) if theme else {}
+        )
         self._cached_level = level
         self._cached_wall_colors = wall_colors
         return wall_colors
@@ -742,10 +756,14 @@ class Raycaster:
         for entity, dist, angle, type_id in final_sprites:
             if type_id == 1:
                 proj = cast("Projectile", entity)
-                self._draw_single_projectile(player, proj, dist, angle, half_fov, view_offset_y)
+                self._draw_single_projectile(
+                    player, proj, dist, angle, half_fov, view_offset_y
+                )
             elif type_id == 2:
                 part = cast("WorldParticle", entity)
-                self._draw_single_particle(player, part, dist, angle, half_fov, view_offset_y)
+                self._draw_single_particle(
+                    player, part, dist, angle, half_fov, view_offset_y
+                )
             else:
                 bot = cast("Bot", entity)
                 self._draw_single_sprite(
@@ -798,11 +816,15 @@ class Raycaster:
 
         # Draw
         try:
-            rect = pygame.Rect(int(ray_x), int(sprite_y), int(sprite_scale), int(sprite_scale))
+            rect = pygame.Rect(
+                int(ray_x), int(sprite_y), int(sprite_scale), int(sprite_scale)
+            )
             if rect.width > 0 and rect.height > 0:
                 # Particles are often somewhat transparent or additive?
                 # For now simple circle
-                pygame.draw.circle(self.view_surface, particle.color, rect.center, rect.width // 2)
+                pygame.draw.circle(
+                    self.view_surface, particle.color, rect.center, rect.width // 2
+                )
         except (ValueError, pygame.error):
             pass
 
@@ -834,7 +856,12 @@ class Raycaster:
         sprite_ray_width = sprite_size / self.render_scale
         sprite_ray_x = ray_x
 
-        sprite_y = self.config.SCREEN_HEIGHT / 2 - sprite_size / 2 + player.pitch + view_offset_y
+        sprite_y = (
+            self.config.SCREEN_HEIGHT / 2
+            - sprite_size / 2
+            + player.pitch
+            + view_offset_y
+        )
 
         if sprite_ray_x + sprite_ray_width < 0 or sprite_ray_x >= self.num_rays:
             return
@@ -854,7 +881,9 @@ class Raycaster:
         if target_width <= 0 or target_height <= 0:
             return
 
-        visible_runs, total_visible_pixels = self._collect_visible_runs(start_r, end_r, dist)
+        visible_runs, total_visible_pixels = self._collect_visible_runs(
+            start_r, end_r, dist
+        )
         if not visible_runs:
             return
 
@@ -914,7 +943,9 @@ class Raycaster:
         padding = (surf_size - cached_size) // 2
 
         sprite_surface = pygame.Surface((surf_size, surf_size), pygame.SRCALPHA)
-        BotRenderer.render_sprite(sprite_surface, bot, padding, padding, cached_size, self.config)
+        BotRenderer.render_sprite(
+            sprite_surface, bot, padding, padding, cached_size, self.config
+        )
 
         shade_val = int(255 * distance_shade)
         shade_color = (shade_val, shade_val, shade_val)
@@ -924,7 +955,9 @@ class Raycaster:
         if bot.frozen:
             sprite_surface.fill((150, 200, 255), special_flags=pygame.BLEND_MULT)
 
-        self._evict_lru(self.sprite_cache, self._SPRITE_CACHE_MAX, self._SPRITE_CACHE_EVICT)
+        self._evict_lru(
+            self.sprite_cache, self._SPRITE_CACHE_MAX, self._SPRITE_CACHE_EVICT
+        )
         self.sprite_cache[cache_key] = sprite_surface
         return sprite_surface, cache_key, distance_shade
 
@@ -1078,9 +1111,13 @@ class Raycaster:
 
         # Draw
         try:
-            rect = pygame.Rect(int(ray_x), int(sprite_y), int(sprite_scale), int(sprite_scale))
+            rect = pygame.Rect(
+                int(ray_x), int(sprite_y), int(sprite_scale), int(sprite_scale)
+            )
             if rect.width > 0 and rect.height > 0:
-                pygame.draw.circle(self.view_surface, proj.color, rect.center, rect.width // 2)
+                pygame.draw.circle(
+                    self.view_surface, proj.color, rect.center, rect.width // 2
+                )
                 self._draw_projectile_effect(proj, rect)
         except (ValueError, pygame.error):
             pass

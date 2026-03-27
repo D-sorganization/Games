@@ -100,7 +100,9 @@ class WeaponSystem:
     def explode_laser(self, impact_x: float, impact_y: float) -> None:
         """Delegate laser explosion to the combat manager."""
         game = self._game
-        game.damage_texts = game.combat_manager.explode_laser(impact_x, impact_y, game.damage_texts)
+        game.damage_texts = game.combat_manager.explode_laser(
+            impact_x, impact_y, game.damage_texts
+        )
         game._sync_combat_state()  # noqa: SLF001
 
     def explode_plasma(self, projectile: Projectile) -> None:

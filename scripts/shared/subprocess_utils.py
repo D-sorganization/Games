@@ -24,7 +24,9 @@ def run_command(
     Returns:
         CompletedProcess instance with command results
     """
-    return subprocess.run(cmd, capture_output=capture_output, text=text, check=check, **kwargs)
+    return subprocess.run(
+        cmd, capture_output=capture_output, text=text, check=check, **kwargs
+    )
 
 
 def run_gh_command(
@@ -107,4 +109,6 @@ def run_powershell(
     Returns:
         CompletedProcess instance with command results
     """
-    return run_command(["powershell", "-Command", command], capture_output, text, check=False)
+    return run_command(
+        ["powershell", "-Command", command], capture_output, text, check=False
+    )

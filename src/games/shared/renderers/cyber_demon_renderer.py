@@ -66,7 +66,9 @@ class CyberDemonStyleRenderer(BaseBotStyleRenderer):
         torso_w = rw * 0.8
         torso_h = rh * 0.5
         torso_y = ry + rh * 0.2
-        torso_rect = pygame.Rect(int(cx - torso_w / 2), int(torso_y), int(torso_w), int(torso_h))
+        torso_rect = pygame.Rect(
+            int(cx - torso_w / 2), int(torso_y), int(torso_w), int(torso_h)
+        )
         pygame.draw.rect(screen, color, torso_rect)
 
         # Details (Rivets/Plates)

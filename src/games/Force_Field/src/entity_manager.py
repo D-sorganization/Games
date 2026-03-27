@@ -131,7 +131,11 @@ class EntityManager:
 
     def get_active_enemies(self) -> list[Bot]:
         """Return list of alive enemies (excluding items)."""
-        return [b for b in self.bots if b.alive and b.type_data.get("visual_style") != "item"]
+        return [
+            b
+            for b in self.bots
+            if b.alive and b.type_data.get("visual_style") != "item"
+        ]
 
     def get_nearest_enemy_distance(self, x: float, y: float) -> float:
         """Get the distance to the nearest enemy."""

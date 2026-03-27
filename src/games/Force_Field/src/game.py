@@ -131,7 +131,9 @@ class Game(FPSGameBase):
         self.game_over_timer = 0
 
         # Audio
-        self.sound_manager = sound_manager if sound_manager is not None else SoundManager()
+        self.sound_manager = (
+            sound_manager if sound_manager is not None else SoundManager()
+        )
         self.sound_manager.start_music()
 
         # Event Bus — lightweight pub/sub for decoupling subsystems
@@ -510,7 +512,10 @@ class Game(FPSGameBase):
         return False
 
     def _handle_combat_input(self) -> None:
-        is_firing = self.input_manager.is_action_pressed("shoot") or pygame.mouse.get_pressed()[0]
+        is_firing = (
+            self.input_manager.is_action_pressed("shoot")
+            or pygame.mouse.get_pressed()[0]
+        )
 
         if is_firing:
             w_data = C.WEAPONS.get(self.player.current_weapon, {})
@@ -597,16 +602,24 @@ class Game(FPSGameBase):
         moving = False
 
         if self.input_manager.is_action_pressed("move_forward"):
-            self.player.move(self.game_map, self.bots, forward=True, speed=current_speed)
+            self.player.move(
+                self.game_map, self.bots, forward=True, speed=current_speed
+            )
             moving = True
         if self.input_manager.is_action_pressed("move_backward"):
-            self.player.move(self.game_map, self.bots, forward=False, speed=current_speed)
+            self.player.move(
+                self.game_map, self.bots, forward=False, speed=current_speed
+            )
             moving = True
         if self.input_manager.is_action_pressed("strafe_left"):
-            self.player.strafe(self.game_map, self.bots, right=False, speed=current_speed)
+            self.player.strafe(
+                self.game_map, self.bots, right=False, speed=current_speed
+            )
             moving = True
         if self.input_manager.is_action_pressed("strafe_right"):
-            self.player.strafe(self.game_map, self.bots, right=True, speed=current_speed)
+            self.player.strafe(
+                self.game_map, self.bots, right=True, speed=current_speed
+            )
             moving = True
 
         self.player.is_moving = moving
@@ -646,7 +659,9 @@ class Game(FPSGameBase):
 
                     if bot.enemy_type == "health_pack":
                         if self.player.health < C.PLAYER_HEALTH:
-                            self.player.health = min(C.PLAYER_HEALTH, self.player.health + 50)
+                            self.player.health = min(
+                                C.PLAYER_HEALTH, self.player.health + 50
+                            )
                             pickup_msg = "HEALTH +50"
                     elif bot.enemy_type == "ammo_box":
                         for w in self.player.ammo:
@@ -694,7 +709,9 @@ class Game(FPSGameBase):
                     self.visited_cells.add((cx + r_j, cy + r_i))
 
     def _update_atmosphere(self) -> None:
-        min_dist = self.entity_manager.get_nearest_enemy_distance(self.player.x, self.player.y)
+        min_dist = self.entity_manager.get_nearest_enemy_distance(
+            self.player.x, self.player.y
+        )
 
         if min_dist < 15:
             self.beast_timer -= 1
@@ -992,7 +1009,9 @@ class Game(FPSGameBase):
                         self.intro_start_time = pygame.time.get_ticks()
                     elapsed = pygame.time.get_ticks() - self.intro_start_time
 
-                    self.ui_renderer.render_intro(self.intro_phase, self.intro_step, elapsed)
+                    self.ui_renderer.render_intro(
+                        self.intro_phase, self.intro_step, elapsed
+                    )
                     self._update_intro_logic(elapsed)
 
                 elif self.state == GameState.MENU:

@@ -49,7 +49,9 @@ class TestCastRayDda:
         direction: str,
     ) -> None:
         """Ray should hit a wall when cast in any cardinal/diagonal direction."""
-        dist, wall_type, _, _, _, _, _ = cast_ray_dda(5.0, 5.0, angle, open_map, max_dist=20.0)
+        dist, wall_type, _, _, _, _, _ = cast_ray_dda(
+            5.0, 5.0, angle, open_map, max_dist=20.0
+        )
         assert dist > 0, f"Distance should be positive ({direction})"
         assert dist < 20.0, f"Should hit wall before max ({direction})"
         assert wall_type > 0, f"Should return wall type ({direction})"
@@ -57,12 +59,16 @@ class TestCastRayDda:
     def test_ray_returns_max_dist_in_open_space(self, open_map: MockMap) -> None:
         """Ray should return max_dist when no wall is close enough."""
         short_max = 0.5
-        dist, _, _, _, _, _, _ = cast_ray_dda(5.0, 5.0, 0.0, open_map, max_dist=short_max)
+        dist, _, _, _, _, _, _ = cast_ray_dda(
+            5.0, 5.0, 0.0, open_map, max_dist=short_max
+        )
         assert dist <= short_max + 0.1
 
     def test_ray_hits_middle_wall(self, wall_map: MockMap) -> None:
         """Ray should detect a wall placed in the middle of the map."""
-        dist, wall_type, _, _, _, map_x, _ = cast_ray_dda(2.5, 5.5, 0.0, wall_map, max_dist=20.0)
+        dist, wall_type, _, _, _, map_x, _ = cast_ray_dda(
+            2.5, 5.5, 0.0, wall_map, max_dist=20.0
+        )
         assert wall_type > 0
         assert map_x == 4
 
@@ -181,7 +187,9 @@ class TestTryMoveEntity:
 
     def test_ray_out_of_bounds(self, open_map: MockMap) -> None:
         """Ray cast outside map boundaries should return as wall type 1."""
-        dist, wall_type, _, _, _, _, _ = cast_ray_dda(-1.0, -1.0, 0.0, open_map, max_dist=10.0)
+        dist, wall_type, _, _, _, _, _ = cast_ray_dda(
+            -1.0, -1.0, 0.0, open_map, max_dist=10.0
+        )
         assert wall_type == 1
 
     def test_move_corner_obstacle(self, open_map: MockMap) -> None:

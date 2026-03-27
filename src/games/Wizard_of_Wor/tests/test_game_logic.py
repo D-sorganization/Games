@@ -61,7 +61,9 @@ class TestGameLogic(unittest.TestCase):
         self.game.respawn_player()
 
         # Verify get_random_spawn_position was called with prefer_player=True
-        self.game.dungeon.get_random_spawn_position.assert_called_with(prefer_player=True)
+        self.game.dungeon.get_random_spawn_position.assert_called_with(
+            prefer_player=True
+        )
 
         # Check player initialized correctly
         self.assertIsNotNone(self.game.player)

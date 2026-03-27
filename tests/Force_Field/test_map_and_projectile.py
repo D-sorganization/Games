@@ -32,7 +32,9 @@ class TestFFMap:
         """Map should have both wall (!=0) and floor (0) tiles."""
         m = Map(size=20)
         total = m.size * m.size
-        walls = sum(1 for i in range(m.size) for j in range(m.size) if m.grid[i][j] != 0)
+        walls = sum(
+            1 for i in range(m.size) for j in range(m.size) if m.grid[i][j] != 0
+        )
         floors = total - walls
         assert floors > 0  # At least some passable space
         assert walls > 0  # At least some walls

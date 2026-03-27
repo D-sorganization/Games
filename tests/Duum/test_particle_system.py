@@ -18,14 +18,18 @@ class TestWorldParticle:
         assert wp.alive is True
 
     def test_update_moves_particle(self) -> None:
-        wp = WorldParticle(0.0, 0.0, 5.0, 0.1, 0.2, -0.1, (255, 0, 0), 10, 0.1, gravity=0.0)
+        wp = WorldParticle(
+            0.0, 0.0, 5.0, 0.1, 0.2, -0.1, (255, 0, 0), 10, 0.1, gravity=0.0
+        )
         wp.update()
         assert wp.x == pytest.approx(0.1)
         assert wp.y == pytest.approx(0.2)
         assert wp.z == pytest.approx(4.9)
 
     def test_update_applies_gravity(self) -> None:
-        wp = WorldParticle(0.0, 0.0, 5.0, 0.0, 0.0, 0.0, (255, 0, 0), 10, 0.1, gravity=0.5)
+        wp = WorldParticle(
+            0.0, 0.0, 5.0, 0.0, 0.0, 0.0, (255, 0, 0), 10, 0.1, gravity=0.5
+        )
         wp.update()
         # dz starts at 0.0, then z += dz (0.0) → z = 5.0,
         # then dz -= gravity (0.5) → dz = -0.5

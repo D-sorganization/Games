@@ -55,7 +55,9 @@ class Particle:
             # Render logic for normal particles is handled in ParticleSystem.render
             return
         elif self.ptype == "laser" and self.start_pos and self.end_pos:
-            pygame.draw.line(screen, self.color, self.start_pos, self.end_pos, self.width)
+            pygame.draw.line(
+                screen, self.color, self.start_pos, self.end_pos, self.width
+            )
 
 
 class ParticleSystem:

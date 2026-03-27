@@ -224,7 +224,9 @@ class TestRaycasterInit:
     def test_get_cached_strip_exception(self, raycaster: Raycaster) -> None:
         """Test catching exceptions during scaling."""
         with (
-            patch("games.shared.raycaster.pygame.transform.scale", side_effect=ValueError),
+            patch(
+                "games.shared.raycaster.pygame.transform.scale", side_effect=ValueError
+            ),
             patch("games.shared.raycaster.pygame.error", ValueError, create=True),
         ):
             assert raycaster._get_cached_strip("stone", 0, 100) is None
@@ -357,7 +359,9 @@ class TestRaycasterInit:
         import numpy as np
 
         player = MagicMock(x=1.0, y=1.0, angle=0.0, pitch=0)
-        proj = MagicMock(x=2.0, y=1.0, alive=True, weapon_type="plasma", color=(255, 0, 0))
+        proj = MagicMock(
+            x=2.0, y=1.0, alive=True, weapon_type="plasma", color=(255, 0, 0)
+        )
         raycaster.z_buffer = np.full(800, 5.0)
         raycaster.view_surface = DummySurface((800, 600))
 

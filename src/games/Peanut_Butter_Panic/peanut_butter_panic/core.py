@@ -163,7 +163,9 @@ class WorldStats:
 
 
 class GameWorld:
-    def __init__(self, config: GameConfig | None = None, seed: int | None = 1337) -> None:
+    def __init__(
+        self, config: GameConfig | None = None, seed: int | None = 1337
+    ) -> None:
         """Initialize the game world with the given configuration and random seed."""
         self.config = config or GameConfig()
         self.rng = random.Random(seed)
@@ -329,7 +331,8 @@ class GameWorld:
         for sandwich in self.sandwiches:
             if (
                 sandwich.alive
-                and _distance(sandwich.position, enemy.position) <= sandwich.radius + enemy.radius
+                and _distance(sandwich.position, enemy.position)
+                <= sandwich.radius + enemy.radius
             ):
                 return sandwich
         dist_to_player = _distance(self.player.position, enemy.position)
@@ -489,7 +492,9 @@ class GameWorld:
     def _remove_enemies(self, defeated: Iterable[Enemy]) -> None:
         """Remove defeated enemies from the enemy list."""
         defeated_ids = {id(enemy) for enemy in defeated}
-        self.enemies = [enemy for enemy in self.enemies if id(enemy) not in defeated_ids]
+        self.enemies = [
+            enemy for enemy in self.enemies if id(enemy) not in defeated_ids
+        ]
 
     def _clamped_position(self, position: Vec2) -> Vec2:
         """Clamp a position to stay within the game world bounds."""

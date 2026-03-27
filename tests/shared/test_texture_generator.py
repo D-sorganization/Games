@@ -9,7 +9,9 @@ from games.shared.texture_generator import TextureGenerator
 
 @pytest.fixture
 def mock_pygame_surfarray():
-    with patch("games.shared.texture_generator.pygame.surfarray", create=True) as mock_sa:
+    with patch(
+        "games.shared.texture_generator.pygame.surfarray", create=True
+    ) as mock_sa:
         mock_sa.make_surface = MagicMock(return_value=MagicMock())
 
         def fake_pixels(surf):
@@ -80,13 +82,17 @@ class TestTextureGenerator:
             return_value=False,
             create=True,
         ):
-            with patch("games.shared.texture_generator.pygame.init", create=True) as mock_init:
+            with patch(
+                "games.shared.texture_generator.pygame.init", create=True
+            ) as mock_init:
                 textures = TextureGenerator.generate_textures()
                 assert mock_init.called
                 assert "brick" in textures
 
     @pytest.mark.parametrize("width,height", [(-1, 10), (10, -1), (0, 10)])
-    def test_invalid_dimensions(self, width, height, mock_pygame_surfarray, mock_pygame_surface):
+    def test_invalid_dimensions(
+        self, width, height, mock_pygame_surfarray, mock_pygame_surface
+    ):
         with pytest.raises(ContractViolation):
             TextureGenerator.generate_stone(width, height)
 
@@ -95,20 +101,26 @@ class TestTextureGenerator:
         surf = TextureGenerator.generate_metal(5, 5)
         assert surf is not None
 
-    def test_generate_hidden_out_of_bounds(self, mock_pygame_surfarray, mock_pygame_surface):
+    def test_generate_hidden_out_of_bounds(
+        self, mock_pygame_surfarray, mock_pygame_surface
+    ):
         # Trigger crack going out of bounds (217->224, 221->219)
         with patch("games.shared.texture_generator.random.randint", return_value=-10):
             surf = TextureGenerator.generate_hidden(2, 30)
             assert surf is not None
 
-    def test_generate_textures_already_init(self, mock_pygame_surfarray, mock_pygame_surface):
+    def test_generate_textures_already_init(
+        self, mock_pygame_surfarray, mock_pygame_surface
+    ):
         # Trigger true branch of pygame.get_init() (233->236)
         with patch(
             "games.shared.texture_generator.pygame.get_init",
             return_value=True,
             create=True,
         ):
-            with patch("games.shared.texture_generator.pygame.init", create=True) as mock_init:
+            with patch(
+                "games.shared.texture_generator.pygame.init", create=True
+            ) as mock_init:
                 textures = TextureGenerator.generate_textures()
                 assert not mock_init.called
                 assert "brick" in textures

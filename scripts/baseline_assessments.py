@@ -31,7 +31,8 @@ output_dir.mkdir(parents=True, exist_ok=True)
 # Analysis findings for Games
 findings = {
     "A": (
-        "Good monorepo structure with engines/ and shared/. " "PyQt6 and Tkinter launchers present."
+        "Good monorepo structure with engines/ and shared/. "
+        "PyQt6 and Tkinter launchers present."
     ),
     "B": "Ruff and Black configured. Coverage artifacts in .gitignore.",
     "C": "Comprehensive README. Added .env.example. Good documentation.",

@@ -46,9 +46,9 @@ def prepare_wall_render_data(
     safe_dists = np.maximum(0.01, corrected_dists)
 
     wall_heights = np.minimum(screen_height * 4, (screen_height / safe_dists))
-    wall_tops = ((screen_height - wall_heights) // 2 + player_pitch + view_offset_y).astype(
-        np.int32
-    )
+    wall_tops = (
+        (screen_height - wall_heights) // 2 + player_pitch + view_offset_y
+    ).astype(np.int32)
     wall_heights_int = wall_heights.astype(np.int32)
 
     shades = np.maximum(0.2, 1.0 - distances / 50.0)
@@ -271,7 +271,9 @@ def blit_strip_scaled(  # noqa: PLR0913
         area = pygame.Rect(tex_x_start, 0, w, tex_height)
         try:
             slice_surf = sprite_surface.subsurface(area)
-            scaled_slice = pygame.transform.scale(slice_surf, (run_width, target_height))
+            scaled_slice = pygame.transform.scale(
+                slice_surf, (run_width, target_height)
+            )
             view_surface.blit(scaled_slice, (run_start, int(sprite_y)))
         except (ValueError, pygame.error):
             continue
@@ -296,7 +298,9 @@ def draw_projectile_effect(
     elif weapon == "flamethrower":
         flame_color = (255, random.randint(100, 200), 0)
         pygame.draw.circle(surface, flame_color, rect.center, rect.width // 2)
-        pygame.draw.circle(surface, (255, 50, 0), (rect.centerx, rect.centery), rect.width // 3)
+        pygame.draw.circle(
+            surface, (255, 50, 0), (rect.centerx, rect.centery), rect.width // 3
+        )
     elif weapon == "pulse":
         pygame.draw.circle(surface, (200, 200, 255), rect.center, rect.width // 2)
         pygame.draw.circle(surface, (100, 100, 255), rect.center, rect.width // 3)
@@ -362,7 +366,9 @@ def generate_background_surface(
         b = far_floor[2] + (near_floor[2] - far_floor[2]) * ratio
         background_surface.set_at((0, h + y), (int(r), int(g), int(b)))
 
-    scaled_background_surface = pygame.transform.scale(background_surface, (screen_width, h * 2))
+    scaled_background_surface = pygame.transform.scale(
+        background_surface, (screen_width, h * 2)
+    )
     return background_surface, scaled_background_surface, theme_idx
 
 
@@ -393,13 +399,15 @@ def render_floor_ceiling(  # noqa: PLR0913
     player_angle = player.angle
 
     if cached_background_theme_idx != theme_idx or background_surface is None:
-        background_surface, scaled_background_surface, theme_idx = generate_background_surface(
-            level,
-            level_themes_list,
-            screen_width,
-            screen_height,
-            gray,
-            dark_gray,
+        background_surface, scaled_background_surface, theme_idx = (
+            generate_background_surface(
+                level,
+                level_themes_list,
+                screen_width,
+                screen_height,
+                gray,
+                dark_gray,
+            )
         )
         cached_background_theme_idx = theme_idx
 
@@ -436,7 +444,9 @@ def render_floor_ceiling(  # noqa: PLR0913
         if 0 <= y < horizon:
             pygame.draw.circle(screen, color, (x, int(y)), int(size))
 
-    moon_x = (screen_width - 200 - int(player_angle * 100)) % (screen_width * 2) - screen_width // 2
+    moon_x = (screen_width - 200 - int(player_angle * 100)) % (
+        screen_width * 2
+    ) - screen_width // 2
     moon_y = 100 + int(player.pitch + view_offset_y)
 
     if -100 < moon_x < screen_width + 100:
@@ -520,7 +530,9 @@ def render_minimap(  # noqa: PLR0913
         if visited_cells is not None:
             visited_count = len(visited_cells)
             if fog_surface is None or fog_visited_count != visited_count:
-                fog_surface = pygame.Surface((minimap_size, minimap_size), pygame.SRCALPHA)
+                fog_surface = pygame.Surface(
+                    (minimap_size, minimap_size), pygame.SRCALPHA
+                )
                 fog_surface.fill((0, 0, 0, 255))
                 for vx, vy in visited_cells:
                     fog_surface.fill(

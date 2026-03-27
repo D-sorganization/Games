@@ -201,7 +201,9 @@ class TextureGenerator:
         validate_positive(width, "width")
         validate_positive(height, "height")
         # Start with standard bricks but darker/different tint
-        surface = TextureGenerator.generate_bricks(width, height, (130, 60, 50), (100, 100, 100))
+        surface = TextureGenerator.generate_bricks(
+            width, height, (130, 60, 50), (100, 100, 100)
+        )
         arr = pygame.surfarray.pixels3d(surface)
 
         # Add visual hint (Dark Cracks)

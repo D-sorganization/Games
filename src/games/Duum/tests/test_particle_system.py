@@ -98,7 +98,9 @@ def test_particle_system_update_render():
 
     sys.particles.append(Particle(0, 0, 0, 0, timer=1))
     sys.particles.append(Particle(0, 0, 0, 0, timer=2))
-    sys.particles.append(Particle(0, 0, timer=2, ptype="laser", start_pos=(0, 0), end_pos=(1, 1)))
+    sys.particles.append(
+        Particle(0, 0, timer=2, ptype="laser", start_pos=(0, 0), end_pos=(1, 1))
+    )
 
     sys.update()
     assert len(sys.world_particles) == 1

@@ -54,8 +54,12 @@ class GameInputHandler:
                 elif not self.game.paused:
                     if not (self.game.player is not None):
                         raise ValueError("DbC Blocked: Precondition failed.")
-                    self.game.player.rotate(event.rel[0] * C.PLAYER_ROT_SPEED * C.SENSITIVITY_X)
-                    self.game.player.pitch_view(-event.rel[1] * C.PLAYER_ROT_SPEED * 200)
+                    self.game.player.rotate(
+                        event.rel[0] * C.PLAYER_ROT_SPEED * C.SENSITIVITY_X
+                    )
+                    self.game.player.pitch_view(
+                        -event.rel[1] * C.PLAYER_ROT_SPEED * 200
+                    )
 
     def _handle_cheat_input(self, event: pygame.event.Event) -> None:
         """Handle input when cheat mode is active."""

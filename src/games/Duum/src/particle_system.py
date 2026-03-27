@@ -103,7 +103,9 @@ class Particle:
             # Render logic for normal particles is handled in ParticleSystem.render
             return
         elif self.ptype == "laser" and self.start_pos and self.end_pos:
-            pygame.draw.line(screen, self.color, self.start_pos, self.end_pos, self.width)
+            pygame.draw.line(
+                screen, self.color, self.start_pos, self.end_pos, self.width
+            )
 
 
 class ParticleSystem:
@@ -128,7 +130,9 @@ class ParticleSystem:
         gravity: float = 0.01,
     ) -> None:
         """Add a 3D world particle."""
-        self.world_particles.append(WorldParticle(x, y, z, dx, dy, dz, color, timer, size, gravity))
+        self.world_particles.append(
+            WorldParticle(x, y, z, dx, dy, dz, color, timer, size, gravity)
+        )
 
     def add_world_explosion(
         self,

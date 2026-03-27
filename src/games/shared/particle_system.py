@@ -99,7 +99,9 @@ class Particle:
 
     def get_current_color(self) -> tuple[int, int, int, int]:
         """Get interpolated RGBA color based on remaining life."""
-        life_ratio = max(0.0, self.timer / self.max_timer) if self.max_timer > 0 else 0.0
+        life_ratio = (
+            max(0.0, self.timer / self.max_timer) if self.max_timer > 0 else 0.0
+        )
         alpha = int(255 * life_ratio)
         if self.fade_color != self.color:
             r = int(self.color[0] * life_ratio + self.fade_color[0] * (1 - life_ratio))
@@ -295,7 +297,9 @@ class ParticleSystem:
         gravity: float = 0.01,
     ) -> None:
         """Add a single 3D world-space particle."""
-        self.world_particles.append(WorldParticle(x, y, z, dx, dy, dz, color, timer, size, gravity))
+        self.world_particles.append(
+            WorldParticle(x, y, z, dx, dy, dz, color, timer, size, gravity)
+        )
 
     def add_world_explosion(
         self,
@@ -344,7 +348,9 @@ class ParticleSystem:
             elif p.ptype == "trace" and p.start_pos and p.end_pos:
                 pygame.draw.line(screen, p.color, p.start_pos, p.end_pos, p.width)
             elif p.ptype == "normal" and p.size > 0:
-                pygame.draw.rect(screen, p.color, (int(p.x), int(p.y), int(p.size), int(p.size)))
+                pygame.draw.rect(
+                    screen, p.color, (int(p.x), int(p.y), int(p.size), int(p.size))
+                )
 
     @property
     def particle_count(self) -> int:

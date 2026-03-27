@@ -196,7 +196,9 @@ class CombatManagerBase:
                 )
 
             # Visual traces
-            self._add_shot_visuals(player, aim_angle, closest_bot, closest_dist, wall_dist)
+            self._add_shot_visuals(
+                player, aim_angle, closest_bot, closest_dist, wall_dist
+            )
 
         except Exception:  # noqa: BLE001
             logger.exception("Error in check_shot_hit")
@@ -519,7 +521,9 @@ class CombatManagerBase:
 
         Returns the updated damage_flash_timer value.
         """
-        dist_to_player = math.sqrt((projectile.x - player.x) ** 2 + (projectile.y - player.y) ** 2)
+        dist_to_player = math.sqrt(
+            (projectile.x - player.x) ** 2 + (projectile.y - player.y) ** 2
+        )
         if dist_to_player < 15:
             damage_flash_timer = 15
 

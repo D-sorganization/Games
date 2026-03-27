@@ -173,7 +173,9 @@ class TestSoundManagerBase:
         mgr.sound_enabled = True
         mgr.sounds = {}
         mgr.current_music = None
-        with patch("games.shared.sound_manager_base.pygame.mixer.unpause") as mock_unpause:
+        with patch(
+            "games.shared.sound_manager_base.pygame.mixer.unpause"
+        ) as mock_unpause:
             mgr.unpause_all()
             mock_unpause.assert_called()
 

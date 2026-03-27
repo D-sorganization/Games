@@ -42,7 +42,9 @@ class GhostStyleRenderer(BaseBotStyleRenderer):
         pygame.draw.circle(screen, ghost_color, center, int(rw / 2))
 
         # Body (Rect)
-        body_rect = pygame.Rect(int(cx - rw / 2), int(gy + rw / 2), int(rw), int(rh * 0.6))
+        body_rect = pygame.Rect(
+            int(cx - rw / 2), int(gy + rw / 2), int(rw), int(rh * 0.6)
+        )
         pygame.draw.rect(screen, ghost_color, body_rect)
 
         # Tattered bottom

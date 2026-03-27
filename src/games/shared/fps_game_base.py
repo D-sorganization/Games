@@ -406,7 +406,9 @@ class FPSGameBase:
 
                 if self.input_manager.is_action_just_pressed(event, "pause"):
                     self._handle_pause_toggle(event)
-                elif event.key == pygame.K_c and (pygame.key.get_mods() & pygame.KMOD_CTRL):
+                elif event.key == pygame.K_c and (
+                    pygame.key.get_mods() & pygame.KMOD_CTRL
+                ):
                     self.cheat_mode_active = True
                     self.current_cheat_input = ""
                     self.add_message("CHEAT MODE: TYPE CODE", self.C.PURPLE)
@@ -425,7 +427,9 @@ class FPSGameBase:
             elif event.type == pygame.MOUSEMOTION and not self.paused:
                 if not (self.player is not None):
                     raise ValueError("DbC Blocked: Precondition failed.")
-                self.player.rotate(event.rel[0] * self.C.PLAYER_ROT_SPEED * self.C.SENSITIVITY_X)
+                self.player.rotate(
+                    event.rel[0] * self.C.PLAYER_ROT_SPEED * self.C.SENSITIVITY_X
+                )
                 self.player.pitch_view(-event.rel[1] * self.C.PLAYER_ROT_SPEED * 200)
 
     def save_game(self, filename: str = "savegame.txt") -> None:

@@ -137,7 +137,9 @@ def launch_game(game: dict[str, Any]) -> None:
             logger.error(f"Error launching {game['name']}: {e}")
     elif game["type"] == "module":
         try:
-            subprocess.Popen([sys.executable, "-m", game["module_name"]], cwd=str(game["cwd"]))
+            subprocess.Popen(
+                [sys.executable, "-m", game["module_name"]], cwd=str(game["cwd"])
+            )
         except Exception as e:  # noqa: BLE001
             logger.error(f"Error launching {game['name']}: {e}")
     elif game["type"] == "web":
@@ -155,7 +157,9 @@ def calculate_game_rects(num_games: int) -> list[pygame.Rect]:
         col = i % GRID_COLS
         x = start_x + col * ITEM_WIDTH
         y = start_y + row * ITEM_HEIGHT
-        game_rects.append(pygame.Rect(x + 10, y + 10, ITEM_WIDTH - 20, ITEM_HEIGHT - 20))
+        game_rects.append(
+            pygame.Rect(x + 10, y + 10, ITEM_WIDTH - 20, ITEM_HEIGHT - 20)
+        )
 
     return game_rects
 

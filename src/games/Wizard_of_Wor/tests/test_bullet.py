@@ -67,7 +67,9 @@ class TestBullet(unittest.TestCase):
         self.assertFalse(bullet.active)
 
         # Moving RIGHT from GAME_AREA_X + GAME_AREA_WIDTH
-        bullet = Bullet(GAME_AREA_X + GAME_AREA_WIDTH + 1, GAME_AREA_Y, (1, 0), YELLOW, True)
+        bullet = Bullet(
+            GAME_AREA_X + GAME_AREA_WIDTH + 1, GAME_AREA_Y, (1, 0), YELLOW, True
+        )
         bullet.update(self.dungeon)
         self.assertFalse(bullet.active)
 

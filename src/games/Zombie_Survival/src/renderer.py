@@ -64,7 +64,9 @@ class GameRenderer:
         # 4. Weapon Model
         weapon_pos = self.weapon_renderer.render_weapon(game.player)
         if game.player.shooting:
-            self.weapon_renderer.render_muzzle_flash(game.player.current_weapon, weapon_pos)
+            self.weapon_renderer.render_muzzle_flash(
+                game.player.current_weapon, weapon_pos
+            )
 
         # 5. UI / HUD
         game.ui_renderer.render_hud(game)

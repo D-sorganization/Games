@@ -50,7 +50,9 @@ class TestZSPlayerMove:
             player.move(mock_map, [])
             mock_move.assert_not_called()
 
-    def test_move_skips_when_shield_active(self, player: Player, mock_map: MagicMock) -> None:
+    def test_move_skips_when_shield_active(
+        self, player: Player, mock_map: MagicMock
+    ) -> None:
         player.shield_active = True
         with patch("games.shared.utils.try_move_entity") as mock_move:
             player.move(mock_map, [])
@@ -68,13 +70,17 @@ class TestZSPlayerStrafe:
             player.strafe(mock_map, [], right=False)
             mock_move.assert_called_once()
 
-    def test_strafe_skips_when_zoomed(self, player: Player, mock_map: MagicMock) -> None:
+    def test_strafe_skips_when_zoomed(
+        self, player: Player, mock_map: MagicMock
+    ) -> None:
         player.zoomed = True
         with patch("games.shared.utils.try_move_entity") as mock_move:
             player.strafe(mock_map, [])
             mock_move.assert_not_called()
 
-    def test_strafe_skips_when_shield_active(self, player: Player, mock_map: MagicMock) -> None:
+    def test_strafe_skips_when_shield_active(
+        self, player: Player, mock_map: MagicMock
+    ) -> None:
         player.shield_active = True
         with patch("games.shared.utils.try_move_entity") as mock_move:
             player.strafe(mock_map, [])

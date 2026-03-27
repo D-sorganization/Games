@@ -183,7 +183,9 @@ def main() -> None:
 
     if success:
         logger.info("SUCCESS! Your Games Launcher shortcut is ready!")
-        logger.info("Look for 'Games Launcher' on your desktop with a cool Force Field icon!")
+        logger.info(
+            "Look for 'Games Launcher' on your desktop with a cool Force Field icon!"
+        )
     else:
         logger.error("Something went wrong. Check the error messages above.")
 
