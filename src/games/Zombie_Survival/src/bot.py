@@ -4,8 +4,6 @@ import math
 import random
 from typing import TYPE_CHECKING
 
-from numba import jit
-
 from games.shared.constants import DEATH_ANIMATION_FRAMES, DISINTEGRATE_FRAMES
 from games.shared.utils import has_line_of_sight
 
@@ -371,7 +369,6 @@ class Bot:
                 return projectile  # Return projectile to be added to list
         return None
 
-    @jit(nopython=True, fastmath=True)
     def _update_default_movement(
         self, game_map: Map, player: Player, other_bots: list[Bot]
     ) -> None:

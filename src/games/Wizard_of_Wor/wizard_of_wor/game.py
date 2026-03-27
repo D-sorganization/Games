@@ -1,5 +1,3 @@
-from numba import jit
-
 # ARCHITECTURE_DEBT:
 # This module historically exceeds standard length metrics and accumulates excessive domain responsibility.
 # It requires domain-aware structural extraction to isolate its internal classes appropriately.
@@ -82,7 +80,6 @@ class SoundBoard:
             self.sounds = {}
             # We don't create intro_melody if mixer is not initialized
 
-    @jit(nopython=True, fastmath=True)
     def _build_tone(self, frequency: int, duration_ms: int) -> pygame.mixer.Sound | None:
         """Build a tone sound effect with the given frequency and duration."""
         if not self.enabled:
@@ -102,8 +99,6 @@ class SoundBoard:
             waveform.append(value)
         return pygame.mixer.Sound(buffer=waveform.tobytes())
 
-    @jit(nopython=True, fastmath=True)
-    @jit(nopython=True, fastmath=True)
     def _build_intro_melody(self) -> pygame.mixer.Sound | None:
         """Build a retro-style intro melody reminiscent of classic arcade games."""
         if not self.enabled:

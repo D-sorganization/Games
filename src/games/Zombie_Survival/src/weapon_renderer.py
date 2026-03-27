@@ -5,7 +5,6 @@ import random
 from typing import TYPE_CHECKING, Any
 
 import pygame
-from numba import jit
 
 from . import constants as C  # noqa: N812
 
@@ -94,7 +93,6 @@ class WeaponRenderer:
             pygame.draw.circle(self.screen, C.ORANGE, (flash_x, flash_y), 15)
             pygame.draw.circle(self.screen, C.WHITE, (flash_x, flash_y), 8)
 
-    @jit(nopython=True, fastmath=True)
     def _render_pistol(
         self,
         cx: int,
@@ -158,7 +156,6 @@ class WeaponRenderer:
             [(cx - 60, cy - 50), (cx + 60, cy - 50), (cx + 50, cy), (cx - 50, cy)],
         )
 
-    @jit(nopython=True, fastmath=True)
     def _render_rifle(
         self,
         cx: int,
@@ -197,7 +194,6 @@ class WeaponRenderer:
             )
             pygame.draw.line(self.screen, C.RED, (cx, cy - 195), (cx, cy - 145), 1)
 
-    @jit(nopython=True, fastmath=True)
     def _render_minigun(self, cx: int, cy: int, player: Player) -> None:
         # Rotate barrels
         rot = 0
@@ -215,8 +211,6 @@ class WeaponRenderer:
 
         pygame.draw.rect(self.screen, (30, 30, 30), (cx - 50, cy - 80, 100, 30))
 
-    @jit(nopython=True, fastmath=True)
-    @jit(nopython=True, fastmath=True)
     def _render_plasma(self, cx: int, cy: int, player: Player, w_state: dict[str, Any]) -> None:
         pygame.draw.polygon(
             self.screen,

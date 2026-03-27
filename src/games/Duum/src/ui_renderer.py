@@ -1,6 +1,7 @@
 # ARCHITECTURE_DEBT:
 # This module historically exceeds standard length metrics and accumulates excessive domain responsibility.
 # It requires domain-aware structural extraction to isolate its internal classes appropriately.
+
 from __future__ import annotations
 
 import logging
@@ -9,7 +10,6 @@ import random
 from typing import TYPE_CHECKING, Any, cast
 
 import pygame
-from numba import jit
 
 from games.shared.ui import Button
 from games.shared.ui_renderer_base import UIRendererBase
@@ -70,8 +70,6 @@ class UIRenderer(UIRendererBase):
         """Return True if *pos* falls inside the start button."""
         return self.start_button.is_clicked(pos)
 
-    @jit(nopython=True, fastmath=True)
-    @jit(nopython=True, fastmath=True)
     def _generate_vignette(self) -> None:
         """Generate a static vignette surface."""
         w, h = C.SCREEN_WIDTH, C.SCREEN_HEIGHT
@@ -167,8 +165,6 @@ class UIRenderer(UIRendererBase):
                 drip["size"] + 1,
             )
 
-    @jit(nopython=True, fastmath=True)
-    @jit(nopython=True, fastmath=True)
     def render_map_select(self, game: Game) -> None:
         """Render map select screen"""
         self.screen.fill(C.BLACK)
@@ -561,7 +557,6 @@ class UIRenderer(UIRendererBase):
                 (cx - bar_w // 2, cy, int(bar_w * charge_pct), bar_h),
             )
 
-    @jit(nopython=True, fastmath=True)
     def _render_pause_menu(self) -> None:
         """Render the pause menu overlay."""
         overlay = pygame.Surface((C.SCREEN_WIDTH, C.SCREEN_HEIGHT), pygame.SRCALPHA)
@@ -712,7 +707,6 @@ class UIRenderer(UIRendererBase):
 
         pygame.display.flip()
 
-    @jit(nopython=True, fastmath=True)
     def _render_intro_slide(self, step: int, elapsed: int) -> None:
         """Render intro slides."""
         slides = [
@@ -763,7 +757,6 @@ class UIRenderer(UIRendererBase):
                     total_w = sum([font.size(c)[0] for c in text])
                     start_x = (C.SCREEN_WIDTH - total_w) // 2
                     y = start_y + i * 100
-                    # OPTIMIZATION_TARGET: Migrate computationally bound loop to PyO3/Rust Core natively
                     x_off = 0
                     for idx, char in enumerate(text):
                         tf = pygame.time.get_ticks() * 0.003 + idx * 0.2
@@ -817,7 +810,6 @@ class UIRenderer(UIRendererBase):
                         sub.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 60)),
                     )
 
-    @jit(nopython=True, fastmath=True)
     def render_key_config(self, game: Any) -> None:
         """Render the key configuration menu."""
         self.screen.fill(C.BLACK)

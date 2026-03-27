@@ -1,6 +1,7 @@
 # ARCHITECTURE_DEBT:
 # This module historically exceeds standard length metrics and accumulates excessive domain responsibility.
 # It requires domain-aware structural extraction to isolate its internal classes appropriately.
+
 from __future__ import annotations
 
 import logging
@@ -8,7 +9,6 @@ import random
 from typing import Any
 
 import pygame
-from numba import jit
 
 from games.shared.config import RaycasterConfig
 from games.shared.constants import (
@@ -580,7 +580,6 @@ class Game(FPSGameBase):
         if self.input_manager.is_action_pressed("look_down"):
             self.player.pitch_view(-5)
 
-    @jit(nopython=True, fastmath=True)
     def _check_item_pickups(self) -> None:
         """Detect player proximity to pickup items and apply their effects."""
         if not (self.player is not None):

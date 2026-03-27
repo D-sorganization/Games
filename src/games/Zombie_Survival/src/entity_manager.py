@@ -3,8 +3,6 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from numba import jit
-
 from games.shared.constants import COMBO_TIMER_FRAMES, PICKUP_RADIUS_SQ
 from games.shared.spatial_grid import SpatialGrid
 
@@ -69,8 +67,6 @@ class EntityManager:
         self.projectiles.extend(new_projectiles)
         self.cleanup_dead_bots()
 
-    @jit(nopython=True, fastmath=True)
-    @jit(nopython=True, fastmath=True)
     def update_projectiles(self, game_map: Map, player: Player, game: Game) -> None:
         """Update all projectiles."""
         for projectile in self.projectiles[:]:

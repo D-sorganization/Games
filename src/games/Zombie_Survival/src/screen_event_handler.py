@@ -1,5 +1,3 @@
-from numba import jit
-
 """Per-screen event handlers for Zombie Survival.
 
 Extracted from game.py to keep that file within the 1 000-line budget.
@@ -73,7 +71,6 @@ class ScreenEventHandler:
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 game.state = GameState.MAP_SELECT
 
-    @jit(nopython=True, fastmath=True)
     def handle_map_select_events(self) -> None:
         """Handle map selection events."""
         game = self._game
@@ -150,8 +147,6 @@ class ScreenEventHandler:
                 elif event.key == pygame.K_ESCAPE:
                     game.state = GameState.MENU
 
-    @jit(nopython=True, fastmath=True)
-    @jit(nopython=True, fastmath=True)
     def handle_key_config_events(self) -> None:
         """Handle input events in Key Config menu."""
         game = self._game

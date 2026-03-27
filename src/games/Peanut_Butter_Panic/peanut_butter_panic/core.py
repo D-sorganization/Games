@@ -5,8 +5,6 @@ import random
 from collections.abc import Iterable
 from dataclasses import dataclass
 
-from numba import jit
-
 Vec2 = tuple[float, float]
 
 
@@ -282,7 +280,6 @@ class GameWorld:
                 self._register_kill(enemy)
         self._remove_enemies(defeated)
 
-    @jit(nopython=True, fastmath=True)
     def _move_enemies(self, dt: float) -> None:
         """Move all enemies towards their primary targets."""
         for enemy in self.enemies:

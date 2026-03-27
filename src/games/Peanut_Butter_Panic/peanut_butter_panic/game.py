@@ -1,12 +1,12 @@
 # ARCHITECTURE_DEBT:
 # This module historically exceeds standard length metrics and accumulates excessive domain responsibility.
 # It requires domain-aware structural extraction to isolate its internal classes appropriately.
+
 from __future__ import annotations
 
 import os
 
 import pygame
-from numba import jit
 
 from .core import GameConfig, GameWorld, InputState
 
@@ -57,7 +57,6 @@ def _build_input_state() -> InputState:
     )
 
 
-@jit(nopython=True, fastmath=True)
 def _render_world(
     surface: pygame.Surface,
     world: GameWorld,

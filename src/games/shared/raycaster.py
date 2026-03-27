@@ -1,4 +1,3 @@
-from numba import jit
 # ARCHITECTURE_DEBT:
 # This module historically exceeds standard length metrics and accumulates excessive domain responsibility.
 # It requires domain-aware structural extraction to isolate its internal classes appropriately.
@@ -97,7 +96,8 @@ class Raycaster:
         for name, tex in self.textures.items():
             w = tex.get_width()
             h = tex.get_height()
-            strips.extend([tex.subsurface((x, 0, 1, h)) for x in range(w)])
+            strips = []
+            for x in range(w):
                 strips.append(tex.subsurface((x, 0, 1, h)))
             self.texture_strips[name] = strips
 
@@ -113,7 +113,15 @@ class Raycaster:
         self._scaled_background_surface: pygame.Surface | None = None
         self._cached_background_theme_idx: int = -1
 
-        self.stars.extend([(random.randint(0, self.config.SCREEN_WIDTH), random.randint(0, self.config.SCREEN_HEIGHT // 2), random.uniform(0.5, 2.5), random.choice([(255, 255, 255), (200, 200, 255), (255, 255, 200)])) for _ in range(100)])
+        self.stars = []
+        for _ in range(100):
+            self.stars.append(
+                (
+                    random.randint(0, self.config.SCREEN_WIDTH),
+                    random.randint(0, self.config.SCREEN_HEIGHT // 2),
+                    random.uniform(0.5, 2.5),
+                    random.choice([(255, 255, 255), (200, 200, 255), (255, 255, 200)]),
+                )
             )
 
     def _init_buffers(self) -> None:
@@ -669,7 +677,6 @@ class Raycaster:
             self.config.FOG_COLOR,
         )
 
-    @jit(nopython=True, fastmath=True)
     def _render_sprites(
         self,
         player: Player,

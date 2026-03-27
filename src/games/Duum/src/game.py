@@ -1,6 +1,7 @@
 # ARCHITECTURE_DEBT:
 # This module historically exceeds standard length metrics and accumulates excessive domain responsibility.
 # It requires domain-aware structural extraction to isolate its internal classes appropriately.
+
 from __future__ import annotations
 
 import logging
@@ -8,7 +9,6 @@ import math
 import random
 
 import pygame
-from numba import jit
 
 from games.shared.config import RaycasterConfig
 
@@ -671,7 +671,6 @@ class Game(FPSGameBase):
         if self.input_manager.is_action_pressed("look_down"):
             self.player.pitch_view(-5)
 
-    @jit(nopython=True, fastmath=True)
     def _check_item_pickups(self) -> None:
         for bot in self.bots:
             is_item = bot.enemy_type.startswith(("health", "ammo", "bomb", "pickup"))
@@ -724,8 +723,6 @@ class Game(FPSGameBase):
                             }
                         )
 
-    @jit(nopython=True, fastmath=True)
-    @jit(nopython=True, fastmath=True)
     def _update_large_fog_reveal(self) -> None:
         cx, cy = int(self.player.x), int(self.player.y)
         reveal_radius = FOG_REVEAL_RADIUS
@@ -734,7 +731,6 @@ class Game(FPSGameBase):
                 if r_i * r_i + r_j * r_j <= reveal_radius * reveal_radius:
                     self.visited_cells.add((cx + r_j, cy + r_i))
 
-    @jit(nopython=True, fastmath=True)
     def _update_atmosphere(self) -> None:
         min_dist_sq = float("inf")
         for bot in self.bots:

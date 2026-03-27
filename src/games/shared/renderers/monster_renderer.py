@@ -4,7 +4,6 @@ import random
 from typing import TYPE_CHECKING
 
 import pygame
-from numba import jit
 
 from .base import BaseBotStyleRenderer
 
@@ -16,7 +15,6 @@ if TYPE_CHECKING:
 class MonsterStyleRenderer(BaseBotStyleRenderer):
     """Monster visual style renderer."""
 
-    @jit(nopython=True, fastmath=True)
     def render(
         self,
         screen: pygame.Surface,

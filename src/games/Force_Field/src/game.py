@@ -1,6 +1,7 @@
 # ARCHITECTURE_DEBT:
 # This module historically exceeds standard length metrics and accumulates excessive domain responsibility.
 # It requires domain-aware structural extraction to isolate its internal classes appropriately.
+
 from __future__ import annotations
 
 import logging
@@ -9,7 +10,6 @@ import random
 from typing import Any
 
 import pygame
-from numba import jit
 
 from games.shared.config import RaycasterConfig
 from games.shared.constants import (
@@ -337,8 +337,6 @@ class Game(FPSGameBase):
         """Trigger freezer AOE explosion"""
         self.combat_system.explode_freezer(projectile)
 
-    @jit(nopython=True, fastmath=True)
-    @jit(nopython=True, fastmath=True)
     def execute_melee_attack(self) -> None:
         """Execute melee attack - wide sweeping damage in front of player"""
         if not (self.player is not None):
@@ -403,8 +401,6 @@ class Game(FPSGameBase):
             else:
                 self.add_message(f"COMBO x{hits}!", C.RED)
 
-    @jit(nopython=True, fastmath=True)
-    @jit(nopython=True, fastmath=True)
     def create_melee_sweep_effect(self) -> None:
         """Create enhanced visual sweep effect for melee attack"""
         if not (self.player is not None):
@@ -416,7 +412,6 @@ class Game(FPSGameBase):
 
         for layer in range(3):
             layer_distance = 80 + layer * 40
-            # OPTIMIZATION_TARGET: Migrate computationally bound loop to PyO3/Rust Core natively
 
             for i in range(30):
                 t = i / 29.0
@@ -629,8 +624,6 @@ class Game(FPSGameBase):
         if self.input_manager.is_action_pressed("look_down"):
             self.player.pitch_view(-5)
 
-    @jit(nopython=True, fastmath=True)
-    @jit(nopython=True, fastmath=True)
     def _update_fog_of_war(self) -> None:
         px, py = int(self.player.x), int(self.player.y)
         for dy in range(-4, 5):
@@ -644,7 +637,6 @@ class Game(FPSGameBase):
                     ):
                         self.visited_cells.add((cx, cy))
 
-    @jit(nopython=True, fastmath=True)
     def _check_item_pickups(self) -> None:
         for bot in self.bots:
             is_item = bot.enemy_type.startswith(("health", "ammo", "bomb", "pickup"))
@@ -697,8 +689,6 @@ class Game(FPSGameBase):
                             }
                         )
 
-    @jit(nopython=True, fastmath=True)
-    @jit(nopython=True, fastmath=True)
     def _update_large_fog_reveal(self) -> None:
         cx, cy = int(self.player.x), int(self.player.y)
         reveal_radius = FOG_REVEAL_RADIUS
@@ -845,7 +835,6 @@ class Game(FPSGameBase):
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 self.state = GameState.MAP_SELECT
 
-    @jit(nopython=True, fastmath=True)
     def handle_map_select_events(self) -> None:
         """Handle map selection events"""
         self.ui_renderer.update_start_button(pygame.mouse.get_pos())
@@ -918,8 +907,6 @@ class Game(FPSGameBase):
                 elif event.key == pygame.K_ESCAPE:
                     self.state = GameState.MENU
 
-    @jit(nopython=True, fastmath=True)
-    @jit(nopython=True, fastmath=True)
     def handle_key_config_events(self) -> None:
         """Handle input events in Key Config menu."""
         for event in pygame.event.get():
