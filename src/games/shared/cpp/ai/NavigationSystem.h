@@ -161,7 +161,7 @@ public:
           neighbor->h = std::sqrt(ndx * ndx + ndz * ndz);
           neighbor->f = neighbor->g + neighbor->h;
           open_pq.push(
-              neighbor); // Push new entry; stale entries skipped via closed_id
+              neighbor); // Push std::make_unique<auto>(entry; stale entries skipped via closed_id
         }
       }
     }
