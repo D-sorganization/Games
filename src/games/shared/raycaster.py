@@ -4,12 +4,11 @@ import math
 import random
 from collections import OrderedDict
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import pygame
 
-from .bot_renderer import BotRenderer
 from .contracts import validate_positive
 from .raycaster_math import (
     finalize_ray_data,
@@ -18,17 +17,13 @@ from .raycaster_math import (
     perform_dda_loop,
 )
 from .raycaster_rendering import (
-    blit_strip_scaled,
-    blit_whole_scaled,
-    collect_visible_runs,
-    draw_projectile_effect,
+    generate_background_surface as _generate_background_surface_fn,
+)
+from .raycaster_rendering import (
     generate_minimap_cache,
     prepare_wall_render_data,
     render_solid_wall_column,
     render_textured_wall_column,
-)
-from .raycaster_rendering import (
-    generate_background_surface as _generate_background_surface_fn,
 )
 from .raycaster_rendering import (
     render_floor_ceiling as _render_floor_ceiling_fn,
@@ -36,6 +31,7 @@ from .raycaster_rendering import (
 from .raycaster_rendering import (
     render_minimap as _render_minimap_fn,
 )
+from .raycaster_sprites import render_sprites as _render_sprites_fn
 from .texture_generator import TextureGenerator
 from .utils import cast_ray_dda
 
@@ -43,7 +39,6 @@ if TYPE_CHECKING:
     from .config import RaycasterConfig
     from .interfaces import (
         Bot,
-        EnemyData,
         Map,
         Player,
         Portal,
@@ -697,438 +692,31 @@ class Raycaster:
         view_offset_y: float = 0.0,
         flash_intensity: float = 0.0,
     ) -> None:
-        """Render all sprites (bots, projectiles, particles) to the view surface"""
-        # Entity tuple: (Object, TypeID)
-        # TypeID: 0=Bot, 1=Projectile, 2=Particle
-        sprites_to_render: list[tuple[Any, int]] = []
+        """Render all sprites (bots, projectiles, particles) to the view surface.
 
-        # Optimization: Pre-calculate player direction vector
-        p_cos = math.cos(player.angle)
-        p_sin = math.sin(player.angle)
-        max_dist_sq = self.config.MAX_DEPTH * self.config.MAX_DEPTH
-
-        # Merge all sprites
-        for bot in bots:
-            if bot.removed:
-                continue
-            sprites_to_render.append((bot, 0))
-
-        for proj in projectiles:
-            if not proj.alive:
-                continue
-            sprites_to_render.append((proj, 1))
-
-        for part in particles:
-            if not part.alive:
-                continue
-            sprites_to_render.append((part, 2))
-
-        final_sprites = []
-
-        for entity, type_id in sprites_to_render:
-            dx = entity.x - player.x
-            dy = entity.y - player.y
-
-            # Distance culling
-            dist_sq = dx * dx + dy * dy
-            if dist_sq > max_dist_sq:
-                continue
-
-            # Dot product check
-            if dx * p_cos + dy * p_sin < 0:
-                continue
-
-            dist = math.sqrt(dist_sq)
-            angle = math.atan2(dy, dx)
-            angle_to_sprite = angle - player.angle
-
-            while angle_to_sprite > math.pi:
-                angle_to_sprite -= 2 * math.pi
-            while angle_to_sprite < -math.pi:
-                angle_to_sprite += 2 * math.pi
-
-            if abs(angle_to_sprite) < half_fov + 0.5:
-                final_sprites.append((entity, dist, angle_to_sprite, type_id))
-
-        # Sort by distance (far to near)
-        final_sprites.sort(key=lambda x: x[1], reverse=True)
-
-        for entity, dist, angle, type_id in final_sprites:
-            if type_id == 1:
-                proj = cast("Projectile", entity)
-                self._draw_single_projectile(
-                    player, proj, dist, angle, half_fov, view_offset_y
-                )
-            elif type_id == 2:
-                part = cast("WorldParticle", entity)
-                self._draw_single_particle(
-                    player, part, dist, angle, half_fov, view_offset_y
-                )
-            else:
-                bot = cast("Bot", entity)
-                self._draw_single_sprite(
-                    player,
-                    bot,
-                    dist,
-                    angle,
-                    half_fov,
-                    view_offset_y,
-                    flash_intensity,
-                )
-
-    def _draw_single_particle(
-        self,
-        player: Player,
-        particle: WorldParticle,
-        dist: float,
-        angle: float,
-        half_fov: float,
-        view_offset_y: float = 0.0,
-    ) -> None:
-        """Draw a world particle."""
-        safe_dist = max(0.01, dist)
-
-        # Calculate screen position
-        base_size = self.config.SCREEN_HEIGHT / safe_dist
-        sprite_size = base_size * float(particle.size)
-
-        center_ray = self.num_rays / 2
-        sprite_scale = sprite_size / self.render_scale
-        ray_x = center_ray + (angle / half_fov) * center_ray - sprite_scale / 2
-
-        z_offset = (particle.z - 0.5) * (self.config.SCREEN_HEIGHT / safe_dist)
-        sprite_y = (
-            (self.config.SCREEN_HEIGHT / 2)
-            - (sprite_size / 2)
-            - z_offset
-            + player.pitch
-            + view_offset_y
-        )
-
-        if ray_x + sprite_scale < 0 or ray_x >= self.num_rays:
-            return
-
-        # Simple Center occlusion check
-        center_ray_idx = int(ray_x + sprite_scale / 2)
-        if 0 <= center_ray_idx < self.num_rays:
-            if dist > self.z_buffer[center_ray_idx]:
-                return  # Occluded
-
-        # Draw
-        try:
-            rect = pygame.Rect(
-                int(ray_x), int(sprite_y), int(sprite_scale), int(sprite_scale)
-            )
-            if rect.width > 0 and rect.height > 0:
-                # Particles are often somewhat transparent or additive?
-                # For now simple circle
-                pygame.draw.circle(
-                    self.view_surface, particle.color, rect.center, rect.width // 2
-                )
-        except (ValueError, pygame.error):
-            pass
-
-    def _draw_single_sprite(  # noqa: PLR0913
-        self,
-        player: Player,
-        bot: Bot,
-        dist: float,
-        angle: float,
-        half_fov: float,
-        view_offset_y: float = 0.0,
-        flash_intensity: float = 0.0,
-    ) -> None:
-        """Draw a single sprite to the view surface.
-
-        Calculates sprite position, scaling, and occlusion, then blits z-buffered
-        vertical strips to the offscreen view surface.
+        Delegates to raycaster_sprites module for the actual rendering logic.
         """
-        safe_dist = max(0.01, dist)
-        base_sprite_size = self.config.SCREEN_HEIGHT / safe_dist
-
-        type_data: EnemyData = bot.type_data
-        sprite_size = base_sprite_size * float(type_data.get("scale", 1.0))
-
-        center_ray = self.num_rays / 2
-        sprite_scale = sprite_size / self.render_scale
-        ray_x = center_ray + (angle / half_fov) * center_ray - sprite_scale / 2
-
-        sprite_ray_width = sprite_size / self.render_scale
-        sprite_ray_x = ray_x
-
-        sprite_y = (
-            self.config.SCREEN_HEIGHT / 2
-            - sprite_size / 2
-            + player.pitch
-            + view_offset_y
-        )
-
-        if sprite_ray_x + sprite_ray_width < 0 or sprite_ray_x >= self.num_rays:
-            return
-
-        # Obtain cached (or freshly rendered) sprite surface
-        sprite_surface, cache_key, distance_shade = self._get_or_create_sprite_surface(
-            bot, sprite_size, dist, flash_intensity
-        )
-
-        start_r = int(max(0, sprite_ray_x))
-        end_r = int(min(self.num_rays, sprite_ray_x + sprite_ray_width))
-        if start_r >= end_r:
-            return
-
-        target_width = int(sprite_ray_width)
-        target_height = int(sprite_size)
-        if target_width <= 0 or target_height <= 0:
-            return
-
-        visible_runs, total_visible_pixels = self._collect_visible_runs(
-            start_r, end_r, dist
-        )
-        if not visible_runs:
-            return
-
-        self._blit_sprite_runs(
-            sprite_surface,
-            cache_key,
-            visible_runs,
-            total_visible_pixels,
-            target_width,
-            target_height,
-            sprite_ray_x,
-            sprite_ray_width,
-            sprite_y,
-            sprite_size,
-        )
-
-    def _get_or_create_sprite_surface(
-        self,
-        bot: Bot,
-        sprite_size: float,
-        dist: float,
-        flash_intensity: float,
-    ) -> tuple[pygame.Surface, tuple[Any, ...], float]:
-        """Get or create a cached sprite surface for the given bot.
-
-        Returns:
-            (sprite_surface, cache_key, distance_shade)
-        """
-        visual_scale = self.VISUAL_SCALE
-        cache_display_size = min(sprite_size, 800)
-        cached_size = max(int(round(cache_display_size / 10.0) * 10.0), 10)
-
-        distance_shade = max(0.2, 1.0 - dist / 50.0)
-        if flash_intensity > 0:
-            flash_factor = flash_intensity * max(0.0, 1.0 - dist / 15.0)
-            distance_shade = min(1.0, distance_shade + flash_factor)
-
-        shade_level = int(distance_shade * 20)
-
-        cache_key = (
-            bot.enemy_type,
-            bot.type_data.get("visual_style"),
-            int(bot.walk_animation * 5),
-            int(bot.shoot_animation * 5),
-            bot.dead,
-            int(bot.death_timer // 5),
-            cached_size,
-            shade_level,
-            bot.frozen,
-        )
-
-        if cache_key in self.sprite_cache:
-            self.sprite_cache.move_to_end(cache_key)
-            return self.sprite_cache[cache_key], cache_key, distance_shade
-
-        surf_size = int(cached_size * visual_scale)
-        padding = (surf_size - cached_size) // 2
-
-        sprite_surface = pygame.Surface((surf_size, surf_size), pygame.SRCALPHA)
-        BotRenderer.render_sprite(
-            sprite_surface, bot, padding, padding, cached_size, self.config
-        )
-
-        shade_val = int(255 * distance_shade)
-        shade_color = (shade_val, shade_val, shade_val)
-        if shade_color != (255, 255, 255):
-            sprite_surface.fill(shade_color, special_flags=pygame.BLEND_MULT)
-
-        if bot.frozen:
-            sprite_surface.fill((150, 200, 255), special_flags=pygame.BLEND_MULT)
-
-        self._evict_lru(
-            self.sprite_cache, self._SPRITE_CACHE_MAX, self._SPRITE_CACHE_EVICT
-        )
-        self.sprite_cache[cache_key] = sprite_surface
-        return sprite_surface, cache_key, distance_shade
-
-    def _collect_visible_runs(
-        self,
-        start_r: int,
-        end_r: int,
-        dist: float,
-    ) -> tuple[list[tuple[int, int]], int]:
-        """Scan z-buffer for visible column runs of a sprite.
-
-        Returns:
-            (visible_runs, total_visible_pixels)
-        """
-        return collect_visible_runs(start_r, end_r, dist, self.z_buffer)
-
-    def _blit_sprite_runs(  # noqa: PLR0913
-        self,
-        sprite_surface: pygame.Surface,
-        cache_key: tuple[Any, ...],
-        visible_runs: list[tuple[int, int]],
-        total_visible_pixels: int,
-        target_width: int,
-        target_height: int,
-        sprite_ray_x: float,
-        sprite_ray_width: float,
-        sprite_y: float,
-        sprite_size: float,
-    ) -> None:
-        """Blit visible sprite runs using whole-scale or strip-scale strategy."""
-        visual_scale = self.VISUAL_SCALE
-        scale_whole = True
-        if (
-            total_visible_pixels < target_width * self.STRIP_VISIBILITY_THRESHOLD
-            and target_width > self.LARGE_SPRITE_THRESHOLD
-        ):
-            scale_whole = False
-
-        if scale_whole:
-            self._blit_whole_scaled(
-                sprite_surface,
-                cache_key,
-                visible_runs,
-                target_width,
-                target_height,
-                sprite_ray_x,
-                sprite_y,
-                visual_scale,
-            )
-        else:
-            self._blit_strip_scaled(
-                sprite_surface,
-                visible_runs,
-                target_width,
-                target_height,
-                sprite_ray_x,
-                sprite_ray_width,
-                sprite_y,
-                visual_scale,
-            )
-
-    def _blit_whole_scaled(  # noqa: PLR0913
-        self,
-        sprite_surface: pygame.Surface,
-        cache_key: tuple[Any, ...],
-        visible_runs: list[tuple[int, int]],
-        target_width: int,
-        target_height: int,
-        sprite_ray_x: float,
-        sprite_y: float,
-        visual_scale: float,
-    ) -> None:
-        """Blit visible runs using a whole-surface scale strategy."""
-        blit_whole_scaled(
-            sprite_surface,
-            cache_key,
-            visible_runs,
-            target_width,
-            target_height,
-            sprite_ray_x,
-            sprite_y,
-            visual_scale,
+        _render_sprites_fn(
+            player,
+            bots,
+            projectiles,
+            particles,
+            half_fov,
+            view_offset_y,
+            flash_intensity,
+            self.config,
+            self.num_rays,
+            self.render_scale,
+            self.view_surface,
+            self.z_buffer,
+            self.sprite_cache,
+            self._SPRITE_CACHE_MAX,
+            self._SPRITE_CACHE_EVICT,
             self._scaled_sprite_cache,
             self._SCALED_SPRITE_CACHE_MAX,
             self._SCALED_SPRITE_CACHE_EVICT,
             self._evict_lru,
-            self.view_surface,
         )
-
-    def _blit_strip_scaled(  # noqa: PLR0913
-        self,
-        sprite_surface: pygame.Surface,
-        visible_runs: list[tuple[int, int]],
-        target_width: int,
-        target_height: int,
-        sprite_ray_x: float,
-        sprite_ray_width: float,
-        sprite_y: float,
-        visual_scale: float,
-    ) -> None:
-        """Blit visible runs using per-strip scaling (fallback for large sprites)."""
-        blit_strip_scaled(
-            sprite_surface,
-            visible_runs,
-            target_width,
-            target_height,
-            sprite_ray_x,
-            sprite_ray_width,
-            sprite_y,
-            visual_scale,
-            self.view_surface,
-        )
-
-    def _draw_single_projectile(
-        self,
-        player: Player,
-        proj: Projectile,
-        dist: float,
-        angle: float,
-        half_fov: float,
-        view_offset_y: float = 0.0,
-    ) -> None:
-        """Draw a projectile sprite."""
-        safe_dist = max(0.01, dist)
-
-        # Calculate screen position
-        base_size = self.config.SCREEN_HEIGHT / safe_dist
-        sprite_size = base_size * float(proj.size)
-
-        center_ray = self.num_rays / 2
-        sprite_scale = sprite_size / self.render_scale
-        ray_x = center_ray + (angle / half_fov) * center_ray - sprite_scale / 2
-
-        z_offset = (proj.z - 0.5) * (self.config.SCREEN_HEIGHT / safe_dist)
-        sprite_y = (
-            (self.config.SCREEN_HEIGHT / 2)
-            - (sprite_size / 2)
-            - z_offset
-            + player.pitch
-            + view_offset_y
-        )
-
-        if ray_x + sprite_scale < 0 or ray_x >= self.num_rays:
-            return
-
-        # Simple Center occlusion check
-        center_ray_idx = int(ray_x + sprite_scale / 2)
-        if 0 <= center_ray_idx < self.num_rays:
-            if dist > self.z_buffer[center_ray_idx]:
-                return  # Occluded
-
-        # Draw
-        try:
-            rect = pygame.Rect(
-                int(ray_x), int(sprite_y), int(sprite_scale), int(sprite_scale)
-            )
-            if rect.width > 0 and rect.height > 0:
-                pygame.draw.circle(
-                    self.view_surface, proj.color, rect.center, rect.width // 2
-                )
-                self._draw_projectile_effect(proj, rect)
-        except (ValueError, pygame.error):
-            pass
-
-    def _draw_projectile_effect(
-        self,
-        proj: Projectile,
-        rect: pygame.Rect,
-    ) -> None:
-        """Draw weapon-type-specific visual effects for a projectile."""
-        draw_projectile_effect(proj, rect, self.view_surface)
 
     def _generate_background_surface(self, level: int) -> None:
         """Pre-generate a high quality background surface for the level theme."""

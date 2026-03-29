@@ -82,7 +82,7 @@ def raycaster() -> Raycaster:
     pygame.init()
     try:
         pygame.display.set_mode((1, 1), pygame.HIDDEN)
-    except Exception:  # noqa: BLE001
+    except (pygame.error, OSError):
         pass
 
     with (
@@ -199,12 +199,15 @@ class TestRaycasterInit:
         raycaster.render_minimap(screen, player, [])
 
     def test_projectile_effects(self, raycaster: Raycaster) -> None:
+        from games.shared.raycaster_rendering import draw_projectile_effect
+
         rect = MagicMock()
         rect.width = 10
         rect.center = (5, 5)
         rect.centerx = 5
         rect.centery = 5
         rect.top = 0
+        surface = DummySurface((800, 600))
         for w in [
             "plasma",
             "rocket",
@@ -215,7 +218,7 @@ class TestRaycasterInit:
             "freezer",
         ]:
             proj = MagicMock(weapon_type=w)
-            raycaster._draw_projectile_effect(proj, rect)
+            draw_projectile_effect(proj, rect, surface)
 
     def test_get_cached_strip_large_height(self, raycaster: Raycaster) -> None:
         """Test preventing memory crashes from large height values."""
@@ -313,11 +316,13 @@ class TestRaycasterInit:
         )
 
     def test_blit_strip_scaled_coverage(self, raycaster: Raycaster) -> None:
-        """Test fallback _blit_strip_scaled logic."""
+        """Test fallback blit_strip_scaled logic."""
+        from games.shared.raycaster_rendering import blit_strip_scaled
+
         sprite_surf = DummySurface((32, 32))
         sprite_surf.subsurface = MagicMock(return_value=DummySurface((5, 32)))  # type: ignore
-        raycaster.view_surface = DummySurface((800, 600))
-        raycaster._blit_strip_scaled(
+        view_surface = DummySurface((800, 600))
+        blit_strip_scaled(
             sprite_surface=sprite_surf,  # type: ignore
             visible_runs=[(10, 20), (30, 40)],
             target_width=100,
@@ -326,10 +331,11 @@ class TestRaycasterInit:
             sprite_ray_width=50.0,
             sprite_y=200.0,
             visual_scale=1.0,
+            view_surface=view_surface,  # type: ignore
         )
 
         # Test 0 width run
-        raycaster._blit_strip_scaled(
+        blit_strip_scaled(
             sprite_surface=sprite_surf,  # type: ignore
             visible_runs=[(10, 10)],
             target_width=100,
@@ -338,48 +344,80 @@ class TestRaycasterInit:
             sprite_ray_width=50.0,
             sprite_y=200.0,
             visual_scale=1.0,
+            view_surface=view_surface,  # type: ignore
         )
 
-        with patch("games.shared.raycaster.pygame.error", ValueError, create=True):
-            # Test exception
-            sprite_surf.subsurface.side_effect = ValueError  # type: ignore
-            raycaster._blit_strip_scaled(
-                sprite_surface=sprite_surf,  # type: ignore
-                visible_runs=[(10, 20)],
-                target_width=100,
-                target_height=100,
-                sprite_ray_x=15.0,
-                sprite_ray_width=50.0,
-                sprite_y=200.0,
-                visual_scale=1.0,
-            )
+        # Test exception
+        sprite_surf.subsurface.side_effect = ValueError  # type: ignore
+        blit_strip_scaled(
+            sprite_surface=sprite_surf,  # type: ignore
+            visible_runs=[(10, 20)],
+            target_width=100,
+            target_height=100,
+            sprite_ray_x=15.0,
+            sprite_ray_width=50.0,
+            sprite_y=200.0,
+            visual_scale=1.0,
+            view_surface=view_surface,  # type: ignore
+        )
 
     def test_draw_single_projectile(self, raycaster: Raycaster) -> None:
         """Test drawing projectile with occlusion."""
         import numpy as np
 
+        from games.shared.raycaster_sprites import _draw_single_projectile
+
         player = MagicMock(x=1.0, y=1.0, angle=0.0, pitch=0)
         proj = MagicMock(
             x=2.0, y=1.0, alive=True, weapon_type="plasma", color=(255, 0, 0)
         )
-        raycaster.z_buffer = np.full(800, 5.0)
-        raycaster.view_surface = DummySurface((800, 600))
+        z_buffer = np.full(800, 5.0)
+        view_surface = DummySurface((800, 600))
 
-        with patch("games.shared.raycaster.pygame.error", ValueError, create=True):
-            # Drawn
-            raycaster._draw_single_projectile(
-                player, proj, dist=2.0, angle=0.0, half_fov=0.5, view_offset_y=0.0
-            )
+        # Drawn
+        _draw_single_projectile(
+            player,
+            proj,
+            dist=2.0,
+            angle=0.0,
+            half_fov=0.5,
+            view_offset_y=0.0,
+            config=raycaster.config,
+            num_rays=raycaster.num_rays,
+            render_scale=raycaster.render_scale,
+            view_surface=view_surface,  # type: ignore
+            z_buffer=z_buffer,
+        )
 
-            # Occluded
-            raycaster._draw_single_projectile(
-                player, proj, dist=10.0, angle=0.0, half_fov=0.5, view_offset_y=0.0
-            )
+        # Occluded
+        _draw_single_projectile(
+            player,
+            proj,
+            dist=10.0,
+            angle=0.0,
+            half_fov=0.5,
+            view_offset_y=0.0,
+            config=raycaster.config,
+            num_rays=raycaster.num_rays,
+            render_scale=raycaster.render_scale,
+            view_surface=view_surface,  # type: ignore
+            z_buffer=z_buffer,
+        )
 
-            # Out of bounds
-            raycaster._draw_single_projectile(
-                player, proj, dist=2.0, angle=3.14, half_fov=0.5, view_offset_y=0.0
-            )
+        # Out of bounds
+        _draw_single_projectile(
+            player,
+            proj,
+            dist=2.0,
+            angle=3.14,
+            half_fov=0.5,
+            view_offset_y=0.0,
+            config=raycaster.config,
+            num_rays=raycaster.num_rays,
+            render_scale=raycaster.render_scale,
+            view_surface=view_surface,  # type: ignore
+            z_buffer=z_buffer,
+        )
 
     def test_floor_ceiling_coverage(self, raycaster: Raycaster) -> None:
         """Test floor ceiling generation and scaling conditions."""

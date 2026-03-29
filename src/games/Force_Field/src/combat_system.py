@@ -5,6 +5,8 @@ import math
 import random
 from typing import TYPE_CHECKING
 
+import pygame
+
 from games.shared.constants import COMBO_TIMER_FRAMES
 
 from . import constants as C
@@ -323,7 +325,7 @@ class CombatSystem:
 
         try:
             self.explode_laser(impact_x, impact_y)
-        except Exception:  # noqa: BLE001
+        except (ValueError, AttributeError, pygame.error):
             logger.exception("Error in explode_laser")
 
         self.game.particle_system.add_laser(
@@ -417,7 +419,7 @@ class CombatSystem:
 
         try:
             self.game.sound_manager.play_sound("bomb")
-        except Exception:  # noqa: BLE001
+        except (pygame.error, OSError):
             logger.exception("Bomb Audio Failed")
 
         # Screen shake on bomb
@@ -487,7 +489,7 @@ class CombatSystem:
         """Trigger Massive Laser Explosion at Impact Point"""
         try:
             self.game.sound_manager.play_sound("boom_real")
-        except Exception:  # noqa: BLE001
+        except (pygame.error, OSError):
             logger.exception("Boom sound failed")
 
         self.game.screen_shake = 10.0
@@ -572,7 +574,7 @@ class CombatSystem:
             self.game.sound_manager.play_sound(
                 "boom_real" if weapon_type == "rocket" else "shoot_plasma"
             )
-        except Exception:  # noqa: BLE001
+        except (pygame.error, OSError):
             pass
 
         for bot in self.game.bots:

@@ -108,7 +108,7 @@ class AssetCatalog:
             sound.set_volume(volume)
             self._cache[key] = sound
             return sound
-        except Exception:  # noqa: BLE001
+        except (pygame.error, FileNotFoundError, OSError):
             logger.exception("Failed to load sound: %s", path)
             return None
 
@@ -130,7 +130,7 @@ class AssetCatalog:
             surface = surface.convert_alpha() if alpha else surface.convert()
             self._cache[key] = surface
             return surface
-        except Exception:  # noqa: BLE001
+        except (pygame.error, FileNotFoundError, OSError):
             logger.exception("Failed to load image: %s", path)
             return None
 

@@ -23,7 +23,7 @@ def create_title_image() -> None:
     # Try to find a bold font, fallback to default
     try:
         font = pygame.font.SysFont("arial", 72, bold=True)
-    except Exception:  # Catch specific exception instead of bare except
+    except (pygame.error, OSError):
         font = pygame.font.Font(None, 72)
 
     text = "WIZARD OF WOR"

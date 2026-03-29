@@ -152,7 +152,7 @@ class Game(FPSGameBase):
                 self.joystick = pygame.joystick.Joystick(0)
                 self.joystick.init()
                 logger.info("Controller detected: %s", self.joystick.get_name())
-            except Exception:  # noqa: BLE001
+            except (pygame.error, OSError):
                 logger.exception("Controller init failed")
 
         # Fog of War
