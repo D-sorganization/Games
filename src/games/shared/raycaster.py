@@ -87,9 +87,7 @@ class Raycaster:
         for name, tex in self.textures.items():
             w = tex.get_width()
             h = tex.get_height()
-            self.texture_strips[name] = [
-                tex.subsurface((x, 0, 1, h)) for x in range(w)
-            ]
+            self.texture_strips[name] = [tex.subsurface((x, 0, 1, h)) for x in range(w)]
 
         # Bounded LRU cache -- eviction handled by update_cache() each frame.
         # 512 entries keeps memory bounded (see issue #583).

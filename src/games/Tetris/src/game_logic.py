@@ -244,8 +244,7 @@ class TetrisLogic:
     def clear_lines(self) -> None:
         """Clear completed lines and update score"""
         lines_to_clear = [
-            y for y in range(GRID_HEIGHT)
-            if all(cell != BLACK for cell in self.grid[y])
+            y for y in range(GRID_HEIGHT) if all(cell != BLACK for cell in self.grid[y])
         ]
 
         # Create particles for cleared lines
