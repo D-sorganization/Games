@@ -26,16 +26,18 @@ class TestUIRendererBase:
 
     def test_init_fonts_fallback(self, mock_pygame_surface):
         with patch("games.shared.ui_renderer_base.pygame") as mock_pg:
-            mock_pg.font.SysFont.side_effect = Exception("No font")
+            mock_pg.error = type("error", (RuntimeError,), {})
+            mock_pg.font.SysFont.side_effect = OSError("No font")
             renderer = DummyRenderer(mock_pygame_surface, 800, 600)
             assert renderer.title_font is not None
 
     def test_load_assets_success(self, mock_pygame_surface):
         with patch("games.shared.ui_renderer_base.pygame") as mock_pg:
+            mock_pg.error = type("error", (RuntimeError,), {})
             with patch(
                 "games.shared.ui_renderer_base.os.path.exists", return_value=True
             ):
-                with patch("games.shared.ui_renderer_base.cv2"):
+                with patch("games.shared.ui_renderer_base.cv2", create=True):
                     surf_mock = MagicMock()
                     surf_mock.get_width.return_value = 800
                     surf_mock.get_height.return_value = 600
@@ -88,10 +90,11 @@ class TestUIRendererBase:
     def test_load_assets_no_scaling(self, mock_pygame_surface):
         """Test load assets where image shouldn't be scaled (scale >= 1)."""
         with patch("games.shared.ui_renderer_base.pygame") as mock_pg:
+            mock_pg.error = type("error", (RuntimeError,), {})
             with patch(
                 "games.shared.ui_renderer_base.os.path.exists", return_value=True
             ):
-                with patch("games.shared.ui_renderer_base.cv2"):
+                with patch("games.shared.ui_renderer_base.cv2", create=True):
                     surf_mock = MagicMock()
                     surf_mock.get_width.return_value = 100
                     surf_mock.get_height.return_value = 100
@@ -106,9 +109,10 @@ class TestUIRendererBase:
 
     def test_load_assets_exception(self, mock_pygame_surface):
         """Test load assets throwing an exception."""
-        with patch("games.shared.ui_renderer_base.pygame"):
+        with patch("games.shared.ui_renderer_base.pygame") as mock_pg:
+            mock_pg.error = type("error", (RuntimeError,), {})
             with patch.object(
-                DummyRenderer, "_get_base_dir", side_effect=Exception("Disk Error")
+                DummyRenderer, "_get_base_dir", side_effect=OSError("Disk Error")
             ):
                 # Should not raise exception
                 renderer = DummyRenderer(mock_pygame_surface, 800, 600)

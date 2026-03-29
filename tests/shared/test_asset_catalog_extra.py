@@ -44,7 +44,7 @@ class TestSoundLoading:
         sounds_dir.mkdir(parents=True)
         (sounds_dir / "bad.wav").write_bytes(b"NOT_VALID_WAVE")
 
-        with patch("pygame.mixer.Sound", side_effect=Exception("corrupt")):
+        with patch("pygame.mixer.Sound", side_effect=OSError("corrupt")):
             catalog = AssetCatalog(tmp_path)
             result = catalog.load_sound("bad.wav")
         assert result is None
@@ -123,7 +123,7 @@ class TestImageLoading:
         bad_img = img_dir / "bad_img.png"
         bad_img.write_bytes(b"NOT A REAL IMAGE")
 
-        with patch("pygame.image.load", side_effect=Exception("decode error")):
+        with patch("pygame.image.load", side_effect=OSError("decode error")):
             result = catalog.load_image("bad_img.png")
             assert result is None
 

@@ -247,7 +247,7 @@ class TestSoundManagerBase:
         with (
             patch.object(mgr, "get_game_name", return_value="MockGame"),
             patch("pathlib.Path.resolve", return_value=tmp_path / "foo" / "mock.py"),
-            patch("pygame.mixer.Sound", side_effect=ValueError("codec fail")),
+            patch("pygame.mixer.Sound", side_effect=OSError("codec fail")),
         ):
             mgr.load_assets()
 
