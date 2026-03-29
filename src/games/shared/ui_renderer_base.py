@@ -248,9 +248,7 @@ class UIRendererBase:
                 slide, duration, elapsed, C, game_title, sub_color
             )
 
-    def _render_distortion_slide(
-        self, slide: dict[str, Any], C: Any
-    ) -> None:
+    def _render_distortion_slide(self, slide: dict[str, Any], C: Any) -> None:
         """Render a distortion-type intro slide with jittering characters."""
         font = self.chiller_font
         lines = [str(slide["text"])]
@@ -333,7 +331,5 @@ class UIRendererBase:
             sub = self.subtitle_font.render(str(slide["sub"]), True, sub_color)
             self.screen.blit(
                 sub,
-                sub.get_rect(
-                    center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 60)
-                ),
+                sub.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 60)),
             )
