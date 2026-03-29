@@ -242,7 +242,7 @@ class Game(FPSGameBase):
             lambda **kw: self.sound_manager.play_sound("scream"),
         )
 
-    def _sync_combat_state(self) -> None:
+    def sync_combat_state(self) -> None:
         """Synchronize kill/combo state from the combat manager back to Game."""
         self.kills = self.kills
         self.kill_combo_count = self.kill_combo_count
@@ -746,6 +746,6 @@ class Game(FPSGameBase):
                     self.ui_renderer.render_game_over(self)
 
                 self.clock.tick(C.FPS)
-        except Exception as e:  # noqa: BLE001
+        except (RuntimeError, pygame.error, OSError, ValueError, TypeError) as e:
             logger.critical("CRASH: %s", e, exc_info=True)
             raise

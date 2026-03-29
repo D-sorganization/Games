@@ -255,7 +255,7 @@ class Bot:
         game_map: Map,
         player: Player,
         dist_sq: float,
-        other_bots: list[Bot],  # noqa: ARG002
+        _other_bots: list[Bot],
     ) -> Projectile | None:
         """Rolling momentum logic -- accelerate, bounce off walls, crush player."""
         # Compute dx/dy/dist from dist_sq for velocity normalization

@@ -77,8 +77,8 @@ class Game(FPSGameBase):
         self.last_death_pos: tuple[float, float] | None = None
 
         # Audio Flags for Intro
-        self._laugh_played = False
-        self._water_played = False
+        self.laugh_played = False
+        self.water_played = False
 
         # Gameplay state
         self.level = 1
@@ -853,23 +853,23 @@ class Game(FPSGameBase):
                 duration = slides_durations[self.intro_step]
 
                 if self.intro_step == 0 and elapsed < 50:
-                    if not self._laugh_played:
+                    if not self.laugh_played:
                         self.sound_manager.play_sound("laugh")
-                        self._laugh_played = True
+                        self.laugh_played = True
 
                 if elapsed > duration:
                     self.intro_step += 1
                     self.intro_start_time = 0
-                    self._laugh_played = False
+                    self.laugh_played = False
             else:
                 self.state = GameState.MENU
                 return
 
         if self.intro_phase < 2:
             if self.intro_phase == 1 and elapsed < 50:
-                if not self._water_played:
+                if not self.water_played:
                     self.sound_manager.play_sound("water")
-                    self._water_played = True
+                    self.water_played = True
 
             if elapsed > duration:
                 self.intro_phase += 1
@@ -938,6 +938,6 @@ class Game(FPSGameBase):
                     self.ui_renderer.render_game_over(self)
 
                 self.clock.tick(C.FPS)
-        except Exception as e:  # noqa: BLE001
+        except (RuntimeError, pygame.error, OSError, ValueError, TypeError) as e:
             logger.critical("CRASH: %s", e, exc_info=True)
             raise

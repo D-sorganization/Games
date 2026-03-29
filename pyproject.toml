@@ -7,6 +7,22 @@ name = "games"
 version = "0.0.0"
 description = "Game collection"
 requires-python = ">=3.10"
+dependencies = [
+    "pygame==2.6.1",
+    "numpy>=2.0,<3",
+    "opencv-python>=4.10,<5",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=9.0,<10",
+    "pytest-cov>=7.0,<8",
+    "pytest-timeout>=2.4,<3",
+    "mypy>=1.10,<2",
+    "ruff>=0.6,<1",
+    "types-PyYAML>=6.0,<7",
+    "types-requests>=2.32,<3",
+]
 
 
 [tool.setuptools.packages.find]

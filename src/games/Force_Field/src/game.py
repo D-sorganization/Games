@@ -974,24 +974,24 @@ class Game(FPSGameBase):
                 duration = slides_durations[self.intro_step]
 
                 if self.intro_step == 0 and elapsed < 50:
-                    if not getattr(self, "_laugh_played", False):
+                    if not getattr(self, "laugh_played", False):
                         self.sound_manager.play_sound("laugh")
-                        self._laugh_played = True
+                        self.laugh_played = True
 
                 if elapsed > duration:
                     self.intro_step += 1
                     self.intro_start_time = 0
-                    if hasattr(self, "_laugh_played"):
-                        del self._laugh_played
+                    if hasattr(self, "laugh_played"):
+                        del self.laugh_played
             else:
                 self.state = GameState.MENU
                 return
 
         if self.intro_phase < 2:
             if self.intro_phase == 1 and elapsed < 50:
-                if not getattr(self, "_water_played", False):
+                if not getattr(self, "water_played", False):
                     self.sound_manager.play_sound("water")
-                    self._water_played = True
+                    self.water_played = True
 
             if elapsed > duration:
                 self.intro_phase += 1
@@ -1046,8 +1046,6 @@ class Game(FPSGameBase):
                     self.ui_renderer.render_game_over(self)
 
                 self.clock.tick(C.FPS)
-        except Exception as e:  # noqa: BLE001
-            logger.critical("CRASH: %s", e)
-            # Re-raise to ensure proper exit; logging critical is good practice.
-            # In a robust system, we might want to show a crash dialog.
-            raise e
+        except (RuntimeError, pygame.error, OSError, ValueError, TypeError) as e:
+            logger.critical("CRASH: %s", e, exc_info=True)
+            raise

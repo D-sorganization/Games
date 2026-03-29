@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import logging
+import math
 import os
 import random
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import pygame
 
@@ -185,3 +186,154 @@ class UIRendererBase:
         through to self.subtitle_font directly (Law of Demeter).
         """
         return self.subtitle_font.render(text, antialias, color)
+
+    # ------------------------------------------------------------------
+    # Intro slide rendering (DRY: extracted from per-game ui_renderers)
+    # ------------------------------------------------------------------
+
+    def _get_intro_slides(self) -> list[dict[str, Any]]:
+        """Return the intro slide data for this game.
+
+        Subclasses should override this to provide game-specific slide content.
+        Default returns an empty list (no intro).
+        """
+        return []
+
+    def _get_game_title(self) -> str:
+        """Return the game title used for title-slide effects.
+
+        Subclasses should override to return their title string
+        (e.g. 'DUUM', 'FORCE FIELD', 'ZOMBIE SURVIVAL').
+        """
+        return ""
+
+    def _get_subtitle_color(self) -> tuple[int, int, int]:
+        """Return the color used for subtitle text on static slides.
+
+        Defaults to red (200, 0, 0). Subclasses can override.
+        """
+        return (200, 0, 0)
+
+    def _get_constants_module(self) -> Any:
+        """Return the game's constants module (provides SCREEN_WIDTH, etc.).
+
+        Subclasses must override this.
+        """
+        raise NotImplementedError  # pragma: no cover
+
+    def _render_intro_slide(self, step: int, elapsed: int) -> None:
+        """Render intro slides using data from _get_intro_slides().
+
+        Args:
+            step: Current slide index.
+            elapsed: Milliseconds elapsed in the current slide.
+        """
+        slides = self._get_intro_slides()
+        C = self._get_constants_module()
+        game_title = self._get_game_title()
+        sub_color = self._get_subtitle_color()
+
+        if step >= len(slides):
+            return
+
+        slide = slides[step]
+        duration = int(cast("int", slide["duration"]))
+
+        if slide["type"] == "distortion":
+            self._render_distortion_slide(slide, C)
+        elif slide["type"] == "story":
+            self._render_story_slide(slide, duration, elapsed, C)
+        elif slide["type"] == "static":
+            self._render_static_slide(
+                slide, duration, elapsed, C, game_title, sub_color
+            )
+
+    def _render_distortion_slide(
+        self, slide: dict[str, Any], C: Any
+    ) -> None:
+        """Render a distortion-type intro slide with jittering characters."""
+        font = self.chiller_font
+        lines = [str(slide["text"])]
+        if "text2" in slide:
+            lines.append(str(slide["text2"]))
+
+        start_y = C.SCREEN_HEIGHT // 2 - (len(lines) * 80) // 2
+        for i, text in enumerate(lines):
+            total_w = sum(font.size(c)[0] for c in text)
+            start_x = (C.SCREEN_WIDTH - total_w) // 2
+            y = start_y + i * 100
+            x_off = 0
+            for idx, char in enumerate(text):
+                tf = pygame.time.get_ticks() * 0.003 + idx * 0.2
+                jx = math.sin(tf * 2.0) * 2
+                jy = math.cos(tf * 1.5) * 4
+                c_val = int(120 + 135 * abs(math.sin(tf * 0.8)))
+
+                self.screen.blit(
+                    font.render(char, True, (50, 0, 0)),
+                    (start_x + x_off + jx + 2, y + jy + 2),
+                )
+                self.screen.blit(
+                    font.render(char, True, (c_val, 0, 0)),
+                    (start_x + x_off + jx, y + jy),
+                )
+                x_off += font.size(char)[0]
+
+    def _render_story_slide(
+        self,
+        slide: dict[str, Any],
+        duration: int,
+        elapsed: int,
+        C: Any,
+    ) -> None:
+        """Render a story-type intro slide with sequentially revealed lines."""
+        lines = cast("list[str]", slide["lines"])
+        show_count = int((elapsed / duration) * (len(lines) + 1))
+        show_count = min(show_count, len(lines))
+        y = C.SCREEN_HEIGHT // 2 - (len(lines) * 50) // 2
+        for i in range(show_count):
+            s = self.subtitle_font.render(lines[i], True, C.RED)
+            self.screen.blit(s, s.get_rect(center=(C.SCREEN_WIDTH // 2, y)))
+            y += 50
+
+    def _render_static_slide(
+        self,
+        slide: dict[str, Any],
+        duration: int,
+        elapsed: int,
+        C: Any,
+        game_title: str,
+        sub_color: tuple[int, int, int],
+    ) -> None:
+        """Render a static-type intro slide with optional title fade and blood drips."""
+        color = cast("tuple[int, int, int]", slide.get("color", C.WHITE))
+        if slide["text"] == game_title:
+            fade = min(1.0, elapsed / duration)
+            r = 255
+            g = int(255 + (0 - 255) * fade)
+            b = int(255 + (0 - 255) * fade)
+            color = (r, g, b)
+
+        txt = self.title_font.render(str(slide["text"]), True, color)
+        rect = txt.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2))
+        if slide["text"] == game_title:
+            rect.centery = 100  # Match Main Menu title position
+        self.screen.blit(txt, rect)
+
+        if (
+            slide["text"] == game_title
+            and color[0] > 250
+            and color[1] < 10
+            and color[2] < 10
+        ):
+            self.update_blood_drips(rect)
+            self._draw_blood_drips(self.title_drips)
+
+        if "sub" in slide:
+            sub = self.subtitle_font.render(str(slide["sub"]), True, sub_color)
+            self.screen.blit(
+                sub,
+                sub.get_rect(
+                    center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 60)
+                ),
+            )

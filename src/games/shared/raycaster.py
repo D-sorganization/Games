@@ -591,7 +591,7 @@ class Raycaster:
     def _resolve_wall_theme(self, level: int) -> dict[int, tuple[int, int, int]]:
         """Resolve wall colour theme for the current level."""
         if self._cached_level == level:
-            return self._cached_wall_colors  # type: ignore[return-value]
+            return self._cached_wall_colors
 
         level_themes = self.config.LEVEL_THEMES or []
         theme_idx = (level - 1) % len(level_themes) if level_themes else 0
