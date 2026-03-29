@@ -82,7 +82,7 @@ def raycaster() -> Raycaster:
     pygame.init()
     try:
         pygame.display.set_mode((1, 1), pygame.HIDDEN)
-    except Exception:  # noqa: BLE001
+    except (pygame.error, OSError):
         pass
 
     with (

@@ -14,6 +14,8 @@ import random
 from contextlib import suppress
 from typing import TYPE_CHECKING, Any
 
+import pygame
+
 from games.shared.constants import COMBO_TIMER_FRAMES
 
 if TYPE_CHECKING:
@@ -200,7 +202,7 @@ class CombatManagerBase:
                 player, aim_angle, closest_bot, closest_dist, wall_dist
             )
 
-        except Exception:  # noqa: BLE001
+        except (ValueError, AttributeError, ZeroDivisionError):
             logger.exception("Error in check_shot_hit")
 
         return damage_texts
@@ -224,7 +226,7 @@ class CombatManagerBase:
 
         try:
             self.explode_laser(impact_x, impact_y, damage_texts)
-        except Exception:  # noqa: BLE001
+        except (ValueError, AttributeError, pygame.error):
             logger.exception("Error in explode_laser")
 
         laser_duration = getattr(self.C, "LASER_DURATION", 10)
@@ -425,7 +427,7 @@ class CombatManagerBase:
 
         try:
             self.sound_manager.play_sound("bomb")
-        except Exception:  # noqa: BLE001
+        except (pygame.error, OSError):
             logger.exception("Bomb Audio Failed")
 
         damage_texts.append(
@@ -449,7 +451,7 @@ class CombatManagerBase:
         """Trigger a laser AOE explosion at an impact point."""
         try:
             self.sound_manager.play_sound("boom_real")
-        except Exception:  # noqa: BLE001
+        except (pygame.error, OSError):
             logger.exception("Boom sound failed")
 
         try:
@@ -504,7 +506,7 @@ class CombatManagerBase:
                         "vy": -2,
                     }
                 )
-        except Exception:  # noqa: BLE001
+        except (ValueError, AttributeError, pygame.error):
             logger.exception("Critical Laser Error")
 
         return damage_texts
@@ -559,7 +561,7 @@ class CombatManagerBase:
             self.sound_manager.play_sound(
                 "boom_real" if weapon_type == "rocket" else "shoot_plasma"
             )
-        except Exception:  # noqa: BLE001
+        except (pygame.error, OSError):
             pass
 
         for bot in self.entity_manager.bots:
