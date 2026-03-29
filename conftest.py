@@ -115,6 +115,16 @@ _pg.Rect = MockRect  # type: ignore[attr-defined]
 _pg.Color = MagicMock  # type: ignore[attr-defined]
 _pg.SRCALPHA = 65536  # type: ignore[attr-defined]
 
+# pygame.error is the base exception class raised by pygame functions.
+# It must be a real exception type so that ``except pygame.error:`` works.
+
+
+class _PygameError(RuntimeError):
+    """Stand-in for ``pygame.error`` in the test-fake module."""
+
+
+_pg.error = _PygameError  # type: ignore[attr-defined]
+
 # Event types
 _pg.QUIT = 256  # type: ignore[attr-defined]
 _pg.KEYDOWN = 768  # type: ignore[attr-defined]
