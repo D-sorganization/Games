@@ -4,12 +4,12 @@ Main game file for Wizard of Wor remake.
 
 # mypy: disable-error-code=unreachable
 
-import math
 import random
 import sys
 from array import array
 from typing import NoReturn
 
+import numpy as np
 import pygame
 from constants import (
     BLACK,
@@ -91,11 +91,10 @@ class SoundBoard:
                 return None
         sample_rate = 22050
         sample_count = int(sample_rate * duration_ms / 1000)
-        waveform = array("h")
-        for i in range(sample_count):
-            value = int(14000 * math.sin(2 * math.pi * frequency * (i / sample_rate)))
-            waveform.append(value)
-        return pygame.mixer.Sound(buffer=waveform.tobytes())
+        # Vectorized sine wave generation using numpy
+        t = np.arange(sample_count) / sample_rate
+        samples = (14000 * np.sin(2 * np.pi * frequency * t)).astype(np.int16)
+        return pygame.mixer.Sound(buffer=samples.tobytes())
 
     def _build_intro_melody(self) -> pygame.mixer.Sound | None:
         """Build a retro-style intro melody reminiscent of classic arcade games."""

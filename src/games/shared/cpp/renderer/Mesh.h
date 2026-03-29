@@ -13,22 +13,19 @@
 
 #include "GLLoader.h"
 
-#include <cassert>
 #include <cmath>
 #include <cstddef>
 #include <map>
+#include <stdexcept>
 #include <utility>
 #include <vector>
 
 namespace qe {
 namespace renderer {
 
-// DbC macro — compiles to no-op in release builds
-#ifndef NDEBUG
-#define QE_REQUIRE(cond, msg) assert((cond) && (msg))
-#else
-#define QE_REQUIRE(cond, msg) ((void)0)
-#endif
+// DbC macro — throws std::invalid_argument on validation failure
+#define QE_REQUIRE(cond, msg) \
+  do { if (!(cond)) throw std::invalid_argument(msg); } while (0)
 
 static constexpr float kPi = 3.14159265358979323846f;
 

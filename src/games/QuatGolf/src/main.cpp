@@ -35,6 +35,7 @@
 #include <SDL.h>
 
 #include <iostream>
+#include <numeric>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -574,10 +575,10 @@ void update(App& app, float dt) {
                 setup_hole(app, next);
             } else {
                 // Round complete
-                int total = 0;
-                for (int s : app.scores) total += s;
-                int total_par = 0;
-                for (const auto& h : app.holes) total_par += h.par;
+                int total = std::accumulate(app.scores.begin(), app.scores.end(), 0);
+                int total_par = std::accumulate(
+                    app.holes.begin(), app.holes.end(), 0,
+                    [](int sum, const auto& h) { return sum + h.par; });
                 std::cout << "\n=== Round Complete! ===\n"
                           << "Total: " << total << " (" << total - total_par
                           << " to par)\n";

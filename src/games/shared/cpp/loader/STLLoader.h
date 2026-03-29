@@ -27,21 +27,19 @@
 #include "../math/Vec3.h"
 #include "../renderer/Mesh.h"
 
-#include <cassert>
 #include <cstdint>
 #include <cstring>
 #include <fstream>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <unordered_map>
 #include <utility>
 #include <vector>
 
-#ifndef NDEBUG
-#define QE_REQUIRE(cond, msg) assert((cond) && (msg))
-#else
-#define QE_REQUIRE(cond, msg) ((void)0)
-#endif
+// DbC macro — throws std::invalid_argument on validation failure
+#define QE_REQUIRE(cond, msg) \
+  do { if (!(cond)) throw std::invalid_argument(msg); } while (0)
 
 namespace qe {
 namespace loader {
