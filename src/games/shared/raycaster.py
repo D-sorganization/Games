@@ -87,10 +87,7 @@ class Raycaster:
         for name, tex in self.textures.items():
             w = tex.get_width()
             h = tex.get_height()
-            strips = []
-            for x in range(w):
-                strips.append(tex.subsurface((x, 0, 1, h)))
-            self.texture_strips[name] = strips
+            self.texture_strips[name] = [tex.subsurface((x, 0, 1, h)) for x in range(w)]
 
         # Bounded LRU cache -- eviction handled by update_cache() each frame.
         # 512 entries keeps memory bounded (see issue #583).
@@ -106,16 +103,15 @@ class Raycaster:
         self._scaled_background_surface: pygame.Surface | None = None
         self._cached_background_theme_idx: int = -1
 
-        self.stars = []
-        for _ in range(100):
-            self.stars.append(
-                (
-                    random.randint(0, self.config.SCREEN_WIDTH),
-                    random.randint(0, self.config.SCREEN_HEIGHT // 2),
-                    random.uniform(0.5, 2.5),
-                    random.choice([(255, 255, 255), (200, 200, 255), (255, 255, 200)]),
-                )
+        self.stars = [
+            (
+                random.randint(0, self.config.SCREEN_WIDTH),
+                random.randint(0, self.config.SCREEN_HEIGHT // 2),
+                random.uniform(0.5, 2.5),
+                random.choice([(255, 255, 255), (200, 200, 255), (255, 255, 200)]),
             )
+            for _ in range(100)
+        ]
 
     def _init_buffers(self) -> None:
         """Initialize rendering buffers and surfaces."""
@@ -148,26 +144,32 @@ class Raycaster:
             self.num_rays, float("inf"), dtype=np.float64
         )
 
+    @staticmethod
+    def _make_alpha_surface(
+        width: int, height: int, color: tuple[int, ...], alpha: int
+    ) -> pygame.Surface:
+        """Create a 1-pixel wide surface filled with *color* at *alpha*."""
+        s = pygame.Surface((width, height), pygame.SRCALPHA)
+        s.fill((*color, alpha) if len(color) == 3 else color[:3] + (alpha,))
+        return s
+
     def _generate_shading_caches(self) -> None:
         """Pre-generate 1-pixel wide surfaces for shading and fog alpha levels."""
         # Height must cover max possible wall height
         cache_height = self.config.SCREEN_HEIGHT * 2
-        self.shading_surfaces = []
-        self.fog_surfaces = []
 
         # Generate shading surfaces (Black with varying alpha)
-        for alpha in range(256):
-            s = pygame.Surface((1, cache_height), pygame.SRCALPHA)
-            s.fill((0, 0, 0, alpha))
-            self.shading_surfaces.append(s)
+        self.shading_surfaces = [
+            self._make_alpha_surface(1, cache_height, (0, 0, 0), alpha)
+            for alpha in range(256)
+        ]
 
         # Generate fog surfaces (Fog Color with varying alpha)
-        # Assuming FOG_COLOR is constant during runtime
         fog_col = self.config.FOG_COLOR
-        for alpha in range(256):
-            s = pygame.Surface((1, cache_height), pygame.SRCALPHA)
-            s.fill((*fog_col, alpha))
-            self.fog_surfaces.append(s)
+        self.fog_surfaces = [
+            self._make_alpha_surface(1, cache_height, fog_col, alpha)
+            for alpha in range(256)
+        ]
 
     def _update_ray_angles(self) -> None:
         """Pre-calculate relative ray angles."""

@@ -43,7 +43,7 @@ public:
         for (auto& s : sys->playing_sounds) {
             if (!s.active) continue;
 
-            Uint32 mix_len = (len > (int)s.remaining) ? s.remaining : len;
+            Uint32 mix_len = (len > static_cast<int>(s.remaining)) ? s.remaining : len;
             SDL_MixAudioFormat(stream, s.position, sys->deviceSpec.format, mix_len, SDL_MIX_MAXVOLUME / 2);
             
             s.position += mix_len;
@@ -122,12 +122,12 @@ public:
     void play_synthetic(float freq, float duration) {
         // Generate a square wave buffer
         static std::vector<Uint8> synth_buffer;
-        int samples = (int)(duration * deviceSpec.freq);
+        int samples = static_cast<int>(duration * deviceSpec.freq);
         int bytes = samples * deviceSpec.channels * 2; // 16bit = 2 bytes
         if (synth_buffer.size() < bytes) synth_buffer.resize(bytes);
-        
-        Sint16* raw = (Sint16*)synth_buffer.data();
-        int period = (int)(deviceSpec.freq / freq);
+
+        auto* raw = reinterpret_cast<Sint16*>(synth_buffer.data());
+        int period = static_cast<int>(deviceSpec.freq / freq);
         
         for (int i=0; i < samples; ++i) {
              Sint16 val = ((i / (period/2)) % 2) ? 3000 : -3000;

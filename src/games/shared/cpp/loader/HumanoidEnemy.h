@@ -5,17 +5,15 @@
 #include "../renderer/Shader.h"
 #include "HumanoidRig.h"
 
-#include <cassert>
 #include <cmath>
 #include <map>
 #include <memory>
+#include <stdexcept>
 #include <vector>
 
-#ifndef NDEBUG
-#define QE_REQUIRE(cond, msg) assert((cond) && (msg))
-#else
-#define QE_REQUIRE(cond, msg) ((void)0)
-#endif
+// DbC macro — throws std::invalid_argument on validation failure
+#define QE_REQUIRE(cond, msg) \
+  do { if (!(cond)) throw std::invalid_argument(msg); } while (0)
 
 namespace qe {
 namespace game {
