@@ -83,7 +83,7 @@ class WeaponSystem:
             angle_offset=angle_offset,
             is_laser=is_laser,
         )
-        game._sync_combat_state()  # noqa: SLF001
+        game.sync_combat_state()
 
     def handle_bomb_explosion(self) -> None:
         """Delegate bomb explosion to the combat manager."""
@@ -95,7 +95,7 @@ class WeaponSystem:
             bots=game.bots,
             damage_texts=game.damage_texts,
         )
-        game._sync_combat_state()  # noqa: SLF001
+        game.sync_combat_state()
 
     def explode_laser(self, impact_x: float, impact_y: float) -> None:
         """Delegate laser explosion to the combat manager."""
@@ -103,7 +103,7 @@ class WeaponSystem:
         game.damage_texts = game.combat_manager.explode_laser(
             impact_x, impact_y, game.damage_texts
         )
-        game._sync_combat_state()  # noqa: SLF001
+        game.sync_combat_state()
 
     def explode_plasma(self, projectile: Projectile) -> None:
         """Delegate plasma explosion to the combat manager."""
@@ -117,7 +117,7 @@ class WeaponSystem:
             game.player,
             game.damage_flash_timer,
         )
-        game._sync_combat_state()  # noqa: SLF001
+        game.sync_combat_state()
 
     def explode_rocket(self, projectile: Projectile) -> None:
         """Delegate rocket explosion to the combat manager."""
@@ -132,7 +132,7 @@ class WeaponSystem:
             game.player,
             game.damage_flash_timer,
         )
-        game._sync_combat_state()  # noqa: SLF001
+        game.sync_combat_state()
 
     # ------------------------------------------------------------------
     # Private fire-mode handlers

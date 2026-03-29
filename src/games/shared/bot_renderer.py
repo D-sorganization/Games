@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import pygame
 
@@ -9,6 +9,8 @@ from .renderers import BotStyleRendererFactory
 if TYPE_CHECKING:
     from .config import RaycasterConfig
     from .interfaces import Bot, EnemyData
+
+Color3 = tuple[int, int, int]
 
 
 class BotRenderer:
@@ -134,10 +136,13 @@ class BotRenderer:
         """
         melt_pct = min(1.0, bot.death_timer / 60.0)
         goo_color = (50, 150, 50)
-        base_color = tuple(
-            int(c * (1 - melt_pct) + g * melt_pct)
-            for c, g in zip(base_color, goo_color, strict=False)
-        )  # type: ignore[assignment]
+        base_color = cast(
+            Color3,
+            tuple(
+                int(c * (1 - melt_pct) + g * melt_pct)
+                for c, g in zip(base_color, goo_color, strict=False)
+            ),
+        )
 
         scale_y = 1.0 - (melt_pct * 0.85)
         scale_x = 1.0 + (melt_pct * 0.8)
@@ -167,4 +172,4 @@ class BotRenderer:
             )
             return None
 
-        return render_y, render_width, render_height, base_color  # type: ignore[return-value]
+        return int(render_y), int(render_width), int(render_height), base_color

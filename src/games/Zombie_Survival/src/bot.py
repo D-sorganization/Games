@@ -162,8 +162,8 @@ class Bot:
         self,
         game_map: Map,
         player: Player,
-        dist_sq: float,  # noqa: ARG002
-        other_bots: list[Bot],  # noqa: ARG002
+        _dist_sq: float,
+        _other_bots: list[Bot],
     ) -> Projectile | None:
         """Rolling momentum movement with wall bouncing and crush attack."""
         # Accelerate towards player

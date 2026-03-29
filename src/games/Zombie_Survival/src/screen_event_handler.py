@@ -207,14 +207,14 @@ class ScreenEventHandler:
                 duration = slides_durations[game.intro_step]
 
                 if game.intro_step == 0 and elapsed < 50:
-                    if not hasattr(game, "_laugh_played"):
+                    if not hasattr(game, "laugh_played"):
                         game.sound_manager.play_sound("laugh")
-                        game._laugh_played = True  # noqa: SLF001
+                        game.laugh_played = True
 
                 if elapsed > duration:
                     game.intro_step += 1
                     game.intro_start_time = 0
-                    if hasattr(game, "_laugh_played"):
+                    if hasattr(game, "laugh_played"):
                         del game._laugh_played
             else:
                 game.state = GameState.MENU
@@ -222,9 +222,9 @@ class ScreenEventHandler:
 
         if game.intro_phase < 2:
             if game.intro_phase == 1 and elapsed < 50:
-                if not hasattr(game, "_water_played"):
+                if not hasattr(game, "water_played"):
                     game.sound_manager.play_sound("water")
-                    game._water_played = True  # noqa: SLF001
+                    game.water_played = True
 
             if elapsed > duration:
                 game.intro_phase += 1

@@ -11,6 +11,7 @@ from typing import NoReturn
 
 import numpy as np
 import pygame
+from bullet import Bullet
 from constants import (
     BLACK,
     CELL_SIZE,
@@ -26,6 +27,7 @@ from constants import (
     ORANGE,
     PALE_YELLOW,
     PLAYER_LIVES,
+    PLAYER_SIZE,
     RADAR_SIZE,
     RADAR_X,
     RADAR_Y,
@@ -182,7 +184,7 @@ class WizardOfWorGame:
         self.dungeon = Dungeon()
         self.player: Player | None = None
         self.enemies: list[Enemy] = []
-        self.bullets: list["Bullet"] = []  # type: ignore[name-defined]  # noqa: F821, UP037
+        self.bullets: list[Bullet] = []
         self.radar = Radar()
         self.wizard_spawned = False
         self.soundboard = SoundBoard()
@@ -298,8 +300,6 @@ class WizardOfWorGame:
             return
         self.player.x = x
         self.player.y = y
-        from constants import PLAYER_SIZE  # noqa: PLC0415
-
         self.player.rect.x = int(x) - PLAYER_SIZE // 2
         self.player.rect.y = int(y) - PLAYER_SIZE // 2
 

@@ -5,7 +5,7 @@ import math
 import random
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
 import pygame
 
@@ -643,7 +643,7 @@ class UIRenderer(UIRendererBase):
                 if len(p.color) == 3:
                     color = (*p.color, alpha)
                 else:
-                    color = p.color  # type: ignore
+                    color = p.color  # already has alpha channel
 
                 pygame.draw.circle(
                     self.particle_surface, color, (int(p.x), int(p.y)), int(p.size)
@@ -784,9 +784,9 @@ class UIRenderer(UIRendererBase):
 
         pygame.display.flip()
 
-    def _render_intro_slide(self, step: int, elapsed: int) -> None:
-        """Render intro slides."""
-        slides = [
+    def _get_intro_slides(self) -> list[dict[str, Any]]:
+        """Return Force Field-specific intro slide data."""
+        return [
             {
                 "type": "distortion",
                 "text": "FROM THE DEMENTED MIND",
@@ -819,80 +819,17 @@ class UIRenderer(UIRendererBase):
             },
         ]
 
-        if step < len(slides):
-            slide = slides[step]
-            duration = int(cast("int", slide["duration"]))
+    def _get_game_title(self) -> str:
+        """Return the Force Field game title."""
+        return "FORCE FIELD"
 
-            if slide["type"] == "distortion":
-                font = self.chiller_font
-                lines = [str(slide["text"])]
-                if "text2" in slide:
-                    lines.append(str(slide["text2"]))
+    def _get_subtitle_color(self) -> tuple[int, int, int]:
+        """Return subtitle color for Force Field (cyan)."""
+        return C.CYAN
 
-                start_y = C.SCREEN_HEIGHT // 2 - (len(lines) * 80) // 2
-                for i, text in enumerate(lines):
-                    total_w = sum([font.size(c)[0] for c in text])
-                    start_x = (C.SCREEN_WIDTH - total_w) // 2
-                    y = start_y + i * 100
-                    x_off = 0
-                    for idx, char in enumerate(text):
-                        tf = pygame.time.get_ticks() * 0.003 + idx * 0.2
-                        jx = math.sin(tf * 2.0) * 2
-                        jy = math.cos(tf * 1.5) * 4
-                        c_val = int(120 + 135 * abs(math.sin(tf * 0.8)))
-
-                        self.screen.blit(
-                            font.render(char, True, (50, 0, 0)),
-                            (start_x + x_off + jx + 2, y + jy + 2),
-                        )
-                        self.screen.blit(
-                            font.render(char, True, (c_val, 0, 0)),
-                            (start_x + x_off + jx, y + jy),
-                        )
-                        x_off += font.size(char)[0]
-
-            elif slide["type"] == "story":
-                lines = cast("list[str]", slide["lines"])
-                show_count = int((elapsed / duration) * (len(lines) + 1))
-                show_count = min(show_count, len(lines))
-                y = C.SCREEN_HEIGHT // 2 - (len(lines) * 50) // 2
-                for i in range(show_count):
-                    s = self.subtitle_font.render(lines[i], True, C.RED)
-                    self.screen.blit(s, s.get_rect(center=(C.SCREEN_WIDTH // 2, y)))
-                    y += 50
-
-            elif slide["type"] == "static":
-                color = cast("tuple[int, int, int]", slide.get("color", C.WHITE))
-                if slide["text"] == "FORCE FIELD":
-                    fade = min(1.0, elapsed / duration)
-                    r = int(255 + (255 - 255) * fade)
-                    g = int(255 + (0 - 255) * fade)
-                    b = int(255 + (0 - 255) * fade)
-                    color = (r, g, b)
-
-                txt = self.title_font.render(str(slide["text"]), True, color)
-                rect = txt.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2))
-                if slide["text"] == "FORCE FIELD":
-                    rect.centery = 100  # Match Main Menu title position
-                self.screen.blit(txt, rect)
-
-                if (
-                    slide["text"] == "FORCE FIELD"
-                    and color[0] > 250
-                    and color[1] < 10
-                    and color[2] < 10
-                ):
-                    self.update_blood_drips(rect)
-                    self._draw_blood_drips(self.title_drips)
-
-                if "sub" in slide:
-                    sub = self.subtitle_font.render(str(slide["sub"]), True, C.CYAN)
-                    self.screen.blit(
-                        sub,
-                        sub.get_rect(
-                            center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 60)
-                        ),
-                    )
+    def _get_constants_module(self) -> Any:
+        """Return the Force Field constants module."""
+        return C
 
     def render_key_config(self, game: Any) -> None:
         """Render the key configuration menu."""
