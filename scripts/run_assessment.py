@@ -117,7 +117,7 @@ def grep_in_files(pattern: str, files: list[Path]) -> int:
             content = file.read_text(encoding="utf-8")
             if re.search(pattern, content):
                 count += 1
-        except Exception:  # noqa: BLE001
+        except Exception:  # noqa: BLE001  # noqa: BLE001
             pass
     return count
 
@@ -238,9 +238,7 @@ def run_assessment(assessment_id: str, output_path: Path) -> int:
 
     elif assessment_id == "D":  # Error Handling
         try_count = grep_in_files(r"try:", python_files)
-        except_count = grep_in_files(
-            r"except Exception as e:", python_files
-        )  # noqa: BLE001
+        except_count = grep_in_files(r"except Exception as e:", python_files)  # noqa: BLE001
         findings.append(f"- Files with try blocks: {try_count}")
         findings.append(f"- Files with except blocks: {except_count}")
         if try_count == 0:
@@ -447,7 +445,7 @@ def run_assessment(assessment_id: str, output_path: Path) -> int:
                 total_lines += line_count
                 if line_count > 1500:
                     long_files += 1
-            except Exception:  # noqa: BLE001
+            except Exception:  # noqa: BLE001  # noqa: BLE001
                 pass
 
         avg_lines = total_lines / file_count if file_count > 0 else 0
