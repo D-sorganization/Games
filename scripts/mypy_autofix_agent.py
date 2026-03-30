@@ -146,9 +146,7 @@ def run_mypy(config_file: str | None = None, targets: list[str] | None = None) -
             f"config_file must be a str or None, got {type(config_file).__name__}"
         )
     if targets is not None and not isinstance(targets, list):
-        raise TypeError(
-            f"targets must be a list or None, got {type(targets).__name__}"
-        )
+        raise TypeError(f"targets must be a list or None, got {type(targets).__name__}")
     if not targets:
         # Default to src and tests if no targets provided, but check if they exist
         targets = []

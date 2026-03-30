@@ -115,9 +115,7 @@ def process_assessment_findings(
     if summary_file is None:
         raise ValueError("summary_file must not be None")
     if not isinstance(severities, list):
-        raise TypeError(
-            f"severities must be a list, got {type(severities).__name__}"
-        )
+        raise TypeError(f"severities must be a list, got {type(severities).__name__}")
     if not isinstance(dry_run, bool):
         raise TypeError(f"dry_run must be a bool, got {type(dry_run).__name__}")
     # Load assessment summary
