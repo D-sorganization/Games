@@ -82,9 +82,9 @@ class TestDifficultyConstants:
         """Each difficulty must have damage_mult, health_mult, score_mult."""
         required_keys = {"damage_mult", "health_mult", "score_mult"}
         for name, settings in C.DIFFICULTIES.items():
-            assert required_keys.issubset(
-                set(settings.keys())
-            ), f"Difficulty '{name}' missing keys"
+            assert required_keys.issubset(set(settings.keys())), (
+                f"Difficulty '{name}' missing keys"
+            )
 
     def test_normal_difficulty_is_baseline(self) -> None:
         """NORMAL difficulty should have all multipliers at 1.0."""

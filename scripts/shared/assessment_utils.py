@@ -86,7 +86,7 @@ def extract_score_from_report(report_path: Path) -> float:
                 return float(match.group(1))
 
         return 7.0
-    except Exception:  # noqa: BLE001
+    except Exception:  # noqa: BLE001  # noqa: BLE001
         return 7.0
 
 
@@ -113,6 +113,6 @@ def extract_issues_from_report(report_path: Path) -> list[dict[str, Any]]:
                         "source": report_path.stem,
                     }
                 )
-    except Exception:  # noqa: BLE001
+    except Exception:  # noqa: BLE001  # noqa: BLE001
         pass
     return issues
