@@ -1,4 +1,0 @@
-# file: C:\Users\diete\Repositories\Games\src\games\shared\utils.py
-# hypothesis_version: 6.151.9
-
-[0.0, 0.001, 0.1, 0.5, 1.0, 1.5, 100.0, 1e+30, 'Map', 'alive', 'entity', 'game_map', 'max_dist', 'radius']

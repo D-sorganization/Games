@@ -1,6 +1,7 @@
 # Python
 __pycache__/
 *.py[cod]
+*.pyc
 .venv/
 venv/
 env/
@@ -8,6 +9,10 @@ env/
 .ipynb_checkpoints/
 .coverage
 *.coverage
+*.cover
+htmlcov/
+coverage.xml
+.hypothesis/
 
 # MATLAB/Simulink
 *.asv

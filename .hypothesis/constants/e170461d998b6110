@@ -1,4 +1,0 @@
-# file: C:\Users\diete\Repositories\Games\src\games\shared\constants.py
-# hypothesis_version: 6.151.9
-
-[-0.5, 0.0, 0.0015, 0.005, 0.025, 0.15, 0.2, 0.375, 0.4, 0.5, 0.575, 0.7, 0.8, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 15.0, 100, 120, 128, 160, 180, 240, 255, 300, 800, 900, 1000, 1200, 'EASY', 'HARD', 'HIGH', 'LOW', 'MEDIUM', 'NIGHTMARE', 'NORMAL', 'ULTRA', 'damage_mult', 'game_over', 'health_mult', 'intro', 'key_config', 'level_complete', 'map_select', 'menu', 'music_action', 'music_drums', 'music_horror', 'music_loop', 'music_piano', 'music_wind', 'playing', 'score_mult']
