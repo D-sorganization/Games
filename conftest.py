@@ -86,6 +86,7 @@ _pg.Surface = MagicMock  # type: ignore[attr-defined]
 
 class MockRect:
     def __init__(self, x, y, width, height):
+        """Initialize MockRect with position and dimensions."""
         self.x = x
         self.y = y
         self.width = width
@@ -101,13 +102,16 @@ class MockRect:
         self.bottomright = (x + width, y + height)
 
     def collidepoint(self, pos):
+        """Return True if pos (x, y) falls within this rect's bounds."""
         px, py = pos
         return self.left <= px <= self.right and self.top <= py <= self.bottom
 
     def copy(self):
+        """Return a copy of this MockRect with the same bounds."""
         return MockRect(self.x, self.y, self.width, self.height)
 
     def __repr__(self):
+        """Return a human-readable string representation of this MockRect."""
         return f"<rect({self.x}, {self.y}, {self.width}, {self.height})>"
 
 

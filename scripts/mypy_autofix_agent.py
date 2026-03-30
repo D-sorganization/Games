@@ -141,6 +141,14 @@ COMMON_TYPE_IMPORTS = {
 
 def run_mypy(config_file: str | None = None, targets: list[str] | None = None) -> str:
     """Run mypy and return raw output."""
+    if config_file is not None and not isinstance(config_file, str):
+        raise TypeError(
+            f"config_file must be a str or None, got {type(config_file).__name__}"
+        )
+    if targets is not None and not isinstance(targets, list):
+        raise TypeError(
+            f"targets must be a list or None, got {type(targets).__name__}"
+        )
     if not targets:
         # Default to src and tests if no targets provided, but check if they exist
         targets = []
@@ -246,6 +254,10 @@ def fix_callable_as_type(lines: list[str], error: MypyError) -> Fix | None:
 
     This is a REAL fix, not a suppression.
     """
+    if not isinstance(lines, list):
+        raise TypeError(f"lines must be a list, got {type(lines).__name__}")
+    if not isinstance(error, MypyError):
+        raise TypeError(f"error must be a MypyError, got {type(error).__name__}")
     if error.code != "valid-type":
         return None
     if '"callable" is not valid as a type' not in error.message.lower():
@@ -287,6 +299,10 @@ def fix_union_attr(lines: list[str], error: MypyError) -> Fix | None:
 
     This is a REAL fix - adds proper type narrowing.
     """
+    if not isinstance(lines, list):
+        raise TypeError(f"lines must be a list, got {type(lines).__name__}")
+    if not isinstance(error, MypyError):
+        raise TypeError(f"error must be a MypyError, got {type(error).__name__}")
     if error.code != "union-attr":
         return None
 

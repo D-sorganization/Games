@@ -148,6 +148,10 @@ def launch_game(game: dict[str, Any]) -> None:
 
 def calculate_game_rects(num_games: int) -> list[pygame.Rect]:
     """Calculate rectangles for game grid layout."""
+    if not isinstance(num_games, int):
+        raise TypeError(f"num_games must be an int, got {type(num_games).__name__}")
+    if num_games < 0:
+        raise ValueError(f"num_games must be >= 0, got {num_games}")
     game_rects: list[pygame.Rect] = []
     start_x = (WIDTH - (GRID_COLS * ITEM_WIDTH)) // 2
     start_y = 150
@@ -170,6 +174,10 @@ def handle_keyboard_navigation(
     num_games: int,
 ) -> tuple[int, bool]:
     """Handle keyboard navigation and return new selected index and quit flag."""
+    if event is None:
+        raise ValueError("event must not be None")
+    if not isinstance(num_games, int) or num_games < 0:
+        raise ValueError(f"num_games must be a non-negative int, got {num_games!r}")
     if event.key == pygame.K_ESCAPE:
         return selected_index, True
 
@@ -264,6 +272,14 @@ def draw_ui(
     fonts: dict[str, pygame.font.Font],
 ) -> tuple[int, bool]:
     """Draw the complete UI and return updated selected index and hover state."""
+    if screen is None:
+        raise ValueError("screen must not be None")
+    if not isinstance(games, list):
+        raise TypeError(f"games must be a list, got {type(games).__name__}")
+    if not isinstance(game_rects, list):
+        raise TypeError(f"game_rects must be a list, got {type(game_rects).__name__}")
+    if not isinstance(fonts, dict):
+        raise TypeError(f"fonts must be a dict, got {type(fonts).__name__}")
     screen.fill(BG_COLOR)
 
     draw_text(

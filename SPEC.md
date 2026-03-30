@@ -353,3 +353,4 @@ Active development. Core games (F1-F6, F8-F9) fully implemented and tested. F7 (
 | Date | Version | Changes |
 |------|---------|---------|
 | 2026-03-28 | 1.0.0 | Initial specification document |
+| 2026-03-30 | 1.1.0 | A-N Assessment remediation: added DbC precondition validation to `game_launcher.py` (calculate_game_rects, handle_keyboard_navigation, draw_ui), `run_tests.py` (get_test_environment, run_game_tests), and scripts (analyze_completist_data, generate_assessment_summary, create_issues_from_assessment, mypy_autofix_agent). Added docstrings to MockRect methods in conftest.py. Added .env to .gitignore (infrastructure fix). Addresses issue #658. |

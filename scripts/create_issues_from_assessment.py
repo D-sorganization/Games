@@ -112,6 +112,14 @@ def process_assessment_findings(
     Returns:
         Exit code (0 = success, 1 = failure)
     """
+    if summary_file is None:
+        raise ValueError("summary_file must not be None")
+    if not isinstance(severities, list):
+        raise TypeError(
+            f"severities must be a list, got {type(severities).__name__}"
+        )
+    if not isinstance(dry_run, bool):
+        raise TypeError(f"dry_run must be a bool, got {type(dry_run).__name__}")
     # Load assessment summary
     try:
         with open(summary_file) as f:

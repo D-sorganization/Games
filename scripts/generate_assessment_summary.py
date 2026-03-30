@@ -97,6 +97,14 @@ def generate_summary(
     Returns:
         Exit code (0 = success, 1 = failure)
     """
+    if not isinstance(input_reports, list):
+        raise TypeError(
+            f"input_reports must be a list, got {type(input_reports).__name__}"
+        )
+    if output_md is None:
+        raise ValueError("output_md must not be None")
+    if output_json is None:
+        raise ValueError("output_json must not be None")
     logger.info(f"Generating assessment summary from {len(input_reports)} reports...")
 
     # Category mapping with weights based on prompt
