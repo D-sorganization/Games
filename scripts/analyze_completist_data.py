@@ -58,6 +58,8 @@ class Finding(_FindingOptional):
 
 def is_excluded(filepath: str) -> bool:
     """Check if filepath should be excluded from analysis."""
+    if not isinstance(filepath, str):
+        raise TypeError(f"filepath must be a str, got {type(filepath).__name__}")
     if not filepath:
         return True
 
@@ -83,6 +85,10 @@ def _scan_completist_file(
     source_key: str, parser: Callable[[str], Finding | None]
 ) -> list[Finding]:
     """Generic helper to scan a completist data file and parse findings."""
+    if not isinstance(source_key, str) or not source_key:
+        raise ValueError(f"source_key must be a non-empty str, got {source_key!r}")
+    if not callable(parser):
+        raise TypeError(f"parser must be callable, got {type(parser).__name__}")
     source_path = FILES_MAP.get(source_key)
     if not source_path or not os.path.exists(source_path):
         return []
@@ -191,6 +197,10 @@ def analyze_abstract_methods() -> list[Finding]:
 
 def calculate_metrics(item: Mapping[str, Any]) -> tuple[int, int, int]:
     """Calculate heuristics for Impact, Coverage, and Complexity (1-5 range)."""
+    if not isinstance(item, Mapping):
+        raise TypeError(f"item must be a Mapping, got {type(item).__name__}")
+    if "file" not in item:
+        raise ValueError("item must contain a 'file' key")
     filepath = cast(str, item["file"])
     itype = cast(str, item.get("type", ""))
 
@@ -217,6 +227,10 @@ def calculate_metrics(item: Mapping[str, Any]) -> tuple[int, int, int]:
 
 def create_issue_file(item: Mapping[str, Any], issue_id: int) -> str:
     """Idempotent creation of markdown issue files."""
+    if not isinstance(item, Mapping):
+        raise TypeError(f"item must be a Mapping, got {type(item).__name__}")
+    if not isinstance(issue_id, int) or issue_id <= 0:
+        raise ValueError(f"issue_id must be a positive int, got {issue_id!r}")
     os.makedirs(ISSUES_DIR, exist_ok=True)
 
     itype = str(item.get("type", "Incomplete Implementation"))
@@ -271,6 +285,14 @@ def generate_mermaid_charts(
     docs: list[Finding],
 ) -> str:
     """Generate Mermaid charts for the report."""
+    if not isinstance(criticals, list):
+        raise TypeError(f"criticals must be a list, got {type(criticals).__name__}")
+    if not isinstance(todos, list):
+        raise TypeError(f"todos must be a list, got {type(todos).__name__}")
+    if not isinstance(fixmes, list):
+        raise TypeError(f"fixmes must be a list, got {type(fixmes).__name__}")
+    if not isinstance(docs, list):
+        raise TypeError(f"docs must be a list, got {type(docs).__name__}")
     chart = []
     chart.append("## Visualization")
 

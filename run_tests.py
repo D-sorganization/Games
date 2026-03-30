@@ -9,6 +9,10 @@ logger = logging.getLogger(__name__)
 
 def get_test_environment(game_path: Path, root_dir: Path) -> dict[str, str]:
     """Create environment with proper PYTHONPATH for game tests."""
+    if game_path is None:
+        raise ValueError("game_path must not be None")
+    if root_dir is None:
+        raise ValueError("root_dir must not be None")
     env = os.environ.copy()
     original_pythonpath = env.get("PYTHONPATH", "")
     src_path = root_dir / "src"
@@ -22,6 +26,12 @@ def get_test_environment(game_path: Path, root_dir: Path) -> dict[str, str]:
 
 def run_game_tests(name: str, game_path: Path, root_dir: Path) -> bool:
     """Run tests for a single game and return success status."""
+    if not isinstance(name, str) or not name:
+        raise ValueError(f"name must be a non-empty string, got {name!r}")
+    if game_path is None:
+        raise ValueError("game_path must not be None")
+    if root_dir is None:
+        raise ValueError("root_dir must not be None")
     logger.info("=== Running tests for %s ===", name)
     test_path = game_path / "tests"
 

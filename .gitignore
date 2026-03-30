@@ -5,6 +5,9 @@ __pycache__/
 .venv/
 venv/
 env/
+.env
+.env.*
+!.env.example
 *.egg-info/
 .ipynb_checkpoints/
 .coverage
