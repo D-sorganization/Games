@@ -81,34 +81,156 @@ _pg.transform = sys.modules["pygame.transform"]
 _pg.locals = sys.modules["pygame.locals"]
 
 # Common pygame top-level classes/constants
-_pg.Surface = MagicMock  # type: ignore[attr-defined]
 
 
 class MockRect:
     def __init__(self, x, y, width, height):
         """Initialize MockRect with position and dimensions."""
-        self.x = x
-        self.y = y
-        self.width = width
-        self.height = height
-        self.top = y
-        self.left = x
-        self.bottom = y + height
-        self.right = x + width
-        self.center = (x + width // 2, y + height // 2)
-        self.topleft = (x, y)
-        self.topright = (x + width, y)
-        self.bottomleft = (x, y + height)
-        self.bottomright = (x + width, y + height)
+        self._x = int(x)
+        self._y = int(y)
+        self.width = int(width)
+        self.height = int(height)
+
+    # -- coordinate properties (keep left/right/top/bottom in sync) --
+
+    @property
+    def x(self):
+        """Left edge x coordinate."""
+        return self._x
+
+    @x.setter
+    def x(self, value):
+        """Set left edge x coordinate."""
+        self._x = int(value)
+
+    @property
+    def y(self):
+        """Top edge y coordinate."""
+        return self._y
+
+    @y.setter
+    def y(self, value):
+        """Set top edge y coordinate."""
+        self._y = int(value)
+
+    @property
+    def left(self):
+        """Left edge."""
+        return self._x
+
+    @left.setter
+    def left(self, value):
+        """Set left edge."""
+        self._x = int(value)
+
+    @property
+    def top(self):
+        """Top edge."""
+        return self._y
+
+    @top.setter
+    def top(self, value):
+        """Set top edge."""
+        self._y = int(value)
+
+    @property
+    def right(self):
+        """Right edge."""
+        return self._x + self.width
+
+    @right.setter
+    def right(self, value):
+        """Set right edge (moves rect)."""
+        self._x = int(value) - self.width
+
+    @property
+    def bottom(self):
+        """Bottom edge."""
+        return self._y + self.height
+
+    @bottom.setter
+    def bottom(self, value):
+        """Set bottom edge (moves rect)."""
+        self._y = int(value) - self.height
+
+    @property
+    def center(self):
+        """Center point."""
+        return (self._x + self.width // 2, self._y + self.height // 2)
+
+    @center.setter
+    def center(self, value):
+        """Set center (moves rect)."""
+        cx, cy = value
+        self._x = int(cx) - self.width // 2
+        self._y = int(cy) - self.height // 2
+
+    @property
+    def topleft(self):
+        """Top-left corner."""
+        return (self._x, self._y)
+
+    @property
+    def topright(self):
+        """Top-right corner."""
+        return (self._x + self.width, self._y)
+
+    @property
+    def bottomleft(self):
+        """Bottom-left corner."""
+        return (self._x, self._y + self.height)
+
+    @property
+    def bottomright(self):
+        """Bottom-right corner."""
+        return (self._x + self.width, self._y + self.height)
 
     def collidepoint(self, pos):
         """Return True if pos (x, y) falls within this rect's bounds."""
         px, py = pos
         return self.left <= px <= self.right and self.top <= py <= self.bottom
 
+    def colliderect(self, other):
+        """Return True if this rect overlaps with *other*."""
+        return (
+            self.left < other.right
+            and self.right > other.left
+            and self.top < other.bottom
+            and self.bottom > other.top
+        )
+
     def copy(self):
         """Return a copy of this MockRect with the same bounds."""
         return MockRect(self.x, self.y, self.width, self.height)
+
+    def inflate(self, dx, dy):
+        """Return a new rect expanded by dx, dy."""
+        return MockRect(
+            self.x - dx // 2,
+            self.y - dy // 2,
+            self.width + dx,
+            self.height + dy,
+        )
+
+    def move(self, dx, dy):
+        """Return a new rect moved by dx, dy."""
+        return MockRect(self.x + dx, self.y + dy, self.width, self.height)
+
+    def clip(self, other):
+        """Return the intersection of this rect and other."""
+        x = max(self.left, other.left)
+        y = max(self.top, other.top)
+        w = max(0, min(self.right, other.right) - x)
+        h = max(0, min(self.bottom, other.bottom) - y)
+        return MockRect(x, y, w, h)
+
+    def union(self, other):
+        """Return the union bounding rect."""
+        x = min(self.left, other.left)
+        y = min(self.top, other.top)
+        w = max(self.right, other.right) - x
+        h = max(self.bottom, other.bottom) - y
+        return MockRect(x, y, w, h)
 
     def __repr__(self):
         """Return a human-readable string representation of this MockRect."""
@@ -116,6 +238,25 @@ class MockRect:
 
 
 _pg.Rect = MockRect  # type: ignore[attr-defined]
+
+
+class _MockSurface(MagicMock):
+    """MagicMock subclass that pre-wires common Surface methods."""
+
+    def __init__(self, *args, **kwargs):
+        """Initialise with pre-wired methods."""
+        super().__init__(*args, **kwargs)
+        self.fill = MagicMock()
+        self.get_width = MagicMock(return_value=800)
+        self.get_height = MagicMock(return_value=600)
+        self.set_alpha = MagicMock()
+        self.set_at = MagicMock()
+        self.blit = MagicMock()
+        self.convert_alpha = MagicMock(return_value=self)
+        self.get_rect = MagicMock(return_value=MockRect(0, 0, 800, 600))
+
+
+_pg.Surface = _MockSurface  # type: ignore[attr-defined]
 _pg.Color = MagicMock  # type: ignore[attr-defined]
 _pg.SRCALPHA = 65536  # type: ignore[attr-defined]
 
@@ -205,8 +346,16 @@ _pg.HWSURFACE = 2  # type: ignore[attr-defined]
 _pg.DOUBLEBUF = 4  # type: ignore[attr-defined]
 _pg.HIDDEN = 32768  # type: ignore[attr-defined]
 
+# draw helpers
+_pg.draw.rect = MagicMock()  # type: ignore[attr-defined]
+_pg.draw.circle = MagicMock()  # type: ignore[attr-defined]
+_pg.draw.line = MagicMock()  # type: ignore[attr-defined]
+_pg.draw.polygon = MagicMock()  # type: ignore[attr-defined]
+_pg.draw.lines = MagicMock()  # type: ignore[attr-defined]
+_pg.draw.ellipse = MagicMock()  # type: ignore[attr-defined]
+
 # display helpers
-_pg.display.set_mode = MagicMock(return_value=MagicMock())  # type: ignore[attr-defined]
+_pg.display.set_mode = MagicMock(return_value=_MockSurface())  # type: ignore[attr-defined]
 _pg.display.flip = MagicMock()  # type: ignore[attr-defined]
 _pg.display.update = MagicMock()  # type: ignore[attr-defined]
 _pg.display.set_caption = MagicMock()  # type: ignore[attr-defined]
@@ -215,6 +364,7 @@ _pg.display.init = MagicMock()  # type: ignore[attr-defined]
 
 # mixer helpers
 _pg.mixer.init = MagicMock()  # type: ignore[attr-defined]
+_pg.mixer.get_init = MagicMock(return_value=False)  # type: ignore[attr-defined]
 _pg.mixer.music = sys.modules["pygame.mixer.music"]  # type: ignore[attr-defined]
 _pg.mixer.Sound = MagicMock()  # type: ignore[attr-defined]
 _pg.mixer.quit = MagicMock()  # type: ignore[attr-defined]
@@ -250,7 +400,98 @@ _pg.key.get_pressed = MagicMock(  # type: ignore[attr-defined]
 _pg.key.name = MagicMock(return_value="unknown")  # type: ignore[attr-defined]
 
 # math helpers (Vector2)
-_pg.math.Vector2 = MagicMock  # type: ignore[attr-defined]
+
+
+class _MockVector2:
+    """Minimal Vector2 stub for headless tests."""
+
+    def __init__(self, *args):
+        """Accept (x, y) or ((x, y),) or (scalar,)."""
+        if len(args) == 2:
+            self.x, self.y = float(args[0]), float(args[1])
+        elif len(args) == 1:
+            arg = args[0]
+            if hasattr(arg, "__iter__"):
+                vals = list(arg)
+                self.x, self.y = float(vals[0]), float(vals[1])
+            else:
+                self.x = self.y = float(arg)
+        else:
+            self.x = self.y = 0.0
+
+    def copy(self):
+        """Return a copy of this vector."""
+        return _MockVector2(self.x, self.y)
+
+    def __iadd__(self, other):
+        """In-place addition."""
+        self.x += other.x
+        self.y += other.y
+        return self
+
+    def __imul__(self, scalar):
+        """In-place scalar multiplication."""
+        self.x *= scalar
+        self.y *= scalar
+        return self
+
+    def __mul__(self, scalar):
+        """Scalar multiplication."""
+        return _MockVector2(self.x * scalar, self.y * scalar)
+
+    def __rmul__(self, scalar):
+        """Reverse scalar multiplication."""
+        return _MockVector2(self.x * scalar, self.y * scalar)
+
+    def length(self):
+        """Return vector length."""
+        import math
+
+        return math.hypot(self.x, self.y)
+
+    def distance_to(self, other):
+        """Return distance to another vector."""
+        import math
+
+        return math.hypot(self.x - other.x, self.y - other.y)
+
+    def rotate(self, angle):
+        """Return a new vector rotated by angle degrees."""
+        import math
+
+        rad = math.radians(angle)
+        cos_a, sin_a = math.cos(rad), math.sin(rad)
+        return _MockVector2(
+            self.x * cos_a - self.y * sin_a,
+            self.x * sin_a + self.y * cos_a,
+        )
+
+    def normalize(self):
+        """Return a normalized copy (unit vector)."""
+        import math
+
+        mag = math.hypot(self.x, self.y)
+        if mag == 0:
+            return _MockVector2(0, 0)
+        return _MockVector2(self.x / mag, self.y / mag)
+
+    def angle_to(self, other):
+        """Return angle in degrees to other vector."""
+        import math
+
+        return math.degrees(math.atan2(other.y - self.y, other.x - self.x))
+
+    def __iter__(self):
+        """Support tuple unpacking."""
+        yield self.x
+        yield self.y
+
+    def __repr__(self):
+        """String form."""
+        return f"<Vector2({self.x}, {self.y})>"
+
+
+_pg.math.Vector2 = _MockVector2  # type: ignore[attr-defined]
 
 # mixer extras
 _pg.mixer.pre_init = MagicMock()  # type: ignore[attr-defined]

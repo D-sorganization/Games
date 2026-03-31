@@ -11,7 +11,7 @@
 | **License** | MIT |
 | **Current Version** | N/A |
 | **Spec Version** | 1.0.0 |
-| **Last Spec Update** | 2026-03-29 |
+| **Last Spec Update** | 2026-03-31 |
 
 ## 2. Purpose & Mission
 
@@ -60,9 +60,18 @@ Games/
 │   │   ├── board/                 # Game board state and logic
 │   │   └── scoring/               # Scoring and level progression
 │   ├── Wizard_of_Wor/             # Arcade game remake
-│   │   ├── maze/                  # Procedural maze generation
-│   │   ├── enemies/               # Enemy patterns and AI
-│   │   └── items/                 # Collectible items
+│   │   ├── wizard_of_wor/         # Game package
+│   │   │   ├── game.py            # WizardOfWorGame (thin orchestrator, SRP)
+│   │   │   ├── render_mixin.py    # RenderMixin – all draw_* methods (SRP)
+│   │   │   ├── audio_mixin.py     # AudioMixin + SoundBoard – audio wiring (SRP)
+│   │   │   ├── collision_manager.py # CollisionManager – spatial-grid collision (SRP)
+│   │   │   ├── dungeon.py         # Procedural maze generation
+│   │   │   ├── enemy.py           # Enemy AI and patterns
+│   │   │   ├── player.py          # Player entity
+│   │   │   ├── bullet.py          # Projectile system
+│   │   │   ├── radar.py           # HUD radar
+│   │   │   └── effects.py         # Visual effect system
+│   │   └── tests/                 # Per-component unit tests
 │   ├── Peanut_Butter_Panic/       # Platformer game
 │   │   ├── levels/                # Level design and tiling
 │   │   ├── physics/               # Platform collision and gravity
