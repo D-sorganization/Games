@@ -11,7 +11,7 @@
 | **License** | MIT |
 | **Current Version** | N/A |
 | **Spec Version** | 1.0.0 |
-| **Last Spec Update** | 2026-03-29 |
+| **Last Spec Update** | 2026-03-31 |
 
 ## 2. Purpose & Mission
 
@@ -90,6 +90,9 @@ Games/
 │   ├── zombie-survival/           # Three.js Zombie Survival
 │   └── shared/                    # Web-specific shared utilities
 ├── .github/workflows/             # CI/CD pipelines
+│   ├── ci-standard.yml            # Python quality gate, tests, security scan, Rust gate
+│   └── cpp-ci.yml                 # C++ format check (clang-format) + cmake/ctest pipeline
+├── .clang-format                  # C++ style config (Google-based, 100 cols)
 └── docs/                          # Documentation and design docs
 ```
 
@@ -103,6 +106,8 @@ Games/
 | Tetris Logic | `src/games/Tetris/` | Piece mechanics, board state, gravity, line clearing |
 | Shared Renderers | `src/games/shared/renderers/` | Common rendering abstractions, 2D drawing, sprite management |
 | C++ Bindings | `src/games/shared/cpp_bindings/` | ctypes interface to compiled performance-critical code |
+| QuatEngine C++ | `src/games/shared/cpp/` | Header-only C++17 engine modules: math, core, game, AI, renderer, input, loader |
+| C++ CI Pipeline | `.github/workflows/cpp-ci.yml` | clang-format style gate + cmake/ctest build matrix (GCC 12, Clang 17) |
 | Input Handler | `src/games/shared/input/` | Unified keyboard/controller input abstraction |
 | Three.js Client | `web/zombie-survival/` | Browser-based 3D rendering for Zombie Survival |
 

@@ -1,0 +1,162 @@
+name: C++ CI — QuatEngine Components
+
+# Runs only when C++ source files or CMake config change.
+# Two jobs:
+#   format-check : clang-format dry-run (fails on style violations)
+#   build-and-test: cmake configure → build → ctest
+#
+# Both jobs are skipped entirely when no C++ files changed, so the workflow
+# is zero-cost on Python-only pull requests.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/games/shared/cpp/**"
+      - "src/games/QuatGolf/src/**"
+      - "tests/shared/cpp/**"
+      - "CMakeLists.txt"
+      - ".clang-format"
+      - ".github/workflows/cpp-ci.yml"
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - "src/games/shared/cpp/**"
+      - "src/games/QuatGolf/src/**"
+      - "tests/shared/cpp/**"
+      - "CMakeLists.txt"
+      - ".clang-format"
+      - ".github/workflows/cpp-ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Job 1: clang-format style check
+# ─────────────────────────────────────────────────────────────────────────────
+jobs:
+  format-check:
+    name: clang-format style check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install clang-format
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends clang-format-17
+
+      - name: Verify clang-format version
+        run: clang-format-17 --version
+
+      - name: Check C++ formatting
+        run: |
+          echo "Checking formatting of all C++ source files..."
+          FILES=$(find src/games/shared/cpp src/games/QuatGolf/src tests/shared/cpp \
+            -name "*.cpp" -o -name "*.h" -o -name "*.hpp" 2>/dev/null || true)
+
+          if [ -z "$FILES" ]; then
+            echo "No C++ files found – format check skipped."
+            exit 0
+          fi
+
+          VIOLATIONS=""
+          for f in $FILES; do
+            diff_output=$(clang-format-17 --style=file --dry-run --Werror "$f" 2>&1 || true)
+            if [ -n "$diff_output" ]; then
+              VIOLATIONS="$VIOLATIONS\n  $f"
+            fi
+          done
+
+          if [ -n "$VIOLATIONS" ]; then
+            echo "::error::clang-format violations found in:$VIOLATIONS"
+            echo ""
+            echo "Run 'clang-format --style=file -i <file>' to fix."
+            exit 1
+          fi
+
+          echo "All C++ files pass clang-format check."
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Job 2: CMake build + CTest
+# ─────────────────────────────────────────────────────────────────────────────
+  build-and-test:
+    name: cmake build & ctest (${{ matrix.compiler }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler:
+          - { cc: gcc-12, cxx: g++-12, label: "GCC 12" }
+          - { cc: clang-17, cxx: clang++-17, label: "Clang 17" }
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            cmake ninja-build \
+            gcc-12 g++-12 \
+            clang-17 clang++-17
+
+      - name: Cache CMake build directory
+        uses: actions/cache@v4
+        with:
+          path: build
+          key: ${{ runner.os }}-cmake-${{ matrix.compiler.label }}-${{ hashFiles('CMakeLists.txt', 'src/games/shared/cpp/**', 'tests/shared/cpp/**') }}
+          restore-keys: |
+            ${{ runner.os }}-cmake-${{ matrix.compiler.label }}-
+
+      - name: Configure (CMake)
+        env:
+          CC: ${{ matrix.compiler.cc }}
+          CXX: ${{ matrix.compiler.cxx }}
+        run: |
+          cmake -S . -B build \
+            -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_COMPILER="${{ matrix.compiler.cc }}" \
+            -DCMAKE_CXX_COMPILER="${{ matrix.compiler.cxx }}"
+
+      - name: Build
+        run: cmake --build build --parallel $(nproc)
+
+      - name: Run CTest
+        working-directory: build
+        run: ctest --output-on-failure --timeout 60
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ctest-results-${{ matrix.compiler.label }}
+          path: build/Testing/
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Job 3: Summary
+# ─────────────────────────────────────────────────────────────────────────────
+  cpp-ci-summary:
+    name: C++ CI Summary
+    needs: [format-check, build-and-test]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Report outcome
+        run: |
+          echo "## C++ CI Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Result |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| clang-format | ${{ needs.format-check.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| build & test | ${{ needs.build-and-test.result }} |" >> $GITHUB_STEP_SUMMARY
