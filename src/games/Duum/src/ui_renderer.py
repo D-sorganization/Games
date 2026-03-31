@@ -756,6 +756,10 @@ class UIRenderer(UIRendererBase):
             },
         ]
 
+    def _get_game_name(self) -> str:
+        """Return the game name for asset loading."""
+        return "Duum"
+
     def _get_game_title(self) -> str:
         """Return the Duum game title."""
         return "DUUM"

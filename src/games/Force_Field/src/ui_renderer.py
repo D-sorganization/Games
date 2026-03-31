@@ -819,6 +819,10 @@ class UIRenderer(UIRendererBase):
             },
         ]
 
+    def _get_game_name(self) -> str:
+        """Return the game name for asset loading."""
+        return "Force_Field"
+
     def _get_game_title(self) -> str:
         """Return the Force Field game title."""
         return "FORCE FIELD"
