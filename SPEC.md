@@ -343,6 +343,10 @@ pytest tests/ -v
 
 Active development. Core games (F1-F6, F8-F9) fully implemented and tested. F7 (QuatGolf) in progress with quaternion physics implementation. Shared rendering infrastructure stable. Focus on test coverage expansion and performance optimization.
 
+### Completed (2026-03-31)
+
+- **Collision detection optimization** (issue #681): Wizard of Wor collision detection replaced O(n²) brute-force with O(n) spatial-grid approach; significant FPS improvement at high entity counts.
+
 ### Planned Work
 
 | Priority | Item | Issue/PR | Target Date |

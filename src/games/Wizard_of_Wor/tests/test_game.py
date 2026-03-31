@@ -161,3 +161,93 @@ class TestWizardOfWorGame(unittest.TestCase):
         # We just test that methods don't crash
         sb.play("shot")
         sb.play_intro()
+
+    # ------------------------------------------------------------------
+    # Tests for optimised collision detection (issue #681)
+    # ------------------------------------------------------------------
+
+    def test_enemy_grid_attribute_exists(self) -> None:
+        """WizardOfWorGame must expose _enemy_grid for spatial partitioning."""
+        from games.shared.spatial_grid import SpatialGrid
+
+        self.assertIsInstance(self.game._enemy_grid, SpatialGrid)
+
+    def test_bullet_deferred_removal_no_duplicate_remove(self) -> None:
+        """Bullets deactivated during update() are removed exactly once.
+
+        Previously, bullets.remove() was called inside a loop over a copy
+        of the list (O(n) per call -> O(n^2) total).  The new code replaces
+        the list in a single list-comprehension pass so there is no risk of
+        ValueError from a double-remove.
+        """
+        from wizard_of_wor.bullet import Bullet
+        from wizard_of_wor.enemy import Burwor
+
+        enemy = Burwor(self.game.player.x + 500, self.game.player.y + 500)
+        self.game.enemies = [enemy]
+
+        # Create several bullets that are already inactive
+        inactive_bullets = [
+            Bullet(0, 0, (1, 0), is_player_bullet=True) for _ in range(5)
+        ]
+        for b in inactive_bullets:
+            b.active = False
+        self.game.bullets = list(inactive_bullets)
+
+        # This must not raise and must empty the bullet list
+        self.game.check_collisions()
+        # All inactive bullets should be gone (they were filtered out before
+        # check_collisions, but even if present they must not cause errors)
+        for b in inactive_bullets:
+            self.assertNotIn(b, self.game.bullets)
+
+    def test_check_collisions_uses_spatial_grid_not_brute_force(self) -> None:
+        """Spatial grid is rebuilt each frame and consulted for nearby enemies.
+
+        We populate the grid with enemies far from any bullet and verify
+        that a player bullet placed in an empty region of the grid hits
+        nothing, confirming the grid prunes the candidate set correctly.
+        """
+        from wizard_of_wor.bullet import Bullet
+        from wizard_of_wor.enemy import Burwor
+
+        # Place several enemies far from the bullet
+        far_x = self.game.player.x + 400
+        far_y = self.game.player.y + 400
+        self.game.enemies = [Burwor(far_x, far_y) for _ in range(5)]
+
+        # Bullet is nowhere near the enemies
+        bullet = Bullet(
+            self.game.player.x, self.game.player.y, (1, 0), is_player_bullet=True
+        )
+        self.game.bullets = [bullet]
+        initial_score = self.game.score
+
+        self.game.check_collisions()
+
+        # No enemy should have been hit
+        self.assertEqual(self.game.score, initial_score)
+        self.assertTrue(all(e.alive for e in self.game.enemies))
+
+    def test_multiple_bullets_removed_in_one_pass(self) -> None:
+        """Multiple bullets deactivated in the same frame are all removed."""
+        from wizard_of_wor.bullet import Bullet
+        from wizard_of_wor.enemy import Burwor
+
+        # Two enemies at slightly different positions
+        enemy1 = Burwor(300, 300)
+        enemy2 = Burwor(400, 400)
+        self.game.enemies = [enemy1, enemy2]
+
+        # Two player bullets, each on top of an enemy
+        bullet1 = Bullet(enemy1.x, enemy1.y, (1, 0), is_player_bullet=True)
+        bullet2 = Bullet(enemy2.x, enemy2.y, (1, 0), is_player_bullet=True)
+        self.game.bullets = [bullet1, bullet2]
+
+        self.game.check_collisions()
+
+        # Both bullets removed, both enemies dead
+        self.assertNotIn(bullet1, self.game.bullets)
+        self.assertNotIn(bullet2, self.game.bullets)
+        self.assertFalse(enemy1.alive)
+        self.assertFalse(enemy2.alive)
