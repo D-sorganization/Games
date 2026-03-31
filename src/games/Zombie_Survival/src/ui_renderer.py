@@ -676,6 +676,10 @@ class UIRenderer(UIRendererBase):
             },
         ]
 
+    def _get_game_name(self) -> str:
+        """Return the game name for asset loading."""
+        return "Zombie_Survival"
+
     def _get_game_title(self) -> str:
         """Return the Zombie Survival game title."""
         return "ZOMBIE SURVIVAL"

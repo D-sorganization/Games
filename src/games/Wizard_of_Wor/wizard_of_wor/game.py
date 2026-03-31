@@ -1,22 +1,25 @@
 """
 Main game file for Wizard of Wor remake.
+
+The monolithic WizardOfWorGame class has been decomposed following SRP:
+- Rendering is handled by :class:`~render_mixin.RenderMixin`.
+- Audio wiring is handled by :class:`~audio_mixin.AudioMixin`.
+- Collision detection is delegated to :class:`~collision_manager.CollisionManager`.
 """
 
 # mypy: disable-error-code=unreachable
 
 import random
 import sys
-from array import array
 from typing import NoReturn
 
-import numpy as np
 import pygame
+from audio_mixin import AudioMixin, SoundBoard
 from bullet import Bullet
+from collision_manager import CollisionManager
 from constants import (
-    BLACK,
     CELL_SIZE,
     CYAN,
-    DARK_GRAY,
     ENEMIES_PER_LEVEL,
     FPS,
     GAME_AREA_HEIGHT,
@@ -24,149 +27,31 @@ from constants import (
     GAME_AREA_X,
     GAME_AREA_Y,
     GREEN,
-    ORANGE,
-    PALE_YELLOW,
     PLAYER_LIVES,
     PLAYER_SIZE,
-    RADAR_SIZE,
-    RADAR_X,
-    RADAR_Y,
-    RED,
     RESPAWN_SHIELD_FRAMES,
     SCREEN_HEIGHT,
     SCREEN_WIDTH,
-    SHIELD_BAR_WIDTH,
-    WHITE,
-    WIZARD_ARRIVAL_BAR_WIDTH,
-    YELLOW,
 )
 from dungeon import Dungeon
 from effects import RadarPing, SparkleBurst, Vignette, VisualEffect
 from enemy import Burwor, Enemy, Garwor, Thorwor, Wizard, Worluk
 from player import Player
 from radar import Radar
+from render_mixin import RenderMixin
+
+from games.shared.spatial_grid import SpatialGrid
 
 from games.shared.spatial_grid import SpatialGrid
 
 
-class SoundBoard:
-    """Lightweight tone generator for classic arcade-style beeps."""
+class WizardOfWorGame(RenderMixin, AudioMixin):
+    """Main game class.
 
-    def __init__(self) -> None:
-        """Initialize the tone generator for arcade-style sound effects."""
-        self.enabled = False
-        self.sounds: dict[str, pygame.mixer.Sound | None] = {}
-        try:
-            if not pygame.mixer.get_init():
-                pygame.mixer.init(frequency=22050, size=-16, channels=1)
-            self.enabled = True
-        except pygame.error:
-            self.enabled = False
-
-        if not pygame.mixer.get_init():
-            self.enabled = False
-
-        if self.enabled:
-            self.sounds = {
-                "shot": self._build_tone(920, 80),
-                "enemy_hit": self._build_tone(480, 120),
-                "player_hit": self._build_tone(220, 200),
-                "spawn": self._build_tone(640, 150),
-                "wizard": self._build_tone(300, 200),
-            }
-            # Create simple intro melody
-            self.intro_melody = self._build_intro_melody()
-        else:
-            self.sounds = {}
-            # We don't create intro_melody if mixer is not initialized
-
-    def _build_tone(
-        self, frequency: int, duration_ms: int
-    ) -> pygame.mixer.Sound | None:
-        """Build a tone sound effect with the given frequency and duration."""
-        if not self.enabled:
-            # Create a dummy Sound object if mixer is not initialized
-            # This is a bit of a hack for testing/headless environments
-            try:
-                return pygame.mixer.Sound(buffer=b"")
-            except pygame.error:
-                # If even that fails (e.g. no audio device at all), simply return None
-                # so the game continues without sound.
-                return None
-        sample_rate = 22050
-        sample_count = int(sample_rate * duration_ms / 1000)
-        # Vectorized sine wave generation using numpy
-        t = np.arange(sample_count) / sample_rate
-        samples = (14000 * np.sin(2 * np.pi * frequency * t)).astype(np.int16)
-        return pygame.mixer.Sound(buffer=samples.tobytes())
-
-    def _build_intro_melody(self) -> pygame.mixer.Sound | None:
-        """Build a retro-style intro melody reminiscent of classic arcade games."""
-        if not self.enabled:
-            try:
-                return pygame.mixer.Sound(buffer=b"")
-            except pygame.error:
-                return None
-        sample_rate = 22050
-        duration_ms = 3000  # 3 second intro
-        sample_count = int(sample_rate * duration_ms / 1000)
-        waveform = array("h")
-
-        # Classic arcade-style melody notes (frequencies in Hz)
-        melody = [
-            (523, 300),  # C5
-            (659, 300),  # E5
-            (784, 300),  # G5
-            (1047, 600),  # C6
-            (784, 300),  # G5
-            (659, 300),  # E5
-            (523, 600),  # C5
-        ]
-
-        current_sample = 0
-        for freq, note_duration_ms in melody:
-            note_samples = int(sample_rate * note_duration_ms / 1000)
-            for i in range(note_samples):
-                if current_sample >= sample_count:
-                    break
-                # Create a simple square wave with some envelope
-                envelope = min(1.0, (note_samples - i) / (note_samples * 0.1))
-                # Square wave generation
-                square_wave = 1 if (i * freq // sample_rate) % 2 else -1
-                value = int(8000 * envelope * square_wave)
-                waveform.append(value)
-                current_sample += 1
-
-            # Small pause between notes
-            pause_samples = int(sample_rate * 0.05)  # 50ms pause
-            for _ in range(pause_samples):
-                if current_sample >= sample_count:
-                    break
-                waveform.append(0)
-                current_sample += 1
-
-        # Fill remaining time with silence
-        while current_sample < sample_count:
-            waveform.append(0)
-            current_sample += 1
-
-        return pygame.mixer.Sound(buffer=waveform.tobytes())
-
-    def play(self, name: str) -> None:
-        """Play a sound effect by name."""
-        if self.enabled and name in self.sounds:
-            sound = self.sounds[name]
-            if sound:
-                sound.play()
-
-    def play_intro(self) -> None:
-        """Play the intro melody."""
-        if self.enabled and hasattr(self, "intro_melody") and self.intro_melody:
-            self.intro_melody.play()
-
-
-class WizardOfWorGame:
-    """Main game class."""
+    Delegates rendering to :class:`~render_mixin.RenderMixin` and audio event
+    wiring to :class:`~audio_mixin.AudioMixin`.  Collision detection is owned
+    by :class:`~collision_manager.CollisionManager`.
+    """
 
     def __init__(self) -> None:
         """Initialize the game."""
@@ -203,11 +88,24 @@ class WizardOfWorGame:
         self.font_medium = pygame.font.Font(None, 32)
         self.font_small = pygame.font.Font(None, 24)
 
+        # Collision manager wired to game callbacks
+        self._collision_manager = CollisionManager(
+            enemy_grid=self._enemy_grid,
+            on_enemy_hit=self._add_score,
+            on_player_hit=self._handle_player_hit,
+            on_audio_enemy_hit=self._audio_play_enemy_hit,
+            on_audio_player_hit=self._audio_play_player_hit,
+        )
+
         # Auto-start the first level
         self.start_level()
 
         # Play intro music
-        self.soundboard.play_intro()
+        self._audio_play_intro()
+
+    # ------------------------------------------------------------------
+    # Level management
+    # ------------------------------------------------------------------
 
     def start_level(self) -> None:
         """Start a new level."""
@@ -235,7 +133,7 @@ class WizardOfWorGame:
         # Occasionally spawn Worluk
         if self.level > 1 and len(self.enemies) > 0:
             self._spawn_enemy(Worluk)
-        self.soundboard.play("spawn")
+        self._audio_play_spawn()
 
     def spawn_wizard(self) -> None:
         """Spawn the Wizard of Wor."""
@@ -243,7 +141,7 @@ class WizardOfWorGame:
             pos = self.dungeon.get_random_spawn_position()
             self.enemies.append(Wizard(pos[0], pos[1]))
             self.wizard_spawned = True
-            self.soundboard.play("wizard")
+            self._audio_play_wizard()
 
     def _spawn_enemy(self, enemy_cls: type["Enemy"]) -> None:
         """Spawn a single enemy with spacing away from the player."""
@@ -307,6 +205,28 @@ class WizardOfWorGame:
         self.player.rect.x = int(x) - PLAYER_SIZE // 2
         self.player.rect.y = int(y) - PLAYER_SIZE // 2
 
+    # ------------------------------------------------------------------
+    # Score / damage callbacks (used by CollisionManager)
+    # ------------------------------------------------------------------
+
+    def _add_score(self, points: int) -> None:
+        """Add *points* to the player score.
+
+        :param points: point value returned by ``enemy.take_damage()``.
+        """
+        self.score += points
+
+    def _handle_player_hit(self) -> None:
+        """React to the player taking damage (called by CollisionManager).
+
+        Life-loss and respawn are deferred to update() so they happen once
+        per frame regardless of how many collisions occurred.
+        """
+
+    # ------------------------------------------------------------------
+    # Input / update / collision
+    # ------------------------------------------------------------------
+
     def handle_events(self) -> None:
         """Handle input events."""
         for event in pygame.event.get():
@@ -328,7 +248,7 @@ class WizardOfWorGame:
                                 self.bullets.append(bullet)
                                 if muzzle:
                                     self.effects.append(muzzle)
-                                self.soundboard.play("shot")
+                                self._audio_play_shot()
                     elif event.key == pygame.K_ESCAPE:
                         self.state = "paused"
                     elif event.key == pygame.K_p:
@@ -420,79 +340,21 @@ class WizardOfWorGame:
         self._update_effects()
 
     def check_collisions(self) -> None:
-        """Check for collisions between bullets and entities.
+        """Delegate collision detection to the CollisionManager.
+
+        Keeps a thin adapter here so existing tests that call
+        ``game.check_collisions()`` continue to work unchanged.
 
         Uses a spatial hash grid so each bullet only tests the handful of
         enemies that share its grid cell and its 8 neighbours, giving
         O(bullets * local_density) instead of O(bullets * total_enemies).
-        Bullet removal uses a set for O(1) membership tests, avoiding the
-        O(n) cost of ``list.__contains__`` / ``list.remove`` per bullet.
         """
-        # Rebuild spatial grid from current alive enemies (O(enemies))
-        alive_enemies = [e for e in self.enemies if e.alive]
-        self._enemy_grid.update(alive_enemies)
-
-        # Use a set for O(1) "already scheduled for removal" checks
-        bullets_to_remove: set[Bullet] = set()
-
-        # Player bullets hitting enemies
-        for bullet in self.bullets:
-            if not bullet.is_player_bullet or not bullet.active:
-                continue
-
-            # Only check enemies that are spatially close to this bullet
-            nearby = self._enemy_grid.get_nearby(bullet.x, bullet.y)
-            for enemy in nearby:
-                if enemy.alive and bullet.rect.colliderect(enemy.rect):
-                    points = enemy.take_damage()
-                    self.score += points
-                    bullet.active = False
-                    bullets_to_remove.add(bullet)
-                    self.soundboard.play("enemy_hit")
-                    self.effects.append(
-                        SparkleBurst((enemy.x, enemy.y), enemy.color, count=10),
-                    )
-                    break
-
-        # Enemy bullets hitting player
-        for bullet in self.bullets:
-            if (
-                bullet.is_player_bullet
-                or not bullet.active
-                or bullet in bullets_to_remove  # O(1) set lookup
-            ):
-                continue
-
-            if (
-                self.player is not None
-                and self.player.alive
-                and bullet.rect.colliderect(self.player.rect)
-            ):
-                took_damage = self.player.take_damage()
-                bullet.active = False
-                bullets_to_remove.add(bullet)
-                if took_damage:
-                    self.soundboard.play("player_hit")
-                    self.effects.append(
-                        SparkleBurst((self.player.x, self.player.y), RED, count=16),
-                    )
-
-        # Deferred removal in a single O(n) pass
-        if bullets_to_remove:
-            self.bullets = [b for b in self.bullets if b not in bullets_to_remove]
-
-        # Player colliding with enemies – query grid around player position
-        if self.player is not None and self.player.alive:
-            nearby = self._enemy_grid.get_nearby(self.player.x, self.player.y)
-            for enemy in nearby:
-                if enemy.alive and self.player.rect.colliderect(enemy.rect):
-                    took_damage = self.player.take_damage()
-                    if took_damage:
-                        self.soundboard.play("player_hit")
-                        self.effects.append(
-                            SparkleBurst((self.player.x, self.player.y), RED, count=16),
-                        )
-                    break
+        self.bullets = self._collision_manager.check(
+            self.bullets,
+            self.enemies,
+            self.player,
+            self.effects,
+        )
 
     def _update_effects(self) -> None:
         """Advance and cull transient visual effects."""
@@ -502,235 +364,9 @@ class WizardOfWorGame:
                 next_effects.append(effect)
         self.effects = next_effects
 
-    def _draw_effects_by_layer(self, layer: str) -> None:
-        """Draw all effects matching a specific layer."""
-        for effect in self.effects:
-            if getattr(effect, "layer", "") == layer:
-                effect.draw(self.screen)
-
-    def draw(self) -> None:
-        """Draw everything."""
-        self.screen.fill(BLACK)
-
-        if self.state == "menu":
-            self.draw_menu()
-        elif self.state == "playing":
-            self.draw_game()
-        elif self.state == "paused":
-            self.draw_paused()
-        elif self.state == "level_complete":
-            self.draw_level_complete()
-        elif self.state == "game_over":
-            self.draw_game_over()
-
-        pygame.display.flip()
-
-    def draw_menu(self) -> None:
-        """Draw main menu."""
-        title = self.font_large.render("WIZARD OF WOR", True, YELLOW)
-        title_rect = title.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 3))
-        self.screen.blit(title, title_rect)
-
-        instructions = [
-            "WASD or Arrow Keys - Move",
-            "SPACE - Shoot",
-            "P or ESC - Pause",
-            "",
-            "Press ENTER to Start",
-            "Press ESC to Quit",
-        ]
-
-        y_offset = SCREEN_HEIGHT // 2
-        for line in instructions:
-            text = self.font_small.render(line, True, WHITE)
-            text_rect = text.get_rect(center=(SCREEN_WIDTH // 2, y_offset))
-            self.screen.blit(text, text_rect)
-            y_offset += 30
-
-    def draw_game(self) -> None:
-        """Draw game screen."""
-        # Draw dungeon
-        self.dungeon.draw(self.screen)
-
-        # Effects under actors
-        self._draw_effects_by_layer("floor")
-
-        # Draw player
-        if self.player is not None:
-            self.player.draw(self.screen)
-
-        # Draw enemies
-        for enemy in self.enemies:
-            enemy.draw(self.screen)
-
-        self._draw_effects_by_layer("middle")
-
-        # Draw bullets and top-layer effects
-        for bullet in self.bullets:
-            bullet.draw(self.screen)
-        self._draw_effects_by_layer("top")
-
-        # Vignette over playfield
-        self.vignette.draw(self.screen)
-
-        # Draw radar
-        self.radar.draw(self.screen, self.enemies, self.player)
-        self._draw_effects_by_layer("hud")
-
-        # Draw UI
-        self.draw_ui()
-
-    def draw_ui(self) -> None:
-        """Draw user interface (score, lives, level)."""
-        # Score
-        score_text = self.font_medium.render(f"SCORE: {self.score}", True, WHITE)
-        self.screen.blit(score_text, (GAME_AREA_X, 10))
-
-        # Lives
-        lives_text = self.font_medium.render(f"LIVES: {self.lives}", True, WHITE)
-        self.screen.blit(lives_text, (GAME_AREA_X + 250, 10))
-
-        # Level
-        level_text = self.font_medium.render(f"LEVEL: {self.level}", True, WHITE)
-        self.screen.blit(level_text, (GAME_AREA_X + 450, 10))
-
-        # Enemies remaining
-        alive_enemies = sum(1 for e in self.enemies if e.alive)
-        enemies_text = self.font_small.render(f"Enemies: {alive_enemies}", True, CYAN)
-        self.screen.blit(enemies_text, (RADAR_X, RADAR_Y + RADAR_SIZE + 10))
-
-        # Shield indicator
-        if self.player is not None:
-            shield_ratio = 0.0
-            if self.player.invulnerable_timer > 0:
-                shield_ratio = min(
-                    1.0,
-                    self.player.invulnerable_timer / RESPAWN_SHIELD_FRAMES,
-                )
-            bar_width = SHIELD_BAR_WIDTH
-            bar_height = 10
-            bar_x = GAME_AREA_X
-            bar_y = GAME_AREA_Y + GAME_AREA_HEIGHT + 16
-            pygame.draw.rect(
-                self.screen,
-                DARK_GRAY,
-                (bar_x, bar_y, bar_width, bar_height),
-            )
-            if shield_ratio > 0:
-                pygame.draw.rect(
-                    self.screen,
-                    PALE_YELLOW,
-                    (bar_x, bar_y, int(bar_width * shield_ratio), bar_height),
-                )
-            shield_text = self.font_small.render("Shield", True, PALE_YELLOW)
-            self.screen.blit(shield_text, (bar_x, bar_y - 18))
-
-        # Wizard arrival meter
-        total_enemies = sum(1 for e in self.enemies)
-        if total_enemies > 0:
-            progress = 1 - (alive_enemies / max(1, total_enemies))
-            bar_width = WIZARD_ARRIVAL_BAR_WIDTH
-            bar_height = 8
-            bar_x = GAME_AREA_X + 220
-            bar_y = GAME_AREA_Y + GAME_AREA_HEIGHT + 16
-            pygame.draw.rect(
-                self.screen,
-                DARK_GRAY,
-                (bar_x, bar_y, bar_width, bar_height),
-            )
-            pygame.draw.rect(
-                self.screen,
-                ORANGE,
-                (bar_x, bar_y, int(bar_width * progress), bar_height),
-            )
-            wizard_text = self.font_small.render("Wizard Warmup", True, ORANGE)
-            self.screen.blit(wizard_text, (bar_x, bar_y - 18))
-
-    def draw_level_complete(self) -> None:
-        """Draw level complete screen."""
-        self.draw_game()  # Draw game in background
-
-        # Overlay
-        overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
-        overlay.set_alpha(128)
-        overlay.fill(BLACK)
-        self.screen.blit(overlay, (0, 0))
-
-        # Text
-        text = self.font_large.render("LEVEL COMPLETE!", True, GREEN)
-        text_rect = text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 50))
-        self.screen.blit(text, text_rect)
-
-        score_text = self.font_medium.render(f"Score: {self.score}", True, WHITE)
-        score_rect = score_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
-        self.screen.blit(score_text, score_rect)
-
-        continue_text = self.font_small.render("Press ENTER to continue", True, WHITE)
-        continue_rect = continue_text.get_rect(
-            center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 50),
-        )
-        self.screen.blit(continue_text, continue_rect)
-
-    def draw_game_over(self) -> None:
-        """Draw game over screen."""
-        title = self.font_large.render("GAME OVER", True, RED)
-        title_rect = title.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 3))
-        self.screen.blit(title, title_rect)
-
-        score_text = self.font_medium.render(f"Final Score: {self.score}", True, WHITE)
-        score_rect = score_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
-        self.screen.blit(score_text, score_rect)
-
-        level_text = self.font_medium.render(
-            f"Reached Level: {self.level}",
-            True,
-            WHITE,
-        )
-        level_rect = level_text.get_rect(
-            center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 50),
-        )
-        self.screen.blit(level_text, level_rect)
-
-        restart_text = self.font_small.render("Press ENTER to play again", True, WHITE)
-        restart_rect = restart_text.get_rect(
-            center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 100),
-        )
-        self.screen.blit(restart_text, restart_rect)
-
-        menu_text = self.font_small.render("Press ESC for menu", True, WHITE)
-        menu_rect = menu_text.get_rect(
-            center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 130),
-        )
-        self.screen.blit(menu_text, menu_rect)
-
-    def draw_paused(self) -> None:
-        """Draw pause screen."""
-        self.draw_game()  # Draw game in background
-
-        # Overlay
-        overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
-        overlay.set_alpha(128)
-        overlay.fill(BLACK)
-        self.screen.blit(overlay, (0, 0))
-
-        # Text
-        text = self.font_large.render("PAUSED", True, YELLOW)
-        text_rect = text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 50))
-        self.screen.blit(text, text_rect)
-
-        instructions = [
-            "P or ESC - Resume",
-            "Q - Quit to Menu",
-        ]
-
-        y_offset = SCREEN_HEIGHT // 2
-        for line in instructions:
-            instruction_text = self.font_small.render(line, True, WHITE)
-            instruction_rect = instruction_text.get_rect(
-                center=(SCREEN_WIDTH // 2, y_offset)
-            )
-            self.screen.blit(instruction_text, instruction_rect)
-            y_offset += 30
+    # ------------------------------------------------------------------
+    # Main loop
+    # ------------------------------------------------------------------
 
     def run(self) -> NoReturn:
         """Main game loop."""

@@ -1,0 +1,16 @@
+---
+# QuatEngine shared C++ style guide
+# Mirrors Google style with minor project-specific tweaks.
+BasedOnStyle: Google
+IndentWidth: 2
+ColumnLimit: 100
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+BraceWrapping:
+  AfterFunction: false
+  AfterClass: false
+  AfterControlStatement: Never
+SpaceAfterCStyleCast: false
+SortIncludes: CaseSensitive
+IncludeBlocks: Regroup

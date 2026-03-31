@@ -8,6 +8,10 @@ from games.shared.sound_manager_base import SoundManagerBase
 class SoundManager(SoundManagerBase):
     """Manages sound effects and music for Force Field."""
 
+    def get_game_name(self) -> str:
+        """Return the game name for asset loading."""
+        return "Force_Field"
+
     # Map logical names to filenames
     SOUND_FILES = {
         "shoot": "shoot.wav",

@@ -60,9 +60,18 @@ Games/
 │   │   ├── board/                 # Game board state and logic
 │   │   └── scoring/               # Scoring and level progression
 │   ├── Wizard_of_Wor/             # Arcade game remake
-│   │   ├── maze/                  # Procedural maze generation
-│   │   ├── enemies/               # Enemy patterns and AI
-│   │   └── items/                 # Collectible items
+│   │   ├── wizard_of_wor/         # Game package
+│   │   │   ├── game.py            # WizardOfWorGame (thin orchestrator, SRP)
+│   │   │   ├── render_mixin.py    # RenderMixin – all draw_* methods (SRP)
+│   │   │   ├── audio_mixin.py     # AudioMixin + SoundBoard – audio wiring (SRP)
+│   │   │   ├── collision_manager.py # CollisionManager – spatial-grid collision (SRP)
+│   │   │   ├── dungeon.py         # Procedural maze generation
+│   │   │   ├── enemy.py           # Enemy AI and patterns
+│   │   │   ├── player.py          # Player entity
+│   │   │   ├── bullet.py          # Projectile system
+│   │   │   ├── radar.py           # HUD radar
+│   │   │   └── effects.py         # Visual effect system
+│   │   └── tests/                 # Per-component unit tests
 │   ├── Peanut_Butter_Panic/       # Platformer game
 │   │   ├── levels/                # Level design and tiling
 │   │   ├── physics/               # Platform collision and gravity
@@ -90,6 +99,9 @@ Games/
 │   ├── zombie-survival/           # Three.js Zombie Survival
 │   └── shared/                    # Web-specific shared utilities
 ├── .github/workflows/             # CI/CD pipelines
+│   ├── ci-standard.yml            # Python quality gate, tests, security scan, Rust gate
+│   └── cpp-ci.yml                 # C++ format check (clang-format) + cmake/ctest pipeline
+├── .clang-format                  # C++ style config (Google-based, 100 cols)
 └── docs/                          # Documentation and design docs
 ```
 
@@ -103,6 +115,8 @@ Games/
 | Tetris Logic | `src/games/Tetris/` | Piece mechanics, board state, gravity, line clearing |
 | Shared Renderers | `src/games/shared/renderers/` | Common rendering abstractions, 2D drawing, sprite management |
 | C++ Bindings | `src/games/shared/cpp_bindings/` | ctypes interface to compiled performance-critical code |
+| QuatEngine C++ | `src/games/shared/cpp/` | Header-only C++17 engine modules: math, core, game, AI, renderer, input, loader |
+| C++ CI Pipeline | `.github/workflows/cpp-ci.yml` | clang-format style gate + cmake/ctest build matrix (GCC 12, Clang 17) |
 | Input Handler | `src/games/shared/input/` | Unified keyboard/controller input abstraction |
 | Three.js Client | `web/zombie-survival/` | Browser-based 3D rendering for Zombie Survival |
 
