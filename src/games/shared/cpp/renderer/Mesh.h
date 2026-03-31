@@ -11,8 +11,6 @@
  * is move-only (copy is deleted to prevent double-free of GL objects).
  */
 
-#include "GLLoader.h"
-
 #include <cmath>
 #include <cstddef>
 #include <map>
@@ -20,12 +18,17 @@
 #include <utility>
 #include <vector>
 
+#include "GLLoader.h"
+
 namespace qe {
 namespace renderer {
 
 // DbC macro — throws std::invalid_argument on validation failure
-#define QE_REQUIRE(cond, msg) \
-  do { if (!(cond)) throw std::invalid_argument(msg); } while (0)
+#define QE_REQUIRE(cond, msg)           \
+  do {                                  \
+    if (!(cond))                        \
+      throw std::invalid_argument(msg); \
+  } while (0)
 
 static constexpr float kPi = 3.14159265358979323846f;
 
@@ -38,7 +41,7 @@ struct Vertex {
 };
 
 class Mesh {
-public:
+ public:
   GLuint vao = 0;
   GLuint vbo = 0;
   GLuint ebo = 0;
@@ -52,8 +55,7 @@ public:
   Mesh &operator=(const Mesh &) = delete;
 
   Mesh(Mesh &&other) noexcept
-      : vao(other.vao), vbo(other.vbo), ebo(other.ebo),
-        index_count(other.index_count) {
+      : vao(other.vao), vbo(other.vbo), ebo(other.ebo), index_count(other.index_count) {
     other.vao = 0;
     other.vbo = 0;
     other.ebo = 0;
@@ -75,7 +77,9 @@ public:
     return *this;
   }
 
-  ~Mesh() { destroy(); }
+  ~Mesh() {
+    destroy();
+  }
 
   // ── Upload / Draw / Destroy ─────────────────────────────────────
 
@@ -84,8 +88,7 @@ public:
    * @pre vertices is non-empty
    * @pre indices is non-empty
    */
-  void upload(const std::vector<Vertex> &vertices,
-              const std::vector<unsigned int> &indices) {
+  void upload(const std::vector<Vertex> &vertices, const std::vector<unsigned int> &indices) {
     QE_REQUIRE(!vertices.empty(), "Mesh::upload: vertices must not be empty");
     QE_REQUIRE(!indices.empty(), "Mesh::upload: indices must not be empty");
 
@@ -102,15 +105,13 @@ public:
     gl::glBindVertexArray(vao);
 
     gl::glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    gl::glBufferData(GL_ARRAY_BUFFER,
-                     static_cast<GLsizeiptr>(vertices.size() * sizeof(Vertex)),
+    gl::glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(vertices.size() * sizeof(Vertex)),
                      vertices.data(), GL_STATIC_DRAW);
 
     gl::glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-    gl::glBufferData(
-        GL_ELEMENT_ARRAY_BUFFER,
-        static_cast<GLsizeiptr>(indices.size() * sizeof(unsigned int)),
-        indices.data(), GL_STATIC_DRAW);
+    gl::glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+                     static_cast<GLsizeiptr>(indices.size() * sizeof(unsigned int)), indices.data(),
+                     GL_STATIC_DRAW);
 
     setup_vertex_attributes();
     gl::glBindVertexArray(0);
@@ -136,8 +137,8 @@ public:
   void draw_instanced(GLsizei instance_count) const {
     QE_REQUIRE(vao != 0, "Mesh::draw_instanced: mesh not uploaded");
     gl::glBindVertexArray(vao);
-    gl::glDrawElementsInstanced(GL_TRIANGLES, index_count, GL_UNSIGNED_INT,
-                                nullptr, instance_count);
+    gl::glDrawElementsInstanced(GL_TRIANGLES, index_count, GL_UNSIGNED_INT, nullptr,
+                                instance_count);
     gl::glBindVertexArray(0);
   }
 
@@ -211,8 +212,7 @@ public:
   }
 
   /** Large textured floor plane on XZ. UVs tile the texture. */
-  static Mesh create_floor_plane(float half_size = 20.0f,
-                                 float uv_scale = 4.0f) {
+  static Mesh create_floor_plane(float half_size = 20.0f, float uv_scale = 4.0f) {
     Mesh mesh;
     float s = half_size;
     float u = uv_scale;
@@ -235,10 +235,9 @@ public:
    * @pre subdivisions >= 0
    * @pre r > 0
    */
-  static Mesh create_sphere(int subdivisions = 2, float r = 0.5f,
-                            float cr = 0.8f, float cg = 0.6f, float cb = 0.3f) {
-    QE_REQUIRE(subdivisions >= 0,
-               "Mesh::create_sphere: subdivisions must be >= 0");
+  static Mesh create_sphere(int subdivisions = 2, float r = 0.5f, float cr = 0.8f, float cg = 0.6f,
+                            float cb = 0.3f) {
+    QE_REQUIRE(subdivisions >= 0, "Mesh::create_sphere: subdivisions must be >= 0");
     QE_REQUIRE(r > 0.0f, "Mesh::create_sphere: radius must be positive");
 
     Mesh mesh;
@@ -253,8 +252,7 @@ public:
     };
     // Normalize all to unit sphere
     for (size_t i = 0; i < pos.size(); i += 3) {
-      float len = std::sqrt(pos[i] * pos[i] + pos[i + 1] * pos[i + 1] +
-                            pos[i + 2] * pos[i + 2]);
+      float len = std::sqrt(pos[i] * pos[i] + pos[i + 1] * pos[i + 1] + pos[i + 2] * pos[i + 2]);
       pos[i] /= len;
       pos[i + 1] /= len;
       pos[i + 2] /= len;
@@ -269,11 +267,9 @@ public:
     // Subdivide with midpoint cache to avoid duplicate vertices
     for (int s = 0; s < subdivisions; ++s) {
       std::vector<unsigned int> new_idx;
-      std::map<std::pair<unsigned int, unsigned int>, unsigned int>
-          midpoint_cache;
+      std::map<std::pair<unsigned int, unsigned int>, unsigned int> midpoint_cache;
 
-      auto get_midpoint = [&](unsigned int i0,
-                              unsigned int i1) -> unsigned int {
+      auto get_midpoint = [&](unsigned int i0, unsigned int i1) -> unsigned int {
         // Canonical edge ordering so (a,b) and (b,a) map to same midpoint
         auto edge = (i0 < i1) ? std::make_pair(i0, i1) : std::make_pair(i1, i0);
         auto it = midpoint_cache.find(edge);
@@ -352,25 +348,17 @@ public:
       float pos = i * spacing;
       float brightness = (i == 0) ? 0.6f : 0.25f;
 
-      vertices.push_back({{pos, 0.0f, -extent},
-                          {0, 1, 0},
-                          {brightness, brightness, brightness},
-                          {0, 0}});
-      vertices.push_back({{pos, 0.0f, extent},
-                          {0, 1, 0},
-                          {brightness, brightness, brightness},
-                          {1, 0}});
+      vertices.push_back(
+          {{pos, 0.0f, -extent}, {0, 1, 0}, {brightness, brightness, brightness}, {0, 0}});
+      vertices.push_back(
+          {{pos, 0.0f, extent}, {0, 1, 0}, {brightness, brightness, brightness}, {1, 0}});
       indices.push_back(idx++);
       indices.push_back(idx++);
 
-      vertices.push_back({{-extent, 0.0f, pos},
-                          {0, 1, 0},
-                          {brightness, brightness, brightness},
-                          {0, 0}});
-      vertices.push_back({{extent, 0.0f, pos},
-                          {0, 1, 0},
-                          {brightness, brightness, brightness},
-                          {1, 0}});
+      vertices.push_back(
+          {{-extent, 0.0f, pos}, {0, 1, 0}, {brightness, brightness, brightness}, {0, 0}});
+      vertices.push_back(
+          {{extent, 0.0f, pos}, {0, 1, 0}, {brightness, brightness, brightness}, {1, 0}});
       indices.push_back(idx++);
       indices.push_back(idx++);
     }
@@ -380,28 +368,25 @@ public:
     return mesh;
   }
 
-private:
+ private:
   /**
    * Configure vertex attribute pointers for the standard vertex layout.
    * DRY: shared by upload() — all mesh creation goes through upload().
    */
   static void setup_vertex_attributes() {
     // Position (location = 0)
-    gl::glVertexAttribPointer(
-        0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
-        reinterpret_cast<void *>(offsetof(Vertex, position)));
+    gl::glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                              reinterpret_cast<void *>(offsetof(Vertex, position)));
     gl::glEnableVertexAttribArray(0);
 
     // Normal (location = 1)
-    gl::glVertexAttribPointer(
-        1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
-        reinterpret_cast<void *>(offsetof(Vertex, normal)));
+    gl::glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                              reinterpret_cast<void *>(offsetof(Vertex, normal)));
     gl::glEnableVertexAttribArray(1);
 
     // Color (location = 2)
-    gl::glVertexAttribPointer(
-        2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
-        reinterpret_cast<void *>(offsetof(Vertex, color)));
+    gl::glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                              reinterpret_cast<void *>(offsetof(Vertex, color)));
     gl::glEnableVertexAttribArray(2);
 
     // UV (location = 3)
@@ -411,5 +396,5 @@ private:
   }
 };
 
-} // namespace renderer
-} // namespace qe
+}  // namespace renderer
+}  // namespace qe

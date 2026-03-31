@@ -122,8 +122,7 @@ constexpr GLenum GL_VENDOR = 0x1F00;
 
 // Core GL 1.x (may be directly available, but we load anyway)
 using PFNGLCLEARPROC = void(QE_APIENTRY *)(GLbitfield);
-using PFNGLCLEARCOLORPROC = void(QE_APIENTRY *)(GLfloat, GLfloat, GLfloat,
-                                                GLfloat);
+using PFNGLCLEARCOLORPROC = void(QE_APIENTRY *)(GLfloat, GLfloat, GLfloat, GLfloat);
 using PFNGLVIEWPORTPROC = void(QE_APIENTRY *)(GLint, GLint, GLsizei, GLsizei);
 using PFNGLENABLEPROC = void(QE_APIENTRY *)(GLenum);
 using PFNGLDISABLEPROC = void(QE_APIENTRY *)(GLenum);
@@ -131,8 +130,7 @@ using PFNGLBLENDFUNCPROC = void(QE_APIENTRY *)(GLenum, GLenum);
 using PFNGLCULLFACEPROC = void(QE_APIENTRY *)(GLenum);
 using PFNGLPOLYGONMODEPROC = void(QE_APIENTRY *)(GLenum, GLenum);
 using PFNGLDRAWARRAYSPROC = void(QE_APIENTRY *)(GLenum, GLint, GLsizei);
-using PFNGLDRAWELEMENTSPROC = void(QE_APIENTRY *)(GLenum, GLsizei, GLenum,
-                                                  const void *);
+using PFNGLDRAWELEMENTSPROC = void(QE_APIENTRY *)(GLenum, GLsizei, GLenum, const void *);
 using PFNGLGETSTRINGPROC = const GLchar *(QE_APIENTRY *)(GLenum);
 using PFNGLGETERRORPROC = GLenum(QE_APIENTRY *)();
 using PFNGLDEPTHMASKPROC = void(QE_APIENTRY *)(GLboolean);
@@ -140,63 +138,50 @@ using PFNGLLINEWIDTHPROC = void(QE_APIENTRY *)(GLfloat);
 
 // Shader functions
 using PFNGLCREATESHADERPROC = GLuint(QE_APIENTRY *)(GLenum);
-using PFNGLSHADERSOURCEPROC = void(QE_APIENTRY *)(GLuint, GLsizei,
-                                                  const GLchar **,
-                                                  const GLint *);
+using PFNGLSHADERSOURCEPROC = void(QE_APIENTRY *)(GLuint, GLsizei, const GLchar **, const GLint *);
 using PFNGLCOMPILESHADERPROC = void(QE_APIENTRY *)(GLuint);
 using PFNGLGETSHADERIVPROC = void(QE_APIENTRY *)(GLuint, GLenum, GLint *);
-using PFNGLGETSHADERINFOLOGPROC = void(QE_APIENTRY *)(GLuint, GLsizei,
-                                                      GLsizei *, GLchar *);
+using PFNGLGETSHADERINFOLOGPROC = void(QE_APIENTRY *)(GLuint, GLsizei, GLsizei *, GLchar *);
 using PFNGLDELETESHADERPROC = void(QE_APIENTRY *)(GLuint);
 using PFNGLCREATEPROGRAMPROC = GLuint(QE_APIENTRY *)();
 using PFNGLATTACHSHADERPROC = void(QE_APIENTRY *)(GLuint, GLuint);
 using PFNGLLINKPROGRAMPROC = void(QE_APIENTRY *)(GLuint);
 using PFNGLGETPROGRAMIVPROC = void(QE_APIENTRY *)(GLuint, GLenum, GLint *);
-using PFNGLGETPROGRAMINFOLOGPROC = void(QE_APIENTRY *)(GLuint, GLsizei,
-                                                       GLsizei *, GLchar *);
+using PFNGLGETPROGRAMINFOLOGPROC = void(QE_APIENTRY *)(GLuint, GLsizei, GLsizei *, GLchar *);
 using PFNGLUSEPROGRAMPROC = void(QE_APIENTRY *)(GLuint);
 using PFNGLDELETEPROGRAMPROC = void(QE_APIENTRY *)(GLuint);
 
 // Uniform functions
-using PFNGLGETUNIFORMLOCATIONPROC = GLint(QE_APIENTRY *)(GLuint,
-                                                         const GLchar *);
+using PFNGLGETUNIFORMLOCATIONPROC = GLint(QE_APIENTRY *)(GLuint, const GLchar *);
 using PFNGLUNIFORM1FPROC = void(QE_APIENTRY *)(GLint, GLfloat);
-using PFNGLUNIFORM3FPROC = void(QE_APIENTRY *)(GLint, GLfloat, GLfloat,
-                                               GLfloat);
-using PFNGLUNIFORM4FPROC = void(QE_APIENTRY *)(GLint, GLfloat, GLfloat, GLfloat,
-                                               GLfloat);
-using PFNGLUNIFORMMATRIX4FVPROC = void(QE_APIENTRY *)(GLint, GLsizei, GLboolean,
-                                                      const GLfloat *);
+using PFNGLUNIFORM3FPROC = void(QE_APIENTRY *)(GLint, GLfloat, GLfloat, GLfloat);
+using PFNGLUNIFORM4FPROC = void(QE_APIENTRY *)(GLint, GLfloat, GLfloat, GLfloat, GLfloat);
+using PFNGLUNIFORMMATRIX4FVPROC = void(QE_APIENTRY *)(GLint, GLsizei, GLboolean, const GLfloat *);
 
 // VAO functions
 using PFNGLGENVERTEXARRAYSPROC = void(QE_APIENTRY *)(GLsizei, GLuint *);
 using PFNGLBINDVERTEXARRAYPROC = void(QE_APIENTRY *)(GLuint);
-using PFNGLDELETEVERTEXARRAYSPROC = void(QE_APIENTRY *)(GLsizei,
-                                                        const GLuint *);
+using PFNGLDELETEVERTEXARRAYSPROC = void(QE_APIENTRY *)(GLsizei, const GLuint *);
 
 // VBO functions
 using PFNGLGENBUFFERSPROC = void(QE_APIENTRY *)(GLsizei, GLuint *);
 using PFNGLBINDBUFFERPROC = void(QE_APIENTRY *)(GLenum, GLuint);
-using PFNGLBUFFERDATAPROC = void(QE_APIENTRY *)(GLenum, GLsizeiptr,
-                                                const void *, GLenum);
+using PFNGLBUFFERDATAPROC = void(QE_APIENTRY *)(GLenum, GLsizeiptr, const void *, GLenum);
 using PFNGLDELETEBUFFERSPROC = void(QE_APIENTRY *)(GLsizei, const GLuint *);
 using PFNGLENABLEVERTEXATTRIBARRAYPROC = void(QE_APIENTRY *)(GLuint);
-using PFNGLVERTEXATTRIBPOINTERPROC = void(QE_APIENTRY *)(GLuint, GLint, GLenum,
-                                                         GLboolean, GLsizei,
+using PFNGLVERTEXATTRIBPOINTERPROC = void(QE_APIENTRY *)(GLuint, GLint, GLenum, GLboolean, GLsizei,
                                                          const void *);
 using PFNGLVERTEXATTRIBDIVISORPROC = void(QE_APIENTRY *)(GLuint, GLuint);
 
 // Instanced drawing
-using PFNGLDRAWELEMENTSINSTANCEDPROC = void(QE_APIENTRY *)(GLenum, GLsizei,
-                                                           GLenum, const void *,
+using PFNGLDRAWELEMENTSINSTANCEDPROC = void(QE_APIENTRY *)(GLenum, GLsizei, GLenum, const void *,
                                                            GLsizei);
 
 // Texture functions
 using PFNGLGENTEXTURESPROC = void(QE_APIENTRY *)(GLsizei, GLuint *);
 using PFNGLBINDTEXTUREPROC = void(QE_APIENTRY *)(GLenum, GLuint);
-using PFNGLTEXIMAGE2DPROC = void(QE_APIENTRY *)(GLenum, GLint, GLint, GLsizei,
-                                                GLsizei, GLint, GLenum, GLenum,
-                                                const void *);
+using PFNGLTEXIMAGE2DPROC = void(QE_APIENTRY *)(GLenum, GLint, GLint, GLsizei, GLsizei, GLint,
+                                                GLenum, GLenum, const void *);
 using PFNGLTEXPARAMETERIPROC = void(QE_APIENTRY *)(GLenum, GLenum, GLint);
 using PFNGLACTIVETEXTUREPROC = void(QE_APIENTRY *)(GLenum);
 using PFNGLGENERATEMIPMAPPROC = void(QE_APIENTRY *)(GLenum);
@@ -282,9 +267,9 @@ inline PFNGLUNIFORM1IPROC glUniform1i = nullptr;
  * @return true if all required functions were loaded.
  */
 inline bool load() {
-#define QE_LOAD_GL(name)                                                       \
-  name = reinterpret_cast<decltype(name)>(SDL_GL_GetProcAddress(#name));       \
-  if (!name)                                                                   \
+#define QE_LOAD_GL(name)                                                 \
+  name = reinterpret_cast<decltype(name)>(SDL_GL_GetProcAddress(#name)); \
+  if (!name)                                                             \
   return false
 
   // Core
@@ -355,8 +340,8 @@ inline bool load() {
 #undef QE_LOAD_GL
   return true;
 }
-#endif // QE_NO_SDL
+#endif  // QE_NO_SDL
 
-} // namespace gl
-} // namespace renderer
-} // namespace qe
+}  // namespace gl
+}  // namespace renderer
+}  // namespace qe
