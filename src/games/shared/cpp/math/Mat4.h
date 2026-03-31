@@ -8,11 +8,11 @@
  * TRS (Translation-Rotation-Scale) model matrix construction.
  */
 
-#include "Quaternion.h"
-#include "Vec3.h"
-
 #include <array>
 #include <cmath>
+
+#include "Quaternion.h"
+#include "Vec3.h"
 
 namespace qe {
 namespace math {
@@ -66,10 +66,14 @@ struct Mat4 {
   }
 
   /** Uniform scale matrix from scalar. */
-  static Mat4 scale(float s) noexcept { return scale(Vec3(s, s, s)); }
+  static Mat4 scale(float s) noexcept {
+    return scale(Vec3(s, s, s));
+  }
 
   // Aliases for consistency with call sites
-  static Mat4 translate(const Vec3 &t) noexcept { return translation(t); }
+  static Mat4 translate(const Vec3 &t) noexcept {
+    return translation(t);
+  }
 
   /** Rotation matrix from quaternion. */
   static Mat4 rotation(const Quaternion &q) noexcept {
@@ -101,11 +105,12 @@ struct Mat4 {
     return result;
   }
 
-  static Mat4 rotate(const Quaternion &q) noexcept { return rotation(q); }
+  static Mat4 rotate(const Quaternion &q) noexcept {
+    return rotation(q);
+  }
 
   /** Model matrix: Translation * Rotation * Scale (TRS order). */
-  static Mat4 trs(const Vec3 &pos, const Quaternion &rot,
-                  const Vec3 &scl) noexcept {
+  static Mat4 trs(const Vec3 &pos, const Quaternion &rot, const Vec3 &scl) noexcept {
     Mat4 t = translation(pos);
     Mat4 r = rotation(rot);
     Mat4 s = scale(scl);
@@ -120,8 +125,7 @@ struct Mat4 {
    *  @param near_z  Near clipping plane distance.
    *  @param far_z   Far clipping plane distance.
    */
-  static Mat4 perspective(float fov_y, float aspect, float near_z,
-                          float far_z) noexcept {
+  static Mat4 perspective(float fov_y, float aspect, float near_z, float far_z) noexcept {
     Mat4 result;
     float tan_half = std::tan(fov_y * 0.5f);
 
@@ -138,11 +142,10 @@ struct Mat4 {
    *  @param target Point to look at.
    *  @param world_up  World up direction (typically {0,1,0}).
    */
-  static Mat4 look_at(const Vec3 &eye, const Vec3 &target,
-                      const Vec3 &world_up) {
-    Vec3 zaxis = (eye - target).normalized(); // Forward (camera looks -Z)
-    Vec3 xaxis = world_up.cross(zaxis).normalized(); // Right
-    Vec3 yaxis = zaxis.cross(xaxis);                 // Up
+  static Mat4 look_at(const Vec3 &eye, const Vec3 &target, const Vec3 &world_up) {
+    Vec3 zaxis = (eye - target).normalized();         // Forward (camera looks -Z)
+    Vec3 xaxis = world_up.cross(zaxis).normalized();  // Right
+    Vec3 yaxis = zaxis.cross(xaxis);                  // Up
 
     Mat4 result;
     result.m[0][0] = xaxis.x;
@@ -172,9 +175,8 @@ struct Mat4 {
     Mat4 result;
     for (int col = 0; col < 4; ++col) {
       for (int row = 0; row < 4; ++row) {
-        result.m[col][row] =
-            m[0][row] * rhs.m[col][0] + m[1][row] * rhs.m[col][1] +
-            m[2][row] * rhs.m[col][2] + m[3][row] * rhs.m[col][3];
+        result.m[col][row] = m[0][row] * rhs.m[col][0] + m[1][row] * rhs.m[col][1] +
+                             m[2][row] * rhs.m[col][2] + m[3][row] * rhs.m[col][3];
       }
     }
     return result;
@@ -201,8 +203,10 @@ struct Mat4 {
   }
 
   /** Get a pointer to the raw float data (for OpenGL upload). */
-  const float *data() const noexcept { return &m[0][0]; }
+  const float *data() const noexcept {
+    return &m[0][0];
+  }
 };
 
-} // namespace math
-} // namespace qe
+}  // namespace math
+}  // namespace qe

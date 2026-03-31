@@ -17,9 +17,6 @@
  *   - Postcondition: returned URDFModel has at least one link
  */
 
-#include "../math/Quaternion.h"
-#include "../math/Vec3.h"
-
 #include <algorithm>
 #include <cmath>
 #include <fstream>
@@ -27,6 +24,9 @@
 #include <sstream>
 #include <string>
 #include <vector>
+
+#include "../math/Quaternion.h"
+#include "../math/Vec3.h"
 
 namespace qe {
 namespace loader {
@@ -56,7 +56,7 @@ struct URDFGeometry {
 /** Origin (position + rotation) for visual/collision/joint. */
 struct URDFOrigin {
   math::Vec3 xyz{0, 0, 0};
-  math::Vec3 rpy{0, 0, 0}; // Roll, Pitch, Yaw in radians
+  math::Vec3 rpy{0, 0, 0};  // Roll, Pitch, Yaw in radians
 };
 
 /** A URDF link (body segment). */
@@ -71,7 +71,7 @@ struct URDFLink {
 /** A URDF joint (connection between links). */
 struct URDFJoint {
   std::string name;
-  std::string type; // "revolute", "fixed", "continuous"
+  std::string type;  // "revolute", "fixed", "continuous"
   std::string parent_link;
   std::string child_link;
   URDFOrigin origin;
@@ -83,7 +83,7 @@ struct URDFModel {
   std::string name;
   std::vector<URDFLink> links;
   std::vector<URDFJoint> joints;
-  std::map<std::string, int> link_index; // name → index into links[]
+  std::map<std::string, int> link_index;  // name → index into links[]
 
   /** Get the root link (not a child of any joint). */
   std::string root_link_name() const {
@@ -100,8 +100,7 @@ struct URDFModel {
   }
 
   /** Get all children of a given link. */
-  std::vector<const URDFJoint *>
-  children_of(const std::string &link_name) const {
+  std::vector<const URDFJoint *> children_of(const std::string &link_name) const {
     std::vector<const URDFJoint *> result;
     for (const auto &j : joints) {
       if (j.parent_link == link_name) {
@@ -118,13 +117,13 @@ struct URDFLoadResult {
   bool success = false;
   URDFModel model;
   std::string error;
-  std::string base_dir; // Directory containing the URDF (for mesh paths)
+  std::string base_dir;  // Directory containing the URDF (for mesh paths)
 };
 
 // ── Parser ──────────────────────────────────────────────────────────────────
 
 class URDFLoader {
-public:
+ public:
   /**
    * Load and parse a URDF file.
    * @param file_path  Path to the .urdf file.
@@ -141,9 +140,7 @@ public:
 
     // Extract base directory for resolving mesh paths
     auto last_slash = file_path.find_last_of("/\\");
-    result.base_dir = (last_slash != std::string::npos)
-                          ? file_path.substr(0, last_slash + 1)
-                          : "";
+    result.base_dir = (last_slash != std::string::npos) ? file_path.substr(0, last_slash + 1) : "";
 
     std::stringstream ss;
     ss << file.rdbuf();
@@ -173,12 +170,11 @@ public:
     return result;
   }
 
-private:
+ private:
   // ── Minimal XML helpers (no external XML lib dependency) ─────────────
 
   /** Find all occurrences of a tag in the XML. Returns content between tags. */
-  static std::vector<std::string> find_tags(const std::string &xml,
-                                            const std::string &tag) {
+  static std::vector<std::string> find_tags(const std::string &xml, const std::string &tag) {
     std::vector<std::string> results;
     std::string open = "<" + tag;
     size_t pos = 0;
@@ -211,8 +207,7 @@ private:
   }
 
   /** Extract attribute value from a tag string. */
-  static std::string extract_attr(const std::string &tag_str,
-                                  const std::string & /*tag*/,
+  static std::string extract_attr(const std::string &tag_str, const std::string & /*tag*/,
                                   const std::string &attr) {
     std::string search = attr + "=\"";
     auto pos = tag_str.find(search);
@@ -226,8 +221,7 @@ private:
   }
 
   /** Extract attribute directly from content string. */
-  static std::string get_attr(const std::string &content,
-                              const std::string &attr) {
+  static std::string get_attr(const std::string &content, const std::string &attr) {
     return extract_attr(content, "", attr);
   }
 
@@ -248,8 +242,7 @@ private:
   }
 
   /** Parse the first occurrence of a nested tag and return its content. */
-  static std::string find_nested(const std::string &parent,
-                                 const std::string &tag) {
+  static std::string find_nested(const std::string &parent, const std::string &tag) {
     auto tags = find_tags(parent, tag);
     return tags.empty() ? "" : tags[0];
   }
@@ -398,5 +391,5 @@ private:
   }
 };
 
-} // namespace loader
-} // namespace qe
+}  // namespace loader
+}  // namespace qe

@@ -1,19 +1,22 @@
 #pragma once
 
-#include "../core/Transform.h"
-#include "../math/Mat4.h"
-#include "../renderer/Shader.h"
-#include "HumanoidRig.h"
-
 #include <cmath>
 #include <map>
 #include <memory>
 #include <stdexcept>
 #include <vector>
 
+#include "../core/Transform.h"
+#include "../math/Mat4.h"
+#include "../renderer/Shader.h"
+#include "HumanoidRig.h"
+
 // DbC macro — throws std::invalid_argument on validation failure
-#define QE_REQUIRE(cond, msg) \
-  do { if (!(cond)) throw std::invalid_argument(msg); } while (0)
+#define QE_REQUIRE(cond, msg)           \
+  do {                                  \
+    if (!(cond))                        \
+      throw std::invalid_argument(msg); \
+  } while (0)
 
 namespace qe {
 namespace game {
@@ -24,7 +27,7 @@ namespace game {
  * References a shared HumanoidRig for mesh and hierarchy data.
  */
 class HumanoidEnemy {
-public:
+ public:
   core::Transform transform;
 
   // Per-node state (indexed by RigNode::index)
@@ -63,15 +66,15 @@ public:
       s.joint_angle = 0.0f;
 
     switch (state) {
-    case AnimState::Idle:
-      animate_idle(anim_time_);
-      break;
-    case AnimState::Walk:
-      animate_walk(anim_time_);
-      break;
-    case AnimState::Panic:
-      animate_panic(anim_time_);
-      break;
+      case AnimState::Idle:
+        animate_idle(anim_time_);
+        break;
+      case AnimState::Walk:
+        animate_walk(anim_time_);
+        break;
+      case AnimState::Panic:
+        animate_panic(anim_time_);
+        break;
     }
 
     // Recalculate matrices starting from root
@@ -104,9 +107,11 @@ public:
   }
 
   /** Check if a rig has been set. */
-  bool has_rig() const noexcept { return rig_ != nullptr; }
+  bool has_rig() const noexcept {
+    return rig_ != nullptr;
+  }
 
-private:
+ private:
   std::shared_ptr<loader::HumanoidRig> rig_;
   std::vector<NodeState> states_;
   float anim_time_ = 0.0f;
@@ -154,8 +159,7 @@ private:
     math::Mat4 local_anim = math::Mat4::identity();
 
     if (node.joint_type == "revolute" || node.joint_type == "continuous") {
-      math::Quaternion q =
-          math::Quaternion::from_axis_angle(node.joint_axis, state.joint_angle);
+      math::Quaternion q = math::Quaternion::from_axis_angle(node.joint_axis, state.joint_angle);
       local_anim = math::Mat4::rotate(q);
     }
 
@@ -167,5 +171,5 @@ private:
   }
 };
 
-} // namespace game
-} // namespace qe
+}  // namespace game
+}  // namespace qe

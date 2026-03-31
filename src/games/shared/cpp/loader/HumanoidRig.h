@@ -1,15 +1,15 @@
 #pragma once
 
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
+
 #include "../math/Mat4.h"
 #include "../math/Quaternion.h"
 #include "../renderer/Mesh.h"
 #include "STLLoader.h"
 #include "URDFLoader.h"
-
-#include <map>
-#include <memory>
-#include <string>
-#include <vector>
 
 namespace qe {
 namespace loader {
@@ -20,7 +20,7 @@ namespace loader {
  */
 struct RigNode {
   std::string name;
-  int index = -1; // Linear index in rig array
+  int index = -1;  // Linear index in rig array
 
   // Visuals
   renderer::Mesh mesh;
@@ -30,7 +30,7 @@ struct RigNode {
   math::Mat4 offset_matrix = math::Mat4::identity();
 
   // Joint Definition
-  std::string joint_type; // "revolute", "fixed"
+  std::string joint_type;  // "revolute", "fixed"
   math::Vec3 joint_axis{0, 0, 1};
 
   // Hierarchy
@@ -43,7 +43,7 @@ struct RigNode {
  * Load this ONCE per enemy type (e.g. once for "Grunt", once for "Scout").
  */
 class HumanoidRig {
-public:
+ public:
   std::string name;
   std::vector<RigNode> nodes;
   std::map<std::string, int> node_map;
@@ -76,29 +76,23 @@ public:
 
       // Load Mesh
       const auto &link = result.model.links[idx];
-      if (link.visual_geom.type == URDFGeomType::Mesh &&
-          !link.visual_geom.mesh_filename.empty()) {
-
+      if (link.visual_geom.type == URDFGeomType::Mesh && !link.visual_geom.mesh_filename.empty()) {
         // base_dir already ends with '/' — avoid double-slash
-        std::string full_path =
-            result.base_dir + link.visual_geom.mesh_filename;
-        auto stl = STLLoader::load(full_path, link.color.r, link.color.g,
-                                   link.color.b);
+        std::string full_path = result.base_dir + link.visual_geom.mesh_filename;
+        auto stl = STLLoader::load(full_path, link.color.r, link.color.g, link.color.b);
 
         if (stl.success) {
           rig->nodes[idx].mesh = std::move(stl.mesh);
           rig->nodes[idx].has_mesh = true;
         } else {
-          rig->warnings.push_back("Failed to load mesh: " + full_path + " (" +
-                                  stl.error + ")");
+          rig->warnings.push_back("Failed to load mesh: " + full_path + " (" + stl.error + ")");
         }
       }
     }
 
     // 2. Build Hierarchy from Joints
     for (const auto &joint : result.model.joints) {
-      if (rig->node_map.count(joint.parent_link) &&
-          rig->node_map.count(joint.child_link)) {
+      if (rig->node_map.count(joint.parent_link) && rig->node_map.count(joint.child_link)) {
         int p_idx = rig->node_map[joint.parent_link];
         int c_idx = rig->node_map[joint.child_link];
 
@@ -106,8 +100,8 @@ public:
         rig->nodes[p_idx].children_indices.push_back(c_idx);
 
         // Calc Bind Pose Offset
-        math::Quaternion rot = math::Quaternion::from_euler(
-            joint.origin.rpy.x, joint.origin.rpy.y, joint.origin.rpy.z);
+        math::Quaternion rot = math::Quaternion::from_euler(joint.origin.rpy.x, joint.origin.rpy.y,
+                                                            joint.origin.rpy.z);
         math::Mat4 trans = math::Mat4::translate(joint.origin.xyz);
 
         rig->nodes[c_idx].offset_matrix = trans * math::Mat4::rotate(rot);
@@ -134,5 +128,5 @@ public:
   }
 };
 
-} // namespace loader
-} // namespace qe
+}  // namespace loader
+}  // namespace qe

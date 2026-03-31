@@ -7,14 +7,14 @@
  * Each particle is a small cube mesh drawn via glDrawElementsInstanced.
  */
 
+#include <memory>
+#include <random>
+#include <vector>
+
 #include "../math/Mat4.h"
 #include "../math/Vec3.h"
 #include "../renderer/Mesh.h"
 #include "../renderer/Shader.h"
-
-#include <memory>
-#include <random>
-#include <vector>
 
 namespace qe {
 namespace game {
@@ -29,7 +29,7 @@ struct Particle {
 };
 
 class ParticleSystem {
-public:
+ public:
   std::vector<Particle> particles;
   std::shared_ptr<renderer::Mesh> particle_mesh;
 
@@ -37,8 +37,7 @@ public:
 
   /** Initialize particle mesh and instanced shader. */
   void init() {
-    particle_mesh =
-        std::make_shared<renderer::Mesh>(renderer::Mesh::create_cube());
+    particle_mesh = std::make_shared<renderer::Mesh>(renderer::Mesh::create_cube());
     instanced_shader.load_from_files("shaders/particle_instanced.vert",
                                      "shaders/particle_instanced.frag");
   }
@@ -100,24 +99,19 @@ public:
     draw_colors_.reserve(particles.size());
 
     for (const auto &p : particles) {
-      draw_models_.push_back(math::Mat4::translate(p.position) *
-                             math::Mat4::scale(p.scale));
+      draw_models_.push_back(math::Mat4::translate(p.position) * math::Mat4::scale(p.scale));
       draw_colors_.push_back(p.color);
     }
 
     using namespace renderer::gl;
 
     glBindBuffer(GL_ARRAY_BUFFER, instance_vbo_model_);
-    glBufferData(
-        GL_ARRAY_BUFFER,
-        static_cast<GLsizeiptr>(draw_models_.size() * sizeof(math::Mat4)),
-        draw_models_.data(), GL_STREAM_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(draw_models_.size() * sizeof(math::Mat4)),
+                 draw_models_.data(), GL_STREAM_DRAW);
 
     glBindBuffer(GL_ARRAY_BUFFER, instance_vbo_color_);
-    glBufferData(
-        GL_ARRAY_BUFFER,
-        static_cast<GLsizeiptr>(draw_colors_.size() * sizeof(math::Vec3)),
-        draw_colors_.data(), GL_STREAM_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(draw_colors_.size() * sizeof(math::Vec3)),
+                 draw_colors_.data(), GL_STREAM_DRAW);
 
     instanced_shader.use();
     instanced_shader.set_mat4("uViewProjection", view_proj);
@@ -130,7 +124,7 @@ public:
 
   renderer::Shader instanced_shader;
 
-private:
+ private:
   // Mat4 column stride for instanced vertex attributes (4 floats per column)
   static constexpr size_t kMat4ColStride = sizeof(float) * 4;
 
@@ -152,8 +146,7 @@ private:
     // Instance Model matrix (locations 4-7, one vec4 per column)
     glGenBuffers(1, &instance_vbo_model_);
     glBindBuffer(GL_ARRAY_BUFFER, instance_vbo_model_);
-    glBufferData(GL_ARRAY_BUFFER,
-                 static_cast<GLsizeiptr>(2048 * sizeof(math::Mat4)), nullptr,
+    glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(2048 * sizeof(math::Mat4)), nullptr,
                  GL_STREAM_DRAW);
 
     for (int i = 0; i < 4; ++i) {
@@ -166,13 +159,11 @@ private:
     // Instance Color (location 8)
     glGenBuffers(1, &instance_vbo_color_);
     glBindBuffer(GL_ARRAY_BUFFER, instance_vbo_color_);
-    glBufferData(GL_ARRAY_BUFFER,
-                 static_cast<GLsizeiptr>(2048 * sizeof(math::Vec3)), nullptr,
+    glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(2048 * sizeof(math::Vec3)), nullptr,
                  GL_STREAM_DRAW);
 
     glEnableVertexAttribArray(8);
-    glVertexAttribPointer(8, 3, GL_FLOAT, GL_FALSE, sizeof(math::Vec3),
-                          nullptr);
+    glVertexAttribPointer(8, 3, GL_FLOAT, GL_FALSE, sizeof(math::Vec3), nullptr);
     glVertexAttribDivisor(8, 1);
 
     glBindVertexArray(0);
@@ -180,5 +171,5 @@ private:
   }
 };
 
-} // namespace game
-} // namespace qe
+}  // namespace game
+}  // namespace qe

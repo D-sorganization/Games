@@ -1,10 +1,11 @@
 #pragma once
 
-#include "math/Vec3.h"
 #include <algorithm>
 #include <cmath>
 #include <queue>
 #include <vector>
+
+#include "math/Vec3.h"
 
 namespace qe {
 namespace ai {
@@ -23,11 +24,11 @@ struct Node {
   float g = 0, h = 0, f = 0;
   Node *parent = nullptr;
   int search_id = 0;
-  int closed_id = 0; // Tracks closed set per search (lazy deletion)
+  int closed_id = 0;  // Tracks closed set per search (lazy deletion)
 };
 
 class NavigationSystem {
-public:
+ public:
   std::vector<Node> nodes;
   int width = 0, depth = 0;
   float scale = 1.0f;
@@ -45,9 +46,9 @@ public:
         Node &n = nodes[z * width + x];
         n.x = x;
         n.z = z;
-        n.world_x = (x - width / 2.0f) * scale; // Centered
+        n.world_x = (x - width / 2.0f) * scale;  // Centered
         n.world_z = (z - depth / 2.0f) * scale;
-        n.walkable = true; // Assume flat for now, or check heightmap
+        n.walkable = true;  // Assume flat for now, or check heightmap
       }
     }
 
@@ -88,22 +89,19 @@ public:
     return nullptr;
   }
 
-  std::vector<math::Vec3> find_path(const math::Vec3 &start,
-                                    const math::Vec3 &end) {
+  std::vector<math::Vec3> find_path(const math::Vec3 &start, const math::Vec3 &end) {
     current_search_id++;
     Node *start_node = get_node(start.x, start.z);
     Node *end_node = get_node(end.x, end.z);
 
-    if (!start_node || !end_node || !start_node->walkable ||
-        !end_node->walkable)
+    if (!start_node || !end_node || !start_node->walkable || !end_node->walkable)
       return {};
     if (start_node == end_node)
       return {end};
 
     // Min-heap ordered by f-score (lowest first)
     auto cmp = [](Node *a, Node *b) { return a->f > b->f; };
-    std::priority_queue<Node *, std::vector<Node *>, decltype(cmp)> open_pq(
-        cmp);
+    std::priority_queue<Node *, std::vector<Node *>, decltype(cmp)> open_pq(cmp);
 
     start_node->g = 0;
     float dx = static_cast<float>(start_node->x - end_node->x);
@@ -160,15 +158,14 @@ public:
           float ndz = static_cast<float>(neighbor->z - end_node->z);
           neighbor->h = std::sqrt(ndx * ndx + ndz * ndz);
           neighbor->f = neighbor->g + neighbor->h;
-          open_pq.push(
-              neighbor); // Push new entry; stale entries skipped via closed_id
+          open_pq.push(neighbor);  // Push new entry; stale entries skipped via closed_id
         }
       }
     }
 
-    return {}; // No path found
+    return {};  // No path found
   }
 };
 
-} // namespace ai
-} // namespace qe
+}  // namespace ai
+}  // namespace qe

@@ -40,29 +40,28 @@ static int g_passed = 0;
 static int g_failed = 0;
 static int g_total = 0;
 
-#define CHECK(cond)                                                            \
-  do {                                                                         \
-    g_total++;                                                                 \
-    if (!(cond)) {                                                             \
-      std::cerr << "  FAIL: " << #cond << "  [" << __FILE__ << ":" << __LINE__ \
-                << "]" << std::endl;                                           \
-      g_failed++;                                                              \
-    } else {                                                                   \
-      g_passed++;                                                              \
-    }                                                                          \
+#define CHECK(cond)                                                                   \
+  do {                                                                                \
+    g_total++;                                                                        \
+    if (!(cond)) {                                                                    \
+      std::cerr << "  FAIL: " << #cond << "  [" << __FILE__ << ":" << __LINE__ << "]" \
+                << std::endl;                                                         \
+      g_failed++;                                                                     \
+    } else {                                                                          \
+      g_passed++;                                                                     \
+    }                                                                                 \
   } while (0)
 
-#define CHECK_APPROX(a, b, eps)                                                \
-  do {                                                                         \
-    g_total++;                                                                 \
-    if (std::abs((a) - (b)) > (eps)) {                                         \
-      std::cerr << "  FAIL: " << #a << " ~ " << #b << "  (got " << (a)         \
-                << " vs " << (b) << ", eps=" << (eps) << ")  [" << __FILE__    \
-                << ":" << __LINE__ << "]" << std::endl;                        \
-      g_failed++;                                                              \
-    } else {                                                                   \
-      g_passed++;                                                              \
-    }                                                                          \
+#define CHECK_APPROX(a, b, eps)                                                                    \
+  do {                                                                                             \
+    g_total++;                                                                                     \
+    if (std::abs((a) - (b)) > (eps)) {                                                             \
+      std::cerr << "  FAIL: " << #a << " ~ " << #b << "  (got " << (a) << " vs " << (b)            \
+                << ", eps=" << (eps) << ")  [" << __FILE__ << ":" << __LINE__ << "]" << std::endl; \
+      g_failed++;                                                                                  \
+    } else {                                                                                       \
+      g_passed++;                                                                                  \
+    }                                                                                              \
   } while (0)
 
 #define SECTION(name) std::cout << "  [" << name << "]" << std::endl
@@ -434,12 +433,9 @@ void test_urdf_parser() {
     int base_idx = result.model.link_index["base"];
     int arm_idx = result.model.link_index["arm"];
     int hand_idx = result.model.link_index["hand"];
-    CHECK(result.model.links[base_idx].visual_geom.type ==
-          qe::loader::URDFGeomType::Box);
-    CHECK(result.model.links[arm_idx].visual_geom.type ==
-          qe::loader::URDFGeomType::Cylinder);
-    CHECK(result.model.links[hand_idx].visual_geom.type ==
-          qe::loader::URDFGeomType::Sphere);
+    CHECK(result.model.links[base_idx].visual_geom.type == qe::loader::URDFGeomType::Box);
+    CHECK(result.model.links[arm_idx].visual_geom.type == qe::loader::URDFGeomType::Cylinder);
+    CHECK(result.model.links[hand_idx].visual_geom.type == qe::loader::URDFGeomType::Sphere);
   }
 
   SECTION("box size");
@@ -563,8 +559,7 @@ void test_stl_ascii_parse() {
 
   SECTION("scale factor");
   {
-    auto scaled =
-        qe::loader::STLLoader::parse(stl_path, 0.6f, 0.6f, 0.6f, 2.0f);
+    auto scaled = qe::loader::STLLoader::parse(stl_path, 0.6f, 0.6f, 0.6f, 2.0f);
     CHECK(scaled.success);
     CHECK_APPROX(scaled.bounds_max.x, 2.0f, 1e-6f);
     CHECK_APPROX(scaled.bounds_max.y, 2.0f, 1e-6f);
@@ -722,8 +717,7 @@ void test_vertex_struct() {
   qe::renderer::Vertex v{};
 
   SECTION("default position is origin");
-  CHECK(v.position[0] == 0.0f && v.position[1] == 0.0f &&
-        v.position[2] == 0.0f);
+  CHECK(v.position[0] == 0.0f && v.position[1] == 0.0f && v.position[2] == 0.0f);
 
   SECTION("default normal is up");
   CHECK(v.normal[0] == 0.0f && v.normal[1] == 1.0f && v.normal[2] == 0.0f);
@@ -864,8 +858,8 @@ int main() {
   test_stl_nonexistent_file();
 
   // Summary
-  std::cout << "\n=== Results: " << g_passed << " PASSED, " << g_failed
-            << " FAILED (of " << g_total << " total) ===\n";
+  std::cout << "\n=== Results: " << g_passed << " PASSED, " << g_failed << " FAILED (of " << g_total
+            << " total) ===\n";
 
   return (g_failed == 0) ? 0 : 1;
 }

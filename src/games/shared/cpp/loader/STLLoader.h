@@ -24,9 +24,6 @@
  *      2 bytes: attribute byte count (ignored)
  */
 
-#include "../math/Vec3.h"
-#include "../renderer/Mesh.h"
-
 #include <cstdint>
 #include <cstring>
 #include <fstream>
@@ -37,9 +34,15 @@
 #include <utility>
 #include <vector>
 
+#include "../math/Vec3.h"
+#include "../renderer/Mesh.h"
+
 // DbC macro — throws std::invalid_argument on validation failure
-#define QE_REQUIRE(cond, msg) \
-  do { if (!(cond)) throw std::invalid_argument(msg); } while (0)
+#define QE_REQUIRE(cond, msg)           \
+  do {                                  \
+    if (!(cond))                        \
+      throw std::invalid_argument(msg); \
+  } while (0)
 
 namespace qe {
 namespace loader {
@@ -61,7 +64,7 @@ struct STLLoadResult {
   renderer::Mesh mesh;
   math::Vec3 bounds_min;
   math::Vec3 bounds_max;
-  math::Vec3 center_offset; // Offset from origin to mesh center
+  math::Vec3 center_offset;  // Offset from origin to mesh center
   int triangle_count = 0;
   int vertex_count = 0;
   std::string error;
@@ -91,15 +94,14 @@ struct VertexEqual {
 };
 
 class STLLoader {
-public:
+ public:
   /**
    * Parse an STL file (CPU only, no GL calls).
    * Usable for unit testing without a GL context.
    * @pre scale > 0
    */
-  static STLParseResult parse(const std::string &file_path, float r = 0.6f,
-                              float g = 0.6f, float b = 0.6f,
-                              float scale = 1.0f) {
+  static STLParseResult parse(const std::string &file_path, float r = 0.6f, float g = 0.6f,
+                              float b = 0.6f, float scale = 1.0f) {
     QE_REQUIRE(scale > 0.0f, "STLLoader::parse: scale must be positive");
     STLParseResult result;
 
@@ -110,7 +112,7 @@ public:
     }
 
     if (is_binary_stl(file)) {
-      file.seekg(80); // Skip header, position at triangle count
+      file.seekg(80);  // Skip header, position at triangle count
       result = parse_binary(file, r, g, b, scale);
     } else {
       file.seekg(0);
@@ -125,9 +127,8 @@ public:
    * Load an STL file and upload to GPU.
    * @pre scale > 0
    */
-  static STLLoadResult load(const std::string &file_path, float r = 0.6f,
-                            float g = 0.6f, float b = 0.6f,
-                            float scale = 1.0f) {
+  static STLLoadResult load(const std::string &file_path, float r = 0.6f, float g = 0.6f,
+                            float b = 0.6f, float scale = 1.0f) {
     STLLoadResult result;
 
     auto parsed = parse(file_path, r, g, b, scale);
@@ -154,8 +155,7 @@ public:
    * Vertices are translated so the bounding box center is at (0,0,0).
    * @pre scale > 0
    */
-  static STLLoadResult load_centered(const std::string &file_path,
-                                     float r = 0.6f, float g = 0.6f,
+  static STLLoadResult load_centered(const std::string &file_path, float r = 0.6f, float g = 0.6f,
                                      float b = 0.6f, float scale = 1.0f) {
     STLLoadResult result;
 
@@ -185,7 +185,7 @@ public:
     return result;
   }
 
-private:
+ private:
   /**
    * Detect whether an STL file is binary or ASCII.
    * Binary STLs (even those with "solid" in the header) are identified
@@ -213,7 +213,7 @@ private:
     // Binary STL: exactly 84 (header + count) + 50 * tri_count bytes
     auto expected_size = static_cast<std::streamoff>(84 + tri_count * 50);
     if (expected_size == static_cast<std::streamoff>(file_size)) {
-      file.seekg(84); // Position past header + count
+      file.seekg(84);  // Position past header + count
       return true;
     }
 
@@ -223,15 +223,13 @@ private:
   }
 
   /** Parse binary STL format with vertex deduplication. */
-  static STLParseResult parse_binary(std::ifstream &file, float r, float g,
-                                     float b, float scale) {
+  static STLParseResult parse_binary(std::ifstream &file, float r, float g, float b, float scale) {
     STLParseResult result;
 
     uint32_t tri_count = 0;
     file.read(reinterpret_cast<char *>(&tri_count), 4);
     if (!file.good() || tri_count == 0 || tri_count > 10000000) {
-      result.error =
-          "Invalid binary STL triangle count: " + std::to_string(tri_count);
+      result.error = "Invalid binary STL triangle count: " + std::to_string(tri_count);
       return result;
     }
 
@@ -239,8 +237,7 @@ private:
     result.vertices.reserve(tri_count * 3);
     result.indices.reserve(tri_count * 3);
 
-    std::unordered_map<renderer::Vertex, unsigned int, VertexHash, VertexEqual>
-        vertex_map;
+    std::unordered_map<renderer::Vertex, unsigned int, VertexHash, VertexEqual> vertex_map;
 
     result.bounds_min = {1e30f, 1e30f, 1e30f};
     result.bounds_max = {-1e30f, -1e30f, -1e30f};
@@ -255,8 +252,7 @@ private:
       file.read(reinterpret_cast<char *>(&attr), 2);
 
       if (!file.good()) {
-        result.error =
-            "Unexpected end of STL data at triangle " + std::to_string(i);
+        result.error = "Unexpected end of STL data at triangle " + std::to_string(i);
         return result;
       }
 
@@ -284,12 +280,10 @@ private:
   }
 
   /** Parse ASCII STL format with vertex deduplication. */
-  static STLParseResult parse_ascii(std::ifstream &file, float r, float g,
-                                    float b, float scale) {
+  static STLParseResult parse_ascii(std::ifstream &file, float r, float g, float b, float scale) {
     STLParseResult result;
 
-    std::unordered_map<renderer::Vertex, unsigned int, VertexHash, VertexEqual>
-        vertex_map;
+    std::unordered_map<renderer::Vertex, unsigned int, VertexHash, VertexEqual> vertex_map;
 
     result.bounds_min = {1e30f, 1e30f, 1e30f};
     result.bounds_max = {-1e30f, -1e30f, -1e30f};
@@ -339,11 +333,10 @@ private:
   }
 
   /** DRY: shared vertex deduplication for both ASCII and binary paths. */
-  static void
-  deduplicate_vertex(STLParseResult &result,
-                     std::unordered_map<renderer::Vertex, unsigned int,
-                                        VertexHash, VertexEqual> &vertex_map,
-                     const renderer::Vertex &vert) {
+  static void deduplicate_vertex(
+      STLParseResult &result,
+      std::unordered_map<renderer::Vertex, unsigned int, VertexHash, VertexEqual> &vertex_map,
+      const renderer::Vertex &vert) {
     auto it = vertex_map.find(vert);
     if (it != vertex_map.end()) {
       result.indices.push_back(it->second);
@@ -365,5 +358,5 @@ private:
   }
 };
 
-} // namespace loader
-} // namespace qe
+}  // namespace loader
+}  // namespace qe

@@ -16,14 +16,12 @@
 #include <vector>
 
 // ── Headers under test ──────────────────────────────────────────────────────
+#include "../ai/NavigationSystem.h"
 #include "../core/AABB.h"
 #include "../core/Entity.h"
 #include "../core/Projectile.h"
 #include "../core/Transform.h"
-
 #include "../game/Combat.h"
-
-#include "../ai/NavigationSystem.h"
 
 // ── Simple Test Framework (same as test_loaders.cpp) ────────────────────────
 
@@ -31,29 +29,28 @@ static int g_passed = 0;
 static int g_failed = 0;
 static int g_total = 0;
 
-#define CHECK(cond)                                                            \
-  do {                                                                         \
-    g_total++;                                                                 \
-    if (!(cond)) {                                                             \
-      std::cerr << "  FAIL: " << #cond << "  [" << __FILE__ << ":" << __LINE__ \
-                << "]" << std::endl;                                           \
-      g_failed++;                                                              \
-    } else {                                                                   \
-      g_passed++;                                                              \
-    }                                                                          \
+#define CHECK(cond)                                                                   \
+  do {                                                                                \
+    g_total++;                                                                        \
+    if (!(cond)) {                                                                    \
+      std::cerr << "  FAIL: " << #cond << "  [" << __FILE__ << ":" << __LINE__ << "]" \
+                << std::endl;                                                         \
+      g_failed++;                                                                     \
+    } else {                                                                          \
+      g_passed++;                                                                     \
+    }                                                                                 \
   } while (0)
 
-#define CHECK_APPROX(a, b, eps)                                                \
-  do {                                                                         \
-    g_total++;                                                                 \
-    if (std::abs((a) - (b)) > (eps)) {                                         \
-      std::cerr << "  FAIL: " << #a << " ~ " << #b << "  (got " << (a)         \
-                << " vs " << (b) << ", eps=" << (eps) << ")  [" << __FILE__    \
-                << ":" << __LINE__ << "]" << std::endl;                        \
-      g_failed++;                                                              \
-    } else {                                                                   \
-      g_passed++;                                                              \
-    }                                                                          \
+#define CHECK_APPROX(a, b, eps)                                                                    \
+  do {                                                                                             \
+    g_total++;                                                                                     \
+    if (std::abs((a) - (b)) > (eps)) {                                                             \
+      std::cerr << "  FAIL: " << #a << " ~ " << #b << "  (got " << (a) << " vs " << (b)            \
+                << ", eps=" << (eps) << ")  [" << __FILE__ << ":" << __LINE__ << "]" << std::endl; \
+      g_failed++;                                                                                  \
+    } else {                                                                                       \
+      g_passed++;                                                                                  \
+    }                                                                                              \
   } while (0)
 
 #define SECTION(name) std::cout << "  [" << name << "]" << std::endl
@@ -129,7 +126,7 @@ void test_aabb() {
     float t = 0;
     bool hit = box.ray_intersect(Vec3(0, 0, 0), Vec3(1, 0, 0).normalized(), t);
     CHECK(hit);
-    CHECK_APPROX(t, 4.0f, 1e-4f); // Hit near face of box at x=4
+    CHECK_APPROX(t, 4.0f, 1e-4f);  // Hit near face of box at x=4
   }
 
   SECTION("ray_intersect miss");
@@ -145,7 +142,7 @@ void test_aabb() {
     AABB box = AABB::from_center(Vec3(-5, 0, 0), 1.0f);
     float t = 0;
     bool hit = box.ray_intersect(Vec3(0, 0, 0), Vec3(1, 0, 0).normalized(), t);
-    CHECK(!hit); // Box is behind ray
+    CHECK(!hit);  // Box is behind ray
   }
 
   SECTION("transformed with scale");
@@ -160,7 +157,7 @@ void test_aabb() {
   {
     AABB box(Vec3(1, 1, 1), Vec3(3, 3, 3));
     AABB flipped = box.transformed(Vec3(0, 0, 0), Vec3(-1, 1, 1));
-    CHECK(flipped.min.x <= flipped.max.x); // min < max ensured
+    CHECK(flipped.min.x <= flipped.max.x);  // min < max ensured
   }
 }
 
@@ -231,7 +228,7 @@ void test_entity() {
     Entity e;
     e.take_damage(10.0f);
     CHECK(e.hit_flash > 0.0f);
-    e.update(0.5f); // 0.5 seconds > 0.3 flash duration
+    e.update(0.5f);  // 0.5 seconds > 0.3 flash duration
     CHECK_APPROX(e.hit_flash, 0.0f, 1e-6f);
   }
 
@@ -262,9 +259,9 @@ void test_entity() {
     e.take_damage(100.0f);
     CHECK(!e.alive);
     e.update(0.5f);
-    CHECK(!e.alive); // Not enough time
-    e.update(0.6f);  // Total 1.1s > 1.0s delay
-    CHECK(e.alive);  // Respawned
+    CHECK(!e.alive);  // Not enough time
+    e.update(0.6f);   // Total 1.1s > 1.0s delay
+    CHECK(e.alive);   // Respawned
   }
 
   SECTION("world_bounds applies position and scale");
@@ -274,7 +271,7 @@ void test_entity() {
     e.scale = Vec3(2, 2, 2);
     auto wb = e.world_bounds();
     CHECK_APPROX(wb.center().x, 10.0f, 1e-4f);
-    CHECK(wb.size().x > 1.0f); // Scaled up
+    CHECK(wb.size().x > 1.0f);  // Scaled up
   }
 }
 
@@ -315,8 +312,7 @@ void test_transform() {
     Transform t;
     // Rotate 90 degrees around Y axis
     t.rotate_axis(Vec3::up(), 3.14159265f / 2.0f);
-    t.translate_local(
-        Vec3(0, 0, -1)); // Forward in local = should move in rotated direction
+    t.translate_local(Vec3(0, 0, -1));  // Forward in local = should move in rotated direction
     // After 90 Y rotation, local -Z maps to world -X (approximately)
     CHECK(std::abs(t.position().x) > 0.5f || std::abs(t.position().z) > 0.5f);
   }
@@ -378,7 +374,7 @@ void test_transform() {
   {
     Transform t;
     auto m1 = t.to_matrix();
-    auto m2 = t.to_matrix(); // Should use cache
+    auto m2 = t.to_matrix();  // Should use cache
     CHECK_APPROX(m1.m[0][0], m2.m[0][0], EPS);
     CHECK_APPROX(m1.m[3][0], m2.m[3][0], EPS);
   }
@@ -432,7 +428,7 @@ void test_projectile() {
     Projectile p;
     p.position = Vec3(0, 0, 0);
     p.velocity = Vec3(0, -20, 0);
-    p.update(1.0f); // y = -20, below -1
+    p.update(1.0f);  // y = -20, below -1
     CHECK(!p.active);
   }
 
@@ -510,8 +506,7 @@ void test_combat() {
     std::vector<Projectile> projectiles;
     std::vector<Entity> entities;
 
-    qe::game::shoot(Vec3(0, 0, 0), Vec3(1, 0, 0), cfg, projectiles, entities,
-                    stats);
+    qe::game::shoot(Vec3(0, 0, 0), Vec3(1, 0, 0), cfg, projectiles, entities, stats);
     CHECK(projectiles.size() == 1);
     CHECK(stats.total_shots == 1);
   }
@@ -528,8 +523,7 @@ void test_combat() {
     target.local_bounds = qe::core::AABB::from_center(Vec3::zero(), 1.0f);
     entities.push_back(target);
 
-    qe::game::shoot(Vec3(0, 0, 0), Vec3(1, 0, 0), cfg, projectiles, entities,
-                    stats);
+    qe::game::shoot(Vec3(0, 0, 0), Vec3(1, 0, 0), cfg, projectiles, entities, stats);
     CHECK(stats.total_hits == 1);
     CHECK(entities[0].health < 100.0f);
   }
@@ -537,7 +531,7 @@ void test_combat() {
   SECTION("shoot kill adds score");
   {
     CombatConfig cfg;
-    cfg.projectile_damage = 200.0f; // One-shot kill
+    cfg.projectile_damage = 200.0f;  // One-shot kill
     CombatStats stats;
     std::vector<Projectile> projectiles;
     std::vector<Entity> entities;
@@ -547,8 +541,7 @@ void test_combat() {
     target.local_bounds = qe::core::AABB::from_center(Vec3::zero(), 1.0f);
     entities.push_back(target);
 
-    qe::game::shoot(Vec3(0, 0, 0), Vec3(1, 0, 0), cfg, projectiles, entities,
-                    stats);
+    qe::game::shoot(Vec3(0, 0, 0), Vec3(1, 0, 0), cfg, projectiles, entities, stats);
     CHECK(stats.score == cfg.kill_score);
     CHECK(!entities[0].alive);
   }
@@ -726,8 +719,8 @@ int main() {
   test_combat();
   test_navigation();
 
-  std::cout << "\n=== Results: " << g_passed << " passed, " << g_failed
-            << " failed, " << g_total << " total ===\n";
+  std::cout << "\n=== Results: " << g_passed << " passed, " << g_failed << " failed, " << g_total
+            << " total ===\n";
 
   return g_failed > 0 ? 1 : 0;
 }

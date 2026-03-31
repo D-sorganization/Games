@@ -10,7 +10,7 @@
 | **Primary Language(s)** | Python 3.10+ (Pygame), JavaScript (Three.js for web) |
 | **License** | MIT |
 | **Current Version** | N/A |
-| **Spec Version** | 1.0.0 |
+| **Spec Version** | 1.1.1 |
 | **Last Spec Update** | 2026-03-31 |
 
 ## 2. Purpose & Mission
@@ -268,6 +268,10 @@ Games employs a test pyramid with unit tests for individual game logic component
 | `coverage-integration.yml` | PR | Codecov integration | Yes |
 | `spec-check.yml` | Push/PR | Verify SPEC.md matches code | Yes |
 
+PR CI now prefers the local self-hosted runner fleet and falls back to
+GitHub-hosted runners when the fleet is unavailable. These CI checks remain
+merge-blocking without requiring PR review approval.
+
 ## 9. Dependencies
 
 ### Runtime Dependencies
@@ -370,5 +374,6 @@ Active development. Core games (F1-F6, F8-F9) fully implemented and tested. F7 (
 
 | Date | Version | Changes |
 |------|---------|---------|
+| 2026-03-31 | 1.1.1 | Added self-hosted runner fallback behavior to PR CI documentation and normalized C++ headers/tests to satisfy the blocking clang-format check |
 | 2026-03-28 | 1.0.0 | Initial specification document |
 | 2026-03-30 | 1.1.0 | A-N Assessment remediation: added DbC precondition validation to `game_launcher.py` (calculate_game_rects, handle_keyboard_navigation, draw_ui), `run_tests.py` (get_test_environment, run_game_tests), and scripts (analyze_completist_data, generate_assessment_summary, create_issues_from_assessment, mypy_autofix_agent). Added docstrings to MockRect methods in conftest.py. Added .env to .gitignore (infrastructure fix). Addresses issue #658. |
