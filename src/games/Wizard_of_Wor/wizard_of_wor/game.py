@@ -42,8 +42,6 @@ from render_mixin import RenderMixin
 
 from games.shared.spatial_grid import SpatialGrid
 
-from games.shared.spatial_grid import SpatialGrid
-
 
 class WizardOfWorGame(RenderMixin, AudioMixin):
     """Main game class.
