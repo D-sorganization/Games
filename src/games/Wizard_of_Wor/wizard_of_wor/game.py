@@ -46,6 +46,8 @@ from enemy import Burwor, Enemy, Garwor, Thorwor, Wizard, Worluk
 from player import Player
 from radar import Radar
 
+from games.shared.spatial_grid import SpatialGrid
+
 
 class SoundBoard:
     """Lightweight tone generator for classic arcade-style beeps."""
@@ -186,6 +188,8 @@ class WizardOfWorGame:
         self.enemies: list[Enemy] = []
         self.bullets: list[Bullet] = []
         self.radar = Radar()
+        # Spatial grid for O(1) average-case collision detection (fixes #681)
+        self._enemy_grid: SpatialGrid = SpatialGrid(cell_size=float(CELL_SIZE))
         self.wizard_spawned = False
         self.soundboard = SoundBoard()
         self.effects: list[VisualEffect] = []
@@ -388,11 +392,11 @@ class WizardOfWorGame:
             if bullet:
                 self.bullets.append(bullet)
 
-        # Update bullets
-        for bullet in self.bullets[:]:
+        # Update bullets – use list-comprehension for O(n) deferred removal
+        # instead of remove() inside the loop which is O(n^2).
+        for bullet in self.bullets:
             bullet.update(self.dungeon)
-            if not bullet.active:
-                self.bullets.remove(bullet)
+        self.bullets = [b for b in self.bullets if b.active]
 
         # Check collisions
         self.check_collisions()
@@ -416,20 +420,34 @@ class WizardOfWorGame:
         self._update_effects()
 
     def check_collisions(self) -> None:
-        """Check for collisions between bullets and entities."""
-        bullets_to_remove = []
+        """Check for collisions between bullets and entities.
+
+        Uses a spatial hash grid so each bullet only tests the handful of
+        enemies that share its grid cell and its 8 neighbours, giving
+        O(bullets * local_density) instead of O(bullets * total_enemies).
+        Bullet removal uses a set for O(1) membership tests, avoiding the
+        O(n) cost of ``list.__contains__`` / ``list.remove`` per bullet.
+        """
+        # Rebuild spatial grid from current alive enemies (O(enemies))
+        alive_enemies = [e for e in self.enemies if e.alive]
+        self._enemy_grid.update(alive_enemies)
+
+        # Use a set for O(1) "already scheduled for removal" checks
+        bullets_to_remove: set[Bullet] = set()
 
         # Player bullets hitting enemies
         for bullet in self.bullets:
             if not bullet.is_player_bullet or not bullet.active:
                 continue
 
-            for enemy in self.enemies:
+            # Only check enemies that are spatially close to this bullet
+            nearby = self._enemy_grid.get_nearby(bullet.x, bullet.y)
+            for enemy in nearby:
                 if enemy.alive and bullet.rect.colliderect(enemy.rect):
                     points = enemy.take_damage()
                     self.score += points
                     bullet.active = False
-                    bullets_to_remove.append(bullet)
+                    bullets_to_remove.add(bullet)
                     self.soundboard.play("enemy_hit")
                     self.effects.append(
                         SparkleBurst((enemy.x, enemy.y), enemy.color, count=10),
@@ -441,7 +459,7 @@ class WizardOfWorGame:
             if (
                 bullet.is_player_bullet
                 or not bullet.active
-                or bullet in bullets_to_remove
+                or bullet in bullets_to_remove  # O(1) set lookup
             ):
                 continue
 
@@ -452,21 +470,21 @@ class WizardOfWorGame:
             ):
                 took_damage = self.player.take_damage()
                 bullet.active = False
-                bullets_to_remove.append(bullet)
+                bullets_to_remove.add(bullet)
                 if took_damage:
                     self.soundboard.play("player_hit")
                     self.effects.append(
                         SparkleBurst((self.player.x, self.player.y), RED, count=16),
                     )
 
-        # Remove bullets that hit something
-        for bullet in bullets_to_remove:
-            if bullet in self.bullets:
-                self.bullets.remove(bullet)
+        # Deferred removal in a single O(n) pass
+        if bullets_to_remove:
+            self.bullets = [b for b in self.bullets if b not in bullets_to_remove]
 
-        # Player colliding with enemies
+        # Player colliding with enemies – query grid around player position
         if self.player is not None and self.player.alive:
-            for enemy in self.enemies:
+            nearby = self._enemy_grid.get_nearby(self.player.x, self.player.y)
+            for enemy in nearby:
                 if enemy.alive and self.player.rect.colliderect(enemy.rect):
                     took_damage = self.player.take_damage()
                     if took_damage:
