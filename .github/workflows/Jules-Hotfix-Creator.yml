@@ -30,7 +30,7 @@ jobs:
       - name: Check for self-hosted runner
         id: check
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.RUNNER_CHECK_TOKEN }}
         run: |
           ONLINE=$(gh api /orgs/${{ github.repository_owner }}/actions/runners \
             --jq '[.runners[] | select(.status == "online") | select(.labels[].name == "d-sorg-fleet")] | length' \
@@ -61,7 +61,7 @@ jobs:
       - name: Create Hotfix Branch
         id: hotfix
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.RUNNER_CHECK_TOKEN }}
         run: |
           TIMESTAMP=$(date +%Y%m%d-%H%M%S)
           HOTFIX_BRANCH="hotfix/ci-fail-${TIMESTAMP}"
@@ -74,7 +74,7 @@ jobs:
 
       - name: Fetch CI Logs & Auto-Fix
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.RUNNER_CHECK_TOKEN }}
           TARGET_RUN_ID: ${{ inputs.run_id }}
           FAILED_BRANCH: ${{ inputs.failed_branch }}
           HOTFIX_BRANCH: ${{ steps.hotfix.outputs.branch }}
@@ -97,7 +97,7 @@ jobs:
 
       - name: Create Urgent PR
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.RUNNER_CHECK_TOKEN }}
           FAILED_BRANCH: ${{ inputs.failed_branch }}
           HOTFIX_BRANCH: ${{ steps.hotfix.outputs.branch }}
           RUN_ID: ${{ inputs.run_id }}

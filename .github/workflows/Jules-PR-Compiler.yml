@@ -41,7 +41,7 @@ jobs:
       - name: Check for self-hosted runner
         id: check
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.RUNNER_CHECK_TOKEN }}
         run: |
           ONLINE=$(gh api /orgs/${{ github.repository_owner }}/actions/runners \
             --jq '[.runners[] | select(.status == "online") | select(.labels[].name == "d-sorg-fleet")] | length' \
@@ -61,12 +61,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.RUNNER_CHECK_TOKEN }}
 
       - name: Find Consolidation Candidates
         id: find
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.RUNNER_CHECK_TOKEN }}
           BRANCH_PATTERN: ${{ inputs.branch_pattern || 'jules/' }}
         run: |
           echo "Looking for PRs to consolidate..."
@@ -87,7 +87,7 @@ jobs:
       - name: Analyze Consolidation Opportunities
         if: steps.find.outputs.count > 1
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.RUNNER_CHECK_TOKEN }}
         run: |
           echo "## Consolidation Analysis" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -124,7 +124,7 @@ jobs:
       - name: Create Consolidated PR
         if: steps.find.outputs.count > 2 && inputs.dry_run == 'false'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.RUNNER_CHECK_TOKEN }}
         run: |
           echo "PR consolidation would happen here in non-dry-run mode"
           echo "This feature requires careful implementation to avoid losing work"

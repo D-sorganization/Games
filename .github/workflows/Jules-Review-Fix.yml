@@ -15,7 +15,7 @@ jobs:
       - name: Check for self-hosted runner
         id: check
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.RUNNER_CHECK_TOKEN }}
         run: |
           ONLINE=$(gh api /orgs/${{ github.repository_owner }}/actions/runners \
             --jq '[.runners[] | select(.status == "online") | select(.labels[].name == "d-sorg-fleet")] | length' \
@@ -38,7 +38,7 @@ jobs:
     steps:
       - name: Validate Reviewer Permission
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.RUNNER_CHECK_TOKEN }}
           REVIEWER_LOGIN: ${{ github.event.review.user.login }}
           REPO: ${{ github.repository }}
         run: |
@@ -64,7 +64,7 @@ jobs:
       - name: Compile Feedback
         id: feedback
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.RUNNER_CHECK_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           REVIEWER_LOGIN: ${{ github.event.review.user.login }}
           REVIEW_BODY: ${{ github.event.review.body }}
