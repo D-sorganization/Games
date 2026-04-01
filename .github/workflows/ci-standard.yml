@@ -58,7 +58,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
-        with: { python-version: "3.11" }
+        with: {python-version: "3.11"}
       - run: pip install ruff==0.14.10 black==26.1.0 mypy==1.13.0 bandit==1.7.7 pydocstyle==6.3.0
 
       # Validate that CI tool versions match pre-commit config
@@ -139,7 +139,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
-        with: { python-version: "3.11" }
+        with: {python-version: "3.11"}
       - name: Install pip-audit
         run: pip install pip-audit
       - name: Audit Python Dependencies
@@ -161,7 +161,7 @@ jobs:
       - run: pip install -r requirements.lock
       - run: pip install -e .
       - name: Install SDL dependencies
-        run: sudo apt-get update && sudo apt-get install -y libsdl2-dev libsdl2-mixer-dev libsdl2-image-dev libsdl2-ttf-dev xvfb
+        run: "if command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then\n  sudo apt-get update && sudo apt-get install -y libsdl2-dev libsdl2-mixer-dev libsdl2-image-dev libsdl2-ttf-dev xvfb\nelse\n  echo \"Using preinstalled Linux dependencies on self-hosted runner\"\nfi"
       - name: Run tests with coverage
         env:
           SDL_VIDEODRIVER: dummy
