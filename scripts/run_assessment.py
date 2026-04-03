@@ -43,24 +43,25 @@ ASSESSMENTS = {
     "O": {"name": "Maintainability", "description": "Code maintainability"},
 }
 
+# Directories excluded from Python file discovery
+_EXCLUDED_DIRS = {
+    ".git",
+    "__pycache__",
+    ".venv",
+    "venv",
+    "node_modules",
+    ".tox",
+    "build",
+    "dist",
+}
+
 
 def find_python_files() -> list[Path]:
     """Find all Python files in the repository."""
     python_files: list[Path] = []
     for pattern in ["**/*.py"]:
         python_files.extend(Path(".").glob(pattern))
-    # Exclude common non-source directories
-    excluded = {
-        ".git",
-        "__pycache__",
-        ".venv",
-        "venv",
-        "node_modules",
-        ".tox",
-        "build",
-        "dist",
-    }
-    return [f for f in python_files if not any(p in f.parts for p in excluded)]
+    return [f for f in python_files if not any(p in f.parts for p in _EXCLUDED_DIRS)]
 
 
 def run_ruff_check_wrapper() -> dict:
@@ -122,32 +123,44 @@ def grep_in_files(pattern: str, files: list[Path]) -> int:
     return count
 
 
-def run_assessment(assessment_id: str, output_path: Path) -> int:
-    """
-    Run a specific assessment and generate report.
+# ---------------------------------------------------------------------------
+# Extracted single-responsibility helpers
+# ---------------------------------------------------------------------------
 
-    Args:
-        assessment_id: Assessment ID (A-O)
-        output_path: Path to save the assessment report
+
+def file_discovery() -> tuple[list[Path], int]:
+    """Discover Python source files and return them with a count.
 
     Returns:
-        Exit code (0 = success, 1 = failure)
+        A tuple of (python_files, file_count) where python_files is the list
+        of discovered Path objects and file_count is len(python_files).
     """
-    assessment = ASSESSMENTS.get(assessment_id)
-    if not assessment:
-        logger.error(f"Unknown assessment: {assessment_id}")
-        return 1
+    python_files = find_python_files()
+    return python_files, len(python_files)
 
-    logger.info(f"Running Assessment {assessment_id}: {assessment['name']}...")
 
-    # Gather metrics based on assessment type
-    findings = []
+def analyze_module(
+    assessment_id: str,
+    python_files: list[Path],
+    file_count: int,
+) -> tuple[list[str], int | None]:
+    """Analyse a repository for a single assessment category.
+
+    Each assessment category maps to a focused analysis routine.  The function
+    collects human-readable *findings* lines and an integer *score* (0-10,
+    or None when the score cannot be determined automatically).
+
+    Args:
+        assessment_id: Single uppercase letter identifying the assessment (A-O).
+        python_files:  List of Python source Path objects from file_discovery().
+        file_count:    Number of entries in python_files.
+
+    Returns:
+        A tuple of (findings, score) where findings is a list of markdown
+        bullet strings and score is an int 0-10 or None.
+    """
+    findings: list[str] = []
     score: int | None = 10  # Start with perfect score
-    if not (score is not None):
-        raise ValueError("DbC Blocked: Precondition failed.")
-
-    python_files: list[Path] = find_python_files()
-    file_count = len(python_files)
 
     if assessment_id == "A":  # Code Structure
         has_src = Path("src").exists()
@@ -162,9 +175,9 @@ def run_assessment(assessment_id: str, output_path: Path) -> int:
         )
         findings.append(f"- Tests directory/files: {'✓' if has_tests else '✗'}")
         if not has_src:
-            score -= 2
+            score -= 2  # type: ignore[operator]
         if not has_tests:
-            score -= 2
+            score -= 2  # type: ignore[operator]
 
     elif assessment_id == "B":  # Documentation
         docs = check_documentation()
@@ -185,21 +198,21 @@ def run_assessment(assessment_id: str, output_path: Path) -> int:
             docstring_percent = (docstring_count / checked_files) * 100
             findings.append(f"- Docstring presence (sample): {docstring_percent:.0f}%")
             if docstring_percent < 50:
-                score -= 2
+                score -= 2  # type: ignore[operator]
 
         if not docs["has_readme"]:
-            score -= 3
+            score -= 3  # type: ignore[operator]
         if not docs["has_docs_dir"]:
-            score -= 1
+            score -= 1  # type: ignore[operator]
 
     elif assessment_id == "C":  # Test Coverage
         test_count = count_test_files()
         findings.append(f"- Test files found: {test_count}")
         if test_count == 0:
-            score -= 5
+            score -= 5  # type: ignore[operator]
             findings.append("- Critical: No tests found")
         elif test_count < 5:
-            score -= 2
+            score -= 2  # type: ignore[operator]
             findings.append("- Warning: Low number of test files")
         else:
             findings.append("- Good number of test files")
@@ -225,16 +238,16 @@ def run_assessment(assessment_id: str, output_path: Path) -> int:
                     cov_percent = int(match.group(1))
                     findings.append(f"- Coverage: {cov_percent}%")
                     if cov_percent < 50:
-                        score -= 2
+                        score -= 2  # type: ignore[operator]
                         findings.append("- Warning: Low test coverage (< 50%)")
                     elif cov_percent < 80:
-                        score -= 1
+                        score -= 1  # type: ignore[operator]
                         findings.append("- Note: Moderate test coverage (< 80%)")
             else:
                 findings.append(
                     f"- Pytest execution: ✗ Failed (Exit code {result.returncode})"
                 )
-                score -= 2
+                score -= 2  # type: ignore[operator]
         except Exception as e:  # noqa: BLE001
             findings.append(f"- Pytest execution failed to start: {e}")
 
@@ -246,7 +259,7 @@ def run_assessment(assessment_id: str, output_path: Path) -> int:
         findings.append(f"- Files with try blocks: {try_count}")
         findings.append(f"- Files with except blocks: {except_count}")
         if try_count == 0:
-            score -= 2
+            score -= 2  # type: ignore[operator]
             findings.append("- Warning: No error handling detected in sample")
 
     elif assessment_id == "E":  # Performance
@@ -264,13 +277,13 @@ def run_assessment(assessment_id: str, output_path: Path) -> int:
             findings.append(
                 "- Note: No explicit performance profiling tools found in code"
             )
-            score -= 1
+            score -= 1  # type: ignore[operator]
 
         if time_sleep > 2:
             findings.append(
                 "- Warning: Multiple uses of time.sleep detected (potential bottleneck)"
             )
-            score -= 1
+            score -= 1  # type: ignore[operator]
 
     elif assessment_id == "F":  # Security
         # Basic check for subprocess without shell=True or hardcoded secrets
@@ -280,7 +293,7 @@ def run_assessment(assessment_id: str, output_path: Path) -> int:
                 f"- Critical: subprocess with shell=True found in "
                 f"{subprocess_shell} files"
             )
-            score -= 3
+            score -= 3  # type: ignore[operator]
         else:
             findings.append("- subprocess with shell=True: Not found (Good)")
 
@@ -291,7 +304,7 @@ def run_assessment(assessment_id: str, output_path: Path) -> int:
             findings.append(
                 f"- Warning: Potential secrets found in {secrets_found} files (vars)"
             )
-            score -= 1
+            score -= 1  # type: ignore[operator]
 
         # Check for eval/exec
         unsafe_eval = grep_in_files(r"eval\(|exec\(", python_files)
@@ -299,7 +312,7 @@ def run_assessment(assessment_id: str, output_path: Path) -> int:
             findings.append(
                 f"- Critical: Unsafe eval/exec detected in {unsafe_eval} files"
             )
-            score -= 3
+            score -= 3  # type: ignore[operator]
 
     elif assessment_id == "G":  # Dependencies
         has_req = Path("requirements.txt").exists()
@@ -318,18 +331,18 @@ def run_assessment(assessment_id: str, output_path: Path) -> int:
         )
 
         if not (has_req or has_pyproject):
-            score -= 5
+            score -= 5  # type: ignore[operator]
             findings.append("- Critical: No dependency definition found")
 
         if not has_lock:
             findings.append("- Note: No lock file found (reproducibility risk)")
-            score -= 1
+            score -= 1  # type: ignore[operator]
 
     elif assessment_id == "H":  # CI/CD
         has_github_workflows = Path(".github/workflows").exists()
         findings.append(f"- GitHub Workflows: {'✓' if has_github_workflows else '✗'}")
         if not has_github_workflows:
-            score -= 3
+            score -= 3  # type: ignore[operator]
             findings.append("- Warning: No GitHub Actions workflows found")
         else:
             workflow_count = len(list(Path(".github/workflows").glob("*.yml"))) + len(
@@ -347,18 +360,9 @@ def run_assessment(assessment_id: str, output_path: Path) -> int:
         )
         findings.append(f"- Black formatting: {black_status}")
         if ruff_result["exit_code"] != 0:
-            score -= 3
+            score -= 3  # type: ignore[operator]
         if black_result["exit_code"] != 0:
-            score -= 2
-
-    elif assessment_id == "L":  # Logging
-        logging_imports = grep_in_files(
-            r"import logging|from logging import", python_files
-        )
-        findings.append(f"- Files importing logging: {logging_imports}")
-        if logging_imports < 2 and file_count > 5:
-            score -= 2
-            findings.append("- Warning: Sparse logging detected")
+            score -= 2  # type: ignore[operator]
 
     elif assessment_id == "J":  # API Design
         # Check for type hints as a proxy for explicit API design
@@ -372,10 +376,10 @@ def run_assessment(assessment_id: str, output_path: Path) -> int:
             findings.append(f"- Type hint coverage: {ratio:.0%}")
 
             if ratio < 0.2:
-                score -= 3
+                score -= 3  # type: ignore[operator]
                 findings.append("- Warning: Low type hint usage (< 20%)")
             elif ratio < 0.5:
-                score -= 1
+                score -= 1  # type: ignore[operator]
                 findings.append("- Note: Moderate type hint usage")
             else:
                 findings.append("- Good type hint usage")
@@ -402,10 +406,19 @@ def run_assessment(assessment_id: str, output_path: Path) -> int:
         findings.append(f"- Files using @dataclass: {dataclass_usage}")
 
         if data_imports == 0 and dataclass_usage == 0 and file_count > 5:
-            score -= 2
+            score -= 2  # type: ignore[operator]
             findings.append(
                 "- Note: Limited explicit data handling structures detected"
             )
+
+    elif assessment_id == "L":  # Logging
+        logging_imports = grep_in_files(
+            r"import logging|from logging import", python_files
+        )
+        findings.append(f"- Files importing logging: {logging_imports}")
+        if logging_imports < 2 and file_count > 5:
+            score -= 2  # type: ignore[operator]
+            findings.append("- Warning: Sparse logging detected")
 
     elif assessment_id == "M":  # Configuration
         config_files = (
@@ -415,7 +428,7 @@ def run_assessment(assessment_id: str, output_path: Path) -> int:
         )
         findings.append(f"- Config files found: {[f.name for f in config_files]}")
         if not config_files:
-            score -= 1
+            score -= 1  # type: ignore[operator]
             findings.append("- Note: No standard config files found in root")
 
     elif assessment_id == "N":  # Scalability
@@ -457,32 +470,61 @@ def run_assessment(assessment_id: str, output_path: Path) -> int:
         findings.append(f"- Files > 1500 lines: {long_files}")
 
         if long_files > 0:
-            score -= min(3, long_files)
+            score -= min(3, long_files)  # type: ignore[operator]
             findings.append(
                 f"- Warning: {long_files} large files detected (> 1500 lines)"
             )
 
         if avg_lines > 500:
-            score -= 1
+            score -= 1  # type: ignore[operator]
             findings.append("- Warning: High average file size")
 
     else:
         # Fallback for unexpected assessment IDs
-        score = None  # type: ignore [assignment]
+        score = None
         findings.append(f"- Python files analyzed: {file_count}")
         findings.append(
             "- **REQUIRES REVIEW**: No automated checks available for this category"
         )
         findings.append("- Score must be assigned by Jules bot or manual code review")
 
-    # Format score display
-    if score is not None:
-        score = max(0, min(10, score))
-        score_display = f"{score}/10"
-    else:
-        score_display = "PENDING REVIEW"
+    return findings, score
 
-    # Generate report
+
+def calculate_scores(score: int | None) -> tuple[int | None, str]:
+    """Clamp and format a raw score value.
+
+    Args:
+        score: Raw integer score (may be negative after deductions) or None
+               when the score cannot be determined automatically.
+
+    Returns:
+        A tuple of (clamped_score, score_display) where clamped_score is
+        clamped to [0, 10] (or None) and score_display is the formatted
+        string (e.g. "7/10" or "PENDING REVIEW").
+    """
+    if score is not None:
+        clamped = max(0, min(10, score))
+        return clamped, f"{clamped}/10"
+    return None, "PENDING REVIEW"
+
+
+def generate_report(
+    assessment_id: str,
+    assessment: dict,
+    score_display: str,
+    findings: list[str],
+    output_path: Path,
+) -> None:
+    """Write the assessment markdown report to disk.
+
+    Args:
+        assessment_id:  Single uppercase letter identifying the assessment.
+        assessment:     Dict with 'name' and 'description' keys from ASSESSMENTS.
+        score_display:  Formatted score string (e.g. "7/10" or "PENDING REVIEW").
+        findings:       List of markdown bullet strings produced by analyze_module().
+        output_path:    Destination Path for the written report file.
+    """
     report_content = f"""# Assessment {assessment_id}: {assessment["name"]}
 
 **Date**: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
@@ -516,6 +558,45 @@ This assessment was generated automatically. For detailed analysis:
     # Write report
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(report_content)
+
+
+def run_assessment(assessment_id: str, output_path: Path) -> int:
+    """
+    Run a specific assessment and generate report.
+
+    Thin orchestrator: delegates file discovery, analysis, scoring, and report
+    generation to the dedicated helper functions (file_discovery,
+    analyze_module, calculate_scores, generate_report).
+
+    Args:
+        assessment_id: Assessment ID (A-O)
+        output_path: Path to save the assessment report
+
+    Returns:
+        Exit code (0 = success, 1 = failure)
+    """
+    assessment = ASSESSMENTS.get(assessment_id)
+    if not assessment:
+        logger.error(f"Unknown assessment: {assessment_id}")
+        return 1
+
+    logger.info(f"Running Assessment {assessment_id}: {assessment['name']}...")
+
+    # DbC precondition: assessment must be valid before proceeding
+    if not (assessment is not None):
+        raise ValueError("DbC Blocked: Precondition failed.")
+
+    # 1. Discover files
+    python_files, file_count = file_discovery()
+
+    # 2. Analyse
+    findings, raw_score = analyze_module(assessment_id, python_files, file_count)
+
+    # 3. Score
+    _, score_display = calculate_scores(raw_score)
+
+    # 4. Report
+    generate_report(assessment_id, assessment, score_display, findings, output_path)
 
     logger.info(f"✓ Assessment {assessment_id} report saved to {output_path}")
     logger.info(f"  Score: {score_display}")
