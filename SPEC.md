@@ -10,8 +10,8 @@
 | **Primary Language(s)** | Python 3.10+ (Pygame), JavaScript (Three.js for web) |
 | **License** | MIT |
 | **Current Version** | N/A |
-| **Spec Version** | 1.1.1 |
-| **Last Spec Update** | 2026-03-31 |
+| **Spec Version** | 1.1.2 |
+| **Last Spec Update** | 2026-04-02 |
 
 ## 2. Purpose & Mission
 
@@ -347,6 +347,10 @@ pytest tests/ -v
 
 Active development. Core games (F1-F6, F8-F9) fully implemented and tested. F7 (QuatGolf) in progress with quaternion physics implementation. Shared rendering infrastructure stable. Focus on test coverage expansion and performance optimization.
 
+### Completed (2026-04-02)
+
+- **run_assessment.py refactor** (issue #680): Extracted `file_discovery()`, `analyze_module()`, `calculate_scores()`, and `generate_report()` from the monolithic 394-line `run_assessment()` function. Each helper follows SRP; `run_assessment()` is now a thin orchestrator. 35 new unit tests cover every extracted function.
+
 ### Completed (2026-03-31)
 
 - **Collision detection optimization** (issue #681): Wizard of Wor collision detection replaced O(n²) brute-force with O(n) spatial-grid approach; significant FPS improvement at high entity counts.
@@ -374,6 +378,7 @@ Active development. Core games (F1-F6, F8-F9) fully implemented and tested. F7 (
 
 | Date | Version | Changes |
 |------|---------|---------|
+| 2026-04-02 | 1.1.2 | Refactored `scripts/run_assessment.py` (issue #680): extracted `file_discovery`, `analyze_module`, `calculate_scores`, `generate_report` from monolithic function; added 35 unit tests; `run_assessment()` is now a thin orchestrator. |
 | 2026-03-31 | 1.1.1 | Added self-hosted runner fallback behavior to PR CI documentation and normalized C++ headers/tests to satisfy the blocking clang-format check |
 | 2026-03-28 | 1.0.0 | Initial specification document |
 | 2026-03-30 | 1.1.0 | A-N Assessment remediation: added DbC precondition validation to `game_launcher.py` (calculate_game_rects, handle_keyboard_navigation, draw_ui), `run_tests.py` (get_test_environment, run_game_tests), and scripts (analyze_completist_data, generate_assessment_summary, create_issues_from_assessment, mypy_autofix_agent). Added docstrings to MockRect methods in conftest.py. Added .env to .gitignore (infrastructure fix). Addresses issue #658. |
