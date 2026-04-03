@@ -1,6 +1,6 @@
 # Assessment K: Data Handling
 
-**Date**: 2026-03-26 08:33:49
+**Date**: 2026-04-02 09:05:01
 **Assessment**: K - Data Handling
 **Description**: Data validation, serialization
 **Generated**: Automated via Jules Assessment Auto-Fix workflow
@@ -10,7 +10,7 @@
 ## Findings
 
 - Files with data handling imports: 12
-- Files using @dataclass: 5
+- Files using @dataclass: 6
 
 ## Recommendations
 

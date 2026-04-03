@@ -207,6 +207,8 @@ def run_assessment(assessment_id: str, output_path: Path) -> int:
         # Attempt to run pytest with coverage
         try:
             # We don't fail if this errors, as environment might not support it
+            env = os.environ.copy()
+            env["PYTHONPATH"] = "."
             cmd = [
                 sys.executable,
                 "-m",
@@ -214,7 +216,7 @@ def run_assessment(assessment_id: str, output_path: Path) -> int:
                 "--cov=src",
                 "--cov-report=term-missing",
             ]
-            result = run_command(cmd, check=False)
+            result = run_command(cmd, check=False, env=env)
             if result.returncode == 0:
                 findings.append("- Pytest execution: ✓ Passed")
                 # Parse coverage percentage if possible (simple heuristic)
