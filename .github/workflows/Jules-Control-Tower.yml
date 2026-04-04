@@ -8,27 +8,6 @@ on:
   workflow_run:
     workflows: ["CI Standard"]
     types: [completed]
-  schedule:
-    # COST OPTIMIZED: Runs Mon/Thu (2x weekly for active repos)
-    # Time-based routing in triage step handles worker selection
-    - cron: "0 8 * * 1,4" # Monday and Thursday at midnight PST
-  workflow_dispatch:
-    inputs:
-      target:
-        description: "Worker to dispatch (auto uses schedule routing)"
-        required: false
-        default: "auto"
-        type: choice
-        options:
-          - auto
-          - assessment-generator
-          - code-quality-reviewer
-          - completist
-          - documentation-auditor
-          - sentinel
-          - auto-refactor
-          - issue-resolver
-          - pr-compiler
 
 # SAFEGUARD: Maximum iterations to prevent infinite repair loops
 env:
