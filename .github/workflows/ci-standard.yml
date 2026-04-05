@@ -1,326 +1,266 @@
 name: CI Standard
+# Refreshed to sync with local correct paths
 on:
-  repository_dispatch:
-    types: [fleet_ci_verify]
   push:
-    branches:
-    - main
+    branches: [main]
     paths-ignore:
-    - docs/**
-    - '**.md'
-    - LICENSE
-    - .gitignore
+      - "docs/**"
+      - "**.md"
+      - "LICENSE"
+      - ".gitignore"
+      - ".github/**"
   pull_request:
-    types:
-    - opened
-    - synchronize
-    - reopened
-    - ready_for_review
+    types: [opened, synchronize, reopened, ready_for_review]
     paths-ignore:
-    - docs/**
-    - '**.md'
-    - LICENSE
-    - .gitignore
-  workflow_dispatch: null
+      - "docs/**"
+      - "**.md"
+      - "LICENSE"
+      - ".gitignore"
+      - ".github/**"
+  workflow_dispatch:
+
 permissions:
   contents: read
   actions: read
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+
 jobs:
+  # ── Dispatcher: route to self-hosted if available ──────────────────────────
   pick-runner:
-    name: pick-runner
-    runs-on:
-  repository_dispatch:
-    types: [fleet_ci_verify] ubuntu-latest
-    timeout-minutes: 3
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
     outputs:
-      runner: ${{ steps.pick.outputs.runner }}
-      mode: ${{ steps.pick.outputs.mode }}
-      online: ${{ steps.pick.outputs.online }}
-      idle: ${{ steps.pick.outputs.idle }}
-      busy: ${{ steps.pick.outputs.busy }}
-      queued_runs: ${{ steps.pick.outputs.queued_runs }}
-      threshold: ${{ steps.pick.outputs.threshold }}
+      runner: ${{ steps.check.outputs.runner }}
     steps:
-    - name: Select runner target
-      id: pick
-      shell: bash
-      env:
-        GH_TOKEN: ${{ secrets.RUNNER_CHECK_TOKEN || secrets.GITHUB_TOKEN }}
-        RUNNER_OWNER: D-sorganization
-        RUNNER_LABEL: d-sorg-fleet
-        RUNNER_QUEUE_THRESHOLD: '12'
-      run: |-
-        python3 <<'PY'
-        import json
-        import os
-        import subprocess
-
-        owner = os.environ["RUNNER_OWNER"]
-        label = os.environ["RUNNER_LABEL"]
-        threshold = int(os.environ["RUNNER_QUEUE_THRESHOLD"])
-
-
-        def run_json(command: list[str], default):
-            result = subprocess.run(command, capture_output=True, text=True, check=False)
-            if result.returncode != 0 or not result.stdout.strip():
-                return default
-            try:
-                return json.loads(result.stdout)
-            except json.JSONDecodeError:
-                return default
-
-
-        runners_response = run_json(
-            ["gh", "api", f"/orgs/{owner}/actions/runners?per_page=100"],
-            {"runners": []},
-        )
-        runners = [
-            runner
-            for runner in runners_response.get("runners", [])
-            if any(item.get("name") == label for item in runner.get("labels", []))
-        ]
-        online = sum(1 for runner in runners if runner.get("status") == "online")
-        idle = sum(
-            1
-            for runner in runners
-            if runner.get("status") == "online" and not runner.get("busy", False)
-        )
-        busy = sum(
-            1
-            for runner in runners
-            if runner.get("status") == "online" and runner.get("busy", False)
-        )
-
-        repos = run_json(
-            [
-                "gh",
-                "repo",
-                "list",
-                owner,
-                "--limit",
-                "100",
-                "--json",
-                "name,isArchived",
-            ],
-            [],
-        )
-        queued_runs = 0
-        for repo in repos:
-            if repo.get("isArchived"):
-                continue
-            repo_name = repo.get("name")
-            if not repo_name:
-                continue
-            result = subprocess.run(
-                [
-                    "gh",
-                    "api",
-                    f"/repos/{owner}/{repo_name}/actions/runs?status=queued&per_page=1",
-                    "--jq",
-                    ".total_count",
-                ],
-                capture_output=True,
-                text=True,
-                check=False,
-            )
-            if result.returncode == 0 and result.stdout.strip().isdigit():
-                queued_runs += int(result.stdout.strip())
-
-        if online == 0:
-            runner = "ubuntu-latest"
-            mode = "cloud-no-self-hosted"
-        elif idle > 0:
-            runner = label
-            mode = "self-hosted-idle"
-        elif queued_runs < threshold:
-            runner = label
-            mode = "self-hosted-queue"
-        else:
-            runner = "ubuntu-latest"
-            mode = "cloud-queue-threshold"
-
-        output_path = os.environ["GITHUB_OUTPUT"]
-        with open(output_path, "a", encoding="utf-8") as handle:
-            handle.write(f"runner={runner}\n")
-            handle.write(f"mode={mode}\n")
-            handle.write(f"online={online}\n")
-            handle.write(f"idle={idle}\n")
-            handle.write(f"busy={busy}\n")
-            handle.write(f"queued_runs={queued_runs}\n")
-            handle.write(f"threshold={threshold}\n")
-
-        summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
-        if summary_path:
-            with open(summary_path, "a", encoding="utf-8") as handle:
-                handle.write("## Runner Selection\n")
-                handle.write(f"- label: `{label}`\n")
-                handle.write(f"- online: `{online}`\n")
-                handle.write(f"- idle: `{idle}`\n")
-                handle.write(f"- busy: `{busy}`\n")
-                handle.write(f"- queued workflow runs (fleet): `{queued_runs}`\n")
-                handle.write(f"- queue threshold: `{threshold}`\n")
-                handle.write(f"- selected target: `{runner}` (`{mode}`)\n")
-
-        print(
-            f"Selected {runner} ({mode}); online={online}, idle={idle}, "
-            f"busy={busy}, queued_runs={queued_runs}, threshold={threshold}"
-        )
-        PY
+      - name: Check for self-hosted runner
+        id: check
+        env:
+          GH_TOKEN: ${{ secrets.RUNNER_CHECK_TOKEN }}
+        run: |
+          ONLINE=$(gh api /orgs/${{ github.repository_owner }}/actions/runners \
+            --jq '[.runners[] | select(.status == "online") | select(.labels[].name == "d-sorg-fleet")] | length' \
+            2>/dev/null || echo "0")
+          if [[ "$ONLINE" -gt 0 ]]; then
+            echo "runner=d-sorg-fleet" >> $GITHUB_OUTPUT
+            echo "Self-hosted runner online — routing locally"
+          else
+            echo "runner=ubuntu-latest" >> $GITHUB_OUTPUT
+            echo "No self-hosted runner — using GitHub-hosted"
+          fi
   quality-gate:
     needs: pick-runner
-    runs-on:
-  repository_dispatch:
-    types: [fleet_ci_verify] ${{ needs.pick-runner.outputs.runner }}
+    runs-on: ${{ needs.pick-runner.outputs.runner }}
     timeout-minutes: 20
     steps:
-    - uses: actions/checkout@v6
-    - uses: actions/setup-python@v6
-      with:
-        python-version:
-  repository_dispatch:
-    types: [fleet_ci_verify] '3.11'
-    - run: pip install ruff==0.14.10 black==26.1.0 mypy==1.13.0 bandit==1.7.7 pydocstyle==6.3.0
-    - name: Check Tool Version Consistency
-      run: "echo \"Validating tool versions match .pre-commit-config.yaml...\"\n\n# Check Black version\nif ! grep -q \"rev: 26.1.0\" .pre-commit-config.yaml; then\n  echo \"::error::Black version mismatch between CI and pre-commit config\"\n  exit 1\nfi\n\n# Check Ruff version\nif ! grep -q \"rev: v0.14.10\" .pre-commit-config.yaml; then\n  echo \"::error::Ruff version mismatch between CI and pre-commit config\"\n  exit 1\nfi\n\n# Check MyPy version\nif ! grep -q \"rev: v1.13.0\" .pre-commit-config.yaml; then\n  echo \"::error::MyPy version mismatch between CI and pre-commit config\"\n  exit 1\nfi\n\necho \"\u2713 All tool versions are consistent\"\n"
-    - name: Lint
-      run: ruff check .
-    - name: Check Formatting
-      run: black --check .
-    - run: pip install mypy types-PyYAML types-requests
-    - run: pip install -r requirements.lock
-    - name: Type Check (advisory)
-      continue-on-error: true
-      run: mypy scripts/ tools/ *.py --ignore-missing-imports
-    - name: Verify No Placeholders
-      run: |
-        violations=$(
-          find . \( -path "./.git" -o -path "./.mypy_cache" -o -path "./.ruff_cache" -o -path "./__pycache__" -o -path "./archive" -o -path "./.venv" \) -prune -o -type f -name "*.py" -print0 \
-            | xargs -0 grep -nE "TODO|FIXME" --include="*.py" || true
-        )
-        # Filter out quality check files which legitimately contain these patterns
-        filtered=$(echo "$violations" | grep -v "quality_check" || true)
-        if [ -n "$filtered" ]; then
-          echo "$filtered"
-          echo "::error::Placeholders found. Remove TODOs/FIXMEs or create tracked GitHub issues."
-          exit 1
-        fi
-    - name: MATLAB Quality Check
-      continue-on-error: true
-      run: |
-        python tools/matlab_utilities/scripts/matlab_quality_check.py --output-format text > matlab_quality_report.txt
-        cat matlab_quality_report.txt
-    - name: Upload MATLAB Report
-      uses: actions/upload-artifact@v7
-      if: always()
-      with:
-        name: matlab-quality-report
-        path: matlab_quality_report.txt
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with: { python-version: "3.11" }
+      - run: pip install ruff==0.14.10 black==26.1.0 mypy==1.13.0 bandit==1.7.7 pydocstyle==6.3.0
+
+      # Validate that CI tool versions match pre-commit config
+      - name: Check Tool Version Consistency
+        run: |
+          echo "Validating tool versions match .pre-commit-config.yaml..."
+
+          # Check Black version
+          if ! grep -q "rev: 26.1.0" .pre-commit-config.yaml; then
+            echo "::error::Black version mismatch between CI and pre-commit config"
+            exit 1
+          fi
+
+          # Check Ruff version
+          if ! grep -q "rev: v0.14.10" .pre-commit-config.yaml; then
+            echo "::error::Ruff version mismatch between CI and pre-commit config"
+            exit 1
+          fi
+
+          # Check MyPy version
+          if ! grep -q "rev: v1.13.0" .pre-commit-config.yaml; then
+            echo "::error::MyPy version mismatch between CI and pre-commit config"
+            exit 1
+          fi
+
+          echo "✓ All tool versions are consistent"
+
+      # FIX: Less aggressive Ruff (Errors, Warnings, Imports only)
+      - name: Lint
+        run: ruff check .
+
+      # FIX: Enforce Black formatting (88 chars)
+      - name: Check Formatting
+        run: black --check .
+
+      - run: pip install mypy types-PyYAML types-requests
+      - run: pip install -r requirements.lock
+      # Type checking is advisory while the codebase is being annotated.
+      # Tracked for enforcement in a future sprint.
+      - name: Type Check (advisory)
+        continue-on-error: true
+        run: mypy scripts/ tools/ *.py --ignore-missing-imports
+
+      # Placeholder detection
+      - name: Verify No Placeholders
+        run: |
+          violations=$(
+            find . \( -path "./.git" -o -path "./.mypy_cache" -o -path "./.ruff_cache" -o -path "./__pycache__" -o -path "./archive" -o -path "./.venv" \) -prune -o -type f -name "*.py" -print0 \
+              | xargs -0 grep -nE "TODO|FIXME" --include="*.py" || true
+          )
+          # Filter out quality check files which legitimately contain these patterns
+          filtered=$(echo "$violations" | grep -v "quality_check" || true)
+          if [ -n "$filtered" ]; then
+            echo "$filtered"
+            echo "::error::Placeholders found. Remove TODOs/FIXMEs or create tracked GitHub issues."
+            exit 1
+          fi
+
+      # FIX: Run Python-based MATLAB Quality Check (Works without License)
+      # Non-blocking, archives results for legacy support
+      - name: MATLAB Quality Check
+        continue-on-error: true
+        run: |
+          python tools/matlab_utilities/scripts/matlab_quality_check.py --output-format text > matlab_quality_report.txt
+          cat matlab_quality_report.txt
+
+      - name: Upload MATLAB Report
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: matlab-quality-report
+          path: matlab_quality_report.txt
+
+  # Assessment E: Security scanning for dependency vulnerabilities
   security-scan:
     needs: pick-runner
-    runs-on:
-  repository_dispatch:
-    types: [fleet_ci_verify] ${{ needs.pick-runner.outputs.runner }}
+    runs-on: ${{ needs.pick-runner.outputs.runner }}
     steps:
-    - uses: actions/checkout@v6
-    - uses: actions/setup-python@v6
-      with:
-        python-version:
-  repository_dispatch:
-    types: [fleet_ci_verify] '3.11'
-    - name: Install pip-audit
-      run: pip install pip-audit
-    - name: Audit Python Dependencies
-      run: |
-        echo "Scanning for known vulnerabilities..."
-        pip-audit -r requirements.txt --progress-spinner=off || true
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with: { python-version: "3.11" }
+      - name: Install pip-audit
+        run: pip install pip-audit
+      - name: Audit Python Dependencies
+        run: |
+          echo "Scanning for known vulnerabilities..."
+          pip-audit -r requirements.txt --progress-spinner=off || true
+
   tests:
-    needs:
-    - pick-runner
-    - quality-gate
-    runs-on:
-  repository_dispatch:
-    types: [fleet_ci_verify] ${{ needs.pick-runner.outputs.runner }}
+    needs: [pick-runner, quality-gate]
+    runs-on: ${{ needs.pick-runner.outputs.runner }}
     strategy:
       matrix:
-        python:
-  repository_dispatch:
-    types: [fleet_ci_verify]
-        - '3.11'
+        python: ["3.11"]
     steps:
-    - uses: actions/checkout@v6
-    - uses: actions/setup-python@v6
-      with:
-        python-version:
-  repository_dispatch:
-    types: [fleet_ci_verify] ${{ matrix.python }}
-    - run: pip install -r requirements.lock
-    - run: pip install -e .
-    - name: Install SDL dependencies
-      run: |-
-        if command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
-          sudo apt-get update && sudo apt-get install -y libsdl2-dev libsdl2-mixer-dev libsdl2-image-dev libsdl2-ttf-dev xvfb
-        else
-          echo "Using preinstalled Linux dependencies on self-hosted runner"
-        fi
-    - name: Run tests with coverage
-      env:
-        SDL_VIDEODRIVER: dummy
-        SDL_AUDIODRIVER: disk
-      run: xvfb-run -a pytest tests/ --cov=src/games/shared --cov-branch --cov-report=xml --cov-report=term-missing --timeout=60
-    - uses: codecov/codecov-action@v5
-      env:
-        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-      if: env.CODECOV_TOKEN != ''
-      with:
-        fail_ci_if_error: true
-        token: ${{ secrets.CODECOV_TOKEN }}
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python }}
+      - run: pip install -r requirements.lock
+      - run: pip install -e .
+      - name: Install SDL dependencies
+        run: sudo apt-get update && sudo apt-get install -y libsdl2-dev libsdl2-mixer-dev libsdl2-image-dev libsdl2-ttf-dev xvfb
+      - name: Run tests with coverage
+        env:
+          SDL_VIDEODRIVER: dummy
+          SDL_AUDIODRIVER: disk
+        run: xvfb-run -a pytest tests/ --cov=src/games/shared --cov-branch --cov-report=xml --cov-report=term-missing --timeout=60
+      - uses: codecov/codecov-action@v5
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        if: env.CODECOV_TOKEN != ''
+        with:
+          fail_ci_if_error: true # BLOCKING: Requires CODECOV_TOKEN secret to be configured
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+  # =============================================================================
+  # RUST QUALITY GATE (Conditional)
+  # =============================================================================
+  # No-op until Rust code is added. Activates when Cargo.toml is present.
+  # Enforces: format (rustfmt), lint (clippy), tests (cargo test), audit.
+  # =============================================================================
   rust-quality-gate:
     needs: pick-runner
-    runs-on:
-  repository_dispatch:
-    types: [fleet_ci_verify] ${{ needs.pick-runner.outputs.runner }}
+    runs-on: ${{ needs.pick-runner.outputs.runner }}
     timeout-minutes: 15
     steps:
-    - uses: actions/checkout@v6
-      with:
-        fetch-depth: 0
-    - name: Check for Rust changes
-      id: rust-changes
-      run: "if [ ! -f \"Cargo.toml\" ]; then\n  echo \"has_changes=false\" >> \"$GITHUB_OUTPUT\"\n  echo \"No Cargo.toml found \u2014 Rust quality gate skipped (no Rust code yet).\"\n  exit 0\nfi\n\nif [ \"${{ github.event_name }}\" = \"pull_request\" ]; then\n  git fetch origin \"${{ github.base_ref }}\"\n  BASE_SHA=$(git merge-base \"origin/${{ github.base_ref }}\" HEAD || true)\n  if [ -z \"$BASE_SHA\" ]; then\n    BASE_SHA=\"${{ github.event.pull_request.base.sha }}\"\n  fi\n  RUST_FILES=$(git diff --name-only \"$BASE_SHA\" HEAD -- '*.rs' 'Cargo.toml' '*/Cargo.toml' 'rust-toolchain.toml' || true)\nelif [ -n \"${{ github.event.before }}\" ] && [ \"${{ github.event.before }}\" != \"0000000000000000000000000000000000000000\" ]; then\n  RUST_FILES=$(git diff --name-only \"${{ github.event.before }}\" HEAD -- '*.rs' 'Cargo.toml' '*/Cargo.toml' 'rust-toolchain.toml' || true)\nelse\n  RUST_FILES=$(git diff --name-only HEAD~1 HEAD -- '*.rs' 'Cargo.toml' '*/Cargo.toml' 'rust-toolchain.toml' ||\
-        \ echo \"\")\nfi\n\nif [ -n \"$RUST_FILES\" ]; then\n  echo \"has_changes=true\" >> \"$GITHUB_OUTPUT\"\n  echo \"Changed Rust files:\"\n  echo \"$RUST_FILES\"\nelse\n  echo \"has_changes=false\" >> \"$GITHUB_OUTPUT\"\n  echo \"No Rust changes detected \u2014 skipping Rust quality gate.\"\nfi\n"
-    - name: Install Rust toolchain
-      if: steps.rust-changes.outputs.has_changes == 'true'
-      uses: dtolnay/rust-toolchain@stable
-      with:
-        components: rustfmt, clippy
-    - name: Cache Cargo registry and build
-      if: steps.rust-changes.outputs.has_changes == 'true'
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.cargo/registry
-          ~/.cargo/git
-          target
-        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock', '**/Cargo.toml') }}
-        restore-keys: |
-          ${{ runner.os }}-cargo-
-    - name: Format Check (rustfmt)
-      if: steps.rust-changes.outputs.has_changes == 'true'
-      run: cargo fmt --all -- --check
-    - name: Lint (Clippy)
-      if: steps.rust-changes.outputs.has_changes == 'true'
-      run: cargo clippy --all-targets -- -D warnings
-    - name: Run Rust Tests
-      if: steps.rust-changes.outputs.has_changes == 'true'
-      run: cargo test
-    - name: Security Audit (cargo-audit)
-      if: steps.rust-changes.outputs.has_changes == 'true'
-      run: |
-        cargo install cargo-audit --locked || true
-        cargo audit
-    - name: Rust Quality Gate Summary
-      if: steps.rust-changes.outputs.has_changes == 'true'
-      run: "echo \"## Rust Quality Gate\" >> $GITHUB_STEP_SUMMARY\necho \"- \u2705 rustfmt: formatted\" >> $GITHUB_STEP_SUMMARY\necho \"- \u2705 clippy: no warnings\" >> $GITHUB_STEP_SUMMARY\necho \"- \u2705 cargo test: all tests pass\" >> $GITHUB_STEP_SUMMARY\necho \"- \u2705 cargo audit: no known vulnerabilities\" >> $GITHUB_STEP_SUMMARY\n"
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Check for Rust changes
+        id: rust-changes
+        run: |
+          if [ ! -f "Cargo.toml" ]; then
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+            echo "No Cargo.toml found — Rust quality gate skipped (no Rust code yet)."
+            exit 0
+          fi
+
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git fetch origin "${{ github.base_ref }}"
+            BASE_SHA=$(git merge-base "origin/${{ github.base_ref }}" HEAD || true)
+            if [ -z "$BASE_SHA" ]; then
+              BASE_SHA="${{ github.event.pull_request.base.sha }}"
+            fi
+            RUST_FILES=$(git diff --name-only "$BASE_SHA" HEAD -- '*.rs' 'Cargo.toml' '*/Cargo.toml' 'rust-toolchain.toml' || true)
+          elif [ -n "${{ github.event.before }}" ] && [ "${{ github.event.before }}" != "0000000000000000000000000000000000000000" ]; then
+            RUST_FILES=$(git diff --name-only "${{ github.event.before }}" HEAD -- '*.rs' 'Cargo.toml' '*/Cargo.toml' 'rust-toolchain.toml' || true)
+          else
+            RUST_FILES=$(git diff --name-only HEAD~1 HEAD -- '*.rs' 'Cargo.toml' '*/Cargo.toml' 'rust-toolchain.toml' || echo "")
+          fi
+
+          if [ -n "$RUST_FILES" ]; then
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
+            echo "Changed Rust files:"
+            echo "$RUST_FILES"
+          else
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+            echo "No Rust changes detected — skipping Rust quality gate."
+          fi
+
+      - name: Install Rust toolchain
+        if: steps.rust-changes.outputs.has_changes == 'true'
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache Cargo registry and build
+        if: steps.rust-changes.outputs.has_changes == 'true'
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock', '**/Cargo.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Format Check (rustfmt)
+        if: steps.rust-changes.outputs.has_changes == 'true'
+        run: cargo fmt --all -- --check
+
+      - name: Lint (Clippy)
+        if: steps.rust-changes.outputs.has_changes == 'true'
+        run: cargo clippy --all-targets -- -D warnings
+
+      - name: Run Rust Tests
+        if: steps.rust-changes.outputs.has_changes == 'true'
+        run: cargo test
+
+      - name: Security Audit (cargo-audit)
+        if: steps.rust-changes.outputs.has_changes == 'true'
+        run: |
+          cargo install cargo-audit --locked || true
+          cargo audit
+
+      - name: Rust Quality Gate Summary
+        if: steps.rust-changes.outputs.has_changes == 'true'
+        run: |
+          echo "## Rust Quality Gate" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ rustfmt: formatted" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ clippy: no warnings" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ cargo test: all tests pass" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ cargo audit: no known vulnerabilities" >> $GITHUB_STEP_SUMMARY
