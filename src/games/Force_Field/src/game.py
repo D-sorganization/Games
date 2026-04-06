@@ -17,7 +17,7 @@ from games.shared.interfaces import Portal
 from games.shared.raycaster import Raycaster
 from games.shared.sound_manager_base import SoundManagerBase
 
-from . import combat_actions, game_session, gameplay_runtime, screen_flow
+from . import combat_actions, game_loop, game_session, gameplay_runtime, screen_flow
 from . import constants as C  # noqa: N812
 from .combat_system import CombatSystem
 from .entity_manager import EntityManager
@@ -307,52 +307,5 @@ class Game(FPSGameBase):
         screen_flow.update_intro_logic(self, elapsed)
 
     def run(self) -> None:
-        """Main game loop"""
-        try:
-            while self.running:
-                if self.state == GameState.INTRO:
-                    self.handle_intro_events()
-                    if self.intro_start_time == 0:
-                        self.intro_start_time = pygame.time.get_ticks()
-                    elapsed = pygame.time.get_ticks() - self.intro_start_time
-
-                    self.ui_renderer.render_intro(
-                        self.intro_phase, self.intro_step, elapsed
-                    )
-                    self._update_intro_logic(elapsed)
-
-                elif self.state == GameState.MENU:
-                    self.handle_menu_events()
-                    self.ui_renderer.render_menu()
-
-                elif self.state == GameState.KEY_CONFIG:
-                    self.handle_key_config_events()
-                    self.ui_renderer.render_key_config(self)
-
-                elif self.state == GameState.MAP_SELECT:
-                    self.handle_map_select_events()
-                    self.ui_renderer.render_map_select(self)
-
-                elif self.state == GameState.PLAYING:
-                    self.game_input_handler.handle_game_events()
-                    # Only update logic if not paused
-                    if not self.paused:
-                        self.update_game()
-
-                    self.renderer.render_game(self)
-
-                    if not self.paused and self.damage_flash_timer > 0:
-                        self.damage_flash_timer -= 1
-
-                elif self.state == GameState.LEVEL_COMPLETE:
-                    self.handle_level_complete_events()
-                    self.ui_renderer.render_level_complete(self)
-
-                elif self.state == GameState.GAME_OVER:
-                    self.handle_game_over_events()
-                    self.ui_renderer.render_game_over(self)
-
-                self.clock.tick(C.FPS)
-        except (RuntimeError, pygame.error, OSError, ValueError, TypeError) as e:
-            logger.critical("CRASH: %s", e, exc_info=True)
-            raise
+        """Delegate top-level frame dispatch to the loop subsystem."""
+        game_loop.run(self)
