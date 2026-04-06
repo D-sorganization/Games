@@ -10,7 +10,7 @@
 | **Primary Language(s)** | Python 3.10+ (Pygame), JavaScript (Three.js for web) |
 | **License**             | MIT                                                  |
 | **Current Version**     | N/A                                                  |
-| **Spec Version**        | 1.1.3                                                |
+| **Spec Version**        | 1.1.4                                                |
 | **Last Spec Update**    | 2026-04-06                                           |
 
 ## 2. Purpose & Mission
@@ -367,6 +367,10 @@ pytest tests/ -v
 
 Active development. Core games (F1-F6, F8-F9) fully implemented and tested. F7 (QuatGolf) in progress with quaternion physics implementation. Shared rendering infrastructure stable. Focus on test coverage expansion and performance optimization.
 
+### Completed (2026-04-06)
+
+- **Force Field orchestrator split** (issue #715): Reduced `src/games/Force_Field/src/game.py` to a thin orchestrator by extracting session lifecycle, combat actions, gameplay runtime, and screen-flow responsibilities into focused modules. Added screen-flow tests covering intro transitions, map-select launch flow, and key-binding selection.
+
 ### Completed (2026-04-02)
 
 - **run_assessment.py refactor** (issue #680): Extracted `file_discovery()`, `analyze_module()`, `calculate_scores()`, and `generate_report()` from the monolithic 394-line `run_assessment()` function. Each helper follows SRP; `run_assessment()` is now a thin orchestrator. 35 new unit tests cover every extracted function.
@@ -398,6 +402,7 @@ Active development. Core games (F1-F6, F8-F9) fully implemented and tested. F7 (
 
 | Date       | Version | Changes                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | ---------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-04-06 | 1.1.4   | Split the Force Field orchestrator into focused `game_session`, `combat_actions`, `gameplay_runtime`, and `screen_flow` modules, reducing `game.py` to a thin coordinator and adding screen-flow coverage for intro, setup, and key-config transitions.                                                                                                                                                                                               |
 | 2026-04-06 | 1.1.3   | Narrowed the shared combat-manager hitscan interface to a request-based shot-resolution contract and documented the shared combat component explicitly.                                                                                                                                                                                                                                                                                                   |
 | 2026-04-02 | 1.1.2   | Refactored `scripts/run_assessment.py` (issue #680): extracted `file_discovery`, `analyze_module`, `calculate_scores`, `generate_report` from monolithic function; added 35 unit tests; `run_assessment()` is now a thin orchestrator.                                                                                                                                                                                                                   |
 | 2026-03-31 | 1.1.1   | Added self-hosted runner fallback behavior to PR CI documentation and normalized C++ headers/tests to satisfy the blocking clang-format check                                                                                                                                                                                                                                                                                                            |
