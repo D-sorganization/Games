@@ -10,7 +10,7 @@
 | **Primary Language(s)** | Python 3.10+ (Pygame), JavaScript (Three.js for web) |
 | **License**             | MIT                                                  |
 | **Current Version**     | N/A                                                  |
-| **Spec Version**        | 1.1.4                                                |
+| **Spec Version**        | 1.1.5                                                |
 | **Last Spec Update**    | 2026-04-06                                           |
 
 ## 2. Purpose & Mission
@@ -49,6 +49,7 @@ Games/
 ├── src/games/                      # Main game implementations
 │   ├── Force_Field/               # FPS with raycasting engine
 │   │   ├── engine/                # Raycasting renderer and physics
+│   │   ├── src/                   # Orchestration, loop dispatch, and runtime modules
 │   │   ├── maps/                  # Level data
 │   │   └── entities/              # Player, enemies, projectiles
 │   ├── Duum/                       # Doom-inspired roguelike
@@ -111,6 +112,7 @@ Games/
 | --------------------- | -------------------------------- | ------------------------------------------------------------------------------- |
 | Game Launcher         | `src/games/`                     | Central entry point, game discovery, selection UI, execution orchestration      |
 | Force Field Engine    | `src/games/Force_Field/engine/`  | Raycasting renderer, 3D-to-2D projection, collision detection                   |
+| Force Field Runtime   | `src/games/Force_Field/src/`     | Thin game facade plus extracted loop, session, combat, gameplay, and screen-flow subsystems |
 | Duum Level Generation | `src/games/Duum/levels/`         | Procedural dungeon generation, room connectivity                                |
 | Tetris Logic          | `src/games/Tetris/`              | Piece mechanics, board state, gravity, line clearing                            |
 | Shared Renderers      | `src/games/shared/renderers/`    | Common rendering abstractions, 2D drawing, sprite management                    |
@@ -251,6 +253,7 @@ Games employs a test pyramid with unit tests for individual game logic component
 - [ ] Unit test: Piece collision detection correctly identifies blocking tiles
 - [ ] Unit test: Board line-clear logic removes complete rows and shifts down
 - [ ] Unit test: Force Field raycasting produces valid screen columns from map geometry
+- [x] Unit test: Force Field top-level loop dispatches intro, gameplay, and clock-tick behavior through `src/games/Force_Field/src/game_loop.py`
 - [ ] Unit test: Input handler correctly converts key events to game-specific actions
 - [ ] Integration test: Launcher successfully discovers and lists all game modules
 - [ ] Integration test: Game launch from launcher succeeds with no window errors
@@ -370,6 +373,7 @@ Active development. Core games (F1-F6, F8-F9) fully implemented and tested. F7 (
 ### Completed (2026-04-06)
 
 - **Force Field orchestrator split** (issue #715): Reduced `src/games/Force_Field/src/game.py` to a thin orchestrator by extracting session lifecycle, combat actions, gameplay runtime, and screen-flow responsibilities into focused modules. Added screen-flow tests covering intro transitions, map-select launch flow, and key-binding selection.
+- **Force Field game-loop extraction** (issue #715): Moved the top-level state dispatch loop into `src/games/Force_Field/src/game_loop.py`, leaving `Game.run()` as a facade entry point and adding focused tests for intro timing, paused gameplay behavior, damage-flash decay, and frame clock ticking.
 
 ### Completed (2026-04-02)
 
@@ -402,6 +406,7 @@ Active development. Core games (F1-F6, F8-F9) fully implemented and tested. F7 (
 
 | Date       | Version | Changes                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | ---------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-04-06 | 1.1.5   | Completed the Force Field orchestrator split by extracting the top-level state dispatcher into `src/games/Force_Field/src/game_loop.py`, documenting the runtime subsystem explicitly, and adding targeted loop tests for intro timing, gameplay updates, and frame clock ticking.                                                                                                                                                                  |
 | 2026-04-06 | 1.1.4   | Split the Force Field orchestrator into focused `game_session`, `combat_actions`, `gameplay_runtime`, and `screen_flow` modules, reducing `game.py` to a thin coordinator and adding screen-flow coverage for intro, setup, and key-config transitions.                                                                                                                                                                                               |
 | 2026-04-06 | 1.1.3   | Narrowed the shared combat-manager hitscan interface to a request-based shot-resolution contract and documented the shared combat component explicitly.                                                                                                                                                                                                                                                                                                   |
 | 2026-04-02 | 1.1.2   | Refactored `scripts/run_assessment.py` (issue #680): extracted `file_discovery`, `analyze_module`, `calculate_scores`, `generate_report` from monolithic function; added 35 unit tests; `run_assessment()` is now a thin orchestrator.                                                                                                                                                                                                                   |
