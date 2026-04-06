@@ -27,8 +27,6 @@ from games.shared.raycaster import Raycaster
 from games.shared.sound_manager_base import SoundManagerBase
 
 from . import constants as C  # noqa: N812
-from .combat_system import CombatSystem
-from .entity_manager import EntityManager
 from .game_input import GameInputHandler
 from .input_manager import InputManager
 from .map import Map
@@ -36,8 +34,10 @@ from .particle_system import ParticleSystem
 from .player import Player
 from .projectile import Projectile
 from .renderer import GameRenderer
-from .sound import SoundManager
-from .spawn_manager import FFSpawnManager
+from .systems.audio_manager import AudioManager
+from .systems.combat_system import CombatSystem
+from .systems.entity_manager import EntityManager
+from .systems.spawn_manager import FFSpawnManager
 from .ui_renderer import UIRenderer
 
 logger = logging.getLogger(__name__)
@@ -130,15 +130,16 @@ class Game(FPSGameBase):
 
         self.game_over_timer = 0
 
-        # Audio
-        self.sound_manager = (
-            sound_manager if sound_manager is not None else SoundManager()
-        )
-        self.sound_manager.start_music()
-
         # Event Bus — lightweight pub/sub for decoupling subsystems
         self.event_bus = EventBus()
-        self._wire_event_bus()
+
+        # Audio — AudioManager owns sound wiring via the event bus
+        self.audio_manager = AudioManager(
+            sound_manager=sound_manager,
+            event_bus=self.event_bus,
+        )
+        self.sound_manager = self.audio_manager.sound_manager
+        self.sound_manager.start_music()
 
         # Input
         self.joystick = None
@@ -186,11 +187,11 @@ class Game(FPSGameBase):
         )
 
     def _wire_event_bus(self) -> None:
-        """Subscribe subsystems to game events via the event bus."""
-        self.event_bus.subscribe(
-            "bot_killed",
-            lambda **kw: self.sound_manager.play_sound("scream"),
-        )
+        """Subscribe subsystems to game events via the event bus.
+
+        Audio event wiring is delegated to AudioManager.__init__.
+        Additional non-audio subscriptions can be added here.
+        """
 
     def start_game(self) -> None:
         """Start new game"""
