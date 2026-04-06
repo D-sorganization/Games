@@ -34,6 +34,8 @@ class UIRenderer(UIRendererBase):
     def __init__(self, screen: pygame.Surface) -> None:
         """Initialize the UI renderer"""
         super().__init__(screen, C.SCREEN_WIDTH, C.SCREEN_HEIGHT)
+        self.intro_video: Any | None = None
+        self.title_drips: list[dict[str, Any]] = []
 
         # Buttons
         self.start_button = Button(
@@ -263,6 +265,7 @@ class UIRenderer(UIRendererBase):
 
     def _render_health_bar(self, game: Game) -> None:
         """Render the player health bar at the bottom of the HUD."""
+        player = _require_player(game)
         bar_height = 12
         bar_width = 150
         start_x = 20
@@ -274,13 +277,14 @@ class UIRenderer(UIRendererBase):
             health_y,
             bar_width,
             bar_height,
-            game.player.health / game.player.max_health,
-            C.RED if game.player.health <= 50 else C.GREEN,
+            player.health / player.max_health,
+            C.RED if player.health <= 50 else C.GREEN,
             "HP",
         )
 
     def _render_status_bars(self, game: Game) -> None:
         """Render shield bar, secondary charge bar, and stamina bar."""
+        player = _require_player(game)
         bar_height = 12
         bar_spacing = 8
         bar_width = 150
@@ -296,19 +300,19 @@ class UIRenderer(UIRendererBase):
             shield_y,
             bar_width,
             bar_height,
-            game.player.shield_timer / C.SHIELD_MAX_DURATION,
+            player.shield_timer / C.SHIELD_MAX_DURATION,
             C.CYAN,
             "SHLD",
         )
         # Shield Recharging/Cooldown Text
-        if game.player.shield_recharge_delay > 0:
-            status = "RECHRG" if game.player.shield_active else "COOL"
+        if player.shield_recharge_delay > 0:
+            status = "RECHRG" if player.shield_active else "COOL"
             txt = self.tiny_font.render(status, True, C.GRAY)
             self.screen.blit(txt, (start_x + bar_width + 5, shield_y - 2))
 
         # Secondary Charge
         charge_y = shield_y - (bar_height + bar_spacing)
-        charge_pct = 1.0 - (game.player.secondary_cooldown / C.SECONDARY_COOLDOWN)
+        charge_pct = 1.0 - (player.secondary_cooldown / C.SECONDARY_COOLDOWN)
         self._render_bar(
             start_x,
             charge_y,
@@ -326,7 +330,7 @@ class UIRenderer(UIRendererBase):
             stamina_y,
             bar_width,
             bar_height,
-            game.player.stamina / game.player.max_stamina,
+            player.stamina / player.max_stamina,
             C.YELLOW,
             "STM",
         )
@@ -880,3 +884,10 @@ class UIRenderer(UIRendererBase):
             pygame.draw.rect(self.screen, C.RED, back_rect, 2)
 
         pygame.display.flip()
+
+
+def _require_player(game: Game) -> Player:
+    """Return the current player or raise when HUD rendering is unavailable."""
+    if game.player is None:
+        raise ValueError("DbC Blocked: Precondition failed.")
+    return game.player
