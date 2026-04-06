@@ -10,8 +10,8 @@
 | **Primary Language(s)** | Python 3.10+ (Pygame), JavaScript (Three.js for web) |
 | **License**             | MIT                                                  |
 | **Current Version**     | N/A                                                  |
-| **Spec Version**        | 1.1.2                                                |
-| **Last Spec Update**    | 2026-04-02                                           |
+| **Spec Version**        | 1.1.3                                                |
+| **Last Spec Update**    | 2026-04-06                                           |
 
 ## 2. Purpose & Mission
 
@@ -114,6 +114,7 @@ Games/
 | Duum Level Generation | `src/games/Duum/levels/`         | Procedural dungeon generation, room connectivity                                |
 | Tetris Logic          | `src/games/Tetris/`              | Piece mechanics, board state, gravity, line clearing                            |
 | Shared Renderers      | `src/games/shared/renderers/`    | Common rendering abstractions, 2D drawing, sprite management                    |
+| Shared Combat Manager | `src/games/shared/combat_manager.py` | Shared hitscan and explosion logic with a request-based shot-resolution contract |
 | C++ Bindings          | `src/games/shared/cpp_bindings/` | ctypes interface to compiled performance-critical code                          |
 | QuatEngine C++        | `src/games/shared/cpp/`          | Header-only C++17 engine modules: math, core, game, AI, renderer, input, loader |
 | C++ CI Pipeline       | `.github/workflows/cpp-ci.yml`   | clang-format style gate + cmake/ctest build matrix (GCC 12, Clang 17)           |
@@ -179,6 +180,21 @@ from src.games.shared.input import InputHandler
 input_handler = InputHandler()
 if input_handler.is_key_pressed("UP"):
     # Move player up
+```
+
+**Shared Combat Resolution:**
+
+```python
+from games.shared.combat_manager import ShotResolutionRequest
+
+request = ShotResolutionRequest(
+    player=player,
+    raycaster=raycaster,
+    bots=bots,
+    damage_texts=damage_texts,
+    show_damage=show_damage,
+)
+damage_texts = combat_manager.check_shot_hit(request)
 ```
 
 ## 6. Data & Configuration
@@ -382,6 +398,7 @@ Active development. Core games (F1-F6, F8-F9) fully implemented and tested. F7 (
 
 | Date       | Version | Changes                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | ---------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-04-06 | 1.1.3   | Narrowed the shared combat-manager hitscan interface to a request-based shot-resolution contract and documented the shared combat component explicitly.                                                                                                                                                                                                                                                                                                   |
 | 2026-04-02 | 1.1.2   | Refactored `scripts/run_assessment.py` (issue #680): extracted `file_discovery`, `analyze_module`, `calculate_scores`, `generate_report` from monolithic function; added 35 unit tests; `run_assessment()` is now a thin orchestrator.                                                                                                                                                                                                                   |
 | 2026-03-31 | 1.1.1   | Added self-hosted runner fallback behavior to PR CI documentation and normalized C++ headers/tests to satisfy the blocking clang-format check                                                                                                                                                                                                                                                                                                            |
 | 2026-03-28 | 1.0.0   | Initial specification document                                                                                                                                                                                                                                                                                                                                                                                                                           |
