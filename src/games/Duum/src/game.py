@@ -6,9 +6,8 @@ import random
 
 import pygame
 
+from games.shared.combat_manager import ShotResolutionRequest
 from games.shared.config import RaycasterConfig
-
-# Shared components
 from games.shared.constants import (
     BEAST_TIMER_MAX,
     BEAST_TIMER_MIN,
@@ -463,14 +462,16 @@ class Game(FPSGameBase):
         if not (self.raycaster is not None):
             raise ValueError("DbC Blocked: Precondition failed.")
         self.damage_texts = self.combat_manager.check_shot_hit(
-            player=self.player,
-            raycaster=self.raycaster,
-            bots=self.bots,
-            damage_texts=self.damage_texts,
-            show_damage=self.show_damage,
-            is_secondary=is_secondary,
-            angle_offset=angle_offset,
-            is_laser=is_laser,
+            ShotResolutionRequest(
+                player=self.player,
+                raycaster=self.raycaster,
+                bots=self.bots,
+                damage_texts=self.damage_texts,
+                show_damage=self.show_damage,
+                is_secondary=is_secondary,
+                angle_offset=angle_offset,
+                is_laser=is_laser,
+            )
         )
         self._sync_combat_state()
 
