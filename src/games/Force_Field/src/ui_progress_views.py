@@ -79,11 +79,13 @@ def render_game_over(renderer: UIRenderer, game: Game) -> None:
         (f"Total Kills: {game.kills}", C.WHITE),
         (f"Total Time: {total_time:.1f}s", C.GREEN),
         (
-            f"Average Time/Level: {avg_time:.1f}s",
-            C.GREEN,
-        )
-        if game.level_times
-        else ("", C.WHITE),
+            (
+                f"Average Time/Level: {avg_time:.1f}s",
+                C.GREEN,
+            )
+            if game.level_times
+            else ("", C.WHITE)
+        ),
         ("", C.WHITE),
         ("Press SPACE to restart", C.WHITE),
         ("Press ESC for menu", C.WHITE),
