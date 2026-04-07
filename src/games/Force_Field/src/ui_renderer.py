@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import logging
 import math
-import random
 import sys
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -13,6 +12,7 @@ from games.shared.ui import Button
 from games.shared.ui_renderer_base import UIRendererBase
 
 from . import constants as C  # noqa: N812
+from . import ui_menu_views, ui_overlay_views, ui_progress_views
 
 try:
     import cv2
@@ -100,132 +100,19 @@ class UIRenderer(UIRendererBase):
 
     def render_menu(self) -> None:
         """Render main menu"""
-        self.screen.fill(C.BLACK)
-
-        title = self.title_font.render("FORCE FIELD", True, C.RED)
-        title_rect = title.get_rect(center=(C.SCREEN_WIDTH // 2, 100))
-
-        sub = self.subtitle_font.render("THE ARENA AWAITS", True, C.WHITE)
-        sub_rect = sub.get_rect(center=(C.SCREEN_WIDTH // 2, 160))
-
-        self.screen.blit(title, title_rect)
-        self.screen.blit(sub, sub_rect)
-
-        self.update_blood_drips(title_rect)
-        self._draw_blood_drips(self.title_drips)
-
-        if (pygame.time.get_ticks() // 500) % 2 == 0:
-            prompt = self.font.render("CLICK TO BEGIN", True, C.GRAY)
-            center_pos = (C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT - 150)
-            prompt_rect = prompt.get_rect(center=center_pos)
-            self.screen.blit(prompt, prompt_rect)
-
-        credit = self.tiny_font.render("A Jasper Production", True, C.DARK_GRAY)
-        center_pos = (C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT - 50)
-        credit_rect = credit.get_rect(center=center_pos)
-        self.screen.blit(credit, credit_rect)
-        pygame.display.flip()
+        ui_menu_views.render_menu(self)
 
     def update_blood_drips(self, rect: pygame.Rect) -> None:
         """Spawn and update blood drips interacting with text rect"""
-        # Spawn
-        if random.random() < 0.3:
-            x = random.randint(rect.left, rect.right)
-            self.title_drips.append(
-                {
-                    "x": x,
-                    "y": rect.top,
-                    "start_y": rect.top,
-                    "speed": random.uniform(0.5, 2.0),
-                    "size": random.randint(2, 4),
-                    "color": (random.randint(180, 255), 0, 0),
-                }
-            )
-
-        # Update
-        for drip in self.title_drips:
-            drip["y"] += drip["speed"]
-            drip["speed"] *= 1.02
-        self.title_drips = [d for d in self.title_drips if d["y"] <= C.SCREEN_HEIGHT]
+        ui_menu_views.update_blood_drips(self, rect)
 
     def _draw_blood_drips(self, drips: list[dict[str, Any]]) -> None:
         """Draw the blood drips"""
-        for drip in drips:
-            pygame.draw.line(
-                self.screen,
-                drip["color"],
-                (drip["x"], drip["start_y"]),
-                (drip["x"], drip["y"]),
-                drip["size"],
-            )
-            pygame.draw.circle(
-                self.screen,
-                drip["color"],
-                (drip["x"], int(drip["y"])),
-                drip["size"] + 1,
-            )
+        ui_menu_views.draw_blood_drips(self, drips)
 
     def render_map_select(self, game: Game) -> None:
         """Render map select screen"""
-        self.screen.fill(C.BLACK)
-
-        title = self.subtitle_font.render("MISSION SETUP", True, C.RED)
-        # Shadow
-        for off in [(-2, 0), (2, 0), (0, -2), (0, 2)]:
-            shadow = self.subtitle_font.render("MISSION SETUP", True, (50, 0, 0))
-            cx = C.SCREEN_WIDTH // 2 + off[0]
-            cy = 100 + off[1]
-            s_rect = shadow.get_rect(center=(cx, cy))
-            self.screen.blit(shadow, s_rect)
-
-        title_rect = title.get_rect(center=(C.SCREEN_WIDTH // 2, 100))
-        self.screen.blit(title, title_rect)
-
-        mouse_pos = pygame.mouse.get_pos()
-        start_y = 150
-        line_height = 50
-
-        settings = [
-            ("Map Size", str(game.selected_map_size)),
-            ("Difficulty", game.selected_difficulty),
-            ("Start Level", str(game.selected_start_level)),
-            ("Lives", str(game.selected_lives)),
-        ]
-
-        for i, (label, value) in enumerate(settings):
-            y = start_y + i * line_height
-            color = C.WHITE
-            if abs(mouse_pos[1] - y) < 20:
-                color = C.YELLOW
-
-            # Use retro font for menu settings
-            label_surf = self.retro_subtitle_font.render(f"{label}:", True, C.GRAY)
-            label_rect = label_surf.get_rect(right=C.SCREEN_WIDTH // 2 - 20, centery=y)
-
-            val_surf = self.retro_subtitle_font.render(value, True, color)
-            val_rect = val_surf.get_rect(left=C.SCREEN_WIDTH // 2 + 20, centery=y)
-
-            self.screen.blit(label_surf, label_rect)
-            self.screen.blit(val_surf, val_rect)
-
-        # Draw Start Button (Position logic maintained inside Button.draw)
-        # But let's check position
-        # Button: y = H - 120 (480). Settings end at 150 + 200 = 350. Safe.
-        self.start_button.draw(self.screen, self.retro_font)
-
-        instructions = [
-            "WASD: Move | Shift: Sprint | Mouse: Look | 1-7: Weapons",
-            "Ctrl: Shoot | Z: Zoom | F: Bomb | Space: Shield",
-        ]
-        # Position instructions between settings and button
-        y = 380
-        for line in instructions:
-            text = self.tiny_font.render(line, True, C.RED)
-            text_rect = text.get_rect(center=(C.SCREEN_WIDTH // 2, y))
-            self.screen.blit(text, text_rect)
-            y += 25
-
-        pygame.display.flip()
+        ui_menu_views.render_map_select(self, game)
 
     def render_hud(self, game: Game) -> None:
         """Render the heads-up display including health, ammo, and game stats."""
@@ -521,203 +408,21 @@ class UIRenderer(UIRendererBase):
 
     def _render_pause_menu(self, game: Game) -> None:
         """Render the pause menu overlay."""
-        overlay = pygame.Surface((C.SCREEN_WIDTH, C.SCREEN_HEIGHT), pygame.SRCALPHA)
-        overlay.fill((0, 0, 0, 200))
-        self.screen.blit(overlay, (0, 0))
-
-        title = self.title_font.render("PAUSED", True, C.RED)
-        title_rect = title.get_rect(center=(C.SCREEN_WIDTH // 2, 150))
-        self.screen.blit(title, title_rect)
-
-        if game.cheat_mode_active:
-            # Render Cheat Input Box
-            cheats_surf = self.subtitle_font.render("ENTER CHEAT CODE:", True, C.CYAN)
-            cheats_rect = cheats_surf.get_rect(center=(C.SCREEN_WIDTH // 2, 350))
-            self.screen.blit(cheats_surf, cheats_rect)
-
-            # Input field
-            input_text = game.current_cheat_input + "_"
-            input_surf = self.font.render(input_text, True, C.WHITE)
-            input_rect = input_surf.get_rect(center=(C.SCREEN_WIDTH // 2, 400))
-
-            # Background for input - make it wider to accommodate longer cheat codes
-            bg_rect = input_rect.copy()
-            # Ensure minimum width for the input box and add generous padding
-            min_width = 300  # Minimum width for cheat input
-            bg_rect.width = max(min_width, input_rect.width + 80)
-            bg_rect.height = input_rect.height + 30
-            bg_rect.center = input_rect.center
-
-            pygame.draw.rect(self.screen, C.DARK_GRAY, bg_rect)
-            pygame.draw.rect(self.screen, C.CYAN, bg_rect, 2)
-
-            self.screen.blit(input_surf, input_rect)
-
-            # Hint
-            hint = self.tiny_font.render(
-                "PRESS ENTER TO SUBMIT, ESC TO CANCEL", True, C.GRAY
-            )
-            hint_rect = hint.get_rect(center=(C.SCREEN_WIDTH // 2, 450))
-            self.screen.blit(hint, hint_rect)
-            return
-
-        menu_items = ["RESUME", "SAVE GAME", "ENTER CHEAT", "CONTROLS", "QUIT TO MENU"]
-        mouse_pos = pygame.mouse.get_pos()
-
-        # Calculate the maximum text width to ensure all boxes are the same size
-        max_text_width = 0
-        for item in menu_items:
-            text_surf = self.subtitle_font.render(item, True, C.WHITE)
-            max_text_width = max(max_text_width, text_surf.get_width())
-
-        # Add padding to ensure text fits comfortably
-        box_width = max_text_width + 60
-        box_height = 50
-
-        for i, item in enumerate(menu_items):
-            color = C.WHITE
-            rect = pygame.Rect(
-                C.SCREEN_WIDTH // 2 - box_width // 2,
-                350 + i * 60,
-                box_width,
-                box_height,
-            )
-            if rect.collidepoint(mouse_pos):
-                color = C.YELLOW
-                pygame.draw.rect(self.screen, (50, 0, 0), rect)
-                pygame.draw.rect(self.screen, C.RED, rect, 2)
-
-            text = self.subtitle_font.render(item, True, color)
-            text_rect = text.get_rect(center=rect.center)
-            self.screen.blit(text, text_rect)
-
-        # Movement Speed Slider
-        slider_y = 350 + len(menu_items) * 60 + 30
-        slider_label = self.font.render("Movement Speed:", True, C.WHITE)
-        label_rect = slider_label.get_rect(center=(C.SCREEN_WIDTH // 2, slider_y))
-        self.screen.blit(slider_label, label_rect)
-
-        # Slider bar
-        slider_bar_y = slider_y + 30
-        slider_width = 200
-        slider_height = 10
-        slider_x = C.SCREEN_WIDTH // 2 - slider_width // 2
-
-        # Background bar
-        slider_bg_rect = pygame.Rect(
-            slider_x, slider_bar_y, slider_width, slider_height
-        )
-        pygame.draw.rect(self.screen, C.DARK_GRAY, slider_bg_rect)
-        pygame.draw.rect(self.screen, C.WHITE, slider_bg_rect, 2)
-
-        # Slider handle position (0.5 to 2.0 range mapped to slider width)
-        # Map 0.5-2.0 to 0.0-1.0
-        speed_ratio = (game.movement_speed_multiplier - 0.5) / 1.5
-        handle_x = slider_x + int(speed_ratio * slider_width)
-        handle_rect = pygame.Rect(
-            handle_x - 5, slider_bar_y - 5, 10, slider_height + 10
-        )
-        pygame.draw.rect(self.screen, C.CYAN, handle_rect)
-
-        # Speed value display
-        speed_text = f"{game.movement_speed_multiplier:.1f}x"
-        speed_surf = self.font.render(speed_text, True, C.CYAN)
-        speed_rect = speed_surf.get_rect(
-            center=(C.SCREEN_WIDTH // 2, slider_bar_y + 25)
-        )
-        self.screen.blit(speed_surf, speed_rect)
+        ui_overlay_views.render_pause_menu(self, game)
 
     def render_level_complete(self, game: Game) -> None:
         """Render the level complete screen."""
-        self.screen.fill(C.BLACK)
-
-        # Victory Firework Overlay!
-        if game.particle_system:
-            # Add fireworks occasionally
-            if random.random() < 0.1:
-                game.particle_system.add_victory_fireworks()
-
-            # Render particles on top of black background but behind text
-            # Use shared particle surface to avoid new surface creation
-            self.particle_surface.fill((0, 0, 0, 0))
-
-            for p in game.particle_system.particles:
-                life_ratio = p.timer / p.max_timer
-                alpha = int(255 * life_ratio)
-                if len(p.color) == 3:
-                    color = (*p.color, alpha)
-                else:
-                    color = p.color  # already has alpha channel
-
-                pygame.draw.circle(
-                    self.particle_surface, color, (int(p.x), int(p.y)), int(p.size)
-                )
-
-            self.screen.blit(self.particle_surface, (0, 0))
-            game.particle_system.update()
-
-        title = self.title_font.render("SECTOR CLEARED", True, C.GREEN)
-        title_rect = title.get_rect(center=(C.SCREEN_WIDTH // 2, 150))
-        self.screen.blit(title, title_rect)
-
-        level_time = game.level_times[-1] if game.level_times else 0
-        total_time = sum(game.level_times)
-        stats = [
-            (f"Level {game.level} cleared!", C.WHITE),
-            (f"Time: {level_time:.1f}s", C.GREEN),
-            (f"Total Time: {total_time:.1f}s", C.GREEN),
-            (f"Total Kills: {game.kills}", C.WHITE),
-            ("", C.WHITE),
-            ("Next level: Enemies get stronger!", C.YELLOW),
-            ("", C.WHITE),
-            ("Press SPACE for next level", C.WHITE),
-            ("Press ESC for menu", C.WHITE),
-        ]
-        self._render_stats_lines(stats, 250)
-        pygame.display.flip()
+        ui_progress_views.render_level_complete(self, game)
 
     def render_game_over(self, game: Game) -> None:
         """Render the game over screen."""
-        self.screen.fill(C.BLACK)
-        title = self.title_font.render("SYSTEM FAILURE", True, C.RED)
-        title_rect = title.get_rect(center=(C.SCREEN_WIDTH // 2, 200))
-        self.screen.blit(title, title_rect)
-
-        completed_levels = max(0, game.level - 1)
-        total_time = sum(game.level_times)
-        avg_time = total_time / len(game.level_times) if game.level_times else 0
-
-        stats = [
-            (
-                f"You survived {completed_levels} "
-                f"level{'s' if completed_levels != 1 else ''}",
-                C.WHITE,
-            ),
-            (f"Total Kills: {game.kills}", C.WHITE),
-            (f"Total Time: {total_time:.1f}s", C.GREEN),
-            (
-                (f"Average Time/Level: {avg_time:.1f}s", C.GREEN)
-                if game.level_times
-                else ("", C.WHITE)
-            ),
-            ("", C.WHITE),
-            ("Press SPACE to restart", C.WHITE),
-            ("Press ESC for menu", C.WHITE),
-        ]
-        self._render_stats_lines(stats, 250)
-        pygame.display.flip()
+        ui_progress_views.render_game_over(self, game)
 
     def _render_stats_lines(
         self, stats: list[tuple[str, tuple[int, int, int]]], start_y: int
     ) -> None:
         """Render a list of stat lines."""
-        y = start_y
-        for line, color in stats:
-            if line:
-                text = self.small_font.render(line, True, color)
-                text_rect = text.get_rect(center=(C.SCREEN_WIDTH // 2, y))
-                self.screen.blit(text, text_rect)
-            y += 40
+        ui_progress_views.render_stats_lines(self, stats, start_y)
 
     def render_intro(self, intro_phase: int, intro_step: int, elapsed: int) -> None:
         """Render intro"""
@@ -841,49 +546,7 @@ class UIRenderer(UIRendererBase):
 
     def render_key_config(self, game: Any) -> None:
         """Render the key configuration menu."""
-        self.screen.fill(C.BLACK)
-
-        title = self.title_font.render("CONTROLS", True, C.RED)
-        self.screen.blit(title, title.get_rect(center=(C.SCREEN_WIDTH // 2, 50)))
-
-        bindings = game.input_manager.bindings
-        start_y = 120
-        col_1_x = C.SCREEN_WIDTH // 4
-        col_2_x = C.SCREEN_WIDTH * 3 // 4
-
-        actions = sorted(bindings.keys())
-
-        limit = 12
-
-        for i, action in enumerate(actions):
-            col = 0 if i < limit else 1
-            idx = i if i < limit else i - limit
-            x = col_1_x if col == 0 else col_2_x
-            y = start_y + idx * 40
-
-            name_str = action.replace("_", " ").upper()
-            color = C.WHITE
-            if game.binding_action == action:
-                color = C.YELLOW
-                key_text = "PRESS ANY KEY..."
-            else:
-                key_text = game.input_manager.get_key_name(action)
-
-            name_txt = self.tiny_font.render(f"{name_str}:", True, C.GRAY)
-            key_txt = self.tiny_font.render(key_text, True, color)
-
-            self.screen.blit(name_txt, (x - 150, y))
-            self.screen.blit(key_txt, (x + 20, y))
-
-        back_txt = self.subtitle_font.render("BACK", True, C.WHITE)
-        back_rect = back_txt.get_rect(
-            center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT - 60)
-        )
-        self.screen.blit(back_txt, back_rect)
-        if back_rect.collidepoint(pygame.mouse.get_pos()):
-            pygame.draw.rect(self.screen, C.RED, back_rect, 2)
-
-        pygame.display.flip()
+        ui_overlay_views.render_key_config(self, game)
 
 
 def _require_player(game: Game) -> Player:
