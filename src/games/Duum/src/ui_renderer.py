@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import logging
 import math
-import random
 from typing import TYPE_CHECKING, Any
 
 import pygame
@@ -11,6 +10,7 @@ from games.shared.ui import Button
 from games.shared.ui_renderer_base import UIRendererBase
 
 from . import constants as C  # noqa: N812
+from . import ui_menu_views, ui_overlay_views, ui_progress_views
 from .custom_types import DamageText
 
 try:
@@ -96,129 +96,19 @@ class UIRenderer(UIRendererBase):
 
     def render_menu(self) -> None:
         """Render main menu"""
-        self.screen.fill(C.BLACK)
-
-        title = self.title_font.render("DUUM", True, C.RED)
-        title_rect = title.get_rect(center=(C.SCREEN_WIDTH // 2, 100))
-
-        sub = self.subtitle_font.render("KNEE DEEP IN THE CODE", True, C.WHITE)
-        sub_rect = sub.get_rect(center=(C.SCREEN_WIDTH // 2, 160))
-
-        self.screen.blit(title, title_rect)
-        self.screen.blit(sub, sub_rect)
-
-        self.update_blood_drips(title_rect)
-        self._draw_blood_drips(self.title_drips)
-
-        if (pygame.time.get_ticks() // 500) % 2 == 0:
-            prompt = self.font.render("CLICK TO BEGIN", True, C.GRAY)
-            center_pos = (C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT - 150)
-            prompt_rect = prompt.get_rect(center=center_pos)
-            self.screen.blit(prompt, prompt_rect)
-
-        credit = self.tiny_font.render("A Jasper Production", True, C.DARK_GRAY)
-        center_pos = (C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT - 50)
-        credit_rect = credit.get_rect(center=center_pos)
-        self.screen.blit(credit, credit_rect)
-        pygame.display.flip()
+        ui_menu_views.render_menu(self)
 
     def update_blood_drips(self, rect: pygame.Rect) -> None:
         """Spawn and update blood drips interacting with text rect"""
-        # Spawn
-        if random.random() < 0.3:
-            x = random.randint(rect.left, rect.right)
-            self.title_drips.append(
-                {
-                    "x": x,
-                    "y": rect.top,
-                    "start_y": rect.top,
-                    "speed": random.uniform(0.5, 2.0),
-                    "size": random.randint(2, 4),
-                    "color": (random.randint(180, 255), 0, 0),
-                }
-            )
-
-        # Update
-        for drip in self.title_drips:
-            drip["y"] += drip["speed"]
-            drip["speed"] *= 1.02
-        self.title_drips = [d for d in self.title_drips if d["y"] <= C.SCREEN_HEIGHT]
+        ui_menu_views.update_blood_drips(self, rect)
 
     def _draw_blood_drips(self, drips: list[dict[str, Any]]) -> None:
         """Draw the blood drips"""
-        for drip in drips:
-            pygame.draw.line(
-                self.screen,
-                drip["color"],
-                (drip["x"], drip["start_y"]),
-                (drip["x"], drip["y"]),
-                drip["size"],
-            )
-            pygame.draw.circle(
-                self.screen,
-                drip["color"],
-                (drip["x"], int(drip["y"])),
-                drip["size"] + 1,
-            )
+        ui_menu_views.draw_blood_drips(self, drips)
 
     def render_map_select(self, game: Game) -> None:
         """Render map select screen"""
-        self.screen.fill(C.BLACK)
-
-        title = self.subtitle_font.render("MISSION SETUP", True, C.RED)
-        # Shadow
-        for off in [(-2, 0), (2, 0), (0, -2), (0, 2)]:
-            shadow = self.subtitle_font.render("MISSION SETUP", True, (50, 0, 0))
-            cx = C.SCREEN_WIDTH // 2 + off[0]
-            cy = 100 + off[1]
-            s_rect = shadow.get_rect(center=(cx, cy))
-            self.screen.blit(shadow, s_rect)
-
-        title_rect = title.get_rect(center=(C.SCREEN_WIDTH // 2, 100))
-        self.screen.blit(title, title_rect)
-
-        mouse_pos = pygame.mouse.get_pos()
-        start_y = 200
-        line_height = 80
-
-        settings = [
-            ("Map Size", str(game.selected_map_size)),
-            ("Difficulty", game.selected_difficulty),
-            ("Start Level", str(game.selected_start_level)),
-            ("Lives", str(game.selected_lives)),
-        ]
-
-        for i, (label, value) in enumerate(settings):
-            y = start_y + i * line_height
-            color = C.WHITE
-            if abs(mouse_pos[1] - y) < 20:
-                color = C.YELLOW
-
-            label_surf = self.subtitle_font.render(f"{label}:", True, C.GRAY)
-            label_rect = label_surf.get_rect(right=C.SCREEN_WIDTH // 2 - 20, centery=y)
-
-            val_surf = self.subtitle_font.render(value, True, color)
-            val_rect = val_surf.get_rect(left=C.SCREEN_WIDTH // 2 + 20, centery=y)
-
-            self.screen.blit(label_surf, label_rect)
-            self.screen.blit(val_surf, val_rect)
-
-        self.start_button.draw(self.screen, self.font)
-
-        instructions = [
-            "",
-            "",
-            "WASD: Move | Shift: Sprint | Mouse: Look | 1-4: Weapons",
-            "Click: Shoot | Z: Zoom | F: Bomb | Space: Shield",
-        ]
-        y = C.SCREEN_HEIGHT - 260
-        for line in instructions:
-            text = self.tiny_font.render(line, True, C.RED)
-            text_rect = text.get_rect(center=(C.SCREEN_WIDTH // 2, y))
-            self.screen.blit(text, text_rect)
-            y += 30
-
-        pygame.display.flip()
+        ui_menu_views.render_map_select(self, game)
 
     def render_hud(self, game: Game) -> None:
         """Render the heads-up display including health, ammo, and game stats."""
@@ -564,94 +454,21 @@ class UIRenderer(UIRendererBase):
 
     def _render_pause_menu(self) -> None:
         """Render the pause menu overlay."""
-        overlay = pygame.Surface((C.SCREEN_WIDTH, C.SCREEN_HEIGHT), pygame.SRCALPHA)
-        overlay.fill((0, 0, 0, 200))
-        self.screen.blit(overlay, (0, 0))
-
-        title = self.title_font.render("PAUSED", True, C.RED)
-        title_rect = title.get_rect(center=(C.SCREEN_WIDTH // 2, 150))
-        self.screen.blit(title, title_rect)
-
-        menu_items = ["RESUME", "SAVE GAME", "CONTROLS", "QUIT TO MENU"]
-        mouse_pos = pygame.mouse.get_pos()
-
-        for i, item in enumerate(menu_items):
-            color = C.WHITE
-            rect = pygame.Rect(C.SCREEN_WIDTH // 2 - 100, 350 + i * 60, 200, 50)
-            if rect.collidepoint(mouse_pos):
-                color = C.YELLOW
-                pygame.draw.rect(self.screen, (50, 0, 0), rect)
-                pygame.draw.rect(self.screen, C.RED, rect, 2)
-
-            text = self.subtitle_font.render(item, True, color)
-            text_rect = text.get_rect(center=rect.center)
-            self.screen.blit(text, text_rect)
+        ui_overlay_views.render_pause_menu(self)
 
     def render_level_complete(self, game: Game) -> None:
         """Render the level complete screen."""
-        self.screen.fill(C.BLACK)
-        title = self.title_font.render("SECTOR CLEARED", True, C.GREEN)
-        title_rect = title.get_rect(center=(C.SCREEN_WIDTH // 2, 150))
-        self.screen.blit(title, title_rect)
-
-        level_time = game.level_times[-1] if game.level_times else 0
-        total_time = sum(game.level_times)
-        stats = [
-            (f"Level {game.level} cleared!", C.WHITE),
-            (f"Time: {level_time:.1f}s", C.GREEN),
-            (f"Total Time: {total_time:.1f}s", C.GREEN),
-            (f"Total Kills: {game.kills}", C.WHITE),
-            ("", C.WHITE),
-            ("Next level: Enemies get stronger!", C.YELLOW),
-            ("", C.WHITE),
-            ("Press SPACE for next level", C.WHITE),
-            ("Press ESC for menu", C.WHITE),
-        ]
-        self._render_stats_lines(stats, 250)
-        pygame.display.flip()
+        ui_progress_views.render_level_complete(self, game)
 
     def render_game_over(self, game: Game) -> None:
         """Render the game over screen."""
-        self.screen.fill(C.BLACK)
-        title = self.title_font.render("SYSTEM FAILURE", True, C.RED)
-        title_rect = title.get_rect(center=(C.SCREEN_WIDTH // 2, 200))
-        self.screen.blit(title, title_rect)
-
-        completed_levels = max(0, game.level - 1)
-        total_time = sum(game.level_times)
-        avg_time = total_time / len(game.level_times) if game.level_times else 0
-
-        stats = [
-            (
-                f"You survived {completed_levels} "
-                f"level{'s' if completed_levels != 1 else ''}",
-                C.WHITE,
-            ),
-            (f"Total Kills: {game.kills}", C.WHITE),
-            (f"Total Time: {total_time:.1f}s", C.GREEN),
-            (
-                (f"Average Time/Level: {avg_time:.1f}s", C.GREEN)
-                if game.level_times
-                else ("", C.WHITE)
-            ),
-            ("", C.WHITE),
-            ("Press SPACE to restart", C.WHITE),
-            ("Press ESC for menu", C.WHITE),
-        ]
-        self._render_stats_lines(stats, 250)
-        pygame.display.flip()
+        ui_progress_views.render_game_over(self, game)
 
     def _render_stats_lines(
         self, stats: list[tuple[str, tuple[int, int, int]]], start_y: int
     ) -> None:
         """Render a list of stat lines."""
-        y = start_y
-        for line, color in stats:
-            if line:
-                text = self.small_font.render(line, True, color)
-                text_rect = text.get_rect(center=(C.SCREEN_WIDTH // 2, y))
-                self.screen.blit(text, text_rect)
-            y += 40
+        ui_progress_views.render_stats_lines(self, stats, start_y)
 
     def render_intro(self, intro_phase: int, intro_step: int, elapsed: int) -> None:
         """Render intro"""
@@ -774,46 +591,4 @@ class UIRenderer(UIRendererBase):
 
     def render_key_config(self, game: Any) -> None:
         """Render the key configuration menu."""
-        self.screen.fill(C.BLACK)
-
-        title = self.title_font.render("CONTROLS", True, C.RED)
-        self.screen.blit(title, title.get_rect(center=(C.SCREEN_WIDTH // 2, 50)))
-
-        bindings = game.input_manager.bindings
-        start_y = 120
-        col_1_x = C.SCREEN_WIDTH // 4
-        col_2_x = C.SCREEN_WIDTH * 3 // 4
-
-        actions = sorted(bindings.keys())
-
-        limit = 12
-
-        for i, action in enumerate(actions):
-            col = 0 if i < limit else 1
-            idx = i if i < limit else i - limit
-            x = col_1_x if col == 0 else col_2_x
-            y = start_y + idx * 40
-
-            name_str = action.replace("_", " ").upper()
-            color = C.WHITE
-            if game.binding_action == action:
-                color = C.YELLOW
-                key_text = "PRESS ANY KEY..."
-            else:
-                key_text = game.input_manager.get_key_name(action)
-
-            name_txt = self.tiny_font.render(f"{name_str}:", True, C.GRAY)
-            key_txt = self.tiny_font.render(key_text, True, color)
-
-            self.screen.blit(name_txt, (x - 150, y))
-            self.screen.blit(key_txt, (x + 20, y))
-
-        back_txt = self.subtitle_font.render("BACK", True, C.WHITE)
-        back_rect = back_txt.get_rect(
-            center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT - 60)
-        )
-        self.screen.blit(back_txt, back_rect)
-        if back_rect.collidepoint(pygame.mouse.get_pos()):
-            pygame.draw.rect(self.screen, C.RED, back_rect, 2)
-
-        pygame.display.flip()
+        ui_overlay_views.render_key_config(self, game)
