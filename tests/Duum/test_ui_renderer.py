@@ -23,12 +23,16 @@ def setup_pygame_font():
 def setup_pygame_surface():
     with patch("games.shared.ui_renderer_base.pygame.Surface") as mock_surf_base:
         with patch("games.Duum.src.ui_renderer.pygame.Surface") as mock_surf:
-            with patch("pygame.transform.smoothscale", create=True) as mock_smooth:
-                mock_surf_instance = MagicMock()
-                mock_surf_base.return_value = mock_surf_instance
-                mock_surf.return_value = mock_surf_instance
-                mock_smooth.return_value = mock_surf_instance
-                yield mock_surf_instance
+            with patch(
+                "games.Duum.src.ui_overlay_views.pygame.Surface"
+            ) as overlay_surf:
+                with patch("pygame.transform.smoothscale", create=True) as mock_smooth:
+                    mock_surf_instance = MagicMock()
+                    mock_surf_base.return_value = mock_surf_instance
+                    mock_surf.return_value = mock_surf_instance
+                    overlay_surf.return_value = mock_surf_instance
+                    mock_smooth.return_value = mock_surf_instance
+                    yield mock_surf_instance
 
 
 @pytest.fixture(autouse=True)
@@ -105,10 +109,26 @@ class TestUIRenderer:
         renderer = UIRenderer(mock_screen)
         renderer.render_menu()
 
+    def test_render_menu_delegates_to_menu_views(self, mock_screen):
+        renderer = UIRenderer(mock_screen)
+        with patch(
+            "games.Duum.src.ui_renderer.ui_menu_views.render_menu"
+        ) as render_menu:
+            renderer.render_menu()
+        render_menu.assert_called_once_with(renderer)
+
     def test_render_map_select(self, mock_screen, mock_game):
         with patch("pygame.mouse.get_pos", return_value=(400, 300)):
             renderer = UIRenderer(mock_screen)
             renderer.render_map_select(mock_game)
+
+    def test_render_map_select_delegates_to_menu_views(self, mock_screen, mock_game):
+        renderer = UIRenderer(mock_screen)
+        with patch(
+            "games.Duum.src.ui_renderer.ui_menu_views.render_map_select"
+        ) as render_map_select:
+            renderer.render_map_select(mock_game)
+        render_map_select.assert_called_once_with(renderer, mock_game)
 
     def test_render_hud(self, mock_screen, mock_game):
         renderer = UIRenderer(mock_screen)
@@ -135,9 +155,27 @@ class TestUIRenderer:
         renderer = UIRenderer(mock_screen)
         renderer.render_level_complete(mock_game)
 
+    def test_render_level_complete_delegates_to_progress_views(
+        self, mock_screen, mock_game
+    ):
+        renderer = UIRenderer(mock_screen)
+        with patch(
+            "games.Duum.src.ui_renderer.ui_progress_views.render_level_complete"
+        ) as render_level_complete:
+            renderer.render_level_complete(mock_game)
+        render_level_complete.assert_called_once_with(renderer, mock_game)
+
     def test_render_game_over(self, mock_screen, mock_game):
         renderer = UIRenderer(mock_screen)
         renderer.render_game_over(mock_game)
+
+    def test_render_game_over_delegates_to_progress_views(self, mock_screen, mock_game):
+        renderer = UIRenderer(mock_screen)
+        with patch(
+            "games.Duum.src.ui_renderer.ui_progress_views.render_game_over"
+        ) as render_game_over:
+            renderer.render_game_over(mock_game)
+        render_game_over.assert_called_once_with(renderer, mock_game)
 
     @pytest.mark.parametrize("phase", [0, 1, 2])
     def test_render_intro(self, mock_screen, phase):
@@ -160,6 +198,22 @@ class TestUIRenderer:
         with patch("pygame.mouse.get_pos", return_value=(400, 300)):
             renderer = UIRenderer(mock_screen)
             renderer.render_key_config(mock_game)
+
+    def test_render_key_config_delegates_to_overlay_views(self, mock_screen, mock_game):
+        renderer = UIRenderer(mock_screen)
+        with patch(
+            "games.Duum.src.ui_renderer.ui_overlay_views.render_key_config"
+        ) as render_key_config:
+            renderer.render_key_config(mock_game)
+        render_key_config.assert_called_once_with(renderer, mock_game)
+
+    def test_render_pause_menu_delegates_to_overlay_views(self, mock_screen):
+        renderer = UIRenderer(mock_screen)
+        with patch(
+            "games.Duum.src.ui_renderer.ui_overlay_views.render_pause_menu"
+        ) as render_pause_menu:
+            renderer._render_pause_menu()
+        render_pause_menu.assert_called_once_with(renderer)
 
     def test_blood_drips(self, mock_screen):
         renderer = UIRenderer(mock_screen)
