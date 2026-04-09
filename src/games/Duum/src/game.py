@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-import math
 import random
 
 import pygame
@@ -9,13 +8,8 @@ import pygame
 from games.shared.combat_manager import ShotResolutionRequest
 from games.shared.config import RaycasterConfig
 from games.shared.constants import (
-    BEAST_TIMER_MAX,
-    BEAST_TIMER_MIN,
-    FOG_REVEAL_RADIUS,
-    GROAN_TIMER_DELAY,
     MINIGUN_BULLETS_PER_SHOT,
     MINIGUN_SPREAD,
-    PICKUP_RADIUS_SQ,
     PORTAL_RADIUS_SQ,
     GameState,
 )
@@ -25,7 +19,8 @@ from games.shared.raycaster import Raycaster
 from games.shared.sound_manager_base import SoundManagerBase
 
 from . import constants as C  # noqa: N812
-from . import game_loop
+from . import game_loop, gameplay_updater
+from .atmosphere_manager import AtmosphereManager
 from .combat_manager import DuumCombatManager
 from .custom_types import DamageText, Portal
 from .entity_manager import EntityManager
@@ -144,6 +139,7 @@ class Game(FPSGameBase):
             self.sound_manager,
             on_kill=lambda bot: self.event_bus.emit("bot_killed", x=bot.x, y=bot.y),
         )
+        self.atmosphere_manager = AtmosphereManager(self)
         self.screen_event_handler = ScreenEventHandler(self)
 
         # Input
@@ -598,212 +594,9 @@ class Game(FPSGameBase):
 
         return shield_active
 
-    def _update_damage_texts(self) -> None:
-        for t in self.damage_texts:
-            t["y"] += t["vy"]
-            t["timer"] -= 1
-        self.damage_texts = [t for t in self.damage_texts if t["timer"] > 0]
-
-    def _handle_keyboard_movement(self, keys) -> None:
-        sprint_key = keys[pygame.K_RSHIFT]
-        is_sprinting = self.input_manager.is_action_pressed("sprint") or sprint_key
-        if is_sprinting and self.player.stamina > 0:
-            current_speed = C.PLAYER_SPRINT_SPEED
-            self.player.stamina -= 1
-            self.player.stamina_recharge_delay = 60
-        else:
-            current_speed = C.PLAYER_SPEED
-
-        moving = False
-
-        if self.input_manager.is_action_pressed("move_forward"):
-            self.player.move(
-                self.game_map, self.bots, forward=True, speed=current_speed
-            )
-            moving = True
-        if self.input_manager.is_action_pressed("move_backward"):
-            self.player.move(
-                self.game_map, self.bots, forward=False, speed=current_speed
-            )
-            moving = True
-        if self.input_manager.is_action_pressed("strafe_left"):
-            self.player.strafe(
-                self.game_map, self.bots, right=False, speed=current_speed
-            )
-            moving = True
-        if self.input_manager.is_action_pressed("strafe_right"):
-            self.player.strafe(
-                self.game_map, self.bots, right=True, speed=current_speed
-            )
-            moving = True
-
-        self.player.is_moving = moving
-
-        if self.input_manager.is_action_pressed("turn_left"):
-            self.player.rotate(-0.05)
-        if self.input_manager.is_action_pressed("turn_right"):
-            self.player.rotate(0.05)
-        if self.input_manager.is_action_pressed("look_up"):
-            self.player.pitch_view(5)
-        if self.input_manager.is_action_pressed("look_down"):
-            self.player.pitch_view(-5)
-
-    def _check_item_pickups(self) -> None:
-        for bot in self.bots:
-            is_item = bot.enemy_type.startswith(("health", "ammo", "bomb", "pickup"))
-            if bot.alive and is_item:
-                dx = bot.x - self.player.x
-                dy = bot.y - self.player.y
-                dist_sq = dx * dx + dy * dy
-                if dist_sq < PICKUP_RADIUS_SQ:
-                    pickup_msg = ""
-                    color = C.GREEN
-
-                    if bot.enemy_type == "health_pack":
-                        if self.player.health < 100:
-                            self.player.health = min(100, self.player.health + 50)
-                            pickup_msg = "HEALTH +50"
-                    elif bot.enemy_type == "ammo_box":
-                        for w in self.player.ammo:
-                            self.player.ammo[w] += 20
-                        pickup_msg = "AMMO FOUND"
-                        color = C.YELLOW
-                    elif bot.enemy_type == "bomb_item":
-                        self.player.bombs += 1
-                        pickup_msg = "BOMB +1"
-                        color = C.ORANGE
-                    elif bot.enemy_type.startswith("pickup_"):
-                        w_name = bot.enemy_type.replace("pickup_", "")
-                        if w_name not in self.unlocked_weapons:
-                            self.unlocked_weapons.add(w_name)
-                            self.player.switch_weapon(w_name)
-                            pickup_msg = f"{w_name.upper()} ACQUIRED!"
-                            color = C.CYAN
-                        else:
-                            if w_name in self.player.ammo:
-                                clip_size = C.WEAPONS[w_name]["clip_size"]
-                                self.player.ammo[w_name] += clip_size * 2
-                                pickup_msg = f"{w_name.upper()} AMMO"
-                                color = C.YELLOW
-
-                    if pickup_msg:
-                        bot.alive = False
-                        bot.removed = True
-                        self.damage_texts.append(
-                            {
-                                "x": C.SCREEN_WIDTH // 2,
-                                "y": C.SCREEN_HEIGHT // 2 - 50,
-                                "text": pickup_msg,
-                                "color": color,
-                                "timer": 60,
-                                "vy": -1,
-                            }
-                        )
-
-    def _update_large_fog_reveal(self) -> None:
-        cx, cy = int(self.player.x), int(self.player.y)
-        reveal_radius = FOG_REVEAL_RADIUS
-        for r_i in range(-reveal_radius, reveal_radius + 1):
-            for r_j in range(-reveal_radius, reveal_radius + 1):
-                if r_i * r_i + r_j * r_j <= reveal_radius * reveal_radius:
-                    self.visited_cells.add((cx + r_j, cy + r_i))
-
-    def _update_atmosphere(self) -> None:
-        min_dist_sq = float("inf")
-        for bot in self.bots:
-            if bot.alive:
-                dx = bot.x - self.player.x
-                dy = bot.y - self.player.y
-                d_sq = dx * dx + dy * dy
-                if d_sq < min_dist_sq:
-                    min_dist_sq = d_sq
-
-        min_dist = (
-            math.sqrt(min_dist_sq) if min_dist_sq != float("inf") else float("inf")
-        )
-
-        if min_dist < 15:
-            self.beast_timer -= 1
-            if self.beast_timer <= 0:
-                self.sound_manager.play_sound("beast")
-                self.beast_timer = random.randint(BEAST_TIMER_MIN, BEAST_TIMER_MAX)
-
-        if min_dist < 20:
-            beat_delay = int(min(1.5, max(0.4, min_dist / 10.0)) * C.FPS)
-            self.heartbeat_timer -= 1
-            if self.heartbeat_timer <= 0:
-                self.sound_manager.play_sound("heartbeat")
-                self.sound_manager.play_sound("breath")
-                self.heartbeat_timer = beat_delay
-
-        if self.player.health < 50:
-            self.groan_timer -= 1
-            if self.groan_timer <= 0:
-                self.sound_manager.play_sound("groan")
-                self.groan_timer = GROAN_TIMER_DELAY
-
-    def _check_kill_combo(self) -> None:
-        if self.kill_combo_timer > 0:
-            self.kill_combo_timer -= 1
-            if self.kill_combo_timer <= 0:
-                if self.kill_combo_count >= 3:
-                    phrases = ["phrase_cool", "phrase_awesome", "phrase_brutal"]
-                    phrase = random.choice(phrases)
-                    self.sound_manager.play_sound(phrase)
-                    self.damage_texts.append(
-                        {
-                            "x": C.SCREEN_WIDTH // 2,
-                            "y": C.SCREEN_HEIGHT // 2 - 150,
-                            "text": phrase.replace("phrase_", "").upper() + "!",
-                            "color": C.YELLOW,
-                            "timer": 120,
-                            "vy": -0.2,
-                        }
-                    )
-                self.kill_combo_count = 0
-            # Push combo state back to the combat manager
-            self.combat_manager.kill_combo_timer = self.kill_combo_timer
-            self.combat_manager.kill_combo_count = self.kill_combo_count
-
     def update_game(self) -> None:
-        """Update game state"""
-        if self.paused:
-            return
-
-        if not (self.player is not None):
-            raise ValueError("DbC Blocked: Precondition failed.")
-        if self._check_game_over():
-            return
-
-        if self._check_portal_completion():
-            return
-
-        keys = pygame.key.get_pressed()
-        shield_active = self.input_manager.is_action_pressed("shield")
-
-        if self.joystick and not self.paused and self.player and self.player.alive:
-            shield_active = self._handle_joystick_input(shield_active)
-
-        self.player.set_shield(shield_active)
-        self.particle_system.update()
-        self._update_damage_texts()
-
-        self._handle_keyboard_movement(keys)
-        self.player.update()
-
-        self.entity_manager.update_bots(self.game_map, self.player, self)
-        self._check_item_pickups()
-        self.entity_manager.update_projectiles(self.game_map, self.player, self)
-
-        self._update_large_fog_reveal()
-        self._update_atmosphere()
-        self._check_kill_combo()
-
-        # Decay Flash
-        if self.flash_intensity > 0:
-            self.flash_intensity -= 0.1
-            if self.flash_intensity < 0:
-                self.flash_intensity = 0.0
+        """Update game state through the extracted gameplay updater."""
+        gameplay_updater.update_game(self)
 
     def _update_intro_logic(self, elapsed: int) -> None:
         """Update intro sequence logic and transitions.
