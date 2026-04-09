@@ -25,6 +25,7 @@ from games.shared.raycaster import Raycaster
 from games.shared.sound_manager_base import SoundManagerBase
 
 from . import constants as C  # noqa: N812
+from . import game_loop
 from .combat_manager import DuumCombatManager
 from .custom_types import DamageText, Portal
 from .entity_manager import EntityManager
@@ -814,43 +815,4 @@ class Game(FPSGameBase):
 
     def run(self) -> None:
         """Main game loop"""
-        try:
-            while self.running:
-                if self.state == GameState.INTRO:
-                    self.handle_intro_events()
-                    if self.intro_start_time == 0:
-                        self.intro_start_time = pygame.time.get_ticks()
-                    elapsed = pygame.time.get_ticks() - self.intro_start_time
-
-                    self.ui_renderer.render_intro(
-                        self.intro_phase, self.intro_step, elapsed
-                    )
-                    self._update_intro_logic(elapsed)
-
-                elif self.state == GameState.MENU:
-                    self.handle_menu_events()
-                    self.ui_renderer.render_menu()
-
-                elif self.state == GameState.KEY_CONFIG:
-                    self.handle_key_config_events()
-                    self.ui_renderer.render_key_config(self)
-
-                elif self.state == GameState.MAP_SELECT:
-                    self.handle_map_select_events()
-                    self.ui_renderer.render_map_select(self)
-
-                elif self.state == GameState.PLAYING:
-                    self.screen_event_handler.handle_playing_state()
-
-                elif self.state == GameState.LEVEL_COMPLETE:
-                    self.handle_level_complete_events()
-                    self.ui_renderer.render_level_complete(self)
-
-                elif self.state == GameState.GAME_OVER:
-                    self.handle_game_over_events()
-                    self.ui_renderer.render_game_over(self)
-
-                self.clock.tick(C.FPS)
-        except (RuntimeError, pygame.error, OSError, ValueError, TypeError) as e:
-            logger.critical("CRASH: %s", e, exc_info=True)
-            raise
+        game_loop.run(self)
