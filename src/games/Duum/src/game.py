@@ -15,7 +15,6 @@ from games.shared.constants import (
     GROAN_TIMER_DELAY,
     MINIGUN_BULLETS_PER_SHOT,
     MINIGUN_SPREAD,
-    PAUSE_HEARTBEAT_DELAY,
     PICKUP_RADIUS_SQ,
     PORTAL_RADIUS_SQ,
     GameState,
@@ -35,6 +34,7 @@ from .particle_system import ParticleSystem
 from .player import Player
 from .projectile import Projectile
 from .renderer import GameRenderer
+from .screen_event_handler import ScreenEventHandler
 from .sound import SoundManager
 from .spawn_manager import DuumSpawnManager
 from .ui_renderer import UIRenderer
@@ -143,6 +143,7 @@ class Game(FPSGameBase):
             self.sound_manager,
             on_kill=lambda bot: self.event_bus.emit("bot_killed", x=bot.x, y=bot.y),
         )
+        self.screen_event_handler = ScreenEventHandler(self)
 
         # Input
         self.joystick = None
@@ -305,61 +306,27 @@ class Game(FPSGameBase):
 
     def handle_intro_events(self) -> None:
         """Handle events during intro sequence"""
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                self.running = False
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE or event.key == pygame.K_SPACE:
-                    self.state = GameState.MENU
+        self.screen_event_handler.handle_intro_events()
 
     def handle_menu_events(self) -> None:
         """Handle events in main menu"""
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                self.running = False
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
-                    self.running = False
+        self.screen_event_handler.handle_menu_events()
 
     def handle_key_config_events(self) -> None:
         """Handle events in key configuration screen"""
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                self.running = False
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
-                    self.state = GameState.MENU
+        self.screen_event_handler.handle_key_config_events()
 
     def handle_map_select_events(self) -> None:
         """Handle events in map selection screen"""
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                self.running = False
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
-                    self.state = GameState.MENU
+        self.screen_event_handler.handle_map_select_events()
 
     def handle_level_complete_events(self) -> None:
         """Handle events in level complete screen"""
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                self.running = False
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_SPACE or event.key == pygame.K_RETURN:
-                    self.state = GameState.MENU
-                elif event.key == pygame.K_ESCAPE:
-                    self.state = GameState.MENU
+        self.screen_event_handler.handle_level_complete_events()
 
     def handle_game_over_events(self) -> None:
         """Handle events in game over screen"""
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                self.running = False
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_SPACE or event.key == pygame.K_RETURN:
-                    self.state = GameState.MENU
-                elif event.key == pygame.K_ESCAPE:
-                    self.state = GameState.MENU
+        self.screen_event_handler.handle_game_over_events()
 
     # _handle_cheat_input, _handle_pause_toggle, _handle_weapon_keys,
     # _handle_pause_menu_click, _handle_gameplay_mouse_click,
@@ -843,41 +810,7 @@ class Game(FPSGameBase):
         Args:
             elapsed: Elapsed time in milliseconds since intro started.
         """
-        duration = 0
-        if self.intro_phase == 0:
-            duration = 3000
-        elif self.intro_phase == 1:
-            duration = 3000
-        elif self.intro_phase == 2:
-            slides_durations = [8000, 10000, 4000, 4000]
-            if self.intro_step < len(slides_durations):
-                duration = slides_durations[self.intro_step]
-
-                if self.intro_step == 0 and elapsed < 50:
-                    if not self.laugh_played:
-                        self.sound_manager.play_sound("laugh")
-                        self.laugh_played = True
-
-                if elapsed > duration:
-                    self.intro_step += 1
-                    self.intro_start_time = 0
-                    self.laugh_played = False
-            else:
-                self.state = GameState.MENU
-                return
-
-        if self.intro_phase < 2:
-            if self.intro_phase == 1 and elapsed < 50:
-                if not self.water_played:
-                    self.sound_manager.play_sound("water")
-                    self.water_played = True
-
-            if elapsed > duration:
-                self.intro_phase += 1
-                self.intro_start_time = 0
-                # Only release video when transitioning from phase 1 to phase 2
-                if self.intro_phase == 2:
-                    self.ui_renderer.release_intro_video()
+        self.screen_event_handler.update_intro_logic(elapsed)
 
     def run(self) -> None:
         """Main game loop"""
@@ -907,28 +840,7 @@ class Game(FPSGameBase):
                     self.ui_renderer.render_map_select(self)
 
                 elif self.state == GameState.PLAYING:
-                    self.handle_game_events()
-                    if self.paused:
-                        # Pause Menu Audio
-                        beat_delay = PAUSE_HEARTBEAT_DELAY
-                        self.heartbeat_timer -= 1
-                        if self.heartbeat_timer <= 0:
-                            self.sound_manager.play_sound("heartbeat")
-                            self.sound_manager.play_sound("breath")
-                            self.heartbeat_timer = beat_delay
-
-                        if self.player and self.player.health < 50:
-                            self.groan_timer -= 1
-                            if self.groan_timer <= 0:
-                                self.sound_manager.play_sound("groan")
-                                self.groan_timer = GROAN_TIMER_DELAY
-                    else:
-                        self.update_game()
-                    self.renderer.render_game(self, self.flash_intensity)
-                    # Decrement damage flash timer after rendering
-                    # to maintain correct frame count
-                    if not self.paused and self.damage_flash_timer > 0:
-                        self.damage_flash_timer -= 1
+                    self.screen_event_handler.handle_playing_state()
 
                 elif self.state == GameState.LEVEL_COMPLETE:
                     self.handle_level_complete_events()
