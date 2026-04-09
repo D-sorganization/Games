@@ -10,8 +10,8 @@
 | **Primary Language(s)** | Python 3.10+ (Pygame), JavaScript (Three.js for web) |
 | **License**             | MIT                                                  |
 | **Current Version**     | N/A                                                  |
-| **Spec Version**        | 1.1.10                                               |
-| **Last Spec Update**    | 2026-04-08                                           |
+| **Spec Version**        | 1.1.11                                               |
+| **Last Spec Update**    | 2026-04-09                                           |
 
 ## 2. Purpose & Mission
 
@@ -113,7 +113,7 @@ Games/
 | Game Launcher         | `src/games/`                     | Central entry point, game discovery, selection UI, execution orchestration      |
 | Force Field Engine    | `src/games/Force_Field/engine/`  | Raycasting renderer, 3D-to-2D projection, collision detection                   |
 | Force Field Runtime   | `src/games/Force_Field/src/`     | Thin game facade plus extracted loop, session, combat, gameplay, and screen-flow subsystems |
-| Duum Screen Flow      | `src/games/Duum/src/`            | Thin Duum game facade with delegated per-screen event handling, play-state orchestration, and extracted loop dispatch |
+| Duum Screen Flow      | `src/games/Duum/src/`            | Thin Duum game facade with delegated per-screen event handling, extracted loop dispatch, gameplay updates, and ambient-state management |
 | Duum Level Generation | `src/games/Duum/levels/`         | Procedural dungeon generation, room connectivity                                |
 | Tetris Logic          | `src/games/Tetris/`              | Piece mechanics, board state, gravity, line clearing                            |
 | Shared Renderers      | `src/games/shared/renderers/`    | Common rendering abstractions, 2D drawing, sprite management                    |
