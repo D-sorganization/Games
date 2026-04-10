@@ -10,7 +10,7 @@
 | **Primary Language(s)** | Python 3.10+ (Pygame), JavaScript (Three.js for web) |
 | **License**             | MIT                                                  |
 | **Current Version**     | N/A                                                  |
-| **Spec Version**        | 1.1.14                                               |
+| **Spec Version**        | 1.1.15                                               |
 | **Last Spec Update**    | 2026-04-10                                           |
 
 ## 2. Purpose & Mission
@@ -113,7 +113,7 @@ Games/
 | Game Launcher         | `src/games/`                     | Central entry point, game discovery, selection UI, execution orchestration      |
 | Force Field Engine    | `src/games/Force_Field/engine/`  | Raycasting renderer, 3D-to-2D projection, collision detection                   |
 | Force Field Runtime   | `src/games/Force_Field/src/`     | Thin game facade plus extracted loop, session, combat, gameplay, and screen-flow subsystems |
-| Duum Screen Flow      | `src/games/Duum/src/`            | Thin Duum game facade with delegated per-screen event handling, extracted loop dispatch, gameplay updates, and ambient-state management |
+| Duum Screen Flow      | `src/games/Duum/src/`            | Thin Duum game facade with delegated per-screen event handling, extracted loop dispatch, gameplay updates, ambient-state management, and HUD view helpers |
 | Zombie Gameplay Flow  | `src/games/Zombie_Survival/src/` | Thin Zombie Survival game facade with delegated screen handling, extracted gameplay updates, loop dispatch, ambient-state management, and HUD view helpers |
 | Duum Level Generation | `src/games/Duum/levels/`         | Procedural dungeon generation, room connectivity                                |
 | Tetris Logic          | `src/games/Tetris/`              | Piece mechanics, board state, gravity, line clearing                            |
@@ -408,6 +408,7 @@ Active development. Core games (F1-F6, F8-F9) fully implemented and tested. F7 (
 
 | Date       | Version | Changes                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | ---------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-04-10 | 1.1.15  | Partially addressed issue `#721` by extracting Duum HUD rendering out of `src/games/Duum/src/ui_renderer.py` into `ui_hud_views.py`, keeping `UIRenderer` as the public façade, and adding seam tests around the new HUD delegation points.                                                                                                                                                                                                               |
 | 2026-04-10 | 1.1.14  | Partially addressed issue `#721` by extracting Zombie Survival HUD rendering out of `src/games/Zombie_Survival/src/ui_renderer.py` into `ui_hud_views.py`, keeping `UIRenderer` as the public façade, and adding seam tests around the new HUD delegation points.                                                                                                                                                                                            |
 | 2026-04-10 | 1.1.13  | Partially addressed issue `#721` by extracting Zombie Survival session/level progression out of `src/games/Zombie_Survival/src/game.py` into `progression_flow.py`, delegating full-game start, level start, game-over, and portal-completion transitions through a focused helper module, and adding seam tests around the extracted progression behavior.                                                                                                  |
 | 2026-04-07 | 1.1.8   | Partially addressed issue `#721` by splitting Zombie Survival menu, pause/config, and progression rendering out of `src/games/Zombie_Survival/src/ui_renderer.py` into dedicated helper modules (`ui_menu_views.py`, `ui_overlay_views.py`, `ui_progress_views.py`), keeping `UIRenderer` as the public façade, and adding targeted delegation tests around the extracted seams.                                                                                                                         |
