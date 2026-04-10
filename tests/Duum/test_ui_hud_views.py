@@ -260,5 +260,5 @@ class TestRenderSecondaryCharge:
 
 
 class TestRenderControlsHint:
-    def test_render_controls_hint_runs(self, mock_renderer, mock_game):
-        ui_hud_views.render_controls_hint(mock_renderer, mock_game)
+    def test_render_controls_hint_runs(self, mock_renderer):
+        ui_hud_views.render_controls_hint(mock_renderer)

@@ -155,7 +155,7 @@ class TestRenderStatusBars:
 class TestRenderDamageFlash:
     def test_no_flash_when_timer_zero(self, mock_renderer):
         mock_renderer.overlay_surface = MagicMock()
-        with patch("games.Force_Field.src.ui_hud_views.pygame") as mock_pygame:
+        with patch("games.Force_Field.src.ui_hud_views.pygame"):
             ui_hud_views.render_damage_flash(mock_renderer, 0)
         mock_renderer.overlay_surface.fill.assert_not_called()
 
@@ -183,7 +183,8 @@ class TestRenderShieldEffect:
         mock_renderer.overlay_surface = MagicMock()
         with patch("pygame.draw.rect"):
             ui_hud_views.render_shield_effect(mock_renderer, mock_game.player)
-        mock_renderer.overlay_surface.fill.assert_not_called()  # Uses draw.rect, not fill
+        # Shield rendering uses draw.rect, not overlay_surface.fill.
+        mock_renderer.overlay_surface.fill.assert_not_called()
 
 
 class TestRenderLowHealthTint:
