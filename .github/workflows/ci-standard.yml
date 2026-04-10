@@ -1,3 +1,4 @@
+# CI dispatch marker 2026-04-10
 name: CI Standard
 # Refreshed to sync with local correct paths
 on:
