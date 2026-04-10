@@ -8,7 +8,6 @@ import pygame
 
 from games.shared.config import RaycasterConfig
 from games.shared.constants import (
-    PICKUP_RADIUS_SQ,
     PORTAL_RADIUS_SQ,
     GameState,
 )
@@ -19,6 +18,7 @@ from games.shared.raycaster import Raycaster
 from games.shared.sound_manager_base import SoundManagerBase
 
 from . import constants as C  # noqa: N812
+from . import game_loop, gameplay_updater
 from .atmosphere_manager import AtmosphereManager
 from .combat_manager import ZSCombatManager
 from .entity_manager import EntityManager
@@ -531,149 +531,9 @@ class Game(FPSGameBase):
 
         return shield_active
 
-    def _update_damage_texts(self) -> None:
-        """Tick floating damage text positions and remove expired entries."""
-        for t in self.damage_texts:
-            t["y"] += t["vy"]
-            t["timer"] -= 1
-        self.damage_texts = [t for t in self.damage_texts if t["timer"] > 0]
-
-    def _handle_keyboard_movement(self, keys: pygame.key.ScancodeWrapper) -> None:
-        """Apply keyboard-driven player movement and camera rotation."""
-        if not (self.player is not None):
-            raise ValueError("DbC Blocked: Precondition failed.")
-        if not (self.game_map is not None):
-            raise ValueError("DbC Blocked: Precondition failed.")
-        sprint_key = keys[pygame.K_RSHIFT]
-        is_sprinting = self.input_manager.is_action_pressed("sprint") or sprint_key
-        if is_sprinting and self.player_stamina > 0:
-            current_speed = C.PLAYER_SPRINT_SPEED
-            self.player_stamina -= 1
-            self.player_stamina_recharge_delay = 60
-        else:
-            current_speed = C.PLAYER_SPEED
-
-        moving = False
-        if self.input_manager.is_action_pressed("move_forward"):
-            self.player.move(
-                self.game_map, self.bots, forward=True, speed=current_speed
-            )
-            moving = True
-        if self.input_manager.is_action_pressed("move_backward"):
-            self.player.move(
-                self.game_map, self.bots, forward=False, speed=current_speed
-            )
-            moving = True
-        if self.input_manager.is_action_pressed("strafe_left"):
-            self.player.strafe(
-                self.game_map, self.bots, right=False, speed=current_speed
-            )
-            moving = True
-        if self.input_manager.is_action_pressed("strafe_right"):
-            self.player.strafe(
-                self.game_map, self.bots, right=True, speed=current_speed
-            )
-            moving = True
-
-        self.player_is_moving = moving
-
-        if self.input_manager.is_action_pressed("turn_left"):
-            self.player.rotate(-0.05)
-        if self.input_manager.is_action_pressed("turn_right"):
-            self.player.rotate(0.05)
-        if self.input_manager.is_action_pressed("look_up"):
-            self.player.pitch_view(5)
-        if self.input_manager.is_action_pressed("look_down"):
-            self.player.pitch_view(-5)
-
-    def _check_item_pickups(self) -> None:
-        """Detect player proximity to pickup items and apply their effects."""
-        if not (self.player is not None):
-            raise ValueError("DbC Blocked: Precondition failed.")
-        for bot in self.bots:
-            is_item = bot.enemy_type.startswith(("health", "ammo", "bomb", "pickup"))
-            if not (bot.alive and is_item):
-                continue
-            dx = bot.x - self.player_x
-            dy = bot.y - self.player_y
-            if dx * dx + dy * dy >= PICKUP_RADIUS_SQ:
-                continue
-
-            pickup_msg = ""
-            color = C.GREEN
-            if bot.enemy_type == "health_pack":
-                if self.player_health < 100:
-                    self.player_health = min(100, self.player_health + 50)
-                    pickup_msg = "HEALTH +50"
-            elif bot.enemy_type == "ammo_box":
-                for w in self.player.ammo:
-                    self.player.ammo[w] += 20
-                pickup_msg = "AMMO FOUND"
-                color = C.YELLOW
-            elif bot.enemy_type == "bomb_item":
-                self.player_bombs += 1
-                pickup_msg = "BOMB +1"
-                color = C.ORANGE
-            elif bot.enemy_type.startswith("pickup_"):
-                w_name = bot.enemy_type.replace("pickup_", "")
-                if w_name not in self.unlocked_weapons:
-                    self.unlocked_weapons.add(w_name)
-                    self.player.switch_weapon(w_name)
-                    pickup_msg = f"{w_name.upper()} ACQUIRED!"
-                    color = C.CYAN
-                elif w_name in self.player.ammo:
-                    clip_size = int(C.WEAPONS[w_name]["clip_size"])
-                    self.player.ammo[w_name] += clip_size * 2
-                    pickup_msg = f"{w_name.upper()} AMMO"
-                    color = C.YELLOW
-
-            if pickup_msg:
-                bot.alive = False
-                bot.removed = True
-                self.damage_texts.append(
-                    {
-                        "x": C.SCREEN_WIDTH // 2,
-                        "y": C.SCREEN_HEIGHT // 2 - 50,
-                        "text": pickup_msg,
-                        "color": color,
-                        "timer": 60,
-                        "vy": -1,
-                    }
-                )
-
     def update_game(self) -> None:
-        """Update game state"""
-        if self.paused:
-            return
-
-        if not (self.player is not None):
-            raise ValueError("DbC Blocked: Precondition failed.")
-        if not (self.game_map is not None):
-            raise ValueError("DbC Blocked: Precondition failed.")
-        if self._check_game_over():
-            return
-        if self._check_portal_completion():
-            return
-
-        keys = pygame.key.get_pressed()
-        shield_active = self.input_manager.is_action_pressed("shield")
-
-        if self.joystick and self.player_alive:
-            shield_active = self._handle_joystick_input(shield_active)
-
-        self.player.set_shield(shield_active)
-        self.particle_system.update()
-        self._update_damage_texts()
-        self._handle_keyboard_movement(keys)
-        self.player.update()
-
-        self.entity_manager.update_bots(self.game_map, self.player, self)
-        self._check_item_pickups()
-        self.entity_manager.update_projectiles(self.game_map, self.player, self)
-
-        self.atmosphere_manager.update_fog_reveal()
-        self.atmosphere_manager.update_atmosphere()
-        self.atmosphere_manager.check_kill_combo()
+        """Update game state through the extracted gameplay updater."""
+        gameplay_updater.update_game(self)
 
     # ------------------------------------------------------------------
     # Screen event handlers — delegated to ScreenEventHandler
@@ -708,44 +568,5 @@ class Game(FPSGameBase):
         self.screen_event_handler.update_intro_logic(elapsed)
 
     def run(self) -> None:
-        """Main game loop"""
-        try:
-            while self.running:
-                if self.state == GameState.INTRO:
-                    self.handle_intro_events()
-                    if self.intro_start_time == 0:
-                        self.intro_start_time = pygame.time.get_ticks()
-                    elapsed = pygame.time.get_ticks() - self.intro_start_time
-
-                    self.ui_renderer.render_intro(
-                        self.intro_phase, self.intro_step, elapsed
-                    )
-                    self._update_intro_logic(elapsed)
-
-                elif self.state == GameState.MENU:
-                    self.handle_menu_events()
-                    self.ui_renderer.render_menu()
-
-                elif self.state == GameState.KEY_CONFIG:
-                    self.handle_key_config_events()
-                    self.ui_renderer.render_key_config(self)
-
-                elif self.state == GameState.MAP_SELECT:
-                    self.handle_map_select_events()
-                    self.ui_renderer.render_map_select(self)
-
-                elif self.state == GameState.PLAYING:
-                    self.screen_event_handler.handle_playing_state()
-
-                elif self.state == GameState.LEVEL_COMPLETE:
-                    self.handle_level_complete_events()
-                    self.ui_renderer.render_level_complete(self)
-
-                elif self.state == GameState.GAME_OVER:
-                    self.handle_game_over_events()
-                    self.ui_renderer.render_game_over(self)
-
-                self.clock.tick(C.FPS)
-        except (RuntimeError, pygame.error, OSError, ValueError, TypeError) as e:
-            logger.critical("CRASH: %s", e, exc_info=True)
-            raise
+        """Main game loop."""
+        game_loop.run(self)
