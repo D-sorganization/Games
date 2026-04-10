@@ -520,3 +520,4 @@ _pg.transform.smoothscale = MagicMock(  # type: ignore[attr-defined]
 )
 
 sys.modules["pygame"] = _pg
+# sync trigger 2026-04-10
