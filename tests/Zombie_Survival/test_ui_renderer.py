@@ -132,6 +132,14 @@ class TestUIRenderer:
         renderer = UIRenderer(mock_screen)
         renderer.render_hud(mock_game)
 
+    def test_render_hud_delegates_to_hud_views(self, mock_screen, mock_game):
+        renderer = UIRenderer(mock_screen)
+        with patch(
+            "games.Zombie_Survival.src.ui_renderer.ui_hud_views.render_hud"
+        ) as render_hud:
+            renderer.render_hud(mock_game)
+        render_hud.assert_called_once_with(renderer, mock_game)
+
     def test_render_hud_paused(self, mock_screen, mock_game):
         # Additional coverage for paused mode
         mock_game.paused = True
@@ -212,6 +220,14 @@ class TestUIRenderer:
         ) as render_pause_menu:
             renderer._render_pause_menu()
         render_pause_menu.assert_called_once_with(renderer)
+
+    def test_render_crosshair_delegates_to_hud_views(self, mock_screen):
+        renderer = UIRenderer(mock_screen)
+        with patch(
+            "games.Zombie_Survival.src.ui_renderer.ui_hud_views.render_crosshair"
+        ) as render_crosshair:
+            renderer._render_crosshair()
+        render_crosshair.assert_called_once_with(renderer)
 
     def test_blood_drips(self, mock_screen):
         renderer = UIRenderer(mock_screen)
