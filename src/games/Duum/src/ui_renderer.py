@@ -11,6 +11,7 @@ from games.shared.ui_renderer_base import UIRendererBase
 
 from . import constants as C  # noqa: N812
 from . import ui_hud_views, ui_menu_views, ui_overlay_views, ui_progress_views
+from .custom_types import DamageText
 
 try:
     import cv2
@@ -21,6 +22,7 @@ except ImportError:
 
 if TYPE_CHECKING:
     from .game import Game
+    from .player import Player
 
 logger = logging.getLogger(__name__)
 
@@ -111,6 +113,66 @@ class UIRenderer(UIRendererBase):
     def render_hud(self, game: Game) -> None:
         """Render the heads-up display including health, ammo, and game stats."""
         ui_hud_views.render_hud(self, game)
+
+    def _render_health_bar(self, game: Game) -> None:
+        """Render the player health bar."""
+        ui_hud_views.render_health_bar(self, game)
+
+    def _render_ammo_display(self, game: Game) -> None:
+        """Render the ammo counter and weapon name."""
+        ui_hud_views.render_ammo_display(self, game)
+
+    def _render_weapon_slots(self, game: Game) -> None:
+        """Render the weapon inventory slots."""
+        ui_hud_views.render_weapon_slots(self, game)
+
+    def _render_level_info(self, game: Game) -> None:
+        """Render level number, enemy count, and score."""
+        ui_hud_views.render_level_info(self, game)
+
+    def _render_minimap(self, game: Game) -> None:
+        """Render the minimap if enabled."""
+        ui_hud_views.render_minimap(self, game)
+
+    def _render_status_bars(self, game: Game) -> None:
+        """Render shield bar, stamina bar, and laser charge bar."""
+        ui_hud_views.render_status_bars(self, game)
+
+    def _render_messages(self, game: Game) -> None:
+        """Render floating damage texts and messages."""
+        ui_hud_views.render_messages(self, game)
+
+    def _render_controls_hint(self, game: Game) -> None:
+        """Render the controls hint text at the top of the screen."""
+        ui_hud_views.render_controls_hint(self)
+
+    def _render_pause_overlay(self, game: Game) -> None:
+        """Render the pause menu overlay if the game is paused."""
+        ui_hud_views.render_pause_overlay(self, game)
+
+    def _render_damage_texts(self, texts: list[DamageText]) -> None:
+        """Render floating damage text indicators."""
+        ui_hud_views.render_damage_texts(self, texts)
+
+    def _render_damage_flash(self, timer: int) -> None:
+        """Render red screen flash effect when player takes damage."""
+        ui_hud_views.render_damage_flash(self, timer)
+
+    def _render_shield_effect(self, player: Player) -> None:
+        """Render shield activation visual effects and status."""
+        ui_hud_views.render_shield_effect(self, player)
+
+    def _render_low_health_tint(self, player: Player) -> None:
+        """Render red screen tint when health is low."""
+        ui_hud_views.render_low_health_tint(self, player)
+
+    def _render_crosshair(self) -> None:
+        """Render the aiming crosshair at the center of the screen."""
+        ui_hud_views.render_crosshair(self)
+
+    def _render_secondary_charge(self, player: Player) -> None:
+        """Render secondary weapon charge bar."""
+        ui_hud_views.render_secondary_charge(self, player)
 
     def _render_pause_menu(self) -> None:
         """Render the pause menu overlay."""
