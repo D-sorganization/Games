@@ -1,16 +1,11 @@
 from __future__ import annotations
 
 import logging
-import random
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import pygame
 
-from games.shared.config import RaycasterConfig
-from games.shared.constants import (
-    PORTAL_RADIUS_SQ,
-    GameState,
-)
+from games.shared.constants import GameState
 from games.shared.event_bus import EventBus
 from games.shared.fps_game_base import FPSGameBase
 from games.shared.interfaces import Portal
@@ -18,14 +13,12 @@ from games.shared.raycaster import Raycaster
 from games.shared.sound_manager_base import SoundManagerBase
 
 from . import constants as C  # noqa: N812
-from . import game_loop, gameplay_updater
+from . import game_loop, gameplay_updater, progression_flow
 from .atmosphere_manager import AtmosphereManager
 from .combat_manager import ZSCombatManager
 from .entity_manager import EntityManager
 from .input_manager import InputManager
-from .map import Map
 from .particle_system import ParticleSystem
-from .player import Player
 from .projectile import Projectile
 from .renderer import GameRenderer
 from .screen_event_handler import ScreenEventHandler
@@ -33,6 +26,10 @@ from .sound import SoundManager
 from .spawn_manager import ZSSpawnManager
 from .ui_renderer import UIRenderer
 from .weapon_system import WeaponSystem
+
+if TYPE_CHECKING:
+    from .map import Map
+    from .player import Player
 
 logger = logging.getLogger(__name__)
 
@@ -251,121 +248,11 @@ class Game(FPSGameBase):
 
     def start_game(self) -> None:
         """Start new game"""
-        self.level = self.selected_start_level
-        self.lives = self.selected_lives
-        self.kills = 0
-        self.level_times = []
-        self.paused = False
-        self.particle_system.particles = []
-        self.damage_texts = []
-        self.entity_manager.reset()
-
-        # Reset Cheats/Progress
-        self.unlocked_weapons = {"pistol", "rifle"}
-        self.god_mode = False
-        self.cheat_mode_active = False
-
-        # Reset Combo & Atmosphere
-        self.kill_combo_count = 0
-        self.kill_combo_timer = 0
-        self.heartbeat_timer = 0
-        self.breath_timer = 0
-        self.groan_timer = 0
-        self.beast_timer = 0
-
-        # Reset combat manager state
-        self.kills = 0
-        self.kill_combo_count = 0
-        self.kill_combo_timer = 0
-        self.last_death_pos = None
-
-        # Create map with selected size
-        self.game_map = Map(self.selected_map_size)
-
-        # Initialize Raycaster with Config
-        ray_config = RaycasterConfig(
-            SCREEN_WIDTH=C.SCREEN_WIDTH,
-            SCREEN_HEIGHT=C.SCREEN_HEIGHT,
-            FOV=C.FOV,
-            HALF_FOV=C.HALF_FOV,
-            ZOOM_FOV_MULT=C.ZOOM_FOV_MULT,
-            DEFAULT_RENDER_SCALE=self.render_scale,
-            MAX_DEPTH=C.MAX_DEPTH,
-            FOG_START=C.FOG_START,
-            FOG_COLOR=C.FOG_COLOR,
-            LEVEL_THEMES=C.LEVEL_THEMES,
-            ENEMY_TYPES=C.ENEMY_TYPES,
-        )
-        self.raycaster = Raycaster(self.game_map, ray_config)
-        self.last_death_pos = None
-        self.portal = None
-
-        # Grab mouse
-        pygame.mouse.set_visible(False)
-        pygame.event.set_grab(True)
-
-        self.start_level()
+        progression_flow.start_game(self)
 
     def start_level(self) -> None:
         """Start a new level"""
-        if not (self.game_map is not None):
-            raise ValueError("DbC Blocked: Precondition failed.")
-        self.level_start_time = pygame.time.get_ticks()
-        self.total_paused_time = 0
-        self.pause_start_time = 0
-        self.particle_system.particles = []
-        self.damage_texts = []
-        self.damage_flash_timer = 0
-        self.visited_cells = set()  # Reset fog of war
-        self.portal = None
-
-        # Grab mouse for FPS gameplay
-        pygame.mouse.set_visible(False)
-        pygame.event.set_grab(True)
-
-        # Player Spawn Logic
-        player_pos = self._get_best_spawn_point()
-
-        # Preserve ammo and weapon selection from previous level if player exists
-        previous_ammo = None
-        previous_weapon = "pistol"
-        old_player = self.player
-        if old_player:
-            previous_ammo = old_player.ammo
-            previous_weapon = old_player.current_weapon
-
-        self.player = Player(player_pos[0], player_pos[1], player_pos[2])
-        if previous_ammo:
-            self.player.ammo = previous_ammo
-            if previous_weapon in self.unlocked_weapons:
-                self.player_current_weapon = previous_weapon
-            else:
-                self.player_current_weapon = "pistol"
-        # Validate current weapon is unlocked
-        # (e.g. Player init sets 'rifle' but it might be locked)
-        if self.player_current_weapon not in self.unlocked_weapons:
-            self.player_current_weapon = "pistol"
-
-        # Propagate God Mode state
-        self.player.god_mode = self.god_mode
-
-        # Delegate spawning to SpawnManager
-        self.entity_manager.reset()
-        self.spawn_manager.spawn_all(
-            player_pos, self.game_map, self.level, self.selected_difficulty
-        )
-
-        # Start Music
-        music_tracks = [
-            "music_loop",
-            "music_drums",
-            "music_wind",
-            "music_horror",
-            "music_piano",
-            "music_action",
-        ]
-        if hasattr(self, "sound_manager"):
-            self.sound_manager.start_music(random.choice(music_tracks))
+        progression_flow.start_level(self)
 
     # _handle_cheat_input, _handle_pause_toggle, _handle_weapon_keys,
     # _handle_pause_menu_click, _handle_gameplay_mouse_click,
@@ -417,58 +304,14 @@ class Game(FPSGameBase):
 
         Returns True when the caller should stop further update processing.
         """
-        if not self.player_alive:
-            if self.lives > 1:
-                self.lives -= 1
-                self.respawn_player()
-                return True
-            level_time = (
-                pygame.time.get_ticks() - self.level_start_time - self.total_paused_time
-            ) / 1000.0
-            self.level_times.append(level_time)
-            self.lives = 0
-            self.state = GameState.GAME_OVER
-            self.game_over_timer = 0
-            self.sound_manager.play_sound("game_over1")
-            pygame.mouse.set_visible(True)
-            pygame.event.set_grab(False)
-            return True
-        return False
+        return progression_flow.check_game_over(self)
 
     def _check_portal_completion(self) -> bool:
         """Spawn portal when all enemies are dead; transition on portal entry.
 
         Returns True when the caller should stop further update processing.
         """
-        enemies_alive = self.entity_manager.get_active_enemies()
-        if not enemies_alive:
-            if self.portal is None:
-                self.spawn_portal()
-                self.damage_texts.append(
-                    {
-                        "x": C.SCREEN_WIDTH // 2,
-                        "y": C.SCREEN_HEIGHT // 2,
-                        "text": "PORTAL OPENED!",
-                        "color": C.CYAN,
-                        "timer": 180,
-                        "vy": 0,
-                    }
-                )
-
-        if self.portal:
-            dx = self.portal["x"] - self.player_x
-            dy = self.portal["y"] - self.player_y
-            dist_sq = dx * dx + dy * dy
-            if dist_sq < PORTAL_RADIUS_SQ:
-                paused = self.total_paused_time
-                now = pygame.time.get_ticks()
-                level_time = (now - self.level_start_time - paused) / 1000.0
-                self.level_times.append(level_time)
-                self.state = GameState.LEVEL_COMPLETE
-                pygame.mouse.set_visible(True)
-                pygame.event.set_grab(False)
-                return True
-        return False
+        return progression_flow.check_portal_completion(self)
 
     def _handle_joystick_input(self, shield_active: bool) -> bool:
         """Process joystick axes and buttons; returns updated shield_active."""
