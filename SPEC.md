@@ -10,7 +10,7 @@
 | **Primary Language(s)** | Python 3.10+ (Pygame), JavaScript (Three.js for web) |
 | **License**             | MIT                                                  |
 | **Current Version**     | N/A                                                  |
-| **Spec Version**        | 1.1.21                                               |
+| **Spec Version**        | 1.1.22                                               |
 | **Last Spec Update**    | 2026-04-11                                           |
 
 ## 2. Purpose & Mission
@@ -110,6 +110,7 @@ Games/
 
 | Component             | Location                         | Purpose                                                                         |
 | --------------------- | -------------------------------- | ------------------------------------------------------------------------------- |
+| FPS Shared Base        | `src/games/shared/fps_game_base.py` | Shared constructor and gameplay utilities for FPS titles (Duum, Force Field, Zombie Survival), including common initialization flow and common event handlers |
 | Game Launcher         | `src/games/`                     | Central entry point, game discovery, selection UI, execution orchestration      |
 | Force Field Engine    | `src/games/Force_Field/engine/`  | Raycasting renderer, 3D-to-2D projection, collision detection                   |
 | Force Field Runtime   | `src/games/Force_Field/src/`     | Thin game facade plus extracted loop, session, combat, gameplay, screen-flow, and HUD view helper subsystems |
@@ -410,6 +411,7 @@ Active development. Core games (F1-F6, F8-F9) fully implemented and tested. F7 (
 | ---------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 2026-04-11 | 1.1.20  | Partially addressed issue `#736` by extracting shared FPS defaults and controls across Duum, Force Field, and Zombie Survival into `games.shared` modules, plus deduplicating Duum world-particle setup. This adds `FPS_SHARED_CONSTANTS`, shared input binding profiles, and a shared `WorldParticle` import in Duum particle setup. |
 | 2026-04-11 | 1.1.21  | Partially addressed issue `#737` by decomposing `MonsterStyleRenderer.render` into smaller helper methods for body, head, arms, and legs rendering, reducing function size and preserving behavior. |
+| 2026-04-11 | 1.1.22  | Extracted shared FPS constructor initialization into `FPSGameBase` and rewired the Duum, Force Field, and Zombie Survival constructors through the shared setup path. |
 | 2026-04-11 | 1.1.19  | Refactored Force Field input handling to narrow direct game-object dependency chains behind handler accessors and action helpers, with focused regression coverage for pause and cheat-input behavior. |
 | 2026-04-11 | 1.1.18  | Introduced immutable parameter objects for the raycaster sprite, textured wall, and minimap render helpers, updated the raycaster wrappers to pass those render contexts, and added validation coverage for the new bundles. |
 | 2026-04-10 | 1.1.16  | Partially addressed issue `#721` by extracting Duum weapon/combat orchestration out of `src/games/Duum/src/game.py` into `weapon_system.py`, keeping `Game` as the public façade, and adding focused weapon-system plus delegation tests around the new seam. |

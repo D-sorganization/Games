@@ -1,15 +1,8 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any
 
-import pygame
-
-from games.shared.constants import GameState
-from games.shared.event_bus import EventBus
 from games.shared.fps_game_base import FPSGameBase
-from games.shared.interfaces import Portal
-from games.shared.raycaster import Raycaster
 from games.shared.sound_manager_base import SoundManagerBase
 
 from . import constants as C  # noqa: N812
@@ -26,10 +19,6 @@ from .sound import SoundManager
 from .spawn_manager import ZSSpawnManager
 from .ui_renderer import UIRenderer
 from .weapon_system import WeaponSystem
-
-if TYPE_CHECKING:
-    from .map import Map
-    from .player import Player
 
 logger = logging.getLogger(__name__)
 
@@ -48,79 +37,18 @@ class Game(FPSGameBase):
                 provided, a default SoundManager is created.  Pass a
                 NullSoundManager for testing or headless environments.
         """
-        self.C = C
-        flags = pygame.SCALED | pygame.RESIZABLE
-        self.screen = pygame.display.set_mode((C.SCREEN_WIDTH, C.SCREEN_HEIGHT), flags)
-        pygame.display.set_caption("Zombie Survival - Undead Nightmare")
-        self.clock = pygame.time.Clock()
-        self.running = True
-
-        # Initialize Renderer
-        self.renderer = GameRenderer(self.screen)
-        self.ui_renderer = UIRenderer(self.screen)
-
-        # Game state
-        self.state = GameState.INTRO
-        self.intro_phase = 0
-        self.intro_step = 0
-        self.intro_timer = 0
-        self.intro_start_time = 0
-        self.last_death_pos: tuple[float, float] | None = None
-
-        # Gameplay state
-        self.level = 1
-        self.kills = 0
-        self.level_start_time = 0
-        self.level_times: list[float] = []
-        self.selected_map_size = C.DEFAULT_MAP_SIZE
-        self.render_scale = C.DEFAULT_RENDER_SCALE
-        self.paused = False
-        self.pause_start_time = 0
-        self.total_paused_time = 0
-        self.show_damage = True
-        self.selected_difficulty = C.DEFAULT_DIFFICULTY
-        self.selected_lives = C.DEFAULT_LIVES
-        self.selected_start_level = C.DEFAULT_START_LEVEL
-
-        # Combo & Atmosphere
-        self.kill_combo_count = 0
-        self.kill_combo_timer = 0
-        self.heartbeat_timer = 0
-        self.breath_timer = 0
-        self.groan_timer = 0
-        self.beast_timer = 0
-
-        # Visual effects (Game Logic owned)
-        self.particle_system = ParticleSystem()
-        self.damage_texts: list[dict[str, Any]] = []
-        self.damage_flash_timer = 0
-
-        # Game objects
-        self.game_map: Map | None = None
-        self.player: Player | None = None
-        self.entity_manager = EntityManager()
-        self.raycaster: Raycaster | None = None
-        self.portal: Portal | None = None
-        self.health = C.PLAYER_HEALTH
-        self.lives = C.DEFAULT_LIVES
-
-        # Unlocked weapons tracking - start with basic weapons
-        self.unlocked_weapons = {"pistol", "rifle"}
-        self.cheat_mode_active = False
-        self.current_cheat_input = ""
-        self.god_mode = False
-
-        self.game_over_timer = 0
-
-        # Audio (must be initialized before managers that depend on it)
-        self.sound_manager = (
-            sound_manager if sound_manager is not None else SoundManager()
+        super().init_fps_game(
+            C,
+            caption="Zombie Survival - Undead Nightmare",
+            sound_manager=sound_manager,
+            sound_manager_factory=SoundManager,
+            input_manager=InputManager(),
+            entity_manager=EntityManager(),
+            particle_system=ParticleSystem(),
+            unlocked_weapons={"pistol", "rifle"},
+            render_cls=GameRenderer,
+            ui_render_cls=UIRenderer,
         )
-        self.sound_manager.start_music()
-
-        # Event Bus -- lightweight pub/sub for decoupling subsystems
-        self.event_bus = EventBus()
-        self._wire_event_bus()
 
         # Managers (decomposed from Game god object -- constructor injection)
         self.spawn_manager = ZSSpawnManager(self.entity_manager)
@@ -135,24 +63,6 @@ class Game(FPSGameBase):
         self.weapon_system = WeaponSystem(self)
         self.atmosphere_manager = AtmosphereManager(self)
         self.screen_event_handler = ScreenEventHandler(self)
-
-        # Input
-        self.joystick = None
-        if pygame.joystick.get_count() > 0:
-            try:
-                self.joystick = pygame.joystick.Joystick(0)
-                self.joystick.init()
-                logger.info("Controller detected: %s", self.joystick.get_name())
-            except (pygame.error, OSError):
-                logger.exception("Controller init failed")
-
-        # Fog of War
-        self.visited_cells: set[tuple[int, int]] = set()
-        self.show_minimap = True
-
-        # Input Manager
-        self.input_manager = InputManager()
-        self.binding_action: str | None = None
 
     # --- Law of Demeter (LOD) Flattened Properties ---
     @property

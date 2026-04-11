@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 from games.shared.fps_game_base import FPSGameBase
 
@@ -283,3 +283,97 @@ class TestRespawnPlayer:
         game.player = MagicMock()
         game.respawn_player()
         assert any("RESPAWNED" in t["text"] for t in game.damage_texts)
+
+
+class TestInitFPSGame:
+    """Tests for shared FPS init helper."""
+
+    def test_init_fps_game_sets_common_state(self) -> None:
+        class InitGame(FPSGameBase):
+            def _wire_event_bus(self) -> None:
+                self._event_bus_wired = True
+
+        class Constants(SimpleNamespace):
+            SCREEN_WIDTH = 800
+            SCREEN_HEIGHT = 600
+            SPAWN_SAFETY_MARGIN = 2
+            DEFAULT_PLAYER_SPAWN = (5.5, 5.5, 0.0)
+            WHITE = (255, 255, 255)
+            CYAN = (0, 255, 255)
+            RED = (255, 0, 0)
+            YELLOW = (255, 255, 0)
+            BLACK = (0, 0, 0)
+            PLAYER_HEALTH = 100
+            DEFAULT_MAP_SIZE = 40
+            DEFAULT_RENDER_SCALE = 2
+            DEFAULT_DIFFICULTY = "NORMAL"
+            DEFAULT_LIVES = 3
+            DEFAULT_START_LEVEL = 1
+
+        fake_event_bus = MagicMock()
+        fake_sound_manager = MagicMock()
+        fake_screen = MagicMock()
+        fake_clock = MagicMock()
+        fake_renderer = MagicMock()
+        fake_ui_renderer = MagicMock()
+        fake_joystick = MagicMock()
+        fake_input_manager = MagicMock()
+        fake_entity_manager = MagicMock()
+        fake_particle_system = MagicMock()
+
+        with (
+            patch(
+                "games.shared.fps_game_base.pygame.display.set_mode",
+                return_value=fake_screen,
+            ),
+            patch(
+                "games.shared.fps_game_base.pygame.display.set_caption",
+            ) as mock_set_caption,
+            patch(
+                "games.shared.fps_game_base.pygame.time.Clock",
+                return_value=fake_clock,
+            ),
+            patch(
+                "games.shared.fps_game_base.pygame.joystick",
+                new=MagicMock(
+                    get_count=MagicMock(return_value=1),
+                    Joystick=MagicMock(return_value=fake_joystick),
+                ),
+            ),
+            patch(
+                "games.shared.fps_game_base.EventBus",
+                return_value=fake_event_bus,
+            ),
+        ):
+            game = InitGame()
+            game.init_fps_game(
+                Constants,
+                caption="Test FPS",
+                sound_manager=fake_sound_manager,
+                sound_manager_factory=MagicMock(return_value=fake_sound_manager),
+                input_manager=fake_input_manager,
+                entity_manager=fake_entity_manager,
+                particle_system=fake_particle_system,
+                unlocked_weapons={"pistol", "rifle"},
+                render_cls=lambda _screen: fake_renderer,
+                ui_render_cls=lambda _screen: fake_ui_renderer,
+            )
+
+        mock_set_caption.assert_called_once_with("Test FPS")
+        assert game.C is Constants
+        assert game.screen is fake_screen
+        assert game.clock is fake_clock
+        assert game.running is True
+        assert game.render_scale == Constants.DEFAULT_RENDER_SCALE
+        assert game.selected_map_size == Constants.DEFAULT_MAP_SIZE
+        assert game.health == Constants.PLAYER_HEALTH
+        assert game.unlocked_weapons == {"pistol", "rifle"}
+        assert game.sound_manager is fake_sound_manager
+        assert game.input_manager is fake_input_manager
+        assert game.entity_manager is fake_entity_manager
+        assert game.particle_system is fake_particle_system
+        assert game.event_bus is fake_event_bus
+        assert game._event_bus_wired is True
+        assert game.visited_cells == set()
+        assert game.show_minimap is True
+        assert game.joystick is fake_joystick
