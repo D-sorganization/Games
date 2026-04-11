@@ -9,13 +9,14 @@ from __future__ import annotations
 
 import math
 from collections import OrderedDict
-from collections.abc import Callable, Sequence
+from collections.abc import Callable
 from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 import pygame
 
 from .bot_renderer import BotRenderer
+from .raycaster_render_contexts import SpriteRenderContext
 from .raycaster_rendering import (
     blit_strip_scaled,
     blit_whole_scaled,
@@ -42,51 +43,34 @@ LARGE_SPRITE_THRESHOLD = 200
 # ---------------------------------------------------------------------------
 
 
-def render_sprites(  # noqa: PLR0913
-    player: Player,
-    bots: Sequence[Bot],
-    projectiles: Sequence[Projectile],
-    particles: Sequence[WorldParticle],
-    half_fov: float,
-    view_offset_y: float,
-    flash_intensity: float,
-    config: RaycasterConfig,
-    num_rays: int,
-    render_scale: int,
-    view_surface: pygame.Surface,
-    z_buffer: np.ndarray[Any, np.dtype[Any]],
-    sprite_cache: OrderedDict[tuple, pygame.Surface],
-    sprite_cache_max: int,
-    sprite_cache_evict: int,
-    scaled_sprite_cache: OrderedDict[tuple, pygame.Surface],
-    scaled_cache_max: int,
-    scaled_cache_evict: int,
-    evict_fn: Callable[..., None],
+def render_sprites(
+    context: SpriteRenderContext,
 ) -> None:
     """Render all sprites (bots, projectiles, particles) to the view surface."""
     sprites_to_render: list[tuple[Any, int]] = []
 
+    player = context.player
     p_cos = math.cos(player.angle)
     p_sin = math.sin(player.angle)
-    max_dist_sq = config.MAX_DEPTH * config.MAX_DEPTH
+    max_dist_sq = context.config.MAX_DEPTH * context.config.MAX_DEPTH
 
-    for bot in bots:
+    for bot in context.bots:
         if bot.removed:
             continue
         sprites_to_render.append((bot, 0))
 
-    for proj in projectiles:
+    for proj in context.projectiles:
         if not proj.alive:
             continue
         sprites_to_render.append((proj, 1))
 
-    for part in particles:
+    for part in context.particles:
         if not part.alive:
             continue
         sprites_to_render.append((part, 2))
 
     final_sprites = _cull_and_sort_sprites(
-        sprites_to_render, player, p_cos, p_sin, max_dist_sq, half_fov
+        sprites_to_render, player, p_cos, p_sin, max_dist_sq, context.half_fov
     )
 
     for entity, dist, angle, type_id in final_sprites:
@@ -97,13 +81,13 @@ def render_sprites(  # noqa: PLR0913
                 proj,
                 dist,
                 angle,
-                half_fov,
-                view_offset_y,
-                config,
-                num_rays,
-                render_scale,
-                view_surface,
-                z_buffer,
+                context.half_fov,
+                context.view_offset_y,
+                context.config,
+                context.num_rays,
+                context.render_scale,
+                context.view_surface,
+                context.z_buffer,
             )
         elif type_id == 2:
             part = cast("WorldParticle", entity)
@@ -112,13 +96,13 @@ def render_sprites(  # noqa: PLR0913
                 part,
                 dist,
                 angle,
-                half_fov,
-                view_offset_y,
-                config,
-                num_rays,
-                render_scale,
-                view_surface,
-                z_buffer,
+                context.half_fov,
+                context.view_offset_y,
+                context.config,
+                context.num_rays,
+                context.render_scale,
+                context.view_surface,
+                context.z_buffer,
             )
         else:
             bot = cast("Bot", entity)
@@ -127,21 +111,21 @@ def render_sprites(  # noqa: PLR0913
                 bot,
                 dist,
                 angle,
-                half_fov,
-                view_offset_y,
-                flash_intensity,
-                config,
-                num_rays,
-                render_scale,
-                view_surface,
-                z_buffer,
-                sprite_cache,
-                sprite_cache_max,
-                sprite_cache_evict,
-                scaled_sprite_cache,
-                scaled_cache_max,
-                scaled_cache_evict,
-                evict_fn,
+                context.half_fov,
+                context.view_offset_y,
+                context.flash_intensity,
+                context.config,
+                context.num_rays,
+                context.render_scale,
+                context.view_surface,
+                context.z_buffer,
+                context.sprite_cache,
+                context.sprite_cache_max,
+                context.sprite_cache_evict,
+                context.scaled_sprite_cache,
+                context.scaled_cache_max,
+                context.scaled_cache_evict,
+                context.evict_fn,
             )
 
 

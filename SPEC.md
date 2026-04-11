@@ -10,7 +10,7 @@
 | **Primary Language(s)** | Python 3.10+ (Pygame), JavaScript (Three.js for web) |
 | **License**             | MIT                                                  |
 | **Current Version**     | N/A                                                  |
-| **Spec Version**        | 1.1.17                                               |
+| **Spec Version**        | 1.1.18                                               |
 | **Last Spec Update**    | 2026-04-11                                           |
 
 ## 2. Purpose & Mission
@@ -139,7 +139,7 @@ Games/
 | F6  | Zombie Survival (Web 3D)        | ✅     | Web-based 3D game using Three.js, multiplayer-ready backend, spawn waves, survival mechanics          |
 | F7  | QuatGolf (Quaternion Golf)      | 🔄     | Golf game with quaternion-based ball rotation physics, procedural courses, AI opponents               |
 | F8  | Unified Launcher                | ✅     | Central game selection interface, launch management, window handling, game exit/resume                |
-| F9  | Shared Rendering Infrastructure | ✅     | Common rendering abstractions supporting 2D drawing, sprite management, color/texture handling        |
+| F9  | Shared Rendering Infrastructure | ✅     | Common rendering abstractions supporting 2D drawing, sprite management, color/texture handling, and immutable raycaster render contexts        |
 
 ### API / Interface Contract
 
@@ -408,6 +408,7 @@ Active development. Core games (F1-F6, F8-F9) fully implemented and tested. F7 (
 
 | Date       | Version | Changes                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | ---------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-04-11 | 1.1.18  | Introduced immutable parameter objects for the raycaster sprite, textured wall, and minimap render helpers, updated the raycaster wrappers to pass those render contexts, and added validation coverage for the new bundles. |
 | 2026-04-10 | 1.1.16  | Partially addressed issue `#721` by extracting Duum weapon/combat orchestration out of `src/games/Duum/src/game.py` into `weapon_system.py`, keeping `Game` as the public façade, and adding focused weapon-system plus delegation tests around the new seam. |
 | 2026-04-10 | 1.1.15  | Partially addressed issue `#721` by extracting Force Field and Duum HUD rendering out of their respective `ui_renderer.py` files into `ui_hud_views.py` modules, keeping `UIRenderer` as the public façade, and adding seam tests around the new HUD delegation points. Force Field `ui_renderer.py` reduced from 556 → 260 lines; Duum from 594 → 254 lines. |
 | 2026-04-10 | 1.1.14  | Partially addressed issue `#721` by extracting Zombie Survival HUD rendering out of `src/games/Zombie_Survival/src/ui_renderer.py` into `ui_hud_views.py`, keeping `UIRenderer` as the public façade, and adding seam tests around the new HUD delegation points.                                                                                                                                                                                            |
