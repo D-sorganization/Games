@@ -10,8 +10,8 @@
 | **Primary Language(s)** | Python 3.10+ (Pygame), JavaScript (Three.js for web) |
 | **License**             | MIT                                                  |
 | **Current Version**     | N/A                                                  |
-| **Spec Version**        | 1.1.16                                               |
-| **Last Spec Update**    | 2026-04-10                                           |
+| **Spec Version**        | 1.1.17                                               |
+| **Last Spec Update**    | 2026-04-11                                           |
 
 ## 2. Purpose & Mission
 
@@ -40,7 +40,7 @@ Games is Jules' unified gaming platform providing a collection of complete, play
 
 ### System Context
 
-Games is a standalone entertainment application within the D-sorganization fleet with no dependencies on other fleet repositories. It depends on Pygame 2.6.1 for core rendering and input, OpenCV for image processing, and optionally provides Three.js-based web game implementations. The system is self-contained with all game logic, shared utilities, and test infrastructure included.
+Games is a standalone entertainment application within the D-sorganization fleet with no dependencies on other fleet repositories. It depends on Pygame 2.6.1 for core rendering and input, OpenCV for image processing, and optionally provides Three.js-based web game implementations. Three.js is not vendored in the source tree; any future browser-side usage should resolve the dependency externally. The system is self-contained with all game logic, shared utilities, and test infrastructure included.
 
 ### Module Map
 
