@@ -476,9 +476,52 @@ class TestRaycasterInit:
         )
 
     def test_blit_view_to_screen_render_scale(self, raycaster: Raycaster) -> None:
-        screen = DummySurface((800, 600))
+        # Render scale = 1 blits the precomputed view surface directly.
+        screen = MagicMock()
         raycaster.render_scale = 2
-        raycaster._blit_view_to_screen(screen)
+        raycaster.view_surface = DummySurface((10, 10))
+        scaled_surface = DummySurface((800, 600))
+
+        with patch("games.shared.raycaster.pygame.transform.scale") as mock_scale:
+            mock_scale.return_value = scaled_surface
+            with patch.object(screen, "blit") as mock_blit:
+                raycaster._blit_view_to_screen(screen)
+                mock_scale.assert_called_once_with(
+                    raycaster.view_surface,
+                    (
+                        raycaster.config.SCREEN_WIDTH,
+                        raycaster.config.SCREEN_HEIGHT,
+                    ),
+                )
+                mock_blit.assert_called_once_with(scaled_surface, (0, 0))
+        screen = MagicMock()
+
+        raycaster.render_scale = 1
+        with patch.object(screen, "blit") as direct_blit:
+            raycaster._blit_view_to_screen(screen)
+            direct_blit.assert_called_once_with(raycaster.view_surface, (0, 0))
+
+    def test_generate_background_surface_caches(self, raycaster: Raycaster) -> None:
+        fake_surfaces = ("bg", "scaled_bg", 7)
+
+        with patch(
+            "games.shared.raycaster._generate_background_surface_fn",
+            return_value=fake_surfaces,
+        ) as mock_generate:
+            raycaster._generate_background_surface(4)
+
+        mock_generate.assert_called_once_with(
+            4,
+            raycaster.config.LEVEL_THEMES or [],
+            raycaster.config.SCREEN_WIDTH,
+            raycaster.config.SCREEN_HEIGHT,
+            raycaster.config.GRAY,
+            raycaster.config.DARK_GRAY,
+        )
+        assert raycaster._background_surface == "bg"
+        assert raycaster._scaled_background_surface == "scaled_bg"
+        assert raycaster._cached_background_theme_idx == 7
+        assert mock_generate.call_count == 1
 
     def test_render_textured_wall_specifics(self, raycaster: Raycaster) -> None:
         """Test textured walls with shading, fog and edge cases."""
