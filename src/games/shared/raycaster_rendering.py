@@ -16,11 +16,15 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 import pygame
 
+from .raycaster_render_contexts import (
+    MinimapRenderContext,
+    TexturedWallColumnContext,
+)
+
 if TYPE_CHECKING:
     from collections import OrderedDict
-    from collections.abc import Sequence
 
-    from .interfaces import Bot, Player, Portal, Projectile
+    from .interfaces import Player, Projectile
 
 
 # ---------------------------------------------------------------------------
@@ -69,57 +73,66 @@ def prepare_wall_render_data(
     )
 
 
-def render_textured_wall_column(  # noqa: PLR0913
-    i: int,
-    wt: int,
-    h: int,
-    top: int,
-    wall_x_hit: float,
-    shade: float,
-    fog: float,
-    wall_strips: dict[int, list[pygame.Surface]],
-    wall_colors: dict[int, tuple[int, int, int]],
-    view_surface: pygame.Surface,
-    blits_sequence: list[Any],
-    gray: tuple[int, int, int],
-    texture_map: dict[int, str],
-    shading_surfaces: list[pygame.Surface],
-    fog_surfaces: list[pygame.Surface],
-    get_cached_strip_fn: Any,
+def render_textured_wall_column(
+    context: TexturedWallColumnContext,
 ) -> None:
     """Render a single textured wall column with shading and fog."""
-    strips = wall_strips[wt]
+    strips = context.wall_strips[context.wt]
     tex_w = len(strips)
-    tex_x = int(np.clip(int(wall_x_hit * tex_w), 0, tex_w - 1))
+    tex_x = int(np.clip(int(context.wall_x_hit * tex_w), 0, tex_w - 1))
 
-    if h >= 8000:
+    if context.h >= 8000:
         # Solid colour fallback for extreme close-up
-        col = wall_colors.get(wt, gray)
-        col = (int(col[0] * shade), int(col[1] * shade), int(col[2] * shade))
-        pygame.draw.rect(view_surface, col, (i, top, 1, h))
+        col = context.wall_colors.get(context.wt, context.gray)
+        col = (
+            int(col[0] * context.shade),
+            int(col[1] * context.shade),
+            int(col[2] * context.shade),
+        )
+        pygame.draw.rect(
+            context.view_surface,
+            col,
+            (context.i, context.top, 1, context.h),
+        )
         return
 
-    tname = texture_map.get(wt, "brick")
-    scaled_strip = get_cached_strip_fn(tname, tex_x, int(h))
+    tname = context.texture_map.get(context.wt, "brick")
+    scaled_strip = context.get_cached_strip_fn(tname, tex_x, int(context.h))
 
     if not scaled_strip:
-        col = wall_colors.get(wt, gray)
-        pygame.draw.rect(view_surface, col, (i, top, 1, h))
+        col = context.wall_colors.get(context.wt, context.gray)
+        pygame.draw.rect(
+            context.view_surface,
+            col,
+            (context.i, context.top, 1, context.h),
+        )
         return
 
-    blits_sequence.append((scaled_strip, (i, top)))
+    context.blits_sequence.append((scaled_strip, (context.i, context.top)))
 
     # Shading overlay
-    if shade < 1.0:
-        alpha = max(0, min(255, int(255 * (1.0 - shade))))
+    if context.shade < 1.0:
+        alpha = max(0, min(255, int(255 * (1.0 - context.shade))))
         if alpha > 0:
-            blits_sequence.append((shading_surfaces[alpha], (i, top), (0, 0, 1, h)))
+            context.blits_sequence.append(
+                (
+                    context.shading_surfaces[alpha],
+                    (context.i, context.top),
+                    (0, 0, 1, context.h),
+                )
+            )
 
     # Fog overlay
-    if fog > 0:
-        fog_alpha = max(0, min(255, int(255 * fog)))
+    if context.fog > 0:
+        fog_alpha = max(0, min(255, int(255 * context.fog)))
         if fog_alpha > 0:
-            blits_sequence.append((fog_surfaces[fog_alpha], (i, top), (0, 0, 1, h)))
+            context.blits_sequence.append(
+                (
+                    context.fog_surfaces[fog_alpha],
+                    (context.i, context.top),
+                    (0, 0, 1, context.h),
+                )
+            )
 
 
 def render_solid_wall_column(
@@ -496,24 +509,8 @@ def generate_minimap_cache(
     return surface
 
 
-def render_minimap(  # noqa: PLR0913
-    screen: pygame.Surface,
-    player: Player,
-    bots: Sequence[Bot],
-    minimap_surface: pygame.Surface | None,
-    minimap_size: int,
-    minimap_scale: float,
-    minimap_x: int,
-    minimap_y: int,
-    fog_surface: pygame.Surface | None,
-    fog_visited_count: int,
-    visited_cells: set[tuple[int, int]] | None,
-    portal: Portal | None,
-    enemy_types: dict[str, Any] | None,
-    black: tuple[int, int, int],
-    red: tuple[int, int, int],
-    green: tuple[int, int, int],
-    cyan: tuple[int, int, int],
+def render_minimap(
+    context: MinimapRenderContext,
 ) -> tuple[pygame.Surface | None, int]:
     """Render 2D minimap with fog of war support.
 
@@ -521,67 +518,99 @@ def render_minimap(  # noqa: PLR0913
         (fog_surface, fog_visited_count) -- caller should update its cached state.
     """
     pygame.draw.rect(
-        screen,
-        black,
-        (minimap_x - 2, minimap_y - 2, minimap_size + 4, minimap_size + 4),
+        context.screen,
+        context.black,
+        (
+            context.minimap_x - 2,
+            context.minimap_y - 2,
+            context.minimap_size + 4,
+            context.minimap_size + 4,
+        ),
     )
 
-    if minimap_surface:
-        if visited_cells is not None:
-            visited_count = len(visited_cells)
+    fog_surface = context.fog_surface
+    fog_visited_count = context.fog_visited_count
+
+    if context.minimap_surface:
+        if context.visited_cells is not None:
+            visited_count = len(context.visited_cells)
             if fog_surface is None or fog_visited_count != visited_count:
                 fog_surface = pygame.Surface(
-                    (minimap_size, minimap_size), pygame.SRCALPHA
+                    (context.minimap_size, context.minimap_size), pygame.SRCALPHA
                 )
                 fog_surface.fill((0, 0, 0, 255))
-                for vx, vy in visited_cells:
+                for vx, vy in context.visited_cells:
                     fog_surface.fill(
                         (0, 0, 0, 0),
                         rect=(
-                            vx * minimap_scale,
-                            vy * minimap_scale,
-                            minimap_scale,
-                            minimap_scale,
+                            vx * context.minimap_scale,
+                            vy * context.minimap_scale,
+                            context.minimap_scale,
+                            context.minimap_scale,
                         ),
                     )
                 fog_visited_count = visited_count
-            screen.blit(minimap_surface, (minimap_x, minimap_y))
-            screen.blit(fog_surface, (minimap_x, minimap_y))
+            context.screen.blit(
+                context.minimap_surface,
+                (context.minimap_x, context.minimap_y),
+            )
+            context.screen.blit(fog_surface, (context.minimap_x, context.minimap_y))
         else:
-            screen.blit(minimap_surface, (minimap_x, minimap_y))
-
-    if portal is not None:
-        px, py = int(portal["x"]), int(portal["y"])
-        if visited_cells is None or (px, py) in visited_cells:
-            portal_map_x = minimap_x + px * minimap_scale
-            portal_map_y = minimap_y + py * minimap_scale
-            pygame.draw.circle(
-                screen,
-                cyan,
-                (int(portal_map_x), int(portal_map_y)),
-                int(minimap_scale * 2),
+            context.screen.blit(
+                context.minimap_surface,
+                (context.minimap_x, context.minimap_y),
             )
 
-    for bot in bots:
+    if context.portal is not None:
+        px, py = int(context.portal["x"]), int(context.portal["y"])
+        if context.visited_cells is None or (px, py) in context.visited_cells:
+            portal_map_x = context.minimap_x + px * context.minimap_scale
+            portal_map_y = context.minimap_y + py * context.minimap_scale
+            pygame.draw.circle(
+                context.screen,
+                context.cyan,
+                (int(portal_map_x), int(portal_map_y)),
+                int(context.minimap_scale * 2),
+            )
+
+    for bot in context.bots:
         if (
             bot.alive
             and bot.enemy_type != "health_pack"
-            and enemy_types is not None
-            and enemy_types[bot.enemy_type].get("visual_style") != "item"
+            and context.enemy_types is not None
+            and context.enemy_types[bot.enemy_type].get("visual_style") != "item"
         ):
             bot_cell_x = int(bot.x)
             bot_cell_y = int(bot.y)
-            if visited_cells is None or (bot_cell_x, bot_cell_y) in visited_cells:
-                bot_x = minimap_x + bot.x * minimap_scale
-                bot_y = minimap_y + bot.y * minimap_scale
-                pygame.draw.circle(screen, red, (int(bot_x), int(bot_y)), 3)
+            if (
+                context.visited_cells is None
+                or (
+                    bot_cell_x,
+                    bot_cell_y,
+                )
+                in context.visited_cells
+            ):
+                bot_x = context.minimap_x + bot.x * context.minimap_scale
+                bot_y = context.minimap_y + bot.y * context.minimap_scale
+                pygame.draw.circle(
+                    context.screen,
+                    context.red,
+                    (int(bot_x), int(bot_y)),
+                    3,
+                )
 
-    player_x = minimap_x + player.x * minimap_scale
-    player_y = minimap_y + player.y * minimap_scale
-    pygame.draw.circle(screen, green, (int(player_x), int(player_y)), 3)
+    player_x = context.minimap_x + context.player.x * context.minimap_scale
+    player_y = context.minimap_y + context.player.y * context.minimap_scale
+    pygame.draw.circle(context.screen, context.green, (int(player_x), int(player_y)), 3)
 
-    dir_x = player_x + math.cos(player.angle) * 10
-    dir_y = player_y + math.sin(player.angle) * 10
-    pygame.draw.line(screen, green, (player_x, player_y), (dir_x, dir_y), 2)
+    dir_x = player_x + math.cos(context.player.angle) * 10
+    dir_y = player_y + math.sin(context.player.angle) * 10
+    pygame.draw.line(
+        context.screen,
+        context.green,
+        (player_x, player_y),
+        (dir_x, dir_y),
+        2,
+    )
 
     return fog_surface, fog_visited_count

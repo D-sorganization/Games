@@ -16,6 +16,11 @@ from .raycaster_math import (
     init_dda_params,
     perform_dda_loop,
 )
+from .raycaster_render_contexts import (
+    MinimapRenderContext,
+    SpriteRenderContext,
+    TexturedWallColumnContext,
+)
 from .raycaster_rendering import (
     generate_background_surface as _generate_background_surface_fn,
 )
@@ -354,7 +359,9 @@ class Raycaster:
             self.grid = self.game_map.grid
             self.np_grid = np.array(self.game_map.grid, dtype=np.int8)
 
-    def _calculate_rays(self, player: Player) -> tuple[
+    def _calculate_rays(
+        self, player: Player
+    ) -> tuple[
         np.ndarray[Any, np.dtype[Any]],
         np.ndarray[Any, np.dtype[Any]],
         np.ndarray[Any, np.dtype[Any]],
@@ -641,22 +648,24 @@ class Raycaster:
     ) -> None:
         """Render a single textured wall column with shading and fog."""
         render_textured_wall_column(
-            i,
-            wt,
-            h,
-            top,
-            wall_x_hit,
-            shade,
-            fog,
-            wall_strips,
-            wall_colors,
-            view_surface,
-            blits_sequence,
-            self.config.GRAY,
-            self.texture_map,
-            self.shading_surfaces,
-            self.fog_surfaces,
-            self._get_cached_strip,
+            TexturedWallColumnContext(
+                i,
+                wt,
+                h,
+                top,
+                wall_x_hit,
+                shade,
+                fog,
+                wall_strips,
+                wall_colors,
+                view_surface,
+                blits_sequence,
+                self.config.GRAY,
+                self.texture_map,
+                self.shading_surfaces,
+                self.fog_surfaces,
+                self._get_cached_strip,
+            )
         )
 
     def _render_solid_wall(
@@ -699,25 +708,27 @@ class Raycaster:
         Delegates to raycaster_sprites module for the actual rendering logic.
         """
         _render_sprites_fn(
-            player,
-            bots,
-            projectiles,
-            particles,
-            half_fov,
-            view_offset_y,
-            flash_intensity,
-            self.config,
-            self.num_rays,
-            self.render_scale,
-            self.view_surface,
-            self.z_buffer,
-            self.sprite_cache,
-            self._SPRITE_CACHE_MAX,
-            self._SPRITE_CACHE_EVICT,
-            self._scaled_sprite_cache,
-            self._SCALED_SPRITE_CACHE_MAX,
-            self._SCALED_SPRITE_CACHE_EVICT,
-            self._evict_lru,
+            SpriteRenderContext(
+                player,
+                bots,
+                projectiles,
+                particles,
+                half_fov,
+                view_offset_y,
+                flash_intensity,
+                self.config,
+                self.num_rays,
+                self.render_scale,
+                self.view_surface,
+                self.z_buffer,
+                self.sprite_cache,
+                self._SPRITE_CACHE_MAX,
+                self._SPRITE_CACHE_EVICT,
+                self._scaled_sprite_cache,
+                self._SCALED_SPRITE_CACHE_MAX,
+                self._SCALED_SPRITE_CACHE_EVICT,
+                self._evict_lru,
+            )
         )
 
     def _generate_background_surface(self, level: int) -> None:
@@ -792,21 +803,23 @@ class Raycaster:
         minimap_y = 20
 
         self._fog_surface, self._fog_visited_count = _render_minimap_fn(
-            screen,
-            player,
-            bots,
-            self.minimap_surface,
-            self.minimap_size,
-            self.minimap_scale,
-            minimap_x,
-            minimap_y,
-            self._fog_surface,
-            self._fog_visited_count,
-            visited_cells,
-            portal,
-            self.config.ENEMY_TYPES,
-            self.config.BLACK,
-            self.config.RED,
-            self.config.GREEN,
-            self.config.CYAN,
+            MinimapRenderContext(
+                screen,
+                player,
+                bots,
+                self.minimap_surface,
+                self.minimap_size,
+                self.minimap_scale,
+                minimap_x,
+                minimap_y,
+                self._fog_surface,
+                self._fog_visited_count,
+                visited_cells,
+                portal,
+                self.config.ENEMY_TYPES,
+                self.config.BLACK,
+                self.config.RED,
+                self.config.GREEN,
+                self.config.CYAN,
+            )
         )
