@@ -493,9 +493,7 @@ class TestRaycasterInit:
                         raycaster.config.SCREEN_HEIGHT,
                     ),
                 )
-                mock_blit.assert_called_once_with(
-                    scaled_surface, (0, 0)
-                )
+                mock_blit.assert_called_once_with(scaled_surface, (0, 0))
         screen = MagicMock()
 
         raycaster.render_scale = 1
