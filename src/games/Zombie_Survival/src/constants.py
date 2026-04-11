@@ -1,59 +1,17 @@
-import math
+from games.shared.constants import FPS_SHARED_CONSTANTS
 
 from .custom_types import EnemyData, LevelTheme, WeaponData
 
-# Constants
+globals().update(FPS_SHARED_CONSTANTS)
+
 SCREEN_WIDTH = 1200
 SCREEN_HEIGHT = 800
-FPS = 60
 
-# Map settings
-MAP_SIZE = 40  # Will be set by user
-TILE_SIZE = 64
-MIN_BUILDING_OFFSET = 3  # Minimum offset from map edges for building generation
-
-# Rendering Quality
-# 1 = Ultra (Full Res), 2 = High (Half Res),
-# 4 = Medium/Retro (Quarter Res), 8 = Low (Blocky)
-DEFAULT_RENDER_SCALE = 2
-
-# Player settings
-# Speeds reduced to improve game pacing
-PLAYER_SPEED = 0.375
-PLAYER_SPRINT_SPEED = 0.575
-PLAYER_ROT_SPEED = 0.0015
-SENSITIVITY_X = 1.0
-MAX_RAYCAST_STEPS = 1000  # Maximum steps for raycasting
-
-FOV = math.pi / 3  # 60 degrees
-HALF_FOV = FOV / 2
-
-MAX_DEPTH = 100  # Increased render distance (2x)
-
-DEFAULT_PLAYER_SPAWN = (2.5, 2.5, 0.0)
-SPAWN_SAFE_ZONE_RADIUS = 15.0
-MAP_SIZES = [20, 30, 40, 50, 60]
-
-# New Game Defaults
-DEFAULT_LIVES = 3
-DEFAULT_DIFFICULTY = "NORMAL"
-DEFAULT_START_LEVEL = 1
-
-# Difficulty Settings
-DIFFICULTIES = {
-    "EASY": {"damage_mult": 0.5, "health_mult": 0.7, "score_mult": 0.5},
-    "NORMAL": {"damage_mult": 1.0, "health_mult": 1.0, "score_mult": 1.0},
-    "HARD": {"damage_mult": 1.5, "health_mult": 1.5, "score_mult": 2.0},
-    "NIGHTMARE": {"damage_mult": 2.5, "health_mult": 2.0, "score_mult": 4.0},
-}
-
-# Weapon Ranges
-WEAPON_RANGE_PISTOL = 15
-WEAPON_RANGE_RIFLE = 25
-WEAPON_RANGE_SHOTGUN = 12  # Increased range (was 8)
-WEAPON_RANGE_PLASMA = 30
-WEAPON_RANGE_STORMTROOPER = 30
-WEAPON_RANGE_MINIGUN = 20
+WEAPON_RANGE_PISTOL = FPS_SHARED_CONSTANTS["WEAPON_RANGE_PISTOL"]
+WEAPON_RANGE_RIFLE = FPS_SHARED_CONSTANTS["WEAPON_RANGE_RIFLE"]
+WEAPON_RANGE_SHOTGUN = FPS_SHARED_CONSTANTS["WEAPON_RANGE_SHOTGUN"]
+WEAPON_RANGE_PLASMA = FPS_SHARED_CONSTANTS["WEAPON_RANGE_PLASMA"]
+WEAPON_RANGE_MINIGUN = FPS_SHARED_CONSTANTS["WEAPON_RANGE_MINIGUN"]
 WEAPON_RANGE_SNIPER = 40
 
 # Weapon settings

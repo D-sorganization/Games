@@ -4,55 +4,9 @@ import random
 
 import pygame
 
+from games.shared.particle_system import WorldParticle
+
 from . import constants as C  # noqa: N812
-
-
-class WorldParticle:
-    """3D Particle in the world space."""
-
-    def __init__(
-        self,
-        x: float,
-        y: float,
-        z: float,
-        dx: float,
-        dy: float,
-        dz: float,
-        color: tuple[int, int, int],
-        timer: int,
-        size: float,
-        gravity: float = 0.0,
-    ):
-        self.x = x
-        self.y = y
-        self.z = z
-        self.dx = dx
-        self.dy = dy
-        self.dz = dz
-        self.color = color
-        self.timer = timer
-        self.size = size
-        self.alive = True
-        self.gravity = gravity
-
-    def update(self) -> bool:
-        """Update particle physics."""
-        self.x += self.dx
-        self.y += self.dy
-        self.z += self.dz
-        self.dz -= self.gravity
-
-        # Ground collision
-        if self.z < 0:
-            self.z = 0
-            self.dz = -self.dz * 0.5
-            self.dx *= 0.8
-            self.dy *= 0.8
-
-        self.timer -= 1
-        if self.timer <= 0:
-            self.alive = False
-        return self.alive
 
 
 class Particle:
