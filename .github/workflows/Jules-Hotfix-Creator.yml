@@ -22,7 +22,7 @@ jobs:
 
   # ── Dispatcher: route to self-hosted if available ──────────────────────────
   pick-runner:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     timeout-minutes: 2
     outputs:
       runner: ${{ steps.check.outputs.runner }}
@@ -44,7 +44,7 @@ jobs:
           fi
   create-hotfix:
     needs: pick-runner
-    runs-on: ${{ needs.pick-runner.outputs.runner }}
+    runs-on: self-hosted
     # Only run for trusted branches (main/master)
     if: inputs.failed_branch == 'main' || inputs.failed_branch == 'master'
     steps:

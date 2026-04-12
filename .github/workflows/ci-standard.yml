@@ -31,7 +31,7 @@ concurrency:
 jobs:
   # ── Dispatcher: route to self-hosted if available ──────────────────────────
   pick-runner:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     timeout-minutes: 2
     outputs:
       runner: ${{ steps.check.outputs.runner }}
@@ -53,7 +53,7 @@ jobs:
           fi
   quality-gate:
     needs: pick-runner
-    runs-on: ${{ needs.pick-runner.outputs.runner }}
+    runs-on: self-hosted
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v6
@@ -135,7 +135,7 @@ jobs:
   # Assessment E: Security scanning for dependency vulnerabilities
   security-scan:
     needs: pick-runner
-    runs-on: ${{ needs.pick-runner.outputs.runner }}
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
@@ -149,7 +149,7 @@ jobs:
 
   tests:
     needs: [pick-runner, quality-gate]
-    runs-on: ${{ needs.pick-runner.outputs.runner }}
+    runs-on: self-hosted
     strategy:
       matrix:
         python: ["3.11"]
@@ -183,7 +183,7 @@ jobs:
   # =============================================================================
   rust-quality-gate:
     needs: pick-runner
-    runs-on: ${{ needs.pick-runner.outputs.runner }}
+    runs-on: self-hosted
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v6
