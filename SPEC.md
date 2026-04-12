@@ -10,7 +10,7 @@
 | **Primary Language(s)** | Python 3.10+ (Pygame), JavaScript (Three.js for web) |
 | **License**             | MIT                                                  |
 | **Current Version**     | N/A                                                  |
-| **Spec Version**        | 1.1.22                                               |
+| **Spec Version**        | 1.1.23                                               |
 | **Last Spec Update**    | 2026-04-11                                           |
 
 ## 2. Purpose & Mission
@@ -411,6 +411,7 @@ Active development. Core games (F1-F6, F8-F9) fully implemented and tested. F7 (
 | ---------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 2026-04-11 | 1.1.20  | Partially addressed issue `#736` by extracting shared FPS defaults and controls across Duum, Force Field, and Zombie Survival into `games.shared` modules, plus deduplicating Duum world-particle setup. This adds `FPS_SHARED_CONSTANTS`, shared input binding profiles, and a shared `WorldParticle` import in Duum particle setup. |
 | 2026-04-11 | 1.1.21  | Partially addressed issue `#737` by decomposing `MonsterStyleRenderer.render` into smaller helper methods for body, head, arms, and legs rendering, reducing function size and preserving behavior. |
+| 2026-04-11 | 1.1.23  | Addresses issue `#743` by decomposing the top 5 oversized Python functions into thin orchestrators with single-responsibility helpers: `Force_Field/src/renderer.py::render_game` (108→24 LOC), `Force_Field/src/renderer.py::_render_portal` (105→30 LOC), `scripts/analyze_completist_data.py::generate_report` (106→15 LOC), `Tetris/tetris.py::TetrisGame.run` (102→27 LOC), and `Wizard_of_Wor/wizard_of_wor/enemy.py::Enemy.update` (96→21 LOC). Frame-step ordering preserved; added 8 unit tests for the new completist report helpers. |
 | 2026-04-11 | 1.1.22  | Extracted shared FPS constructor initialization into `FPSGameBase` and rewired the Duum, Force Field, and Zombie Survival constructors through the shared setup path. |
 | 2026-04-11 | 1.1.19  | Refactored Force Field input handling to narrow direct game-object dependency chains behind handler accessors and action helpers, with focused regression coverage for pause and cheat-input behavior. |
 | 2026-04-11 | 1.1.18  | Introduced immutable parameter objects for the raycaster sprite, textured wall, and minimap render helpers, updated the raycaster wrappers to pass those render contexts, and added validation coverage for the new bundles. |

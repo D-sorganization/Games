@@ -80,31 +80,52 @@ class Enemy:
         self.spawn_flash = 36
 
     def update(self, dungeon: Any, player_pos: tuple[float, float]) -> None:
-        """Update enemy position and behavior."""
+        """Update enemy position and behavior.
+
+        Preconditions:
+            - ``dungeon`` must expose a ``can_move_to(rect)`` method.
+            - ``player_pos`` is a 2-tuple of floats ``(x, y)``.
+
+        The method is a thin orchestrator: it updates AI direction, moves
+        the enemy (with wall-collision handling), advances animation, and
+        progresses timers. Order of operations is preserved to keep
+        gameplay frame-identical.
+        """
         if not self.alive:
             return
 
-        # Store old position
         old_x, old_y = self.x, self.y
 
-        # Randomly change direction
+        self._maybe_change_direction(player_pos)
+        self._apply_movement_and_collision(dungeon, old_x, old_y)
+        self._advance_walk_animation(old_x, old_y)
+        self._tick_timers()
+
+    def _maybe_change_direction(self, player_pos: tuple[float, float]) -> None:
+        """Advance the direction timer and occasionally pick a new direction."""
         self.move_timer += 1
-        if self.move_timer >= self.direction_change_interval:
-            self.move_timer = 0
-            self.direction_change_interval = random.randint(30, 90)
+        if self.move_timer < self.direction_change_interval:
+            return
 
-            # Sometimes move toward player
-            if random.random() < 0.3:  # 30% chance to chase player
-                dx = player_pos[0] - self.x
-                dy = player_pos[1] - self.y
+        self.move_timer = 0
+        self.direction_change_interval = random.randint(30, 90)
 
-                if abs(dx) > abs(dy):
-                    self.direction = RIGHT if dx > 0 else LEFT
-                else:
-                    self.direction = DOWN if dy > 0 else UP
+        # Sometimes move toward player
+        if random.random() < 0.3:  # 30% chance to chase player
+            dx = player_pos[0] - self.x
+            dy = player_pos[1] - self.y
+
+            if abs(dx) > abs(dy):
+                self.direction = RIGHT if dx > 0 else LEFT
             else:
-                self.direction = random.choice([UP, DOWN, LEFT, RIGHT])
+                self.direction = DOWN if dy > 0 else UP
+        else:
+            self.direction = random.choice([UP, DOWN, LEFT, RIGHT])
 
+    def _apply_movement_and_collision(
+        self, dungeon: Any, old_x: float, old_y: float
+    ) -> None:
+        """Move in current direction; on wall hit, revert and pick a new way."""
         # Move in current direction
         self.x += self.direction[0] * self.speed
         self.y += self.direction[1] * self.speed
@@ -113,43 +134,48 @@ class Enemy:
         self.rect.x = self.x - ENEMY_SIZE // 2
         self.rect.y = self.y - ENEMY_SIZE // 2
 
-        # Check collision with walls
-        if not dungeon.can_move_to(self.rect):
-            self.x, self.y = old_x, old_y
-            self.rect.x = self.x - ENEMY_SIZE // 2
-            self.rect.y = self.y - ENEMY_SIZE // 2
-            # Smart direction change when hitting wall
-            # Try perpendicular directions first to avoid getting stuck
-            possible_directions = []
-            if self.direction in (UP, DOWN):
-                possible_directions = [LEFT, RIGHT, UP, DOWN]
-            else:  # LEFT or RIGHT
-                possible_directions = [UP, DOWN, LEFT, RIGHT]
+        if dungeon.can_move_to(self.rect):
+            return
 
-            # Test each direction to find a valid one
-            for new_direction in possible_directions:
-                test_x = self.x + new_direction[0] * self.speed * 2
-                test_y = self.y + new_direction[1] * self.speed * 2
-                test_rect = pygame.Rect(
-                    test_x - ENEMY_SIZE // 2,
-                    test_y - ENEMY_SIZE // 2,
-                    ENEMY_SIZE,
-                    ENEMY_SIZE,
-                )
-                if dungeon.can_move_to(test_rect):
-                    self.direction = new_direction
-                    break
-            else:
-                # If no direction works, pick random
-                self.direction = random.choice([UP, DOWN, LEFT, RIGHT])
+        # Revert on collision
+        self.x, self.y = old_x, old_y
+        self.rect.x = self.x - ENEMY_SIZE // 2
+        self.rect.y = self.y - ENEMY_SIZE // 2
+        # Smart direction change when hitting wall
+        # Try perpendicular directions first to avoid getting stuck
+        if self.direction in (UP, DOWN):
+            possible_directions = [LEFT, RIGHT, UP, DOWN]
+        else:  # LEFT or RIGHT
+            possible_directions = [UP, DOWN, LEFT, RIGHT]
 
-        # Advance walk animation
-        if (self.x, self.y) != (old_x, old_y):
-            self.animation_timer += 1
-            if self.animation_timer >= ENEMY_ANIMATION_SPEED:
-                self.animation_timer = 0
-                self.step_frame = 1 - self.step_frame
+        # Test each direction to find a valid one
+        for new_direction in possible_directions:
+            test_x = self.x + new_direction[0] * self.speed * 2
+            test_y = self.y + new_direction[1] * self.speed * 2
+            test_rect = pygame.Rect(
+                test_x - ENEMY_SIZE // 2,
+                test_y - ENEMY_SIZE // 2,
+                ENEMY_SIZE,
+                ENEMY_SIZE,
+            )
+            if dungeon.can_move_to(test_rect):
+                self.direction = new_direction
+                break
+        else:
+            # If no direction works, pick random
+            self.direction = random.choice([UP, DOWN, LEFT, RIGHT])
 
+    def _advance_walk_animation(self, old_x: float, old_y: float) -> None:
+        """Step the walk animation when the enemy actually moved."""
+        if (self.x, self.y) == (old_x, old_y):
+            return
+        self.animation_timer += 1
+        if self.animation_timer >= ENEMY_ANIMATION_SPEED:
+            self.animation_timer = 0
+            self.step_frame = 1 - self.step_frame
+
+    def _tick_timers(self) -> None:
+        """Decrement per-frame timers (shoot, invisibility, spawn flash)."""
         # Update shoot timer
         self.shoot_timer -= 1
 

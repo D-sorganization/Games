@@ -232,105 +232,132 @@ class TetrisGame:
                 self.restart_game()
 
     def run(self) -> None:
-        """Main game loop"""
+        """Main game loop.
+
+        Thin orchestrator that, each tick:
+          1. advances the clock and gathers events,
+          2. dispatches events to the active state handler,
+          3. polls continuous input and advances game logic,
+          4. draws the frame and flips the display.
+
+        The call order of event dispatch, logic update, and draw is
+        preserved from the original implementation to keep gameplay
+        frame-identical.
+        """
         while True:
             dt = self.clock.get_time()
             self.clock.tick(60)
 
             events = pygame.event.get()
-            for event in events:
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    sys.exit()
-
-                if event.type == pygame.MOUSEBUTTONDOWN:
-                    self.handle_mouse_input(event.pos)
-
-                if self.state == C.GameState.MENU:
-                    self.handle_menu_input(event)
-                elif self.state == C.GameState.SETTINGS:
-                    self.handle_settings_input(event)
-                    # Input handler binding logic
-                    if self.input_handler.awaiting_controller_action:
-                        if event.type in [pygame.JOYBUTTONDOWN, pygame.JOYHATMOTION]:
-                            if self.input_handler.apply_controller_binding(event):
-                                # Binding applied
-                                continue
+            self._dispatch_events(events)
 
             # Process events for input handler
             self.input_handler.process_events(events, self.logic, self)
 
-            # Polling for continuous movement
-            keys = pygame.key.get_pressed()
-            if self.state == C.GameState.PLAYING:
-                if keys[pygame.K_LEFT] and self.logic.valid_move(
-                    self.logic.current_piece, x_offset=-1
-                ):
-                    self.logic.move_piece_left()
-                    pygame.time.wait(100)
-                if keys[pygame.K_RIGHT] and self.logic.valid_move(
-                    self.logic.current_piece, x_offset=1
-                ):
-                    self.logic.move_piece_right()
-                    pygame.time.wait(100)
-                if keys[pygame.K_DOWN]:
-                    if self.logic.valid_move(self.logic.current_piece, y_offset=1):
-                        self.logic.move_piece_down()
-                    pygame.time.wait(50)
-
-                self.input_handler.handle_controller_state(self.logic)
-                self.logic.update(dt)
-
-                if self.logic.game_over:
-                    self.state = C.GameState.GAME_OVER
-
-            # Drawing
-            if self.state == C.GameState.MENU:
-                self.renderer.draw_menu(self.logic.starting_level)
-            elif self.state == C.GameState.SETTINGS:
-                self.draw_settings()
-            elif self.state in [C.GameState.PLAYING, C.GameState.PAUSED]:
-                self.renderer.draw_background()
-                self.renderer.draw_grid(self.logic)
-                if self.show_ghost_piece:
-                    self.renderer.draw_ghost_piece(self.logic)
-                self.renderer.draw_piece(self.logic.current_piece)
-                if self.show_next_piece:
-                    self.renderer.draw_next_piece(self.logic)
-                if self.show_hold_piece:
-                    self.renderer.draw_held_piece(self.logic)
-                self.renderer.draw_stats(self.logic)
-                self.renderer.draw_controls(self.show_controls_panel)
-                self.renderer.draw_button(
-                    self.controls_toggle_rect,
-                    "Hide Controls" if self.show_controls_panel else "Show Controls",
-                )
-                self.renderer.draw_button(self.restart_button, "Restart Run")
-
-                if self.state == C.GameState.PLAYING:
-                    self.renderer.draw_particles(self.logic)
-                    self.renderer.draw_score_popups(self.logic)
-                else:
-                    # Draw static particles when paused
-                    self.renderer.draw_particles(self.logic)
-                    self.renderer.draw_score_popups(self.logic)
-
-                if self.state == C.GameState.PAUSED:
-                    overlay = pygame.Surface((C.SCREEN_WIDTH, C.SCREEN_HEIGHT))
-                    overlay.fill(C.BLACK)
-                    overlay.set_alpha(128)
-                    self.screen.blit(overlay, (0, 0))
-                    pause_text = self.renderer.render_large_text(
-                        "PAUSED", True, C.YELLOW
-                    )
-                    center = (C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2)
-                    pause_rect = pause_text.get_rect(center=center)
-                    self.screen.blit(pause_text, pause_rect)
-
-            elif self.state == C.GameState.GAME_OVER:
-                self.renderer.draw_game_over(self.logic)
+            self._update_gameplay(dt)
+            self._draw_frame()
 
             pygame.display.flip()
+
+    def _dispatch_events(self, events: list[pygame.event.Event]) -> None:
+        """Route pygame events to quit, mouse, and state-specific handlers."""
+        for event in events:
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                self.handle_mouse_input(event.pos)
+
+            if self.state == C.GameState.MENU:
+                self.handle_menu_input(event)
+            elif self.state == C.GameState.SETTINGS:
+                self.handle_settings_input(event)
+                # Input handler binding logic
+                if self.input_handler.awaiting_controller_action:
+                    if event.type in [pygame.JOYBUTTONDOWN, pygame.JOYHATMOTION]:
+                        if self.input_handler.apply_controller_binding(event):
+                            # Binding applied
+                            continue
+
+    def _update_gameplay(self, dt: int) -> None:
+        """Poll continuous input and tick the game logic when playing."""
+        keys = pygame.key.get_pressed()
+        if self.state != C.GameState.PLAYING:
+            return
+
+        if keys[pygame.K_LEFT] and self.logic.valid_move(
+            self.logic.current_piece, x_offset=-1
+        ):
+            self.logic.move_piece_left()
+            pygame.time.wait(100)
+        if keys[pygame.K_RIGHT] and self.logic.valid_move(
+            self.logic.current_piece, x_offset=1
+        ):
+            self.logic.move_piece_right()
+            pygame.time.wait(100)
+        if keys[pygame.K_DOWN]:
+            if self.logic.valid_move(self.logic.current_piece, y_offset=1):
+                self.logic.move_piece_down()
+            pygame.time.wait(50)
+
+        self.input_handler.handle_controller_state(self.logic)
+        self.logic.update(dt)
+
+        if self.logic.game_over:
+            self.state = C.GameState.GAME_OVER
+
+    def _draw_frame(self) -> None:
+        """Render the current screen based on game state."""
+        if self.state == C.GameState.MENU:
+            self.renderer.draw_menu(self.logic.starting_level)
+        elif self.state == C.GameState.SETTINGS:
+            self.draw_settings()
+        elif self.state in [C.GameState.PLAYING, C.GameState.PAUSED]:
+            self._draw_playfield()
+        elif self.state == C.GameState.GAME_OVER:
+            self.renderer.draw_game_over(self.logic)
+
+    def _draw_playfield(self) -> None:
+        """Draw the full playfield (grid, pieces, HUD, particles, overlays)."""
+        self.renderer.draw_background()
+        self.renderer.draw_grid(self.logic)
+        if self.show_ghost_piece:
+            self.renderer.draw_ghost_piece(self.logic)
+        self.renderer.draw_piece(self.logic.current_piece)
+        if self.show_next_piece:
+            self.renderer.draw_next_piece(self.logic)
+        if self.show_hold_piece:
+            self.renderer.draw_held_piece(self.logic)
+        self.renderer.draw_stats(self.logic)
+        self.renderer.draw_controls(self.show_controls_panel)
+        self.renderer.draw_button(
+            self.controls_toggle_rect,
+            "Hide Controls" if self.show_controls_panel else "Show Controls",
+        )
+        self.renderer.draw_button(self.restart_button, "Restart Run")
+
+        if self.state == C.GameState.PLAYING:
+            self.renderer.draw_particles(self.logic)
+            self.renderer.draw_score_popups(self.logic)
+        else:
+            # Draw static particles when paused
+            self.renderer.draw_particles(self.logic)
+            self.renderer.draw_score_popups(self.logic)
+
+        if self.state == C.GameState.PAUSED:
+            self._draw_pause_overlay()
+
+    def _draw_pause_overlay(self) -> None:
+        """Draw the translucent PAUSED overlay on top of the playfield."""
+        overlay = pygame.Surface((C.SCREEN_WIDTH, C.SCREEN_HEIGHT))
+        overlay.fill(C.BLACK)
+        overlay.set_alpha(128)
+        self.screen.blit(overlay, (0, 0))
+        pause_text = self.renderer.render_large_text("PAUSED", True, C.YELLOW)
+        center = (C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2)
+        pause_rect = pause_text.get_rect(center=center)
+        self.screen.blit(pause_text, pause_rect)
 
 
 if __name__ == "__main__":
