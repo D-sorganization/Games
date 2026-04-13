@@ -40,10 +40,9 @@ concurrency:
 # Job 1: clang-format style check
 # ─────────────────────────────────────────────────────────────────────────────
 jobs:
-
   # ── Dispatcher: route to self-hosted if available ──────────────────────────
   pick-runner:
-    runs-on: ubuntu-latest
+    runs-on: d-sorg-fleet
     timeout-minutes: 2
     outputs:
       runner: ${{ steps.check.outputs.runner }}
@@ -112,9 +111,9 @@ jobs:
 
           echo "All C++ files pass clang-format check."
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Job 2: CMake build + CTest
-# ─────────────────────────────────────────────────────────────────────────────
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Job 2: CMake build + CTest
+  # ─────────────────────────────────────────────────────────────────────────────
   build-and-test:
     needs: pick-runner
     name: cmake build & ctest (${{ matrix.compiler }})
@@ -125,8 +124,8 @@ jobs:
       fail-fast: false
       matrix:
         compiler:
-          - {cc: gcc-12, cxx: g++-12, label: "GCC 12"}
-          - {cc: clang-17, cxx: clang++-17, label: "Clang 17"}
+          - { cc: gcc-12, cxx: g++-12, label: "GCC 12" }
+          - { cc: clang-17, cxx: clang++-17, label: "Clang 17" }
 
     steps:
       - uses: actions/checkout@v6
@@ -176,9 +175,9 @@ jobs:
           name: ctest-results-${{ matrix.compiler.label }}
           path: build/Testing/
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Job 3: Summary
-# ─────────────────────────────────────────────────────────────────────────────
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Job 3: Summary
+  # ─────────────────────────────────────────────────────────────────────────────
   cpp-ci-summary:
     name: C++ CI Summary
     needs: [pick-runner, format-check, build-and-test]
