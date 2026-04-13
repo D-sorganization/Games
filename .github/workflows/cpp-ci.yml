@@ -75,13 +75,13 @@ jobs:
         run: |-
           if command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
             sudo apt-get -o DPkg::Lock::Timeout=300 update -qq
-            sudo apt-get -o DPkg::Lock::Timeout=300 install -y --no-install-recommends clang-format-17
+            sudo apt-get -o DPkg::Lock::Timeout=300 install -y --no-install-recommends clang-format-14
           else
             echo "Using preinstalled Linux dependencies on self-hosted runner"
           fi
 
       - name: Verify clang-format version
-        run: clang-format-17 --version
+        run: clang-format-14 --version
 
       - name: Check C++ formatting
         run: |
@@ -96,7 +96,7 @@ jobs:
 
           VIOLATIONS=""
           for f in $FILES; do
-            diff_output=$(clang-format-17 --style=file --dry-run --Werror "$f" 2>&1 || true)
+            diff_output=$(clang-format-14 --style=file --dry-run --Werror "$f" 2>&1 || true)
             if [ -n "$diff_output" ]; then
               VIOLATIONS="$VIOLATIONS\n  $f"
             fi
@@ -125,7 +125,7 @@ jobs:
       matrix:
         compiler:
           - { cc: gcc-12, cxx: g++-12, label: "GCC 12" }
-          - { cc: clang-17, cxx: clang++-17, label: "Clang 17" }
+          - { cc: clang-14, cxx: clang++-14, label: "Clang 14" }
 
     steps:
       - uses: actions/checkout@v6
@@ -137,7 +137,7 @@ jobs:
             sudo apt-get -o DPkg::Lock::Timeout=300 install -y --no-install-recommends \
               cmake ninja-build \
               gcc-12 g++-12 \
-              clang-17 clang++-17
+              clang-14 clang++-14
           else
             echo "Using preinstalled Linux dependencies on self-hosted runner"
           fi
