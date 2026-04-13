@@ -35,46 +35,47 @@ class GameRenderer:
         self._portal_glow_surface_cache: dict[int, pygame.Surface] = {}
 
     def render_game(self, game: Game) -> None:
-        """Render gameplay"""
+        """Render gameplay.
+
+        Preconditions (DbC):
+            - ``game.raycaster`` is not None.
+            - ``game.player`` is not None.
+
+        Thin orchestrator: computes camera offsets, renders the 3D world,
+        overlay effects, portal, weapon, HUD, and flips the display. Order
+        of operations is preserved to keep the frame output identical.
+        """
         if not (game.raycaster is not None):
             raise ValueError("DbC Blocked: Precondition failed.")
         if not (game.player is not None):
             raise ValueError("DbC Blocked: Precondition failed.")
 
-        # Calculate Head Bob
+        bob_offset, shake_x, shake_y = self._compute_camera_offsets(game)
+        self._render_world(game, bob_offset, shake_y)
+        self._render_effects_layer(game, shake_x, shake_y)
+        self._render_portal(game.portal, game.player)
+        self._render_weapon_layer(game)
+        self._render_hud_layer(game)
+
+        pygame.display.flip()
+
+    def _compute_camera_offsets(self, game: Game) -> tuple[float, int, int]:
+        """Compute head-bob and screen-shake offsets for the current frame."""
         # Use player's bob_phase for consistent movement
         bob_offset = math.sin(game.player.bob_phase) * 10.0
 
-        # Screen Shake
         shake_x = 0
         shake_y = 0
         if game.screen_shake > 0:
             shake_x = int(random.uniform(-game.screen_shake, game.screen_shake))
             shake_y = int(random.uniform(-game.screen_shake, game.screen_shake))
 
-        # 1. 3D World (Raycaster)
-        # Note: We can't easily shake the raycaster output without rendering
-        # or blitting with offset which might leave gaps.
-        # Simple solution: Render normally, then blit everything with offset at the end?
-        # No, better to pass offset to raycaster if possible?
-        # Actually, if we just blit the view_surface with offset in Raycaster it works.
-        # But Raycaster.render_3d does the blit.
-        # Let's offset the HUD and Weapon for now, or everything if we wrap it.
+        return bob_offset, shake_x, shake_y
 
-        # Raycaster handles its own blitting to screen.
-        # We can simulate camera shake by modifying player pitch/angle temporarily,
-        # but that affects gameplay aiming.
-        # Instead, let's just let the raycaster render to screen (0,0)
-        # 2D overlays (weapon, HUD).
-        # Or better: Create a master surface? No, too slow.
-
-        # Let's just modify the raycaster to accept a view offset tuple.
-        # Raycaster already has view_offset_y.
-        # We can add view_offset_x? Raycaster works by rays.
-
-        # For this implementation, I will just shake the 2D elements.
-        # It gives enough feedback.
-
+    def _render_world(self, game: Game, bob_offset: float, shake_y: int) -> None:
+        """Render the 3D world (floor/ceiling and raycast scene)."""
+        # Raycaster handles its own blitting to screen. We simulate camera
+        # shake on 2D elements only to avoid affecting aiming.
         game.raycaster.render_floor_ceiling(
             self.screen, game.player, game.level, view_offset_y=bob_offset + shake_y
         )
@@ -87,7 +88,8 @@ class GameRenderer:
             projectiles=game.projectiles,
         )
 
-        # 2. Effects
+    def _render_effects_layer(self, game: Game, shake_x: int, shake_y: int) -> None:
+        """Render particles and damage flash to the effects surface, then blit."""
         self.effects_surface.fill((0, 0, 0, 0))
         self._render_particles(game.particle_system.particles, (shake_x, shake_y))
 
@@ -102,32 +104,19 @@ class GameRenderer:
 
         self.screen.blit(self.effects_surface, (shake_x, shake_y))
 
-        # 3. Portal
-        # Portal is 2D overlay on 3D position.
-        # We should probably pass the shake to it too.
-        # But _render_portal calculates screen position from player pos.
-        # If we didn't shake player pos, portal won't shake.
-        # Let's skip deep portal shake integration for now.
-        self._render_portal(game.portal, game.player)
-
-        # 4. Weapon Model
+    def _render_weapon_layer(self, game: Game) -> None:
+        """Render the weapon model and muzzle flash if firing."""
+        # WeaponRenderer.render_weapon draws directly to screen and returns
+        # the (cx, cy) position used to anchor the muzzle flash.
         weapon_pos = self.weapon_renderer.render_weapon(game.player)
-        # Apply shake to weapon position return (it draws itself though).
-        # WeaponRenderer.render_weapon draws directly to screen.
-        # I should modify WeaponRenderer or just accept it's mostly static.
-        # Actually WeaponRenderer returns (cx, cy) but also draws.
-        # It's hard to inject shake there without modifying it.
-        # Wait, I can pass a surface wrapper? No.
-
-        # Actually, WeaponRenderer uses cx, cy calculated inside.
-        # I'll leave weapon as is for now, head bob is already there.
 
         if game.player.shooting:
             self.weapon_renderer.render_muzzle_flash(
                 game.player.current_weapon, weapon_pos
             )
 
-        # 5. UI / HUD
+    def _render_hud_layer(self, game: Game) -> None:
+        """Render the minimap (if enabled) and HUD."""
         if game.show_minimap:
             game.raycaster.render_minimap(
                 self.screen,
@@ -137,10 +126,8 @@ class GameRenderer:
                 game.portal,
             )
 
-        # HUD Shake? usually HUD is static.
+        # HUD is intentionally static (no shake applied).
         game.ui_renderer.render_hud(game)
-
-        pygame.display.flip()
 
     def _render_particles(
         self, particles: list[Any], offset: tuple[int, int] = (0, 0)
@@ -189,6 +176,9 @@ class GameRenderer:
     def _render_portal(self, portal: Portal | None, player: Player) -> None:
         """Render portal visual effects if active.
 
+        Thin orchestrator: projects the portal into screen space, then
+        layers glow, rings, rotating arcs, and the core on top.
+
         Args:
             portal: Portal dictionary with position and state, or None if inactive.
             player: The player object for relative positioning.
@@ -196,23 +186,10 @@ class GameRenderer:
         if not portal:
             return
 
-        sx = portal["x"] - player.x
-        sy = portal["y"] - player.y
-
-        cs = math.cos(player.angle)
-        sn = math.sin(player.angle)
-        a = sy * cs - sx * sn
-        b = sx * cs + sy * sn
-
-        if b <= 0.1:
+        projected = self._project_portal_to_screen(portal, player)
+        if projected is None:
             return
-
-        screen_x = int((0.5 * C.SCREEN_WIDTH) * (1 + a / b * 2.0))
-        screen_y = C.SCREEN_HEIGHT // 2
-        base_size = int(800 / b)
-
-        if not (-base_size < screen_x < C.SCREEN_WIDTH + base_size):
-            return
+        screen_x, screen_y, base_size = projected
 
         center = (screen_x, screen_y)
         time_ms = pygame.time.get_ticks()
@@ -222,27 +199,69 @@ class GameRenderer:
         pulse2 = math.sin(time_ms * 0.015) * 0.2 + 1.0  # Fast pulse
         rotation = time_ms * 0.002  # Rotation effect
 
-        # Draw outer glow effect
+        self._draw_portal_glow(center, base_size)
+        self._draw_portal_rings(center, base_size, pulse1, pulse2)
+        self._draw_portal_arcs(screen_x, screen_y, base_size, pulse1, rotation)
+        self._draw_portal_core(center, base_size, time_ms)
+
+    def _project_portal_to_screen(
+        self, portal: Portal, player: Player
+    ) -> tuple[int, int, int] | None:
+        """Project portal world position to screen coords + base size.
+
+        Returns ``None`` if the portal is behind the camera or fully off-screen.
+        """
+        sx = portal["x"] - player.x
+        sy = portal["y"] - player.y
+
+        cs = math.cos(player.angle)
+        sn = math.sin(player.angle)
+        a = sy * cs - sx * sn
+        b = sx * cs + sy * sn
+
+        if b <= 0.1:
+            return None
+
+        screen_x = int((0.5 * C.SCREEN_WIDTH) * (1 + a / b * 2.0))
+        screen_y = C.SCREEN_HEIGHT // 2
+        base_size = int(800 / b)
+
+        if not (-base_size < screen_x < C.SCREEN_WIDTH + base_size):
+            return None
+
+        return screen_x, screen_y, base_size
+
+    def _draw_portal_glow(self, center: tuple[int, int], base_size: int) -> None:
+        """Draw (and cache) the outer glow halo for the portal."""
         glow_size = int(base_size * 0.9)
-        if glow_size > 0:
-            glow_key = glow_size // 10 * 10  # Cache key rounding
-            if glow_key not in self._portal_glow_surface_cache:
-                s_size = glow_key * 2 + 4
-                surf = pygame.Surface((s_size, s_size), pygame.SRCALPHA)
-                pygame.draw.circle(
-                    surf,
-                    (0, 200, 255, 30),
-                    (s_size // 2, s_size // 2),
-                    glow_key,
-                )
-                self._portal_glow_surface_cache[glow_key] = surf
+        if glow_size <= 0:
+            return
 
-            cached_glow = self._portal_glow_surface_cache.get(glow_key)
-            if cached_glow:
-                glow_rect = cached_glow.get_rect(center=center)
-                self.screen.blit(cached_glow, glow_rect)
+        glow_key = glow_size // 10 * 10  # Cache key rounding
+        if glow_key not in self._portal_glow_surface_cache:
+            s_size = glow_key * 2 + 4
+            surf = pygame.Surface((s_size, s_size), pygame.SRCALPHA)
+            pygame.draw.circle(
+                surf,
+                (0, 200, 255, 30),
+                (s_size // 2, s_size // 2),
+                glow_key,
+            )
+            self._portal_glow_surface_cache[glow_key] = surf
 
-        # Draw plasma rings - simplified for loop
+        cached_glow = self._portal_glow_surface_cache.get(glow_key)
+        if cached_glow:
+            glow_rect = cached_glow.get_rect(center=center)
+            self.screen.blit(cached_glow, glow_rect)
+
+    def _draw_portal_rings(
+        self,
+        center: tuple[int, int],
+        base_size: int,
+        pulse1: float,
+        pulse2: float,
+    ) -> None:
+        """Draw the four pulsing plasma rings with inner bright edges."""
         ring_configs = [
             (0.8 * pulse1, (0, 255, 255), 8),
             (0.6 * pulse2, (100, 255, 255), 6),
@@ -264,7 +283,15 @@ class GameRenderer:
                     2,
                 )
 
-        # Rotating energy arcs
+    def _draw_portal_arcs(
+        self,
+        screen_x: int,
+        screen_y: int,
+        base_size: int,
+        pulse1: float,
+        rotation: float,
+    ) -> None:
+        """Draw the four rotating energy arcs around the portal."""
         arc_radius = base_size * 0.7 * pulse1
         for i in range(4):
             arc_angle = rotation + (i * math.pi / 2)
@@ -282,12 +309,16 @@ class GameRenderer:
             )
             pygame.draw.line(self.screen, (255, 255, 255), arc_start, arc_end, 3)
 
-        # Central energy core
+    def _draw_portal_core(
+        self, center: tuple[int, int], base_size: int, time_ms: int
+    ) -> None:
+        """Draw the central pulsing energy core of the portal."""
         core_pulse = math.sin(time_ms * 0.02) * 0.5 + 1.0
         core_size = int(base_size * 0.1 * core_pulse)
-        if core_size > 0:
-            core_colors = [(255, 255, 255), (200, 255, 255), (100, 255, 255)]
-            for i, color in enumerate(core_colors):
-                s = core_size - i * 2
-                if s > 0:
-                    pygame.draw.circle(self.screen, color, center, s, 0)
+        if core_size <= 0:
+            return
+        core_colors = [(255, 255, 255), (200, 255, 255), (100, 255, 255)]
+        for i, color in enumerate(core_colors):
+            s = core_size - i * 2
+            if s > 0:
+                pygame.draw.circle(self.screen, color, center, s, 0)

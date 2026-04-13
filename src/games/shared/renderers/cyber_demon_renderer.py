@@ -26,15 +26,24 @@ class CyberDemonStyleRenderer(BaseBotStyleRenderer):
         config: RaycasterConfig,
     ) -> None:
         """Render the Cyber Demon visual style."""
-        # Massive Mechanical Demon
-        # Color is usually dark metallic (50, 50, 50)
+        self._render_legs(screen, cx, ry, rw, rh)
+        self._render_torso(screen, cx, ry, rw, rh, color)
+        self._render_head(screen, cx, ry, rw)
+        self._render_arms_and_weapon(screen, bot, cx, ry, rw, rh, color)
 
-        # 1. Legs (Hydraulics)
+    def _render_legs(
+        self,
+        screen: pygame.Surface,
+        cx: float,
+        ry: float,
+        rw: float,
+        rh: float,
+    ) -> None:
+        """Draw the demon's hydraulic legs and wiring."""
         leg_w = rw * 0.25
         leg_h = rh * 0.3
         leg_y = ry + rh * 0.7
 
-        # Left Leg
         pygame.draw.rect(
             screen,
             (30, 30, 35),
@@ -62,7 +71,16 @@ class CyberDemonStyleRenderer(BaseBotStyleRenderer):
             2,
         )
 
-        # 2. Torso (Armored Block)
+    def _render_torso(
+        self,
+        screen: pygame.Surface,
+        cx: float,
+        ry: float,
+        rw: float,
+        rh: float,
+        color: tuple[int, int, int],
+    ) -> None:
+        """Draw the armored torso and its central plating."""
         torso_w = rw * 0.8
         torso_h = rh * 0.5
         torso_y = ry + rh * 0.2
@@ -81,7 +99,14 @@ class CyberDemonStyleRenderer(BaseBotStyleRenderer):
             3,
         )
 
-        # 3. Head (Horns + Visor)
+    def _render_head(
+        self,
+        screen: pygame.Surface,
+        cx: float,
+        ry: float,
+        rw: float,
+    ) -> None:
+        """Draw the horned head and red visor."""
         head_size = rw * 0.3
         head_y = ry
         head_rect = pygame.Rect(
@@ -105,7 +130,6 @@ class CyberDemonStyleRenderer(BaseBotStyleRenderer):
             5,
         )
 
-        # Eyes/Visor (Glowing Red)
         pygame.draw.rect(
             screen,
             (255, 0, 0),
@@ -117,13 +141,22 @@ class CyberDemonStyleRenderer(BaseBotStyleRenderer):
             ),
         )
 
-        # 4. Weapon (Rocket Launcher Arm)
-        # Left Arm (Humanoid)
+    def _render_arms_and_weapon(
+        self,
+        screen: pygame.Surface,
+        bot: Bot,
+        cx: float,
+        ry: float,
+        rw: float,
+        rh: float,
+        color: tuple[int, int, int],
+    ) -> None:
+        """Draw the humanoid arm and rocket launcher cannon."""
+        torso_y = ry + rh * 0.2
         pygame.draw.rect(
             screen, color, (int(cx - rw / 2 - 10), int(torso_y + 10), 20, int(rh * 0.4))
         )
 
-        # Right Arm (Cannon)
         cannon_w = rw * 0.3
         cannon_h = rh * 0.4
         cannon_x = cx + rw / 2 - 10
@@ -134,7 +167,6 @@ class CyberDemonStyleRenderer(BaseBotStyleRenderer):
             (int(cannon_x), int(cannon_y), int(cannon_w), int(cannon_h)),
         )
 
-        # Muzzle glow
         if getattr(bot, "shoot_animation", 0) > 0.5:
             pygame.draw.circle(
                 screen,

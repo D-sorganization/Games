@@ -19,14 +19,14 @@ from __future__ import annotations
 import logging
 import math
 import random
-from typing import TYPE_CHECKING, Any
+from collections.abc import Callable
+from typing import Any
 
 import pygame
 
 from games.shared.constants import GameState
-
-if TYPE_CHECKING:
-    pass
+from games.shared.event_bus import EventBus
+from games.shared.sound_manager_base import SoundManagerBase
 
 logger = logging.getLogger(__name__)
 
@@ -98,6 +98,109 @@ class FPSGameBase:
     def projectiles(self) -> list[Any]:
         """Get list of active projectiles."""
         return self.entity_manager.projectiles
+
+    def init_fps_game(
+        self,
+        C: Any,
+        *,
+        caption: str,
+        sound_manager: SoundManagerBase | None,
+        input_manager: Any,
+        entity_manager: Any,
+        particle_system: Any,
+        unlocked_weapons: set[str],
+        render_cls: Any,
+        ui_render_cls: Any,
+        sound_manager_factory: Callable[[], SoundManagerBase],
+    ) -> None:
+        """Initialize common FPS game state shared across all FPS variants."""
+        self.C = C
+        flags = pygame.SCALED | pygame.RESIZABLE
+        self.screen = pygame.display.set_mode((C.SCREEN_WIDTH, C.SCREEN_HEIGHT), flags)
+        pygame.display.set_caption(caption)
+        self.clock = pygame.time.Clock()
+        self.running = True
+
+        self.renderer = render_cls(self.screen)
+        self.ui_renderer = ui_render_cls(self.screen)
+
+        # Game state
+        self.state = GameState.INTRO
+        self.intro_phase = 0
+        self.intro_step = 0
+        self.intro_timer = 0
+        self.intro_start_time = 0
+        self.last_death_pos = None
+
+        # Gameplay state
+        self.level = 1
+        self.kills = 0
+        self.level_start_time = 0
+        self.level_times: list[float] = []
+        self.selected_map_size = C.DEFAULT_MAP_SIZE
+        self.render_scale = C.DEFAULT_RENDER_SCALE
+        self.paused = False
+        self.pause_start_time = 0
+        self.total_paused_time = 0
+        self.show_damage = True
+        self.selected_difficulty = C.DEFAULT_DIFFICULTY
+        self.selected_lives = C.DEFAULT_LIVES
+        self.selected_start_level = C.DEFAULT_START_LEVEL
+
+        # Combo & atmosphere
+        self.kill_combo_count = 0
+        self.kill_combo_timer = 0
+        self.heartbeat_timer = 0
+        self.breath_timer = 0
+        self.groan_timer = 0
+        self.beast_timer = 0
+
+        # Visual effects
+        self.particle_system = particle_system
+        self.damage_texts: list[dict[str, Any]] = []
+        self.damage_flash_timer = 0
+
+        # Game objects
+        self.game_map = None
+        self.player = None
+        self.entity_manager = entity_manager
+        self.raycaster = None
+        self.portal = None
+        self.health = C.PLAYER_HEALTH
+        self.lives = C.DEFAULT_LIVES
+
+        # Unlocked weapons
+        self.unlocked_weapons = unlocked_weapons
+        self.cheat_mode_active = False
+        self.current_cheat_input = ""
+        self.god_mode = False
+        self.game_over_timer = 0
+
+        self.sound_manager = (
+            sound_manager if sound_manager is not None else sound_manager_factory()
+        )
+        self.sound_manager.start_music()
+
+        self.event_bus = EventBus()
+        self._wire_event_bus()
+
+        # Joystick handling
+        self.joystick = None
+        if pygame.joystick.get_count() > 0:
+            try:
+                self.joystick = pygame.joystick.Joystick(0)
+                self.joystick.init()
+                logger.info("Controller detected: %s", self.joystick.get_name())
+            except (pygame.error, OSError):
+                logger.exception("Controller init failed")
+
+        # Fog of War
+        self.visited_cells: set[tuple[int, int]] = set()
+        self.show_minimap = True
+
+        # Input manager
+        self.input_manager = input_manager
+        self.binding_action = None
 
     # --- Identical methods extracted from all 3 FPS games ---
 

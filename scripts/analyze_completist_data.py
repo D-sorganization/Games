@@ -333,8 +333,17 @@ def generate_mermaid_charts(
     return "\n".join(chart)
 
 
-def generate_report() -> None:
-    """Generate the structured completist status report."""
+class _ReportData(TypedDict):
+    """Bundle of scanned findings used to render a completist report."""
+
+    criticals: list[Finding]
+    todos: list[Finding]
+    fixmes: list[Finding]
+    missing_docs: list[Finding]
+
+
+def _collect_report_data() -> _ReportData:
+    """Scan completist sources and return prioritized finding lists."""
     stubs = analyze_stubs()
     ni_errors = analyze_not_implemented()
     todos, fixmes = analyze_todos()
@@ -345,9 +354,22 @@ def generate_report() -> None:
     criticals = [s for s in (stubs + ni_errors) if "test" not in s["file"].lower()]
     criticals.sort(key=lambda x: calculate_metrics(x)[0], reverse=True)
 
-    # Report Generation
-    date_s = datetime.now().strftime("%Y-%m-%d")
-    report = [
+    return _ReportData(
+        criticals=criticals,
+        todos=todos,
+        fixmes=fixmes,
+        missing_docs=missing_docs,
+    )
+
+
+def _build_report_body(data: _ReportData, date_s: str) -> list[str]:
+    """Build the full markdown report body from collected data."""
+    criticals = data["criticals"]
+    todos = data["todos"]
+    fixmes = data["fixmes"]
+    missing_docs = data["missing_docs"]
+
+    report: list[str] = [
         f"# Completist Report: {date_s}\n",
         "## Executive Summary",
         f"- **Critical Gaps**: {len(criticals)}",
@@ -363,7 +385,6 @@ def generate_report() -> None:
     report.append("\n## Critical Incomplete (Top 50)")
     report.append("| File | Line | Type | Impact | Coverage | Complexity |")
     report.append("|---|---|---|---|---|---|")
-
     for item in criticals[:50]:
         imp, cov, comp = calculate_metrics(item)
         # fmt: off
@@ -411,8 +432,12 @@ def generate_report() -> None:
         desc = item.get("name", item.get("text", ""))[:80].replace("|", "\\|")
         report.append(f"| {i} | `{item['file']}` | {desc} | {imp}/{cov}/{comp} |")
 
-    # Issue creation for High Impact items
-    report.append("\n## Issues Created")
+    return report
+
+
+def _create_issues_section(criticals: list[Finding]) -> list[str]:
+    """Create issue files for high-impact criticals and return a report section."""
+    lines = ["\n## Issues Created"]
     max_id = 0
     issues_glob = glob.glob(os.path.join(ISSUES_DIR, "Issue_*.md")) + glob.glob(
         os.path.join(ISSUES_DIR, "ISSUE_*.md")
@@ -424,18 +449,40 @@ def generate_report() -> None:
 
     next_id = max_id + 1
     for item in [c for c in criticals if calculate_metrics(c)[0] >= 4][:10]:
-        report.append(f"- Created `{create_issue_file(item, next_id)}`")
+        lines.append(f"- Created `{create_issue_file(item, next_id)}`")
         next_id += 1
+    return lines
 
+
+def _write_report_files(report_lines: list[str], date_s: str) -> str:
+    """Write the report to its dated and 'latest' paths; return dated path."""
     os.makedirs(REPORT_DIR, exist_ok=True)
     report_path = os.path.join(REPORT_DIR, f"Completist_Report_{date_s}.md")
+    payload = "\n".join(report_lines)
     with open(report_path, "w", encoding="utf-8") as f_out:
-        f_out.write("\n".join(report))
+        f_out.write(payload)
 
     latest_path = os.path.join(REPORT_DIR, "COMPLETIST_LATEST.md")
     with open(latest_path, "w", encoding="utf-8") as f_out:
-        f_out.write("\n".join(report))
+        f_out.write(payload)
 
+    return report_path
+
+
+def generate_report() -> None:
+    """Generate the structured completist status report.
+
+    Thin orchestrator: collects data, builds the report body, creates
+    issue files for high-impact items, and writes the resulting markdown
+    to disk.
+    """
+    data = _collect_report_data()
+    date_s = datetime.now().strftime("%Y-%m-%d")
+
+    report_lines = _build_report_body(data, date_s)
+    report_lines.extend(_create_issues_section(data["criticals"]))
+
+    report_path = _write_report_files(report_lines, date_s)
     logger.info("Report generated: %s", report_path)
 
 
