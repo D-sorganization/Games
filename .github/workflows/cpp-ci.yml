@@ -150,6 +150,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cmake-${{ matrix.compiler.label }}-
 
+      - name: Clean build directory
+        run: |
+          rm -rf build/
+          mkdir -p build
+
       - name: Configure (CMake)
         env:
           CC: ${{ matrix.compiler.cc }}
