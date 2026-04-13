@@ -2,12 +2,12 @@
 
 import pygame
 
-from src.games.Duum.src.sound import SoundManager as DuumSoundManager
-from src.games.Duum.src.ui_renderer import UIRenderer as DuumUIRenderer
-from src.games.Force_Field.src.sound import SoundManager as FFSoundManager
-from src.games.Force_Field.src.ui_renderer import UIRenderer as FFUIRenderer
-from src.games.Zombie_Survival.src.sound import SoundManager as ZSSoundManager
-from src.games.Zombie_Survival.src.ui_renderer import UIRenderer as ZSUIRenderer
+from games.Duum.src.sound import SoundManager as DuumSoundManager
+from games.Duum.src.ui_renderer import UIRenderer as DuumUIRenderer
+from games.Force_Field.src.sound import SoundManager as FFSoundManager
+from games.Force_Field.src.ui_renderer import UIRenderer as FFUIRenderer
+from games.Zombie_Survival.src.sound import SoundManager as ZSSoundManager
+from games.Zombie_Survival.src.ui_renderer import UIRenderer as ZSUIRenderer
 
 
 def get_mock_screen() -> pygame.Surface:
