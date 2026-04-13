@@ -161,7 +161,7 @@ jobs:
       - run: pip install -r requirements.lock
       - run: pip install -e .
       - name: Install SDL dependencies
-        run: sudo apt-get update && sudo apt-get install -y libsdl2-dev libsdl2-mixer-dev libsdl2-image-dev libsdl2-ttf-dev xvfb
+        run: sudo apt-get -o DPkg::Lock::Timeout=300 update && sudo apt-get -o DPkg::Lock::Timeout=300 install -y libsdl2-dev libsdl2-mixer-dev libsdl2-image-dev libsdl2-ttf-dev xvfb
       - name: Run tests with coverage
         env:
           SDL_VIDEODRIVER: dummy
