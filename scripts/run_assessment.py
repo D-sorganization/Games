@@ -253,7 +253,9 @@ def analyze_module(
 
     elif assessment_id == "D":  # Error Handling
         try_count = grep_in_files(r"try:", python_files)
-        except_count = grep_in_files(r"except Exception as e:", python_files)  # noqa: BLE001
+        except_count = grep_in_files(
+            r"except Exception as e:", python_files
+        )  # noqa: BLE001
         findings.append(f"- Files with try blocks: {try_count}")
         findings.append(f"- Files with except blocks: {except_count}")
         if try_count == 0:
