@@ -25,10 +25,13 @@ def _make_game() -> SimpleNamespace:
     player.zoomed = False
 
     input_manager = MagicMock()
-    input_manager.is_action_just_pressed.side_effect = lambda event, action: action in {
-        "pause",
-        "reload",
-    }
+    input_manager.is_action_just_pressed.side_effect = lambda event, action: (
+        action
+        in {
+            "pause",
+            "reload",
+        }
+    )
 
     game = SimpleNamespace(
         running=True,
