@@ -104,32 +104,13 @@ class TetrisRenderer:
 
     def draw_grid(self, logic: TetrisLogic) -> None:
         """Draw the game grid"""
-        # Draw the play area background with a subtle grid pattern
         pygame.draw.rect(
             self.screen,
-            (10, 10, 10),  # Very dark gray/black
+            (10, 10, 10),
             (TOP_LEFT_X, TOP_LEFT_Y, PLAY_WIDTH, PLAY_HEIGHT),
         )
+        self._draw_grid_lines()
 
-        # Draw background grid lines (faint)
-        for y in range(GRID_HEIGHT + 1):
-            color = (30, 30, 30)
-            pygame.draw.line(
-                self.screen,
-                color,
-                (TOP_LEFT_X, TOP_LEFT_Y + y * GRID_SIZE),
-                (TOP_LEFT_X + PLAY_WIDTH, TOP_LEFT_Y + y * GRID_SIZE),
-            )
-        for x in range(GRID_WIDTH + 1):
-            color = (30, 30, 30)
-            pygame.draw.line(
-                self.screen,
-                color,
-                (TOP_LEFT_X + x * GRID_SIZE, TOP_LEFT_Y),
-                (TOP_LEFT_X + x * GRID_SIZE, TOP_LEFT_Y + PLAY_HEIGHT),
-            )
-
-        # Draw the locked blocks
         for y in range(GRID_HEIGHT):
             for x in range(GRID_WIDTH):
                 color = logic.grid[y][x]
@@ -142,13 +123,30 @@ class TetrisRenderer:
                     )
                     self.draw_bevel_rect(self.screen, color, rect)
 
-        # Draw border
         pygame.draw.rect(
             self.screen,
             WHITE,
             (TOP_LEFT_X - 2, TOP_LEFT_Y - 2, PLAY_WIDTH + 4, PLAY_HEIGHT + 4),
             2,
         )
+
+    def _draw_grid_lines(self) -> None:
+        """Draw faint background grid lines."""
+        color = (30, 30, 30)
+        for y in range(GRID_HEIGHT + 1):
+            pygame.draw.line(
+                self.screen,
+                color,
+                (TOP_LEFT_X, TOP_LEFT_Y + y * GRID_SIZE),
+                (TOP_LEFT_X + PLAY_WIDTH, TOP_LEFT_Y + y * GRID_SIZE),
+            )
+        for x in range(GRID_WIDTH + 1):
+            pygame.draw.line(
+                self.screen,
+                color,
+                (TOP_LEFT_X + x * GRID_SIZE, TOP_LEFT_Y),
+                (TOP_LEFT_X + x * GRID_SIZE, TOP_LEFT_Y + PLAY_HEIGHT),
+            )
 
     def draw_piece(
         self,
@@ -167,9 +165,7 @@ class TetrisRenderer:
                     py = TOP_LEFT_Y + (piece.y + y) * GRID_SIZE + offset_y
 
                     if alpha < 255:
-                        # Create surface for transparency
                         surf = pygame.Surface((GRID_SIZE - 1, GRID_SIZE - 1))
-                        # For ghost piece, keep it simple
                         surf.fill(piece.color)
                         surf.set_alpha(alpha)
                         self.screen.blit(surf, (px, py))
@@ -180,21 +176,23 @@ class TetrisRenderer:
                             1,
                         )
                     else:
-                        # Glow effect for active piece
-                        glow_surf = pygame.Surface(
-                            (GRID_SIZE + 4, GRID_SIZE + 4), pygame.SRCALPHA
-                        )
-                        glow_color = (*piece.color, 100)
-                        pygame.draw.rect(
-                            glow_surf,
-                            glow_color,
-                            (0, 0, GRID_SIZE + 4, GRID_SIZE + 4),
-                            border_radius=4,
-                        )
-                        self.screen.blit(glow_surf, (px - 2, py - 2))
+                        self._draw_piece_cell_opaque(px, py, piece.color)
 
-                        rect = pygame.Rect(px, py, GRID_SIZE - 1, GRID_SIZE - 1)
-                        self.draw_bevel_rect(self.screen, piece.color, rect)
+    def _draw_piece_cell_opaque(
+        self, px: int, py: int, color: tuple[int, int, int]
+    ) -> None:
+        """Draw a single opaque piece cell with glow and bevel effects."""
+        glow_surf = pygame.Surface((GRID_SIZE + 4, GRID_SIZE + 4), pygame.SRCALPHA)
+        glow_color = (*color, 100)
+        pygame.draw.rect(
+            glow_surf,
+            glow_color,
+            (0, 0, GRID_SIZE + 4, GRID_SIZE + 4),
+            border_radius=4,
+        )
+        self.screen.blit(glow_surf, (px - 2, py - 2))
+        rect = pygame.Rect(px, py, GRID_SIZE - 1, GRID_SIZE - 1)
+        self.draw_bevel_rect(self.screen, color, rect)
 
     def draw_ghost_piece(self, logic: TetrisLogic) -> None:
         """Draw a ghost piece showing where the current piece will land"""
@@ -333,21 +331,27 @@ class TetrisRenderer:
         panel_y = TOP_LEFT_Y + 60
 
         pygame.draw.rect(
-            self.screen,
-            DARK_GRAY,
+            self.screen, DARK_GRAY,
             (panel_x - 10, panel_y - 10, 200, len(controls) * 30 + 40),
         )
         pygame.draw.rect(
-            self.screen,
-            WHITE,
+            self.screen, WHITE,
             (panel_x - 10, panel_y - 10, 200, len(controls) * 30 + 40),
             2,
         )
 
         title = self.font.render("Controls", True, WHITE)
         self.screen.blit(title, (panel_x, panel_y))
+        self._draw_controls_rows(controls, panel_x, panel_y + 40)
 
-        y_offset = panel_y + 40
+    def _draw_controls_rows(
+        self,
+        controls: list[tuple[str, str]],
+        panel_x: int,
+        start_y: int,
+    ) -> None:
+        """Render each key/action row inside the controls panel."""
+        y_offset = start_y
         for key, action in controls:
             key_text = self.small_font.render(key, True, GOLD)
             action_text = self.tiny_font.render(action, True, LIGHT_GRAY)
@@ -381,17 +385,29 @@ class TetrisRenderer:
         """Draw the level selection menu"""
         self.screen.fill(BLACK)
 
-        # Title
         title = self.font_large.render("TETRIS", True, CYAN)
-        title_rect = title.get_rect(center=(SCREEN_WIDTH // 2, 100))
-        self.screen.blit(title, title_rect)
+        self.screen.blit(title, title.get_rect(center=(SCREEN_WIDTH // 2, 100)))
 
-        # Instructions
         instruction = self.font.render("Select Starting Level", True, WHITE)
-        inst_rect = instruction.get_rect(center=(SCREEN_WIDTH // 2, 200))
-        self.screen.blit(instruction, inst_rect)
+        self.screen.blit(instruction, instruction.get_rect(center=(SCREEN_WIDTH // 2, 200)))
 
-        # Level options
+        self._draw_menu_level_options(starting_level)
+
+        start_text = self.small_font.render("Press ENTER to Start", True, GREEN)
+        self.screen.blit(start_text, start_text.get_rect(center=(SCREEN_WIDTH // 2, 550)))
+
+        settings_text = self.small_font.render("Press S for Settings", True, LIGHT_GRAY)
+        self.screen.blit(
+            settings_text, settings_text.get_rect(center=(SCREEN_WIDTH // 2, 590))
+        )
+
+        hint_text = self.tiny_font.render(
+            "Use UP/DOWN arrows to select level", True, GRAY
+        )
+        self.screen.blit(hint_text, hint_text.get_rect(center=(SCREEN_WIDTH // 2, 600)))
+
+    def _draw_menu_level_options(self, starting_level: int) -> None:
+        """Render the level list with a selection indicator box."""
         levels = [1, 5, 10, 15, 20]
         y_offset = 280
         for level in levels:
@@ -401,7 +417,6 @@ class TetrisRenderer:
             self.screen.blit(level_text, text_rect)
 
             if level == starting_level:
-                # Draw selection indicator
                 pygame.draw.rect(
                     self.screen,
                     GOLD,
@@ -416,77 +431,42 @@ class TetrisRenderer:
 
             y_offset += 50
 
-        # Start instruction
-        start_text = self.small_font.render("Press ENTER to Start", True, GREEN)
-        start_rect = start_text.get_rect(center=(SCREEN_WIDTH // 2, 550))
-        self.screen.blit(start_text, start_rect)
-
-        settings_text = self.small_font.render("Press S for Settings", True, LIGHT_GRAY)
-        settings_rect = settings_text.get_rect(center=(SCREEN_WIDTH // 2, 590))
-        self.screen.blit(settings_text, settings_rect)
-
-        # Controls hint
-        hint_text = self.tiny_font.render(
-            "Use UP/DOWN arrows to select level", True, GRAY
-        )
-        hint_rect = hint_text.get_rect(center=(SCREEN_WIDTH // 2, 600))
-        self.screen.blit(hint_text, hint_rect)
-
     def draw_game_over(self, logic: TetrisLogic) -> None:
         """Draw game over screen"""
         self.screen.fill(BLACK)
 
-        # Game over screen
         game_over_text = self.font_large.render("GAME OVER", True, RED)
         score_text = self.font.render(f"Final Score: {logic.score}", True, WHITE)
         lines_text = self.font.render(
-            f"Lines Cleared: {logic.lines_cleared}",
-            True,
-            WHITE,
+            f"Lines Cleared: {logic.lines_cleared}", True, WHITE
         )
         level_text = self.font.render(f"Final Level: {logic.level}", True, WHITE)
 
-        # Statistics
-        stats_title = self.font.render("Line Clears:", True, GOLD)
-        single_text = self.small_font.render(
-            f"Singles: {logic.total_singles}",
-            True,
-            WHITE,
-        )
-        double_text = self.small_font.render(
-            f"Doubles: {logic.total_doubles}",
-            True,
-            WHITE,
-        )
-        triple_text = self.small_font.render(
-            f"Triples: {logic.total_triples}",
-            True,
-            WHITE,
-        )
-        tetris_text = self.small_font.render(
-            f"Tetrises: {logic.total_tetrises}",
-            True,
-            CYAN,
-        )
-
-        restart_text = self.small_font.render("Press R to Restart", True, GREEN)
-
         y_pos = 150
         for text in [game_over_text, score_text, lines_text, level_text]:
-            rect = text.get_rect(center=(SCREEN_WIDTH // 2, y_pos))
-            self.screen.blit(text, rect)
+            self.screen.blit(text, text.get_rect(center=(SCREEN_WIDTH // 2, y_pos)))
             y_pos += 60
 
         y_pos += 20
-        stats_rect = stats_title.get_rect(center=(SCREEN_WIDTH // 2, y_pos))
-        self.screen.blit(stats_title, stats_rect)
+        y_pos = self._draw_game_over_stats(logic, y_pos)
+
+        restart_text = self.small_font.render("Press R to Restart", True, GREEN)
+        y_pos += 20
+        self.screen.blit(restart_text, restart_text.get_rect(center=(SCREEN_WIDTH // 2, y_pos)))
+
+    def _draw_game_over_stats(self, logic: "TetrisLogic", y_pos: int) -> int:
+        """Render the line-clear breakdown statistics block."""
+        stats_title = self.font.render("Line Clears:", True, GOLD)
+        self.screen.blit(stats_title, stats_title.get_rect(center=(SCREEN_WIDTH // 2, y_pos)))
         y_pos += 40
 
-        for text in [single_text, double_text, triple_text, tetris_text]:
-            rect = text.get_rect(center=(SCREEN_WIDTH // 2, y_pos))
-            self.screen.blit(text, rect)
+        stat_lines = [
+            self.small_font.render(f"Singles: {logic.total_singles}", True, WHITE),
+            self.small_font.render(f"Doubles: {logic.total_doubles}", True, WHITE),
+            self.small_font.render(f"Triples: {logic.total_triples}", True, WHITE),
+            self.small_font.render(f"Tetrises: {logic.total_tetrises}", True, CYAN),
+        ]
+        for text in stat_lines:
+            self.screen.blit(text, text.get_rect(center=(SCREEN_WIDTH // 2, y_pos)))
             y_pos += 35
-
-        y_pos += 20
-        restart_rect = restart_text.get_rect(center=(SCREEN_WIDTH // 2, y_pos))
-        self.screen.blit(restart_text, restart_rect)
+        return y_pos
