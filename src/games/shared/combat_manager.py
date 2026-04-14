@@ -294,55 +294,73 @@ class CombatManagerBase:
         show_damage: bool,
     ) -> None:
         """Apply damage to a bot that was hit."""
-        range_factor = max(0.3, 1.0 - (distance / weapon_range))
+        final_damage = self._calculate_final_damage(
+            player, bot, distance, weapon_range, base_damage
+        )
+        bot.take_damage(final_damage, is_headshot=is_headshot)
+        if show_damage:
+            self._append_damage_text(damage_texts, final_damage, is_headshot)
+        self._spawn_hit_particles()
+        if not bot.alive:
+            self.handle_kill(bot)
 
+    def _calculate_final_damage(
+        self,
+        player: Any,
+        bot: Any,
+        distance: float,
+        weapon_range: float,
+        base_damage: int,
+    ) -> int:
+        """Return damage after applying range falloff and accuracy scaling."""
+        range_factor = max(0.3, 1.0 - (distance / weapon_range))
         dx = bot.x - player.x
         dy = bot.y - player.y
         bot_angle = math.atan2(dy, dx)
         if bot_angle < 0:
             bot_angle += 2 * math.pi
-
         angle_diff = abs(bot_angle - player.angle)
         if angle_diff > math.pi:
             angle_diff = 2 * math.pi - angle_diff
-
         accuracy_factor = max(0.5, 1.0 - (angle_diff / 0.15))
-        final_damage = int(base_damage * range_factor * accuracy_factor)
+        return int(base_damage * range_factor * accuracy_factor)
 
-        bot.take_damage(final_damage, is_headshot=is_headshot)
-
-        if show_damage:
-            damage_color = getattr(self.C, "DAMAGE_TEXT_COLOR", (255, 255, 255))
-            damage_texts.append(
-                {
-                    "x": self.C.SCREEN_WIDTH // 2 + random.randint(-20, 20),
-                    "y": self.C.SCREEN_HEIGHT // 2 - 50,
-                    "text": str(final_damage) + ("!" if is_headshot else ""),
-                    "color": self.C.RED if is_headshot else damage_color,
-                    "timer": 60,
-                    "vy": -1.0,
-                }
-            )
-
-        self.particle_system.add_explosion(
-            self.C.SCREEN_WIDTH // 2, self.C.SCREEN_HEIGHT // 2, count=5
+    def _append_damage_text(
+        self,
+        damage_texts: list[dict[str, Any]],
+        final_damage: int,
+        is_headshot: bool,
+    ) -> None:
+        """Append a floating damage number to the damage_texts list."""
+        damage_color = getattr(self.C, "DAMAGE_TEXT_COLOR", (255, 255, 255))
+        damage_texts.append(
+            {
+                "x": self.C.SCREEN_WIDTH // 2 + random.randint(-20, 20),
+                "y": self.C.SCREEN_HEIGHT // 2 - 50,
+                "text": str(final_damage) + ("!" if is_headshot else ""),
+                "color": self.C.RED if is_headshot else damage_color,
+                "timer": 60,
+                "vy": -1.0,
+            }
         )
 
+    def _spawn_hit_particles(self) -> None:
+        """Spawn the screen-space explosion and blood-splash particles."""
+        sw2 = self.C.SCREEN_WIDTH // 2
+        sh2 = self.C.SCREEN_HEIGHT // 2
+        self.particle_system.add_explosion(sw2, sh2, count=5)
         blood_color = getattr(self.C, "BLUE_BLOOD", (0, 0, 200))
         particle_lifetime = getattr(self.C, "PARTICLE_LIFETIME", 30)
         for _ in range(10):
             self.particle_system.add_particle(
-                x=self.C.SCREEN_WIDTH // 2,
-                y=self.C.SCREEN_HEIGHT // 2,
+                x=sw2,
+                y=sh2,
                 dx=random.uniform(-5, 5),
                 dy=random.uniform(-5, 5),
                 color=blood_color,
                 timer=particle_lifetime,
                 size=random.randint(2, 5),
             )
-
-        if not bot.alive:
-            self.handle_kill(bot)
 
     def _add_shot_visuals(
         self,
@@ -411,68 +429,12 @@ class CombatManagerBase:
         """
         sw2 = self.C.SCREEN_WIDTH // 2
         sh2 = self.C.SCREEN_HEIGHT // 2
-
-        self.particle_system.add_particle(
-            x=sw2,
-            y=sh2,
-            dx=0,
-            dy=0,
-            color=self.C.WHITE,
-            timer=40,
-            size=3000,
-        )
-
-        # 3D explosion at player pos
-        self.particle_system.add_world_explosion(
-            player.x,
-            player.y,
-            0.5,
-            count=100,
-            color=self.C.ORANGE,
-            speed=0.5,
-        )
-
-        for _ in range(300):
-            angle = random.uniform(0, 2 * math.pi)
-            speed = random.uniform(5, 25)
-            color = random.choice(
-                [
-                    self.C.ORANGE,
-                    self.C.RED,
-                    self.C.YELLOW,
-                    getattr(self.C, "DARK_RED", (139, 0, 0)),
-                    (50, 50, 50),
-                ]
-            )
-            self.particle_system.add_particle(
-                x=sw2,
-                y=sh2,
-                dx=math.cos(angle) * speed,
-                dy=math.sin(angle) * speed,
-                color=color,
-                timer=random.randint(40, 100),
-                size=random.randint(5, 25),
-            )
-
-        bomb_radius = getattr(self.C, "BOMB_RADIUS", 10.0)
-        for bot in bots:
-            if not bot.alive:
-                continue
-            dx = bot.x - player.x
-            dy = bot.y - player.y
-            dist = math.sqrt(dx * dx + dy * dy)
-            if dist < bomb_radius:
-                if bot.take_damage(1000):
-                    self.handle_kill(bot)
-
-                if dist < 5.0:
-                    self.particle_system.add_explosion(sw2, sh2, count=3)
-
+        self._spawn_bomb_particles(player, sw2, sh2)
+        self._apply_bomb_damage(player, bots, sw2, sh2)
         try:
             self.sound_manager.play_sound("bomb")
         except (pygame.error, OSError):
             logger.exception("Bomb Audio Failed")
-
         damage_texts.append(
             {
                 "x": sw2,
@@ -485,6 +447,46 @@ class CombatManagerBase:
         )
         return damage_texts
 
+    def _spawn_bomb_particles(self, player: Any, sw2: int, sh2: int) -> None:
+        """Spawn the flash particle, world explosion, and radial debris."""
+        self.particle_system.add_particle(
+            x=sw2, y=sh2, dx=0, dy=0, color=self.C.WHITE, timer=40, size=3000
+        )
+        self.particle_system.add_world_explosion(
+            player.x, player.y, 0.5, count=100, color=self.C.ORANGE, speed=0.5
+        )
+        dark_red = getattr(self.C, "DARK_RED", (139, 0, 0))
+        colors = [self.C.ORANGE, self.C.RED, self.C.YELLOW, dark_red, (50, 50, 50)]
+        for _ in range(300):
+            angle = random.uniform(0, 2 * math.pi)
+            speed = random.uniform(5, 25)
+            self.particle_system.add_particle(
+                x=sw2,
+                y=sh2,
+                dx=math.cos(angle) * speed,
+                dy=math.sin(angle) * speed,
+                color=random.choice(colors),
+                timer=random.randint(40, 100),
+                size=random.randint(5, 25),
+            )
+
+    def _apply_bomb_damage(
+        self, player: Any, bots: list[Any], sw2: int, sh2: int
+    ) -> None:
+        """Deal 1000 damage to all bots within BOMB_RADIUS of the player."""
+        bomb_radius = getattr(self.C, "BOMB_RADIUS", 10.0)
+        for bot in bots:
+            if not bot.alive:
+                continue
+            dx = bot.x - player.x
+            dy = bot.y - player.y
+            dist = math.sqrt(dx * dx + dy * dy)
+            if dist < bomb_radius:
+                if bot.take_damage(1000):
+                    self.handle_kill(bot)
+                if dist < 5.0:
+                    self.particle_system.add_explosion(sw2, sh2, count=3)
+
     def explode_laser(
         self,
         impact_x: float,
@@ -496,48 +498,10 @@ class CombatManagerBase:
             self.sound_manager.play_sound("boom_real")
         except (pygame.error, OSError):
             logger.exception("Boom sound failed")
-
         try:
-            self.particle_system.add_world_explosion(
-                impact_x,
-                impact_y,
-                0.5,
-                count=80,
-                color=(0, 255, 255),
-                speed=0.4,
-            )
-
             sw2 = self.C.SCREEN_WIDTH // 2
             sh2 = self.C.SCREEN_HEIGHT // 2
-            laser_radius = getattr(self.C, "LASER_AOE_RADIUS", 5.0)
-
-            hits = 0
-            for bot in self.entity_manager.bots:
-                if not getattr(bot, "alive", False):
-                    continue
-                dist = math.sqrt((bot.x - impact_x) ** 2 + (bot.y - impact_y) ** 2)
-                if dist < laser_radius:
-                    killed = bot.take_damage(500)
-                    hits += 1
-
-                    if killed:
-                        self.handle_kill(bot)
-
-                    for _ in range(10):
-                        self.particle_system.add_particle(
-                            x=sw2,
-                            y=sh2,
-                            dx=random.uniform(-10, 10),
-                            dy=random.uniform(-10, 10),
-                            color=(
-                                random.randint(200, 255),
-                                0,
-                                random.randint(200, 255),
-                            ),
-                            timer=40,
-                            size=random.randint(4, 8),
-                        )
-
+            hits = self._apply_laser_damage(impact_x, impact_y, sw2, sh2)
             if hits > 0:
                 damage_texts.append(
                     {
@@ -551,8 +515,44 @@ class CombatManagerBase:
                 )
         except (ValueError, AttributeError, pygame.error):
             logger.exception("Critical Laser Error")
-
         return damage_texts
+
+    def _apply_laser_damage(
+        self, impact_x: float, impact_y: float, sw2: int, sh2: int
+    ) -> int:
+        """Spawn laser explosion particles and damage bots in AOE radius.
+
+        Returns the number of bots hit.
+        """
+        self.particle_system.add_world_explosion(
+            impact_x, impact_y, 0.5, count=80, color=(0, 255, 255), speed=0.4
+        )
+        laser_radius = getattr(self.C, "LASER_AOE_RADIUS", 5.0)
+        hits = 0
+        for bot in self.entity_manager.bots:
+            if not getattr(bot, "alive", False):
+                continue
+            dist = math.sqrt((bot.x - impact_x) ** 2 + (bot.y - impact_y) ** 2)
+            if dist < laser_radius:
+                killed = bot.take_damage(500)
+                hits += 1
+                if killed:
+                    self.handle_kill(bot)
+                for _ in range(10):
+                    self.particle_system.add_particle(
+                        x=sw2,
+                        y=sh2,
+                        dx=random.uniform(-10, 10),
+                        dy=random.uniform(-10, 10),
+                        color=(
+                            random.randint(200, 255),
+                            0,
+                            random.randint(200, 255),
+                        ),
+                        timer=40,
+                        size=random.randint(4, 8),
+                    )
+        return hits
 
     def explode_generic(
         self,
@@ -571,10 +571,23 @@ class CombatManagerBase:
         )
         if dist_to_player < 15:
             damage_flash_timer = 15
-
         sw2 = self.C.SCREEN_WIDTH // 2
         sh2 = self.C.SCREEN_HEIGHT // 2
+        self._spawn_generic_explosion_fx(
+            projectile, weapon_type, dist_to_player, sw2, sh2
+        )
+        self._apply_generic_aoe_damage(projectile, radius)
+        return damage_flash_timer
 
+    def _spawn_generic_explosion_fx(
+        self,
+        projectile: Any,
+        weapon_type: str,
+        dist_to_player: float,
+        sw2: int,
+        sh2: int,
+    ) -> None:
+        """Spawn world explosion particles and play the impact sound."""
         color = self.C.CYAN if weapon_type == "plasma" else self.C.ORANGE
         self.particle_system.add_world_explosion(
             projectile.x,
@@ -584,11 +597,9 @@ class CombatManagerBase:
             color=color,
             speed=0.3,
         )
-
         if dist_to_player < 20:
             count = 5 if weapon_type == "rocket" else 3
             self.particle_system.add_explosion(sw2, sh2, count=count)
-
             for _ in range(20):
                 self.particle_system.add_particle(
                     x=sw2,
@@ -599,7 +610,6 @@ class CombatManagerBase:
                     timer=40,
                     size=random.randint(4, 8),
                 )
-
         try:
             self.sound_manager.play_sound(
                 "boom_real" if weapon_type == "rocket" else "shoot_plasma"
@@ -607,18 +617,16 @@ class CombatManagerBase:
         except (pygame.error, OSError):
             pass
 
+    def _apply_generic_aoe_damage(self, projectile: Any, radius: float) -> None:
+        """Apply distance-scaled damage to all bots within the explosion radius."""
         for bot in self.entity_manager.bots:
             if not bot.alive:
                 continue
             dx = bot.x - projectile.x
             dy = bot.y - projectile.y
             dist = math.sqrt(dx * dx + dy * dy)
-
             if dist < radius:
                 damage_factor = 1.0 - (dist / radius)
                 damage = int(projectile.damage * damage_factor)
-
                 if bot.take_damage(damage):
                     self.handle_kill(bot)
-
-        return damage_flash_timer
