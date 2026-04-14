@@ -123,13 +123,21 @@ class CombatManagerBase:
             )
         if resolution.closest_bot:
             self._apply_hit_damage(
-                request.player, resolution.closest_bot, resolution.closest_distance,
-                weapon_range, request.player.get_current_weapon_damage(),
-                resolution.is_headshot, request.damage_texts, request.show_damage,
+                request.player,
+                resolution.closest_bot,
+                resolution.closest_distance,
+                weapon_range,
+                request.player.get_current_weapon_damage(),
+                resolution.is_headshot,
+                request.damage_texts,
+                request.show_damage,
             )
         self._add_shot_visuals(
-            request.player, resolution.aim_angle, resolution.closest_bot,
-            resolution.closest_distance, resolution.wall_distance,
+            request.player,
+            resolution.aim_angle,
+            resolution.closest_bot,
+            resolution.closest_distance,
+            resolution.wall_distance,
         )
 
     def check_shot_hit(self, request: ShotResolutionRequest) -> list[dict[str, Any]]:
@@ -139,8 +147,11 @@ class CombatManagerBase:
             weapon_range = self._get_weapon_range(request.player, request.is_secondary)
             if request.is_secondary:
                 self._handle_secondary_hit(
-                    request.player, resolution.closest_bot,
-                    resolution.closest_distance, resolution.wall_distance, request.damage_texts,
+                    request.player,
+                    resolution.closest_bot,
+                    resolution.closest_distance,
+                    resolution.wall_distance,
+                    request.damage_texts,
                 )
                 return request.damage_texts
             self._apply_primary_shot(request, resolution, weapon_range)
@@ -353,8 +364,12 @@ class CombatManagerBase:
             )
 
     def _add_wall_hit_particles(
-        self, player: Any, aim_angle: float, wall_dist: float,
-        screen_hit_x: float, screen_hit_y: float,
+        self,
+        player: Any,
+        aim_angle: float,
+        wall_dist: float,
+        screen_hit_x: float,
+        screen_hit_y: float,
     ) -> None:
         """Spawn wall-impact explosion and screen sparks for a missed shot."""
         hit_world_x = player.x + math.cos(aim_angle) * wall_dist
@@ -364,9 +379,13 @@ class CombatManagerBase:
         )
         for _ in range(5):
             self.particle_system.add_particle(
-                x=screen_hit_x, y=screen_hit_y,
-                dx=random.uniform(-3, 3), dy=random.uniform(-3, 3),
-                color=(255, 200, 100), timer=20, size=random.randint(1, 3),
+                x=screen_hit_x,
+                y=screen_hit_y,
+                dx=random.uniform(-3, 3),
+                dy=random.uniform(-3, 3),
+                color=(255, 200, 100),
+                timer=20,
+                size=random.randint(1, 3),
             )
 
     def _add_shot_visuals(
@@ -385,10 +404,14 @@ class CombatManagerBase:
         self.particle_system.add_trace(
             start=(self.C.SCREEN_WIDTH * 0.6, self.C.SCREEN_HEIGHT),
             end=(screen_hit_x, screen_hit_y),
-            color=(255, 255, 100), timer=5, width=1,
+            color=(255, 255, 100),
+            timer=5,
+            width=1,
         )
         if not closest_bot:
-            self._add_wall_hit_particles(player, aim_angle, wall_dist, screen_hit_x, screen_hit_y)
+            self._add_wall_hit_particles(
+                player, aim_angle, wall_dist, screen_hit_x, screen_hit_y
+            )
 
     # ------------------------------------------------------------------
     # Explosion helpers

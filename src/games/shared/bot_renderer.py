@@ -28,7 +28,9 @@ class BotRenderer:
     ) -> tuple[int, float, float, Color3] | None:
         """Return (render_y, w, h, color) or None to skip the draw."""
         render_h = sprite_size
-        render_w = sprite_size * 0.55 if visual_style == "monster" else sprite_size * 0.7
+        render_w = (
+            sprite_size * 0.55 if visual_style == "monster" else sprite_size * 0.7
+        )
         if not bot.dead:
             return sprite_y, render_w, render_h, base_color
         return BotRenderer._render_death_animation(
@@ -62,7 +64,14 @@ class BotRenderer:
         renderer = BotStyleRendererFactory.get_renderer(visual_style)
         if renderer:
             renderer.render(
-                screen, bot, center_x, render_y, render_width, render_height, base_color, config
+                screen,
+                bot,
+                center_x,
+                render_y,
+                render_width,
+                render_height,
+                base_color,
+                config,
             )
 
     @staticmethod
@@ -79,7 +88,16 @@ class BotRenderer:
         """Look up and invoke an item-style renderer."""
         renderer = BotStyleRendererFactory.get_renderer(style_key)
         if renderer:
-            renderer.render(screen, bot, center_x, sprite_y, sprite_size, sprite_size, base_color, config)
+            renderer.render(
+                screen,
+                bot,
+                center_x,
+                sprite_y,
+                sprite_size,
+                sprite_size,
+                base_color,
+                config,
+            )
 
     @staticmethod
     def _render_item_sprite(
@@ -94,12 +112,26 @@ class BotRenderer:
         """Render item-type sprites; return True if handled."""
         if bot.enemy_type in ("health_pack", "ammo_box", "bomb_item"):
             BotRenderer._invoke_item_renderer(
-                bot.enemy_type, screen, bot, center_x, sprite_y, sprite_size, base_color, config
+                bot.enemy_type,
+                screen,
+                bot,
+                center_x,
+                sprite_y,
+                sprite_size,
+                base_color,
+                config,
             )
             return True
         if bot.enemy_type.startswith("pickup_"):
             BotRenderer._invoke_item_renderer(
-                "weapon_pickup", screen, bot, center_x, sprite_y, sprite_size, base_color, config
+                "weapon_pickup",
+                screen,
+                bot,
+                center_x,
+                sprite_y,
+                sprite_size,
+                base_color,
+                config,
             )
             return True
         return False
@@ -117,7 +149,10 @@ class BotRenderer:
         goo_color = (50, 150, 50)
         blended = cast(
             Color3,
-            tuple(int(c * (1 - melt_pct) + g * melt_pct) for c, g in zip(base_color, goo_color, strict=False)),
+            tuple(
+                int(c * (1 - melt_pct) + g * melt_pct)
+                for c, g in zip(base_color, goo_color, strict=False)
+            ),
         )
         current_h = render_height * (1.0 - melt_pct * 0.85)
         current_w = render_width * (1.0 + melt_pct * 0.8)
@@ -135,8 +170,10 @@ class BotRenderer:
         base_color: tuple[int, int, int],
     ) -> tuple[int, int, int, tuple[int, int, int]] | None:
         """Calculate death animation transforms; return dims or None if not drawn."""
-        render_y, render_width, render_height, base_color = BotRenderer._compute_melt_transforms(
-            sprite_y, render_width, render_height, base_color, bot.death_timer
+        render_y, render_width, render_height, base_color = (
+            BotRenderer._compute_melt_transforms(
+                sprite_y, render_width, render_height, base_color, bot.death_timer
+            )
         )
         if bot.disintegrate_timer > 0:
             dis_pct = bot.disintegrate_timer / 100.0
@@ -144,7 +181,8 @@ class BotRenderer:
             if radius_mult <= 0:
                 return None
             pygame.draw.ellipse(
-                screen, base_color,
+                screen,
+                base_color,
                 (
                     int(center_x - render_width / 2 * radius_mult),
                     int(render_y + render_height - 10),
