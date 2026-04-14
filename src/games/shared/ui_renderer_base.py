@@ -101,41 +101,44 @@ class UIRendererBase:
             base_dir = self._get_base_dir()
             self.assets_dir = str(base_dir / "assets")
             pics_dir = str(base_dir / "pics")
-
-            # Willy Wonk image
-            willy_path = os.path.join(pics_dir, "WillyWonk.JPG")
-            if os.path.exists(willy_path):
-                img = pygame.image.load(willy_path)
-                img = pygame.transform.rotate(img, -90)
-                scale = min(500 / img.get_height(), 800 / img.get_width())
-                if scale < 1:
-                    new_size = (
-                        int(img.get_width() * scale),
-                        int(img.get_height() * scale),
-                    )
-                    img = pygame.transform.scale(img, new_size)
-                self.intro_images["willy"] = img
-
-            # Setup Video
-            video_path = os.path.join(pics_dir, "DeadFishSwimming.mp4")
-            if HAS_CV2 and os.path.exists(video_path):
-                self.intro_video = cv2.VideoCapture(video_path)
-
-            # Fallback Image
-            deadfish_path = os.path.join(pics_dir, "DeadFishSwimming_0.JPG")
-            if os.path.exists(deadfish_path):
-                img = pygame.image.load(deadfish_path)
-                scale = min(500 / img.get_height(), 800 / img.get_width())
-                if scale < 1:
-                    new_size = (
-                        int(img.get_width() * scale),
-                        int(img.get_height() * scale),
-                    )
-                    img = pygame.transform.scale(img, new_size)
-                self.intro_images["deadfish"] = img
-
+            self._load_willy_image(pics_dir)
+            self._load_intro_video(pics_dir)
+            self._load_deadfish_image(pics_dir)
         except (pygame.error, FileNotFoundError, OSError, TypeError):
             logger.exception("Failed to load assets")
+
+    def _load_willy_image(self, pics_dir: str) -> None:
+        """Load and rotate the WillyWonk intro image."""
+        willy_path = os.path.join(pics_dir, "WillyWonk.JPG")
+        if not os.path.exists(willy_path):
+            return
+        img = pygame.image.load(willy_path)
+        img = pygame.transform.rotate(img, -90)
+        scale = min(500 / img.get_height(), 800 / img.get_width())
+        if scale < 1:
+            img = pygame.transform.scale(
+                img, (int(img.get_width() * scale), int(img.get_height() * scale))
+            )
+        self.intro_images["willy"] = img
+
+    def _load_intro_video(self, pics_dir: str) -> None:
+        """Load the DeadFishSwimming video if cv2 is available."""
+        video_path = os.path.join(pics_dir, "DeadFishSwimming.mp4")
+        if HAS_CV2 and os.path.exists(video_path):
+            self.intro_video = cv2.VideoCapture(video_path)
+
+    def _load_deadfish_image(self, pics_dir: str) -> None:
+        """Load the DeadFishSwimming fallback still image."""
+        deadfish_path = os.path.join(pics_dir, "DeadFishSwimming_0.JPG")
+        if not os.path.exists(deadfish_path):
+            return
+        img = pygame.image.load(deadfish_path)
+        scale = min(500 / img.get_height(), 800 / img.get_width())
+        if scale < 1:
+            img = pygame.transform.scale(
+                img, (int(img.get_width() * scale), int(img.get_height() * scale))
+            )
+        self.intro_images["deadfish"] = img
 
     def update_blood_drips(self, rect: pygame.Rect) -> None:
         """Update blood drip animations from title text.
