@@ -51,6 +51,17 @@ if TYPE_CHECKING:
         WorldParticle,
     )
 
+# Type alias for the 5-array tuple returned by _calculate_rays.
+# Using an alias keeps the function signature on one line, which prevents
+# the black/ruff-format formatter loop on long tuple[...] return annotations.
+_RayArrays = tuple[
+    np.ndarray[Any, np.dtype[Any]],
+    np.ndarray[Any, np.dtype[Any]],
+    np.ndarray[Any, np.dtype[Any]],
+    np.ndarray[Any, np.dtype[Any]],
+    np.ndarray[Any, np.dtype[Any]],
+]
+
 
 class Raycaster:
     """Raycasting engine for 3D rendering"""
@@ -359,13 +370,7 @@ class Raycaster:
             self.grid = self.game_map.grid
             self.np_grid = np.array(self.game_map.grid, dtype=np.int8)
 
-    def _calculate_rays(self, player: Player) -> tuple[
-        np.ndarray[Any, np.dtype[Any]],
-        np.ndarray[Any, np.dtype[Any]],
-        np.ndarray[Any, np.dtype[Any]],
-        np.ndarray[Any, np.dtype[Any]],
-        np.ndarray[Any, np.dtype[Any]],
-    ]:
+    def _calculate_rays(self, player: Player) -> _RayArrays:
         """Perform vectorized raycasting math."""
         # 1. Setup ray directions
         ray_dir_x, ray_dir_y = self._get_ray_directions(player)
@@ -512,57 +517,73 @@ class Raycaster:
         view_offset_y: float,
         flash_intensity: float,
     ) -> None:
-        """Render walls using computed arrays."""
+        """Render walls using computed arrays; thin orchestrator."""
         wall_colors = self._resolve_wall_theme(level)
-
-        # Pre-compute geometry and shading arrays
-        (
+        wall_heights_int_list, wall_tops_list, shades_list, fog_factors_list = (
+            self._prepare_wall_render_data(
+                distances, player, fisheye_factors, view_offset_y
+            )
+        )
+        use_textures = self.use_textures and len(self.textures) > 0
+        wall_strips = self._prefetch_wall_strips(wall_colors)
+        blits_sequence = self._render_ray_columns(
+            distances,
+            wall_types,
+            wall_x_hits,
             wall_heights_int_list,
             wall_tops_list,
             shades_list,
             fog_factors_list,
-        ) = self._prepare_wall_render_data(
-            distances, player, fisheye_factors, view_offset_y
+            use_textures,
+            wall_strips,
+            wall_colors,
         )
+        if blits_sequence:
+            self.view_surface.blits(blits_sequence, doreturn=False)
 
-        use_textures = self.use_textures and len(self.textures) > 0
-
-        # Pre-fetch texture strips
+    def _prefetch_wall_strips(
+        self, wall_colors: dict[int, tuple[int, int, int]]
+    ) -> dict[int, list[pygame.Surface]]:
+        """Pre-fetch texture strip lists keyed by wall type."""
         wall_strips: dict[int, list[pygame.Surface]] = {}
-        for wt in wall_colors.keys():
+        for wt in wall_colors:
             tname = self.texture_map.get(wt, "brick")
             if tname in self.texture_strips:
                 wall_strips[wt] = self.texture_strips[tname]
+        return wall_strips
 
-        view_surface = self.view_surface
-        blits_sequence: list[
-            tuple[pygame.Surface, tuple[int, int]]
-            | tuple[pygame.Surface, tuple[int, int], tuple[int, int, int, int]]
-        ] = []
+    def _render_ray_columns(  # noqa: PLR0913
+        self,
+        distances: np.ndarray[Any, Any],
+        wall_types: np.ndarray[Any, Any],
+        wall_x_hits: np.ndarray[Any, Any],
+        wall_heights_int_list: list[int],
+        wall_tops_list: list[int],
+        shades_list: list[float],
+        fog_factors_list: list[float],
+        use_textures: bool,
+        wall_strips: dict[int, list[pygame.Surface]],
+        wall_colors: dict[int, tuple[int, int, int]],
+    ) -> list[Any]:
+        """Iterate rays and collect blit operations for the batched flush.
 
-        # Optimization: Convert numpy arrays to Python lists for faster per-element
-        # access in the per-ray loop below.  Python list __getitem__ with an int
-        # index is ~5-10x faster than numpy scalar indexing (arr[i]) because numpy
-        # must box the result into a Python scalar on every access.  Since the loop
-        # is pure-Python ``for i in range(num_rays)`` with individual element reads,
-        # pre-converting via .tolist() is the optimal approach.  (See issue #477.)
+        Converting numpy arrays to Python lists before the per-ray loop gives
+        ~5-10x faster per-element access. (See issue #477.)
+        """
         distances_list = distances.tolist()
         wall_types_list = wall_types.tolist()
         wall_x_hits_list = wall_x_hits.tolist()
-
-        # Per-ray loop
+        view_surface = self.view_surface
+        blits_sequence: list[Any] = []
         for i in range(self.num_rays):
             dist = distances_list[i]
             if dist >= self.config.MAX_DEPTH:
                 continue
-
             wt = wall_types_list[i]
             if wt == 0:
                 continue
-
             h = wall_heights_int_list[i]
             top = wall_tops_list[i]
-
             if use_textures and wt in wall_strips:
                 self._render_textured_wall(
                     i,
@@ -588,10 +609,7 @@ class Raycaster:
                     wall_colors,
                     view_surface,
                 )
-
-        # Perform batched blits
-        if blits_sequence:
-            view_surface.blits(blits_sequence, doreturn=False)
+        return blits_sequence
 
     def _resolve_wall_theme(self, level: int) -> dict[int, tuple[int, int, int]]:
         """Resolve wall colour theme for the current level."""
