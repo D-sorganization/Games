@@ -96,3 +96,204 @@ def test_handle_playing_state_paused_runs_pause_audio_without_update() -> None:
     game.sound_manager.play_sound.assert_has_calls(
         [call("heartbeat"), call("breath"), call("groan")]
     )
+
+
+def test_handle_intro_events_quit_sets_running_false(monkeypatch) -> None:
+    from games.Duum.src.screen_event_handler import ScreenEventHandler
+
+    game = _screen_game(state=GameState.INTRO)
+    monkeypatch.setattr(
+        pygame.event,
+        "get",
+        lambda: [SimpleNamespace(type=pygame.QUIT)],
+    )
+
+    ScreenEventHandler(game).handle_intro_events()
+
+    assert game.running is False
+
+
+def test_handle_menu_events_escape_sets_running_false(monkeypatch) -> None:
+    from games.Duum.src.screen_event_handler import ScreenEventHandler
+
+    game = _screen_game(state=GameState.MENU)
+    monkeypatch.setattr(
+        pygame.event,
+        "get",
+        lambda: [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_ESCAPE)],
+    )
+
+    ScreenEventHandler(game).handle_menu_events()
+
+    assert game.running is False
+
+
+def test_handle_menu_events_quit_sets_running_false(monkeypatch) -> None:
+    from games.Duum.src.screen_event_handler import ScreenEventHandler
+
+    game = _screen_game(state=GameState.MENU)
+    monkeypatch.setattr(
+        pygame.event,
+        "get",
+        lambda: [SimpleNamespace(type=pygame.QUIT)],
+    )
+
+    ScreenEventHandler(game).handle_menu_events()
+
+    assert game.running is False
+
+
+def test_handle_key_config_events_escape_goes_to_menu(monkeypatch) -> None:
+    from games.Duum.src.screen_event_handler import ScreenEventHandler
+
+    game = _screen_game(state=GameState.PLAYING)
+    monkeypatch.setattr(
+        pygame.event,
+        "get",
+        lambda: [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_ESCAPE)],
+    )
+
+    ScreenEventHandler(game).handle_key_config_events()
+
+    assert game.state == GameState.MENU
+
+
+def test_handle_key_config_events_quit_stops_game(monkeypatch) -> None:
+    from games.Duum.src.screen_event_handler import ScreenEventHandler
+
+    game = _screen_game(state=GameState.PLAYING)
+    monkeypatch.setattr(
+        pygame.event,
+        "get",
+        lambda: [SimpleNamespace(type=pygame.QUIT)],
+    )
+
+    ScreenEventHandler(game).handle_key_config_events()
+
+    assert game.running is False
+
+
+def test_handle_map_select_events_escape_goes_to_menu(monkeypatch) -> None:
+    from games.Duum.src.screen_event_handler import ScreenEventHandler
+
+    game = _screen_game(state=GameState.MAP_SELECT)
+    monkeypatch.setattr(
+        pygame.event,
+        "get",
+        lambda: [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_ESCAPE)],
+    )
+
+    ScreenEventHandler(game).handle_map_select_events()
+
+    assert game.state == GameState.MENU
+
+
+def test_handle_map_select_events_quit_stops_game(monkeypatch) -> None:
+    from games.Duum.src.screen_event_handler import ScreenEventHandler
+
+    game = _screen_game(state=GameState.MAP_SELECT)
+    monkeypatch.setattr(
+        pygame.event,
+        "get",
+        lambda: [SimpleNamespace(type=pygame.QUIT)],
+    )
+
+    ScreenEventHandler(game).handle_map_select_events()
+
+    assert game.running is False
+
+
+def test_handle_level_complete_events_space_goes_to_menu(monkeypatch) -> None:
+    from games.Duum.src.screen_event_handler import ScreenEventHandler
+
+    game = _screen_game(state=GameState.LEVEL_COMPLETE)
+    monkeypatch.setattr(
+        pygame.event,
+        "get",
+        lambda: [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_SPACE)],
+    )
+
+    ScreenEventHandler(game).handle_level_complete_events()
+
+    assert game.state == GameState.MENU
+
+
+def test_handle_level_complete_events_quit_stops_game(monkeypatch) -> None:
+    from games.Duum.src.screen_event_handler import ScreenEventHandler
+
+    game = _screen_game(state=GameState.LEVEL_COMPLETE)
+    monkeypatch.setattr(
+        pygame.event,
+        "get",
+        lambda: [SimpleNamespace(type=pygame.QUIT)],
+    )
+
+    ScreenEventHandler(game).handle_level_complete_events()
+
+    assert game.running is False
+
+
+def test_handle_game_over_events_space_goes_to_menu(monkeypatch) -> None:
+    from games.Duum.src.screen_event_handler import ScreenEventHandler
+
+    game = _screen_game(state=GameState.GAME_OVER)
+    monkeypatch.setattr(
+        pygame.event,
+        "get",
+        lambda: [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_SPACE)],
+    )
+
+    ScreenEventHandler(game).handle_game_over_events()
+
+    assert game.state == GameState.MENU
+
+
+def test_handle_game_over_events_quit_stops_game(monkeypatch) -> None:
+    from games.Duum.src.screen_event_handler import ScreenEventHandler
+
+    game = _screen_game(state=GameState.GAME_OVER)
+    monkeypatch.setattr(
+        pygame.event,
+        "get",
+        lambda: [SimpleNamespace(type=pygame.QUIT)],
+    )
+
+    ScreenEventHandler(game).handle_game_over_events()
+
+    assert game.running is False
+
+
+def test_update_intro_logic_phase2_past_slides_goes_to_menu() -> None:
+    from games.Duum.src.screen_event_handler import ScreenEventHandler
+
+    game = _screen_game(intro_phase=2, intro_step=10, intro_start_time=0)
+
+    ScreenEventHandler(game).update_intro_logic(elapsed=100)
+
+    assert game.state == GameState.MENU
+
+
+def test_update_intro_logic_phase2_plays_laugh_on_first_slide() -> None:
+    from games.Duum.src.screen_event_handler import ScreenEventHandler
+
+    game = _screen_game(
+        intro_phase=2, intro_step=0, intro_start_time=500, laugh_played=False
+    )
+
+    ScreenEventHandler(game).update_intro_logic(elapsed=10)
+
+    game.sound_manager.play_sound.assert_called_once_with("laugh")
+    assert game.laugh_played is True
+
+
+def test_update_intro_logic_phase1_plays_water_sound() -> None:
+    from games.Duum.src.screen_event_handler import ScreenEventHandler
+
+    game = _screen_game(
+        intro_phase=1, intro_step=0, intro_start_time=500, water_played=False
+    )
+
+    ScreenEventHandler(game).update_intro_logic(elapsed=10)
+
+    game.sound_manager.play_sound.assert_called_once_with("water")
+    assert game.water_played is True
