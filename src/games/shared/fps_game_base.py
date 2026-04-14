@@ -115,16 +115,30 @@ class FPSGameBase:
     ) -> None:
         """Initialize common FPS game state shared across all FPS variants."""
         self.C = C
+        self._init_display(C, caption, render_cls, ui_render_cls)
+        self._init_game_state(C)
+        self._init_gameplay_state(C)
+        self._init_atmosphere_state()
+        self._init_visual_effects(particle_system)
+        self._init_game_objects(C, entity_manager)
+        self._init_player_options(C, unlocked_weapons)
+        self._init_sound(sound_manager, sound_manager_factory)
+        self._init_input_and_fog(input_manager)
+
+    def _init_display(
+        self, C: Any, caption: str, render_cls: Any, ui_render_cls: Any
+    ) -> None:
+        """Set up the pygame window, clock, and renderer objects."""
         flags = pygame.SCALED | pygame.RESIZABLE
         self.screen = pygame.display.set_mode((C.SCREEN_WIDTH, C.SCREEN_HEIGHT), flags)
         pygame.display.set_caption(caption)
         self.clock = pygame.time.Clock()
         self.running = True
-
         self.renderer = render_cls(self.screen)
         self.ui_renderer = ui_render_cls(self.screen)
 
-        # Game state
+    def _init_game_state(self, C: Any) -> None:
+        """Initialize intro / game-flow state variables."""
         self.state = GameState.INTRO
         self.intro_phase = 0
         self.intro_step = 0
@@ -132,7 +146,8 @@ class FPSGameBase:
         self.intro_start_time = 0
         self.last_death_pos = None
 
-        # Gameplay state
+    def _init_gameplay_state(self, C: Any) -> None:
+        """Initialize level, score, and difficulty settings."""
         self.level = 1
         self.kills = 0
         self.level_start_time = 0
@@ -147,7 +162,8 @@ class FPSGameBase:
         self.selected_lives = C.DEFAULT_LIVES
         self.selected_start_level = C.DEFAULT_START_LEVEL
 
-        # Combo & atmosphere
+    def _init_atmosphere_state(self) -> None:
+        """Initialize combo-tracking and ambient audio timers."""
         self.kill_combo_count = 0
         self.kill_combo_timer = 0
         self.heartbeat_timer = 0
@@ -155,12 +171,14 @@ class FPSGameBase:
         self.groan_timer = 0
         self.beast_timer = 0
 
-        # Visual effects
+    def _init_visual_effects(self, particle_system: Any) -> None:
+        """Initialize particle system and damage-text/flash state."""
         self.particle_system = particle_system
         self.damage_texts: list[dict[str, Any]] = []
         self.damage_flash_timer = 0
 
-        # Game objects
+    def _init_game_objects(self, C: Any, entity_manager: Any) -> None:
+        """Initialize map, player, raycaster and entity-manager references."""
         self.game_map = None
         self.player = None
         self.entity_manager = entity_manager
@@ -169,22 +187,29 @@ class FPSGameBase:
         self.health = C.PLAYER_HEALTH
         self.lives = C.DEFAULT_LIVES
 
-        # Unlocked weapons
+    def _init_player_options(self, C: Any, unlocked_weapons: set[str]) -> None:
+        """Initialize cheat/god-mode flags and unlocked weapon set."""
         self.unlocked_weapons = unlocked_weapons
         self.cheat_mode_active = False
         self.current_cheat_input = ""
         self.god_mode = False
         self.game_over_timer = 0
 
+    def _init_sound(
+        self,
+        sound_manager: SoundManagerBase | None,
+        sound_manager_factory: Callable[[], SoundManagerBase],
+    ) -> None:
+        """Initialize sound manager and event bus."""
         self.sound_manager = (
             sound_manager if sound_manager is not None else sound_manager_factory()
         )
         self.sound_manager.start_music()
-
         self.event_bus = EventBus()
         self._wire_event_bus()
 
-        # Joystick handling
+    def _init_input_and_fog(self, input_manager: Any) -> None:
+        """Initialize joystick, fog-of-war state, and input manager."""
         self.joystick = None
         if pygame.joystick.get_count() > 0:
             try:
@@ -193,12 +218,8 @@ class FPSGameBase:
                 logger.info("Controller detected: %s", self.joystick.get_name())
             except (pygame.error, OSError):
                 logger.exception("Controller init failed")
-
-        # Fog of War
         self.visited_cells: set[tuple[int, int]] = set()
         self.show_minimap = True
-
-        # Input manager
         self.input_manager = input_manager
         self.binding_action = None
 
