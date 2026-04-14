@@ -36,16 +36,26 @@ class GameRenderer:
         if not (game.player is not None):
             raise ValueError("DbC Blocked: Precondition failed.")
 
-        # Calculate Head Bob
-        bob_offset = 0.0
-        if game.player.is_moving:
-            bob_offset = math.sin(pygame.time.get_ticks() * 0.015) * 15.0
+        bob_offset = math.sin(pygame.time.get_ticks() * 0.015) * 15.0 if game.player.is_moving else 0.0
+        self._render_3d_world(game, bob_offset, flash_intensity)
 
-        # 1. 3D World (Raycaster)
+        self.effects_surface.fill((0, 0, 0, 0))
+        self._render_particles(game.particle_system.particles)
+        self.screen.blit(self.effects_surface, (0, 0))
+
+        self._render_portal(game.portal, game.player)
+        weapon_pos = self.weapon_renderer.render_weapon(game.player)
+        if game.player.shooting:
+            self.weapon_renderer.render_muzzle_flash(game.player.current_weapon, weapon_pos)
+
+        game.ui_renderer.render_hud(game)
+        pygame.display.flip()
+
+    def _render_3d_world(self, game: Game, bob_offset: float, flash_intensity: float) -> None:
+        """Render raycaster floor/ceiling and 3D scene."""
         game.raycaster.render_floor_ceiling(
             self.screen, game.player, game.level, view_offset_y=bob_offset
         )
-        # Note: Projectiles are now passed to render_3d to ensure proper Z-sorting
         game.raycaster.render_3d(
             self.screen,
             game.player,
@@ -56,74 +66,40 @@ class GameRenderer:
             particles=game.particle_system.world_particles,
             flash_intensity=flash_intensity,
         )
-        # 'render_projectiles' merged into render_3d in the optimized Raycaster
 
-        # 2. Effects
-        self.effects_surface.fill((0, 0, 0, 0))
-
-        self._render_particles(game.particle_system.particles)
-        self.screen.blit(self.effects_surface, (0, 0))
-
-        # 3. Portal
-        self._render_portal(game.portal, game.player)
-
-        # 4. Weapon Model
-        weapon_pos = self.weapon_renderer.render_weapon(game.player)
-        if game.player.shooting:
-            self.weapon_renderer.render_muzzle_flash(
-                game.player.current_weapon, weapon_pos
+    def _render_laser_particle(self, p: Any) -> None:
+        """Render a laser beam with spread rays onto the effects surface."""
+        alpha = int(255 * (p.timer / C.LASER_DURATION))
+        start = p.start_pos
+        end = p.end_pos
+        pygame.draw.line(self.effects_surface, (*p.color, alpha), start, end, p.width)
+        for i in range(5):
+            offset = (i - 2) * 20
+            target_end = (end[0] + offset, end[1])
+            pygame.draw.line(
+                self.effects_surface,
+                (*p.color, max(0, alpha - 50)),
+                start,
+                target_end,
+                max(1, p.width // 2),
             )
 
-        # 5. UI / HUD
-        game.ui_renderer.render_hud(game)
-
-        pygame.display.flip()
-
     def _render_particles(self, particles: list[Any]) -> None:
-        """Render particle effects including lasers and explosion particles.
-
-        Args:
-            particles: List of Particle objects.
-        """
+        """Render particle effects including lasers and explosion particles."""
         for p in particles:
-            # Handle Particle Object
             if p.ptype == "laser":
-                alpha = int(255 * (p.timer / C.LASER_DURATION))
-                start = p.start_pos
-                end = p.end_pos
-                color = (*p.color, alpha)
-                pygame.draw.line(self.effects_surface, color, start, end, p.width)
-                # Spread
-                for i in range(5):
-                    offset = (i - 2) * 20
-                    target_end = (end[0] + offset, end[1])
-                    pygame.draw.line(
-                        self.effects_surface,
-                        (*p.color, max(0, alpha - 50)),
-                        start,
-                        target_end,
-                        max(1, p.width // 2),
-                    )
+                self._render_laser_particle(p)
             elif p.ptype == "trace":
-                # Bullet trace
-                ratio = p.timer / 5  # Trace lifetime is short
-                alpha = int(255 * ratio)
-                start = p.start_pos
-                end = p.end_pos
-                color = (*p.color, alpha)
-                pygame.draw.line(self.effects_surface, color, start, end, p.width)
+                alpha = int(255 * (p.timer / 5))
+                pygame.draw.line(
+                    self.effects_surface, (*p.color, alpha), p.start_pos, p.end_pos, p.width
+                )
             elif p.ptype == "normal":
                 ratio = p.timer / C.PARTICLE_LIFETIME
-                alpha = int(255 * ratio)
-                alpha = max(0, min(255, alpha))
+                alpha = max(0, min(255, int(255 * ratio)))
                 color = p.color
                 rgba = (*color, alpha) if len(color) == 3 else (*color[:3], alpha)
-                pygame.draw.circle(
-                    self.effects_surface,
-                    rgba,
-                    (int(p.x), int(p.y)),
-                    int(p.size),
-                )
+                pygame.draw.circle(self.effects_surface, rgba, (int(p.x), int(p.y)), int(p.size))
 
     def _render_portal(self, portal: Portal | None, player: Player) -> None:
         """Render portal visual effects if active.
