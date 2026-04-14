@@ -87,50 +87,46 @@ class Bot:
             options = [k for k in C.ENEMY_TYPES if k != "health_pack"]
             self.enemy_type = random.choice(options)
         self.type_data = C.ENEMY_TYPES[self.enemy_type]
+        self._init_stats(level, difficulty)
+        self._init_visual_state(x, y)
+        self._init_combat_state()
 
+    def _init_stats(self, level: int, difficulty: str) -> None:
+        """Compute and store health, damage, and speed from level and difficulty."""
         diff_stats = C.DIFFICULTIES.get(difficulty, C.DIFFICULTIES["NORMAL"])
-
         type_data: EnemyData = self.type_data
         base_health = int(C.BASE_BOT_HEALTH * float(type_data.get("health_mult", 1.0)))
-        # Apply difficulty to health
         self.health = int((base_health + (level - 1) * 3) * diff_stats["health_mult"])
         self.max_health = self.health
-
         base_damage = int(C.BASE_BOT_DAMAGE * float(type_data.get("damage_mult", 1.0)))
-        # Apply difficulty to damage
         self.damage = int((base_damage + (level - 1) * 2) * diff_stats["damage_mult"])
-
         self.speed = float(C.BOT_SPEED * float(type_data.get("speed_mult", 1.0)))
         self.alive = True
         self.attack_timer = 0
         self.level = level
-        self.walk_animation = 0.0  # For walk animation
+
+    def _init_visual_state(self, x: float, y: float) -> None:
+        """Initialize animation and position-tracking state."""
+        self.walk_animation = 0.0
         self.last_x = x
         self.last_y = y
-        self.shoot_animation = 0.0  # For shoot animation
-
-        # Momentum for Ball boss
+        self.shoot_animation = 0.0
         self.vx = 0.0
         self.vy = 0.0
         if self.enemy_type == "ball":
             self.damage = int(self.damage * 1.5)  # Impact damage
-
-        # Visuals (Doom style)
         self.mouth_open = False
         self.mouth_timer = 0
         self.eye_rotation = 0.0
         self.drool_offset = 0.0
 
-        # Death State
+    def _init_combat_state(self) -> None:
+        """Initialize death, pain, and frozen state flags."""
         self.dead = False
         self.death_timer = 0
         self.disintegrate_timer = 0
-        self.removed = False  # When fully disintegrated
-
-        # Pain State
+        self.removed = False
         self.pain_timer = 0
-
-        # Frozen State
         self.frozen = False
         self.frozen_timer = 0
 
@@ -250,6 +246,42 @@ class Bot:
     # returns Projectile | None.
     # ------------------------------------------------------------------
 
+    def _apply_ball_physics(
+        self, game_map: Map, player: Player, dist_sq: float
+    ) -> tuple[float, float]:
+        """Accelerate toward player, cap speed, bounce off walls, return new pos."""
+        dx = player.x - self.x
+        dy = player.y - self.y
+        dist = math.sqrt(dist_sq)
+        accel = 0.001 * self.speed
+        if dist > 0:
+            self.vx += (dx / dist) * accel
+            self.vy += (dy / dist) * accel
+        current_speed = math.sqrt(self.vx**2 + self.vy**2)
+        max_speed = self.speed * 2.0
+        if current_speed > max_speed:
+            scale = max_speed / current_speed
+            self.vx *= scale
+            self.vy *= scale
+        new_x = self.x + self.vx
+        new_y = self.y + self.vy
+        if game_map.is_wall(new_x, self.y):
+            self.vx *= -0.8
+            new_x = self.x
+        if game_map.is_wall(self.x, new_y):
+            self.vy *= -0.8
+            new_y = self.y
+        return new_x, new_y
+
+    def _check_ball_crush(self, new_x: float, new_y: float, player: Player) -> None:
+        """Deal crush damage and reverse velocity if ball overlaps player."""
+        dist_new = math.sqrt((new_x - player.x) ** 2 + (new_y - player.y) ** 2)
+        if dist_new < 1.0:
+            if not player.god_mode:
+                player.take_damage(self.damage)
+            self.vx *= -1.0
+            self.vy *= -1.0
+
     def _update_behavior_ball(
         self,
         game_map: Map,
@@ -258,55 +290,11 @@ class Bot:
         _other_bots: list[Bot],
     ) -> Projectile | None:
         """Rolling momentum logic -- accelerate, bounce off walls, crush player."""
-        # Compute dx/dy/dist from dist_sq for velocity normalization
-        dx = player.x - self.x
-        dy = player.y - self.y
-        dist = math.sqrt(dist_sq)
-
-        # Accelerate towards player
-        accel = 0.001 * self.speed
-
-        # Normalize direction
-        if dist > 0:
-            self.vx += (dx / dist) * accel
-            self.vy += (dy / dist) * accel
-
-        # Max speed cap (high)
-        current_speed = math.sqrt(self.vx**2 + self.vy**2)
-        max_speed = self.speed * 2.0
-        if current_speed > max_speed:
-            scale = max_speed / current_speed
-            self.vx *= scale
-            self.vy *= scale
-
-        # Move
-        new_x = self.x + self.vx
-        new_y = self.y + self.vy
-
-        # Bounce off walls
-        if game_map.is_wall(new_x, self.y):
-            self.vx *= -0.8  # Bounce with some loss
-            new_x = self.x
-        if game_map.is_wall(self.x, new_y):
-            self.vy *= -0.8
-            new_y = self.y
-
-        # Update pos
+        new_x, new_y = self._apply_ball_physics(game_map, player, dist_sq)
         self.x = new_x
         self.y = new_y
-
-        # Visual rotation
         self.angle = math.atan2(self.vy, self.vx)
-
-        # Collision with player (Crush)
-        # Recalculate distance after move
-        dist_new = math.sqrt((new_x - player.x) ** 2 + (new_y - player.y) ** 2)
-        if dist_new < 1.0:
-            if not player.god_mode:
-                player.take_damage(self.damage)
-            # Bounce back
-            self.vx *= -1.0
-            self.vy *= -1.0
+        self._check_ball_crush(new_x, new_y, player)
         return None
 
     def _update_behavior_ninja(
@@ -396,74 +384,79 @@ class Bot:
         self._update_default_movement(game_map, player, other_bots)
         return None
 
-    def _update_default_movement(
-        self, game_map: Map, player: Player, other_bots: list[Bot]
-    ) -> None:
-        # Move toward player (angle already set)
-        move_dx = math.cos(self.angle) * self.speed
-        move_dy = math.sin(self.angle) * self.speed
+    def _check_bot_collisions(
+        self,
+        other_bots: list[Bot],
+        new_x: float,
+        new_y: float,
+        move_dx: float,
+        move_dy: float,
+        game_map: Map,
+    ) -> tuple[bool, bool]:
+        """Check collisions against other bots and optionally push them (beast).
 
-        new_x = self.x + move_dx
-        new_y = self.y + move_dy
-
-        # Check wall collision
+        Returns:
+            (can_move_x, can_move_y) flags after accounting for collisions.
+        """
+        collision_radius = 0.5 + (0.5 if self.enemy_type == "beast" else 0)
+        col_sq = collision_radius * collision_radius
         can_move_x = not game_map.is_wall(new_x, self.y)
         can_move_y = not game_map.is_wall(self.x, new_y)
 
-        # Check collision with other bots
-        collision_radius = 0.5 + (0.5 if self.enemy_type == "beast" else 0)
-        col_sq = collision_radius * collision_radius
+        for other_bot in other_bots:
+            if other_bot is self or other_bot.dead:
+                continue
+            if (
+                abs(self.x - other_bot.x) > C.MAX_COLLISION_DIST
+                or abs(self.y - other_bot.y) > C.MAX_COLLISION_DIST
+            ):
+                continue
+            if can_move_x:
+                if (new_x - other_bot.x) ** 2 + (self.y - other_bot.y) ** 2 < col_sq:
+                    can_move_x = False
+                    if self.enemy_type == "beast":
+                        push_x = other_bot.x + move_dx * 2
+                        if not game_map.is_wall(push_x, other_bot.y):
+                            other_bot.x = push_x
+            if can_move_y:
+                if (self.x - other_bot.x) ** 2 + (new_y - other_bot.y) ** 2 < col_sq:
+                    can_move_y = False
+                    if self.enemy_type == "beast":
+                        push_y = other_bot.y + move_dy * 2
+                        if not game_map.is_wall(other_bot.x, push_y):
+                            other_bot.y = push_y
+            if not can_move_x and not can_move_y:
+                break
+        return can_move_x, can_move_y
 
-        # Optimization: Filter potential colliders by rough grid or distance first?
-        # For now, just optimized loop
-        if can_move_x or can_move_y:
-            for other_bot in other_bots:
-                if other_bot is self or other_bot.dead:
-                    continue
-
-                # Quick box check
-                if (
-                    abs(self.x - other_bot.x) > C.MAX_COLLISION_DIST
-                    or abs(self.y - other_bot.y) > C.MAX_COLLISION_DIST
-                ):
-                    continue
-
-                if can_move_x:
-                    dx_sq = (new_x - other_bot.x) ** 2
-                    dy_sq = (self.y - other_bot.y) ** 2
-                    if dx_sq + dy_sq < col_sq:
-                        can_move_x = False
-                        if self.enemy_type == "beast":
-                            push_x = other_bot.x + move_dx * 2
-                            if not game_map.is_wall(push_x, other_bot.y):
-                                other_bot.x = push_x
-
-                if can_move_y:
-                    dx_sq = (self.x - other_bot.x) ** 2
-                    dy_sq = (new_y - other_bot.y) ** 2
-                    if dx_sq + dy_sq < col_sq:
-                        can_move_y = False
-                        if self.enemy_type == "beast":
-                            push_y = other_bot.y + move_dy * 2
-                            if not game_map.is_wall(other_bot.x, push_y):
-                                other_bot.y = push_y
-
-                if not can_move_x and not can_move_y:
-                    break
-
-        if can_move_x:
-            self.x = new_x
-        if can_move_y:
-            self.y = new_y
-
-        # Update walk animation
-        # Use simple epsilon check
+    def _update_walk_animation(self) -> None:
+        """Advance walk animation if the bot moved this frame."""
         if abs(self.x - self.last_x) > 0.001 or abs(self.y - self.last_y) > 0.001:
             self.walk_animation += 0.3
             if self.walk_animation > 2 * math.pi:
                 self.walk_animation -= 2 * math.pi
         self.last_x = self.x
         self.last_y = self.y
+
+    def _update_default_movement(
+        self, game_map: Map, player: Player, other_bots: list[Bot]
+    ) -> None:
+        # Move toward player (angle already set)
+        move_dx = math.cos(self.angle) * self.speed
+        move_dy = math.sin(self.angle) * self.speed
+        new_x = self.x + move_dx
+        new_y = self.y + move_dy
+
+        can_move_x, can_move_y = self._check_bot_collisions(
+            other_bots, new_x, new_y, move_dx, move_dy, game_map
+        )
+
+        if can_move_x:
+            self.x = new_x
+        if can_move_y:
+            self.y = new_y
+
+        self._update_walk_animation()
 
         if self.attack_timer > 0:
             self.attack_timer -= 1

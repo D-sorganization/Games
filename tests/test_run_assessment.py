@@ -45,7 +45,7 @@ class TestFileDiscovery:
 
     def test_returns_tuple_of_list_and_int(self) -> None:
         """file_discovery() should return (list[Path], int)."""
-        with patch("scripts.run_assessment.find_python_files", return_value=[]):
+        with patch("scripts.assessment_modules.find_python_files", return_value=[]):
             files, count = file_discovery()
         assert isinstance(files, list)
         assert isinstance(count, int)
@@ -53,14 +53,14 @@ class TestFileDiscovery:
     def test_count_matches_list_length(self) -> None:
         """Count returned must equal len(files)."""
         fake_files = [Path("a.py"), Path("b.py"), Path("c.py")]
-        with patch("scripts.run_assessment.find_python_files", return_value=fake_files):
+        with patch("scripts.assessment_modules.find_python_files", return_value=fake_files):
             files, count = file_discovery()
         assert count == len(files)
         assert count == 3
 
     def test_empty_repository_returns_zero(self) -> None:
         """An empty project produces an empty list and count 0."""
-        with patch("scripts.run_assessment.find_python_files", return_value=[]):
+        with patch("scripts.assessment_modules.find_python_files", return_value=[]):
             files, count = file_discovery()
         assert files == []
         assert count == 0
@@ -68,7 +68,7 @@ class TestFileDiscovery:
     def test_returns_same_files_as_find_python_files(self) -> None:
         """file_discovery() must pass through all files from find_python_files."""
         expected = [Path("x.py"), Path("y.py")]
-        with patch("scripts.run_assessment.find_python_files", return_value=expected):
+        with patch("scripts.assessment_modules.find_python_files", return_value=expected):
             files, count = file_discovery()
         assert files == expected
 
@@ -85,7 +85,7 @@ class TestAnalyzeModule:
 
     def test_returns_tuple_of_findings_and_score(self) -> None:
         """analyze_module() must return (list, int|None)."""
-        with patch("scripts.run_assessment.count_test_files", return_value=10):
+        with patch("scripts.assessment_modules.count_test_files", return_value=10):
             findings, score = analyze_module("A", [], 0)
         assert isinstance(findings, list)
         assert score is None or isinstance(score, int)
@@ -95,7 +95,7 @@ class TestAnalyzeModule:
         mock_run = MagicMock(returncode=1, stdout="", stderr="")
         for aid in ASSESSMENTS:
             with (
-                patch("scripts.run_assessment.count_test_files", return_value=5),
+                patch("scripts.assessment_modules.count_test_files", return_value=5),
                 patch(
                     "scripts.run_assessment.check_documentation",
                     return_value={
@@ -125,7 +125,7 @@ class TestAnalyzeModule:
         original_cwd = Path.cwd()
         os.chdir(tmp_path)
         try:
-            with patch("scripts.run_assessment.count_test_files", return_value=5):
+            with patch("scripts.assessment_modules.count_test_files", return_value=5):
                 findings, score = analyze_module("A", [], 0)
         finally:
             os.chdir(original_cwd)
@@ -134,7 +134,7 @@ class TestAnalyzeModule:
 
     def test_assessment_a_records_file_count(self) -> None:
         """Assessment A finding must include the file count."""
-        with patch("scripts.run_assessment.count_test_files", return_value=0):
+        with patch("scripts.assessment_modules.count_test_files", return_value=0):
             findings, _ = analyze_module("A", [], 42)
         assert any("42" in f for f in findings)
 
@@ -169,7 +169,7 @@ class TestAnalyzeModule:
         """Assessment C deducts 5 points when no test files exist."""
         mock_run = MagicMock(returncode=1, stdout="", stderr="")
         with (
-            patch("scripts.run_assessment.count_test_files", return_value=0),
+            patch("scripts.assessment_modules.count_test_files", return_value=0),
             patch("scripts.run_assessment.run_command", return_value=mock_run),
         ):
             findings, score = analyze_module("C", [], 0)
@@ -181,7 +181,7 @@ class TestAnalyzeModule:
         """Assessment C notes a good test count when >= 5 test files exist."""
         mock_run = MagicMock(returncode=1, stdout="", stderr="")
         with (
-            patch("scripts.run_assessment.count_test_files", return_value=10),
+            patch("scripts.assessment_modules.count_test_files", return_value=10),
             patch("scripts.run_assessment.run_command", return_value=mock_run),
         ):
             findings, score = analyze_module("C", [], 0)
@@ -337,8 +337,8 @@ class TestRunAssessment:
         """run_assessment() must return 0 on success."""
         out = tmp_path / "report.md"
         with (
-            patch("scripts.run_assessment.find_python_files", return_value=[]),
-            patch("scripts.run_assessment.count_test_files", return_value=5),
+            patch("scripts.assessment_modules.find_python_files", return_value=[]),
+            patch("scripts.assessment_modules.count_test_files", return_value=5),
         ):
             result = run_assessment("A", out)
         assert result == 0
@@ -353,8 +353,8 @@ class TestRunAssessment:
         """run_assessment() must leave a report file at output_path."""
         out = tmp_path / "report.md"
         with (
-            patch("scripts.run_assessment.find_python_files", return_value=[]),
-            patch("scripts.run_assessment.count_test_files", return_value=5),
+            patch("scripts.assessment_modules.find_python_files", return_value=[]),
+            patch("scripts.assessment_modules.count_test_files", return_value=5),
         ):
             run_assessment("A", out)
         assert out.exists()
@@ -365,8 +365,8 @@ class TestRunAssessment:
         for aid in ASSESSMENTS:
             out = tmp_path / f"report_{aid}.md"
             with (
-                patch("scripts.run_assessment.find_python_files", return_value=[]),
-                patch("scripts.run_assessment.count_test_files", return_value=5),
+                patch("scripts.assessment_modules.find_python_files", return_value=[]),
+                patch("scripts.assessment_modules.count_test_files", return_value=5),
                 patch(
                     "scripts.run_assessment.check_documentation",
                     return_value={
