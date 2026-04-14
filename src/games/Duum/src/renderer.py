@@ -36,7 +36,11 @@ class GameRenderer:
         if not (game.player is not None):
             raise ValueError("DbC Blocked: Precondition failed.")
 
-        bob_offset = math.sin(pygame.time.get_ticks() * 0.015) * 15.0 if game.player.is_moving else 0.0
+        bob_offset = (
+            math.sin(pygame.time.get_ticks() * 0.015) * 15.0
+            if game.player.is_moving
+            else 0.0
+        )
         self._render_3d_world(game, bob_offset, flash_intensity)
 
         self.effects_surface.fill((0, 0, 0, 0))
@@ -46,12 +50,16 @@ class GameRenderer:
         self._render_portal(game.portal, game.player)
         weapon_pos = self.weapon_renderer.render_weapon(game.player)
         if game.player.shooting:
-            self.weapon_renderer.render_muzzle_flash(game.player.current_weapon, weapon_pos)
+            self.weapon_renderer.render_muzzle_flash(
+                game.player.current_weapon, weapon_pos
+            )
 
         game.ui_renderer.render_hud(game)
         pygame.display.flip()
 
-    def _render_3d_world(self, game: Game, bob_offset: float, flash_intensity: float) -> None:
+    def _render_3d_world(
+        self, game: Game, bob_offset: float, flash_intensity: float
+    ) -> None:
         """Render raycaster floor/ceiling and 3D scene."""
         game.raycaster.render_floor_ceiling(
             self.screen, game.player, game.level, view_offset_y=bob_offset
@@ -92,14 +100,20 @@ class GameRenderer:
             elif p.ptype == "trace":
                 alpha = int(255 * (p.timer / 5))
                 pygame.draw.line(
-                    self.effects_surface, (*p.color, alpha), p.start_pos, p.end_pos, p.width
+                    self.effects_surface,
+                    (*p.color, alpha),
+                    p.start_pos,
+                    p.end_pos,
+                    p.width,
                 )
             elif p.ptype == "normal":
                 ratio = p.timer / C.PARTICLE_LIFETIME
                 alpha = max(0, min(255, int(255 * ratio)))
                 color = p.color
                 rgba = (*color, alpha) if len(color) == 3 else (*color[:3], alpha)
-                pygame.draw.circle(self.effects_surface, rgba, (int(p.x), int(p.y)), int(p.size))
+                pygame.draw.circle(
+                    self.effects_surface, rgba, (int(p.x), int(p.y)), int(p.size)
+                )
 
     def _render_portal(self, portal: Portal | None, player: Player) -> None:
         """Render portal visual effects if active.

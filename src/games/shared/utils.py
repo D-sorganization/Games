@@ -25,27 +25,10 @@ def cast_ray_dda(
     validate_positive(max_dist, "max_dist")
     ray_dir_x = math.cos(angle)
     ray_dir_y = math.sin(angle)
-    (
-        map_x,
-        map_y,
-        step_x,
-        step_y,
-        side_dist_x,
-        side_dist_y,
-        delta_dist_x,
-        delta_dist_y,
-    ) = _init_dda_params(start_x, start_y, ray_dir_x, ray_dir_y)
+    dda_params = _init_dda_params(start_x, start_y, ray_dir_x, ray_dir_y)
+    map_x, map_y, step_x, step_y, sdx, sdy, ddx, ddy = dda_params
     hit, wall_type, dist, side, map_x, map_y = _run_dda_loop(
-        map_x,
-        map_y,
-        step_x,
-        step_y,
-        side_dist_x,
-        side_dist_y,
-        delta_dist_x,
-        delta_dist_y,
-        game_map,
-        max_dist,
+        map_x, map_y, step_x, step_y, sdx, sdy, ddx, ddy, game_map, max_dist
     )
     hit_x = start_x + ray_dir_x * dist
     hit_y = start_y + ray_dir_y * dist

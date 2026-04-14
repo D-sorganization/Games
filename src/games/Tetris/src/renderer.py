@@ -331,11 +331,13 @@ class TetrisRenderer:
         panel_y = TOP_LEFT_Y + 60
 
         pygame.draw.rect(
-            self.screen, DARK_GRAY,
+            self.screen,
+            DARK_GRAY,
             (panel_x - 10, panel_y - 10, 200, len(controls) * 30 + 40),
         )
         pygame.draw.rect(
-            self.screen, WHITE,
+            self.screen,
+            WHITE,
             (panel_x - 10, panel_y - 10, 200, len(controls) * 30 + 40),
             2,
         )
@@ -389,12 +391,16 @@ class TetrisRenderer:
         self.screen.blit(title, title.get_rect(center=(SCREEN_WIDTH // 2, 100)))
 
         instruction = self.font.render("Select Starting Level", True, WHITE)
-        self.screen.blit(instruction, instruction.get_rect(center=(SCREEN_WIDTH // 2, 200)))
+        self.screen.blit(
+            instruction, instruction.get_rect(center=(SCREEN_WIDTH // 2, 200))
+        )
 
         self._draw_menu_level_options(starting_level)
 
         start_text = self.small_font.render("Press ENTER to Start", True, GREEN)
-        self.screen.blit(start_text, start_text.get_rect(center=(SCREEN_WIDTH // 2, 550)))
+        self.screen.blit(
+            start_text, start_text.get_rect(center=(SCREEN_WIDTH // 2, 550))
+        )
 
         settings_text = self.small_font.render("Press S for Settings", True, LIGHT_GRAY)
         self.screen.blit(
@@ -452,12 +458,16 @@ class TetrisRenderer:
 
         restart_text = self.small_font.render("Press R to Restart", True, GREEN)
         y_pos += 20
-        self.screen.blit(restart_text, restart_text.get_rect(center=(SCREEN_WIDTH // 2, y_pos)))
+        self.screen.blit(
+            restart_text, restart_text.get_rect(center=(SCREEN_WIDTH // 2, y_pos))
+        )
 
     def _draw_game_over_stats(self, logic: "TetrisLogic", y_pos: int) -> int:
         """Render the line-clear breakdown statistics block."""
         stats_title = self.font.render("Line Clears:", True, GOLD)
-        self.screen.blit(stats_title, stats_title.get_rect(center=(SCREEN_WIDTH // 2, y_pos)))
+        self.screen.blit(
+            stats_title, stats_title.get_rect(center=(SCREEN_WIDTH // 2, y_pos))
+        )
         y_pos += 40
 
         stat_lines = [

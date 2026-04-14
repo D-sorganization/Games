@@ -408,8 +408,15 @@ class Bot:
             ):
                 continue
             can_move_x, can_move_y = self._test_bot_collision(
-                other_bot, new_x, new_y, move_dx, move_dy,
-                col_sq, can_move_x, can_move_y, game_map,
+                other_bot,
+                new_x,
+                new_y,
+                move_dx,
+                move_dy,
+                col_sq,
+                can_move_x,
+                can_move_y,
+                game_map,
             )
             if not can_move_x and not can_move_y:
                 break
@@ -417,7 +424,7 @@ class Bot:
 
     def _test_bot_collision(
         self,
-        other_bot: "Bot",
+        other_bot: Bot,
         new_x: float,
         new_y: float,
         move_dx: float,
@@ -425,7 +432,7 @@ class Bot:
         col_sq: float,
         can_move_x: bool,
         can_move_y: bool,
-        game_map: "Map",
+        game_map: Map,
     ) -> tuple[bool, bool]:
         """Test one bot pair for x/y collision and apply beast push if needed."""
         if can_move_x:

@@ -51,9 +51,7 @@ def _render_victory_fireworks(renderer: UIRenderer, game: Game) -> None:
     for particle in game.particle_system.particles:
         life_ratio = particle.timer / particle.max_timer
         alpha = int(255 * life_ratio)
-        color = (
-            (*particle.color, alpha) if len(particle.color) == 3 else particle.color
-        )
+        color = (*particle.color, alpha) if len(particle.color) == 3 else particle.color
         pygame.draw.circle(
             renderer.particle_surface,
             color,

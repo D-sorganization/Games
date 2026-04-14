@@ -71,7 +71,9 @@ class WeaponRenderer:
         elif weapon == "pulse":
             self._render_pulse(cx, cy, player, w_state)
         elif weapon == "rocket":
-            self._render_rocket_launcher(cx, cy, player, gun_metal, gun_highlight, gun_dark)
+            self._render_rocket_launcher(
+                cx, cy, player, gun_metal, gun_highlight, gun_dark
+            )
         elif weapon == "bfg":
             self._render_bfg(cx, cy, player, gun_metal, gun_highlight, gun_dark)
 
@@ -109,7 +111,6 @@ class WeaponRenderer:
             pygame.draw.circle(self.screen, C.ORANGE, (flash_x, flash_y), 15)
             pygame.draw.circle(self.screen, C.WHITE, (flash_x, flash_y), 8)
 
-
     def _render_bfg_flash(self, flash_x: int, flash_y: int) -> None:
         """Render big green BFG muzzle flash with radiating rays."""
         pygame.draw.circle(self.screen, (0, 255, 0), (flash_x, flash_y), 60)
@@ -123,6 +124,7 @@ class WeaponRenderer:
             pygame.draw.line(
                 self.screen, (0, 255, 0), (flash_x, flash_y), (end_x, end_y), 3
             )
+
     def _render_pistol(
         self,
         cx: int,
@@ -152,11 +154,18 @@ class WeaponRenderer:
         pygame.draw.polygon(
             self.screen,
             gun_highlight,
-            [(cx - 25, slide_y), (cx + 25, slide_y), (cx + 25, slide_y + 120), (cx - 25, slide_y + 120)],
+            [
+                (cx - 25, slide_y),
+                (cx + 25, slide_y),
+                (cx + 25, slide_y + 120),
+                (cx - 25, slide_y + 120),
+            ],
         )
         for i in range(5):
             y_ser = slide_y + 80 + i * 8
-            pygame.draw.line(self.screen, gun_dark, (cx - 20, y_ser), (cx + 20, y_ser), 2)
+            pygame.draw.line(
+                self.screen, gun_dark, (cx - 20, y_ser), (cx + 20, y_ser), 2
+            )
         pygame.draw.rect(self.screen, (10, 10, 10), (cx - 8, slide_y - 5, 16, 10))
         pygame.draw.rect(self.screen, (10, 10, 10), (cx - 20, slide_y - 12, 5, 12))
         pygame.draw.rect(self.screen, (10, 10, 10), (cx + 15, slide_y - 12, 5, 12))
@@ -248,7 +257,12 @@ class WeaponRenderer:
         pygame.draw.polygon(
             self.screen,
             (60, 60, 90),
-            [(cx - 70, cy - 80), (cx + 70, cy - 80), (cx + 50, cy - 250), (cx - 50, cy - 250)],
+            [
+                (cx - 70, cy - 80),
+                (cx + 70, cy - 80),
+                (cx + 50, cy - 250),
+                (cx - 50, cy - 250),
+            ],
         )
         pulse = int(25 * math.sin(pygame.time.get_ticks() * 0.01))
         heat_color = (0, 150 + pulse, 200)
@@ -269,7 +283,8 @@ class WeaponRenderer:
         core_width = 40 + pulse // 2
         pygame.draw.rect(self.screen, (20, 20, 30), (cx - 30, cy - 180, 60, 140))
         pygame.draw.rect(
-            self.screen, vent_color,
+            self.screen,
+            vent_color,
             (cx - core_width // 2, cy - 190, core_width, 120),
             border_radius=10,
         )
@@ -277,7 +292,8 @@ class WeaponRenderer:
             y_coil = cy - 230 + i * 35
             width_coil = 80 - i * 5
             pygame.draw.rect(
-                self.screen, (30, 30, 40),
+                self.screen,
+                (30, 30, 40),
                 (cx - width_coil // 2, y_coil, width_coil, 15),
                 border_radius=4,
             )

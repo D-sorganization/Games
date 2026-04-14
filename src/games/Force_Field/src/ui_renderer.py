@@ -153,7 +153,9 @@ class UIRenderer(UIRendererBase):
             r = img.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 30))
             self.screen.blit(img, r)
             pygame.draw.rect(self.screen, (255, 192, 203), r, 4, border_radius=10)
-        text = self.subtitle_font.render("A Willy Wonk Production", True, (255, 182, 193))
+        text = self.subtitle_font.render(
+            "A Willy Wonk Production", True, (255, 182, 193)
+        )
         self.screen.blit(text, text.get_rect(center=(C.SCREEN_WIDTH // 2, 100)))
 
     def _render_intro_phase1_media(self) -> None:
@@ -166,14 +168,23 @@ class UIRenderer(UIRendererBase):
                 surf = pygame.surfarray.make_surface(frame)
                 scale = 400 / surf.get_height()
                 surf = pygame.transform.scale(
-                    surf, (int(surf.get_width() * scale), int(surf.get_height() * scale))
+                    surf,
+                    (int(surf.get_width() * scale), int(surf.get_height() * scale)),
                 )
-                self.screen.blit(surf, surf.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 50)))
+                self.screen.blit(
+                    surf,
+                    surf.get_rect(
+                        center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 50)
+                    ),
+                )
             else:
                 self.intro_video.set(cv2.CAP_PROP_POS_FRAMES, 0)
         elif "deadfish" in self.intro_images:
             img = self.intro_images["deadfish"]
-            self.screen.blit(img, img.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 50)))
+            self.screen.blit(
+                img,
+                img.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 50)),
+            )
 
     def _render_intro_phase1(self, elapsed: int) -> None:
         """Render pulsing game title and media for intro phase 1."""
@@ -181,9 +192,13 @@ class UIRenderer(UIRendererBase):
         pulse = abs(math.sin(elapsed * 0.003))
         color = (0, int(150 + 100 * pulse), int(200 + 55 * pulse))
         t2 = stylish.render("UPSTREAM DRIFT", True, color)
-        self.screen.blit(t2, t2.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 - 180)))
+        self.screen.blit(
+            t2, t2.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 - 180))
+        )
         t1 = self.tiny_font.render("in association with", True, C.CYAN)
-        self.screen.blit(t1, t1.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 - 230)))
+        self.screen.blit(
+            t1, t1.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 - 230))
+        )
         self._render_intro_phase1_media()
 
     def _get_intro_slides(self) -> list[dict[str, Any]]:
