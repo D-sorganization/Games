@@ -94,7 +94,10 @@ def _draw_mission_setup_title(renderer: UIRenderer) -> None:
 
 
 def _draw_settings_rows(
-    renderer: UIRenderer, settings: list[tuple[str, str]], start_y: int, line_height: int
+    renderer: UIRenderer,
+    settings: list[tuple[str, str]],
+    start_y: int,
+    line_height: int,
 ) -> None:
     """Render label/value rows for the settings list."""
     mouse_pos = pygame.mouse.get_pos()

@@ -67,9 +67,7 @@ class EntityManager:
         self.projectiles.extend(new_projectiles)
         self.cleanup_dead_bots()
 
-    def _trigger_aoe_on_wall_death(
-        self, projectile: Projectile, game: Game
-    ) -> None:
+    def _trigger_aoe_on_wall_death(self, projectile: Projectile, game: Game) -> None:
         """Trigger AoE effects when a projectile dies by hitting a wall."""
         w_type = getattr(projectile, "weapon_type", "normal")
         if w_type == "plasma":

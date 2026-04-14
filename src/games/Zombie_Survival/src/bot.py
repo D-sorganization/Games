@@ -416,8 +416,7 @@ class Bot:
         can_move_x = not game_map.is_wall(new_x, self.y)
         can_move_y = not game_map.is_wall(self.x, new_y)
         can_move_x, can_move_y = self._check_bot_collisions(
-            other_bots, new_x, new_y, move_dx, move_dy, game_map,
-            can_move_x, can_move_y
+            other_bots, new_x, new_y, move_dx, move_dy, game_map, can_move_x, can_move_y
         )
 
         if can_move_x:

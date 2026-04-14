@@ -64,7 +64,9 @@ def handle_keyboard_movement(game: Game, keys) -> None:
         game.player.pitch_view(-5)
 
 
-def _resolve_weapon_pickup(game: Game, weapon_name: str) -> tuple[str, tuple[int, int, int]]:
+def _resolve_weapon_pickup(
+    game: Game, weapon_name: str
+) -> tuple[str, tuple[int, int, int]]:
     """Grant a weapon or ammo; return (message, color)."""
     if weapon_name not in game.unlocked_weapons:
         game.unlocked_weapons.add(weapon_name)

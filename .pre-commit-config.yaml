@@ -224,24 +224,37 @@ repos:
       - id: bandit
         name: "bandit (Python security)"
         stages: [push]
-        args: ["-r", ".", "-ll", "-ii", "-x", "tests/,archive/,legacy/,.github/,node_modules/"]
+        args:
+          [
+            "-r",
+            ".",
+            "-ll",
+            "-ii",
+            "-x",
+            "tests/,archive/,legacy/,.github/,node_modules/",
+          ]
         pass_filenames: false
         types: [python]
 
   # Pytest - Python unit tests (pre-push only)
-  # NOTE: Using language: python (not system) for cross-platform compatibility (Windows/Linux)
   - repo: local
     hooks:
       - id: pytest-unit
         name: "pytest (Python tests)"
         stages: [push]
-        entry: pytest
-        args: ["tests/unit", "-x", "-q", "--tb=short", "-m", "not slow and not integration"]
-        language: python
-        additional_dependencies: [pytest, pytest-cov]
+        entry: python3 -m pytest
+        args:
+          [
+            "tests/",
+            "-x",
+            "-q",
+            "--tb=short",
+            "-m",
+            "not slow and not integration",
+          ]
+        language: system
         pass_filenames: false
         types: [python]
-
 
   # Semgrep - Free local security + code quality scanning (pre-push)
   - repo: https://github.com/semgrep/semgrep
@@ -311,4 +324,4 @@ ci:
   autofix_prs: true
   autoupdate_branch: "main"
   autoupdate_commit_msg: "chore: update pre-commit hooks"
-  skip: [pytest-unit, bandit, mypy, semgrep, radon, fmt, cargo-check]  # Skip slow hooks in CI
+  skip: [pytest-unit, bandit, mypy, semgrep, radon, fmt, cargo-check] # Skip slow hooks in CI

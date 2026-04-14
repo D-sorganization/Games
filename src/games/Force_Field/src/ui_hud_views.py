@@ -59,8 +59,13 @@ def render_health_bar(renderer: UIRenderer, game: Any) -> None:
 
 
 def _draw_shield_bar(
-    renderer: UIRenderer, player: Player, start_x: int, health_y: int,
-    bar_width: int, bar_height: int, bar_spacing: int
+    renderer: UIRenderer,
+    player: Player,
+    start_x: int,
+    health_y: int,
+    bar_width: int,
+    bar_height: int,
+    bar_spacing: int,
 ) -> int:
     """Render the shield bar and return its y position."""
     shield_y = health_y - (bar_height + bar_spacing)
@@ -82,8 +87,13 @@ def _draw_shield_bar(
 
 
 def _draw_charge_and_stamina_bars(
-    renderer: UIRenderer, player: Player, start_x: int, shield_y: int,
-    bar_width: int, bar_height: int, bar_spacing: int
+    renderer: UIRenderer,
+    player: Player,
+    start_x: int,
+    shield_y: int,
+    bar_width: int,
+    bar_height: int,
+    bar_spacing: int,
 ) -> None:
     """Render secondary charge and stamina bars below the shield bar."""
     charge_y = shield_y - (bar_height + bar_spacing)
