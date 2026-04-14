@@ -10,7 +10,7 @@
 | **Primary Language(s)** | Python 3.10+ (Pygame), JavaScript (Three.js for web) |
 | **License**             | MIT                                                  |
 | **Current Version**     | N/A                                                  |
-| **Spec Version**        | 1.1.26                                               |
+| **Spec Version**        | 1.1.27                                               |
 | **Last Spec Update**    | 2026-04-14                                           |
 
 ## 2. Purpose & Mission
