@@ -22,25 +22,27 @@ class WeaponRenderer:
         self.font = pygame.font.SysFont("arial", 20, bold=True)
 
     def render_weapon(self, player: Player) -> tuple[int, int]:
-        """Render weapon model and return its screen position (cx, cy)."""
-        cx, cy = self._compute_weapon_position(player)
-        w_state = player.weapon_state[player.current_weapon]
-        self._dispatch_weapon_render(player, cx, cy, w_state)
-        return cx, cy
-
-    def _compute_weapon_position(self, player: Player) -> tuple[int, int]:
-        """Compute the weapon anchor point with sway, bob, and reload dip."""
+        """Render weapon model and return its screen position (cx, cy)"""
         weapon = player.current_weapon
-        cx = C.SCREEN_WIDTH // 2 + int(player.sway_amount * -300.0)
+        cx = C.SCREEN_WIDTH // 2
         cy = C.SCREEN_HEIGHT
-        time_ms = pygame.time.get_ticks()
 
+        # Weapon Sway (Horizontal lag)
+        sway_x = int(player.sway_amount * -300.0)
+        cx += sway_x
+
+        # Bobbing
+        bob_y = 0
         if player.is_moving:
-            bob_y = int(math.sin(time_ms * 0.012) * 15)
-            cx += int(math.cos(time_ms * 0.006) * 10)
+            bob_y = int(math.sin(pygame.time.get_ticks() * 0.012) * 15)
+            # Add some horizontal bob too
+            bob_x = int(math.cos(pygame.time.get_ticks() * 0.006) * 10)
+            cx += bob_x
         else:
-            bob_y = int(math.sin(time_ms * 0.005) * 5)
-            cx += int(math.cos(time_ms * 0.003) * 3)
+            # Idle bob (breathing)
+            bob_y = int(math.sin(pygame.time.get_ticks() * 0.005) * 5)
+            # Gentle horizontal sway
+            cx += int(math.cos(pygame.time.get_ticks() * 0.003) * 3)
 
         w_state = player.weapon_state[weapon]
         if w_state["reloading"]:
@@ -48,45 +50,45 @@ class WeaponRenderer:
             reload_max = int(w_data.get("reload_time", 60))
             if reload_max > 0:
                 pct = w_state["reload_timer"] / reload_max
-                cy += int(math.sin(pct * math.pi) * 150)
+                dip = math.sin(pct * math.pi) * 150
+                cy += int(dip)
 
         cy += bob_y
-        return cx, cy
 
-    def _dispatch_weapon_render(
-        self,
-        player: Player,
-        cx: int,
-        cy: int,
-        w_state: Any,
-    ) -> None:
-        """Call the per-weapon render helper for the player's current weapon."""
-        weapon = player.current_weapon
         gun_metal = (40, 45, 50)
         gun_highlight = (70, 75, 80)
         gun_dark = (20, 25, 30)
-        dispatch: dict[str, Any] = {
-            "pistol": lambda: self._render_pistol(
+
+        if weapon == "pistol":
+            self._render_pistol(cx, cy, player, gun_metal, gun_highlight, gun_dark)
+
+        elif weapon == "shotgun":
+            self._render_shotgun(cx, cy, gun_metal, gun_dark)
+
+        elif weapon == "rifle":
+            self._render_rifle(cx, cy, player, gun_metal, gun_highlight)
+
+        elif weapon == "minigun":
+            self._render_minigun(cx, cy, player)
+
+        elif weapon == "laser":
+            self._render_laser(cx, cy, player)
+
+        elif weapon == "plasma":
+            self._render_plasma(cx, cy, player, w_state)
+
+        elif weapon == "pulse":
+            self._render_pulse(cx, cy, player, w_state)
+
+        elif weapon == "rocket":
+            self._render_rocket_launcher(
                 cx, cy, player, gun_metal, gun_highlight, gun_dark
-            ),
-            "shotgun": lambda: self._render_shotgun(cx, cy, gun_metal, gun_dark),
-            "rifle": lambda: self._render_rifle(
-                cx, cy, player, gun_metal, gun_highlight
-            ),
-            "minigun": lambda: self._render_minigun(cx, cy, player),
-            "laser": lambda: self._render_laser(cx, cy, player),
-            "plasma": lambda: self._render_plasma(cx, cy, player, w_state),
-            "pulse": lambda: self._render_pulse(cx, cy, player, w_state),
-            "rocket": lambda: self._render_rocket_launcher(
-                cx, cy, player, gun_metal, gun_highlight, gun_dark
-            ),
-            "bfg": lambda: self._render_bfg(
-                cx, cy, player, gun_metal, gun_highlight, gun_dark
-            ),
-        }
-        action = dispatch.get(weapon)
-        if action is not None:
-            action()
+            )
+
+        elif weapon == "bfg":
+            self._render_bfg(cx, cy, player, gun_metal, gun_highlight, gun_dark)
+
+        return cx, cy
 
     def render_muzzle_flash(
         self, weapon_name: str, weapon_pos: tuple[int, int]
@@ -94,66 +96,45 @@ class WeaponRenderer:
         """Render weapon-specific muzzle flash effects."""
         flash_x = weapon_pos[0]
         flash_y = weapon_pos[1] - 210
-        flash_dispatch: dict[str, Any] = {
-            "plasma": lambda: self._flash_plasma(flash_x, flash_y),
-            "pulse": lambda: self._flash_pulse(flash_x, flash_y),
-            "shotgun": lambda: self._flash_shotgun(flash_x, flash_y),
-            "minigun": lambda: self._flash_minigun(flash_x, flash_y),
-            "bfg": lambda: self._flash_bfg(flash_x, flash_y),
-        }
-        action = flash_dispatch.get(weapon_name)
-        if action is not None:
-            action()
-        else:
-            self._flash_default(flash_x, flash_y)
 
-    def _flash_plasma(self, flash_x: int, flash_y: int) -> None:
-        """Plasma cannon muzzle flash: cyan/blue/white glow."""
-        pygame.draw.circle(self.screen, C.CYAN, (flash_x, flash_y), 30)
-        pygame.draw.circle(self.screen, C.BLUE, (flash_x, flash_y), 20)
-        pygame.draw.circle(self.screen, C.WHITE, (flash_x, flash_y), 10)
-
-    def _flash_pulse(self, flash_x: int, flash_y: int) -> None:
-        """Pulse rifle muzzle flash: blue-white glow."""
-        pygame.draw.circle(self.screen, (100, 100, 255), (flash_x, flash_y), 25)
-        pygame.draw.circle(self.screen, (200, 200, 255), (flash_x, flash_y), 15)
-
-    def _flash_shotgun(self, flash_x: int, flash_y: int) -> None:
-        """Shotgun muzzle flash: large orange/yellow burst."""
-        pygame.draw.circle(self.screen, (255, 100, 0), (flash_x, flash_y), 50)
-        pygame.draw.circle(self.screen, C.ORANGE, (flash_x, flash_y), 35)
-        pygame.draw.circle(self.screen, C.YELLOW, (flash_x, flash_y), 15)
-
-    def _flash_minigun(self, flash_x: int, flash_y: int) -> None:
-        """Minigun muzzle flash: jittered yellow/white burst."""
-        offset_x = random.randint(-10, 10)
-        offset_y = random.randint(-10, 10)
-        pygame.draw.circle(
-            self.screen, C.YELLOW, (flash_x + offset_x, flash_y + offset_y), 30
-        )
-        pygame.draw.circle(
-            self.screen, C.WHITE, (flash_x + offset_x, flash_y + offset_y), 15
-        )
-
-    def _flash_bfg(self, flash_x: int, flash_y: int) -> None:
-        """BFG muzzle flash: big green glow with radial rays."""
-        pygame.draw.circle(self.screen, (0, 255, 0), (flash_x, flash_y), 60)
-        pygame.draw.circle(self.screen, (200, 255, 200), (flash_x, flash_y), 40)
-        pygame.draw.circle(self.screen, C.WHITE, (flash_x, flash_y), 20)
-        for _ in range(8):
-            angle = random.uniform(0, 2 * math.pi)
-            dist = random.randint(50, 100)
-            end_x = flash_x + math.cos(angle) * dist
-            end_y = flash_y + math.sin(angle) * dist
-            pygame.draw.line(
-                self.screen, (0, 255, 0), (flash_x, flash_y), (end_x, end_y), 3
+        if weapon_name == "plasma":
+            pygame.draw.circle(self.screen, C.CYAN, (flash_x, flash_y), 30)
+            pygame.draw.circle(self.screen, C.BLUE, (flash_x, flash_y), 20)
+            pygame.draw.circle(self.screen, C.WHITE, (flash_x, flash_y), 10)
+        elif weapon_name == "pulse":
+            pygame.draw.circle(self.screen, (100, 100, 255), (flash_x, flash_y), 25)
+            pygame.draw.circle(self.screen, (200, 200, 255), (flash_x, flash_y), 15)
+        elif weapon_name == "shotgun":
+            pygame.draw.circle(self.screen, (255, 100, 0), (flash_x, flash_y), 50)
+            pygame.draw.circle(self.screen, C.ORANGE, (flash_x, flash_y), 35)
+            pygame.draw.circle(self.screen, C.YELLOW, (flash_x, flash_y), 15)
+        elif weapon_name == "minigun":
+            offset_x = random.randint(-10, 10)
+            offset_y = random.randint(-10, 10)
+            pygame.draw.circle(
+                self.screen, C.YELLOW, (flash_x + offset_x, flash_y + offset_y), 30
             )
-
-    def _flash_default(self, flash_x: int, flash_y: int) -> None:
-        """Default muzzle flash for pistol, rifle, and other weapons."""
-        pygame.draw.circle(self.screen, C.YELLOW, (flash_x, flash_y), 25)
-        pygame.draw.circle(self.screen, C.ORANGE, (flash_x, flash_y), 15)
-        pygame.draw.circle(self.screen, C.WHITE, (flash_x, flash_y), 8)
+            pygame.draw.circle(
+                self.screen, C.WHITE, (flash_x + offset_x, flash_y + offset_y), 15
+            )
+        elif weapon_name == "bfg":
+            # Big Green Flash
+            pygame.draw.circle(self.screen, (0, 255, 0), (flash_x, flash_y), 60)
+            pygame.draw.circle(self.screen, (200, 255, 200), (flash_x, flash_y), 40)
+            pygame.draw.circle(self.screen, C.WHITE, (flash_x, flash_y), 20)
+            # Rays
+            for _ in range(8):
+                angle = random.uniform(0, 2 * math.pi)
+                dist = random.randint(50, 100)
+                end_x = flash_x + math.cos(angle) * dist
+                end_y = flash_y + math.sin(angle) * dist
+                pygame.draw.line(
+                    self.screen, (0, 255, 0), (flash_x, flash_y), (end_x, end_y), 3
+                )
+        else:
+            pygame.draw.circle(self.screen, C.YELLOW, (flash_x, flash_y), 25)
+            pygame.draw.circle(self.screen, C.ORANGE, (flash_x, flash_y), 15)
+            pygame.draw.circle(self.screen, C.WHITE, (flash_x, flash_y), 8)
 
     def _render_pistol(
         self,
@@ -164,16 +145,6 @@ class WeaponRenderer:
         gun_highlight: tuple[int, int, int],
         gun_dark: tuple[int, int, int],
     ) -> None:
-        """Render pistol grip, slide, serrations, and iron sights."""
-        slide_y = cy - 180 + (20 if player.shooting else 0)
-        self._render_pistol_grip(cx, cy, gun_metal)
-        self._render_pistol_slide(cx, slide_y, gun_highlight, gun_dark)
-        self._render_pistol_sights(cx, slide_y)
-
-    def _render_pistol_grip(
-        self, cx: int, cy: int, gun_metal: tuple[int, int, int]
-    ) -> None:
-        """Draw the grip polygon and frame of the pistol."""
         pygame.draw.polygon(
             self.screen,
             (30, 25, 20),
@@ -185,15 +156,9 @@ class WeaponRenderer:
             ],
         )
         pygame.draw.rect(self.screen, gun_metal, (cx - 20, cy - 140, 40, 140))
-
-    def _render_pistol_slide(
-        self,
-        cx: int,
-        slide_y: int,
-        gun_highlight: tuple[int, int, int],
-        gun_dark: tuple[int, int, int],
-    ) -> None:
-        """Draw the slide body with serration lines."""
+        slide_y = cy - 180
+        if player.shooting:
+            slide_y += 20
         pygame.draw.polygon(
             self.screen,
             gun_highlight,
@@ -206,12 +171,9 @@ class WeaponRenderer:
         )
         for i in range(5):
             y_ser = slide_y + 80 + i * 8
-            pygame.draw.line(
-                self.screen, gun_dark, (cx - 20, y_ser), (cx + 20, y_ser), 2
-            )
-
-    def _render_pistol_sights(self, cx: int, slide_y: int) -> None:
-        """Draw the front/rear iron sights and red fiber optic."""
+            start_pos = (cx - 20, y_ser)
+            end_pos = (cx + 20, y_ser)
+            pygame.draw.line(self.screen, gun_dark, start_pos, end_pos, 2)
         pygame.draw.rect(self.screen, (10, 10, 10), (cx - 8, slide_y - 5, 16, 10))
         pygame.draw.rect(self.screen, (10, 10, 10), (cx - 20, slide_y - 12, 5, 12))
         pygame.draw.rect(self.screen, (10, 10, 10), (cx + 15, slide_y - 12, 5, 12))
@@ -295,19 +257,6 @@ class WeaponRenderer:
     def _render_plasma(
         self, cx: int, cy: int, player: Player, w_state: dict[str, Any]
     ) -> None:
-        """Render the plasma cannon body, vents, core, coils, and discharge arcs."""
-        pulse = int(25 * math.sin(pygame.time.get_ticks() * 0.01))
-        heat_color = (0, 150 + pulse, 200)
-        overheat_color = (200 + pulse, 50, 0)
-        vent_color = heat_color if not w_state["overheated"] else overheat_color
-        self._render_plasma_body(cx, cy)
-        self._render_plasma_vents_and_core(cx, cy, pulse, vent_color)
-        self._render_plasma_coils(cx, cy)
-        if player.shooting:
-            self._render_plasma_discharge(cx, cy)
-
-    def _render_plasma_body(self, cx: int, cy: int) -> None:
-        """Draw the base housing trapezoids of the plasma cannon."""
         pygame.draw.polygon(
             self.screen,
             (40, 40, 60),
@@ -328,11 +277,10 @@ class WeaponRenderer:
                 (cx - 50, cy - 250),
             ],
         )
-
-    def _render_plasma_vents_and_core(
-        self, cx: int, cy: int, pulse: int, vent_color: tuple[int, int, int]
-    ) -> None:
-        """Draw the side heat vents and pulsing energy core."""
+        pulse = int(25 * math.sin(pygame.time.get_ticks() * 0.01))
+        heat_color = (0, 150 + pulse, 200)
+        overheat_color = (200 + pulse, 50, 0)
+        vent_color = heat_color if not w_state["overheated"] else overheat_color
         pygame.draw.rect(self.screen, vent_color, (cx - 90, cy - 150, 20, 100))
         pygame.draw.rect(self.screen, vent_color, (cx + 70, cy - 150, 20, 100))
         core_width = 40 + pulse // 2
@@ -343,9 +291,6 @@ class WeaponRenderer:
             (cx - core_width // 2, cy - 190, core_width, 120),
             border_radius=10,
         )
-
-    def _render_plasma_coils(self, cx: int, cy: int) -> None:
-        """Draw the five magnetic coil rings along the barrel."""
         for i in range(5):
             y_coil = cy - 230 + i * 35
             width_coil = 80 - i * 5
@@ -355,15 +300,13 @@ class WeaponRenderer:
                 (cx - width_coil // 2, y_coil, width_coil, 15),
                 border_radius=4,
             )
-
-    def _render_plasma_discharge(self, cx: int, cy: int) -> None:
-        """Draw three random lightning discharge arcs when firing."""
-        for _ in range(3):
-            lx1 = random.randint(cx - 40, cx + 40)
-            ly1 = random.randint(cy - 250, cy - 150)
-            lx2 = random.randint(cx - 40, cx + 40)
-            ly2 = random.randint(cy - 250, cy - 150)
-            pygame.draw.line(self.screen, C.WHITE, (lx1, ly1), (lx2, ly2), 2)
+        if player.shooting:
+            for _ in range(3):
+                lx1 = random.randint(cx - 40, cx + 40)
+                ly1 = random.randint(cy - 250, cy - 150)
+                lx2 = random.randint(cx - 40, cx + 40)
+                ly2 = random.randint(cy - 250, cy - 150)
+                pygame.draw.line(self.screen, C.WHITE, (lx1, ly1), (lx2, ly2), 2)
 
     def _render_pulse(
         self, cx: int, cy: int, player: Player, w_state: dict[str, Any]
@@ -406,7 +349,7 @@ class WeaponRenderer:
         gun_highlight: tuple[int, int, int],
         gun_dark: tuple[int, int, int],
     ) -> None:
-        """Render rocket launcher; delegates to focused sub-renderers."""
+        """Render an impressive rocket launcher with glowing effects."""
         time_ms = pygame.time.get_ticks()
         glow_pulse = math.sin(time_ms * 0.008) * 0.3 + 0.7
         self._render_launcher_body(cx, cy, gun_metal, gun_dark, glow_pulse)
@@ -423,10 +366,9 @@ class WeaponRenderer:
         gun_dark: tuple[int, int, int],
         glow_pulse: float,
     ) -> None:
-        """Draw the main body box with an ambient glow overlay."""
+        """Draw the main launcher body with pulsing glow."""
         body_width = 120
         body_height = 80
-        body_rect = (cx - body_width // 2, cy - 200, body_width, body_height)
         glow_surface = pygame.Surface(
             (body_width + 40, body_height + 40), pygame.SRCALPHA
         )
@@ -438,6 +380,7 @@ class WeaponRenderer:
             border_radius=10,
         )
         self.screen.blit(glow_surface, (cx - body_width // 2 - 20, cy - 220))
+        body_rect = (cx - body_width // 2, cy - 200, body_width, body_height)
         pygame.draw.rect(self.screen, gun_dark, body_rect, border_radius=8)
         pygame.draw.rect(
             self.screen,
@@ -452,7 +395,7 @@ class WeaponRenderer:
         cy: int,
         gun_highlight: tuple[int, int, int],
     ) -> None:
-        """Draw the large-bore rocket tube with dark interior."""
+        """Draw the rocket tube with bore and targeting scope."""
         tube_width = 80
         tube_height = 200
         tube_rect = (cx - tube_width // 2, cy - 350, tube_width, tube_height)
@@ -472,12 +415,8 @@ class WeaponRenderer:
         gun_metal: tuple[int, int, int],
         time_ms: int,
     ) -> None:
-        """Draw targeting scope and side-mounted missile pods."""
-        gun_dark = (60, 60, 80)
+        """Draw the targeting scope and side-mounted missile pods."""
         scope_y = cy - 280
-        pygame.draw.rect(
-            self.screen, gun_dark, (cx - 40, scope_y, 80, 30), border_radius=5
-        )
         reticle_brightness = int(150 + 105 * math.sin(time_ms * 0.015))
         pygame.draw.circle(
             self.screen, (reticle_brightness, 0, 0), (cx, scope_y + 15), 8
@@ -485,12 +424,8 @@ class WeaponRenderer:
         pygame.draw.circle(self.screen, (255, 0, 0), (cx, scope_y + 15), 4)
         for side in [-1, 1]:
             pod_x = cx + side * 70
-            pygame.draw.rect(
-                self.screen,
-                gun_metal,
-                (pod_x - 15, cy - 300, 30, 120),
-                border_radius=15,
-            )
+            pod_rect = (pod_x - 15, cy - 300, 30, 120)
+            pygame.draw.rect(self.screen, gun_metal, pod_rect, border_radius=15)
             for i in range(3):
                 missile_y = cy - 290 + i * 30
                 missile_color = (200, 50, 50) if i % 2 == 0 else (150, 150, 150)
@@ -505,7 +440,7 @@ class WeaponRenderer:
         gun_dark: tuple[int, int, int],
         time_ms: int,
     ) -> None:
-        """Draw grip polygon, trigger, and heat-glow exhaust vents."""
+        """Draw the grip, trigger, and exhaust vents."""
         grip_points = [
             (cx - 30, cy - 120),
             (cx - 20, cy - 50),
@@ -517,10 +452,11 @@ class WeaponRenderer:
         pygame.draw.circle(self.screen, trigger_color, (cx - 35, cy - 60), 8)
         for i in range(4):
             vent_x = cx - 50 + i * 25
+            vent_y = cy - 160
             vent_heat = max(0, min(255, int(100 + 155 * math.sin(time_ms * 0.01 + i))))
             vent_color = (int(vent_heat), int(vent_heat // 3), 0)
             pygame.draw.rect(
-                self.screen, vent_color, (vent_x, cy - 160, 8, 20), border_radius=4
+                self.screen, vent_color, (vent_x, vent_y, 8, 20), border_radius=4
             )
 
     def _render_ammo_display(
@@ -530,7 +466,7 @@ class WeaponRenderer:
         player: Player,
         time_ms: int,
     ) -> None:
-        """Draw digital ammo counter and low-ammo warning lights."""
+        """Draw the ammo counter and warning lights."""
         ammo_count = player.weapon_state["rocket"]["clip"]
         counter_color = (0, 255, 0) if ammo_count > 0 else (255, 0, 0)
         display_rect = pygame.Rect(cx + 30, cy - 320, 80, 25)
@@ -547,9 +483,9 @@ class WeaponRenderer:
         self.screen.blit(text_surf, text_surf.get_rect(center=display_rect.center))
         if ammo_count == 0:
             warning_brightness = int(255 * (math.sin(time_ms * 0.02) * 0.5 + 0.5))
-            for wx in (cx + 50, cx + 70):
+            for warn_x in (cx + 50, cx + 70):
                 pygame.draw.circle(
-                    self.screen, (warning_brightness, 0, 0), (wx, cy - 340), 6
+                    self.screen, (warning_brightness, 0, 0), (warn_x, cy - 340), 6
                 )
 
     def _render_laser(self, cx: int, cy: int, player: Player) -> None:

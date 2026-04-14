@@ -113,7 +113,7 @@ class FPSGameBase:
         ui_render_cls: Any,
         sound_manager_factory: Callable[[], SoundManagerBase],
     ) -> None:
-        """Initialize common FPS game state; thin orchestrator."""
+        """Initialize common FPS game state shared across all FPS variants."""
         self.C = C
         self._init_display(C, caption, render_cls, ui_render_cls)
         self._init_game_state(C)
@@ -128,7 +128,7 @@ class FPSGameBase:
     def _init_display(
         self, C: Any, caption: str, render_cls: Any, ui_render_cls: Any
     ) -> None:
-        """Set up the display window and renderer instances."""
+        """Set up the pygame window, clock, and renderer objects."""
         flags = pygame.SCALED | pygame.RESIZABLE
         self.screen = pygame.display.set_mode((C.SCREEN_WIDTH, C.SCREEN_HEIGHT), flags)
         pygame.display.set_caption(caption)
@@ -138,7 +138,7 @@ class FPSGameBase:
         self.ui_renderer = ui_render_cls(self.screen)
 
     def _init_game_state(self, C: Any) -> None:
-        """Initialise the intro/state machine fields."""
+        """Initialize intro / game-flow state variables."""
         self.state = GameState.INTRO
         self.intro_phase = 0
         self.intro_step = 0
@@ -147,7 +147,7 @@ class FPSGameBase:
         self.last_death_pos = None
 
     def _init_gameplay_state(self, C: Any) -> None:
-        """Initialise level progression and difficulty fields."""
+        """Initialize level, score, and difficulty settings."""
         self.level = 1
         self.kills = 0
         self.level_start_time = 0
@@ -163,7 +163,7 @@ class FPSGameBase:
         self.selected_start_level = C.DEFAULT_START_LEVEL
 
     def _init_atmosphere_state(self) -> None:
-        """Initialise kill-combo and ambient atmosphere timers."""
+        """Initialize combo-tracking and ambient audio timers."""
         self.kill_combo_count = 0
         self.kill_combo_timer = 0
         self.heartbeat_timer = 0
@@ -172,13 +172,13 @@ class FPSGameBase:
         self.beast_timer = 0
 
     def _init_visual_effects(self, particle_system: Any) -> None:
-        """Initialise particle system and damage flash state."""
+        """Initialize particle system and damage-text/flash state."""
         self.particle_system = particle_system
         self.damage_texts: list[dict[str, Any]] = []
         self.damage_flash_timer = 0
 
     def _init_game_objects(self, C: Any, entity_manager: Any) -> None:
-        """Initialise map, player, raycaster, and portal references."""
+        """Initialize map, player, raycaster and entity-manager references."""
         self.game_map = None
         self.player = None
         self.entity_manager = entity_manager
@@ -188,7 +188,7 @@ class FPSGameBase:
         self.lives = C.DEFAULT_LIVES
 
     def _init_player_options(self, C: Any, unlocked_weapons: set[str]) -> None:
-        """Initialise weapon unlock set and cheat/god-mode flags."""
+        """Initialize cheat/god-mode flags and unlocked weapon set."""
         self.unlocked_weapons = unlocked_weapons
         self.cheat_mode_active = False
         self.current_cheat_input = ""
@@ -200,7 +200,7 @@ class FPSGameBase:
         sound_manager: SoundManagerBase | None,
         sound_manager_factory: Callable[[], SoundManagerBase],
     ) -> None:
-        """Create (or accept injected) sound manager and start music."""
+        """Initialize sound manager and event bus."""
         self.sound_manager = (
             sound_manager if sound_manager is not None else sound_manager_factory()
         )
@@ -209,7 +209,7 @@ class FPSGameBase:
         self._wire_event_bus()
 
     def _init_input_and_fog(self, input_manager: Any) -> None:
-        """Initialise joystick, fog-of-war, and input manager."""
+        """Initialize joystick, fog-of-war state, and input manager."""
         self.joystick = None
         if pygame.joystick.get_count() > 0:
             try:

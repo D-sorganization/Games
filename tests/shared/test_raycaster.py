@@ -85,9 +85,17 @@ def raycaster() -> Raycaster:
     except (pygame.error, OSError):
         pass
 
+    # TextureGenerator is now invoked inside raycaster_textures.TextureManager;
+    # patch at the source module to intercept the call.
     with (
-        patch("games.shared.raycaster.TextureGenerator.generate_textures") as mock_gen,
+        patch(
+            "games.shared.raycaster_textures.TextureGenerator.generate_textures"
+        ) as mock_gen,
         patch("games.shared.raycaster.pygame.Surface", side_effect=DummySurface),
+        patch(
+            "games.shared.raycaster_textures.pygame.transform.scale",
+            side_effect=lambda s, size: DummySurface(size),
+        ),
         patch(
             "games.shared.raycaster.pygame.transform.scale",
             side_effect=lambda s, size: DummySurface(size),
@@ -119,20 +127,21 @@ class TestRaycasterInit:
 
     def test_update_cache(self, raycaster: Raycaster) -> None:
         # Fill each cache beyond its bounded limit and verify eviction fires.
-        # We use the named constants so the test tracks future limit changes.
-        strip_max = raycaster._STRIP_CACHE_MAX
+        # Strip cache now lives inside TextureManager._cache._cache.
+        strip_cache = raycaster._texture_mgr._cache._cache
+        strip_max = raycaster._texture_mgr._cache._max_entries
         sprite_max = raycaster._SPRITE_CACHE_MAX
         scaled_max = raycaster._SCALED_SPRITE_CACHE_MAX
 
         for i in range(strip_max + 500):
-            raycaster._strip_cache[("stone", i, 64)] = DummySurface()
+            strip_cache[("stone", i, 64)] = DummySurface()
         for i in range(sprite_max + 50):
             raycaster.sprite_cache[("bot", i)] = DummySurface()
         for i in range(scaled_max + 20):
             raycaster._scaled_sprite_cache[("bot", i)] = DummySurface()
 
         raycaster.update_cache()
-        assert len(raycaster._strip_cache) <= strip_max
+        assert len(strip_cache) <= strip_max
         assert len(raycaster.sprite_cache) <= sprite_max
         assert len(raycaster._scaled_sprite_cache) <= scaled_max
 
