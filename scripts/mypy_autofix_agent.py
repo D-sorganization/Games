@@ -102,6 +102,136 @@ def parse_mypy_output(output: str) -> list[MypyError]:
     return errors
 
 
+def _partition_errors(
+    errors: list[MypyError], report: AgentReport
+) -> dict[str, list[MypyError]]:
+    """Split errors into safe-path files; record skips in report."""
+    errors_by_file: dict[str, list[MypyError]] = defaultdict(list)
+    for error in errors:
+        if is_safe_path(error.file):
+            errors_by_file[error.file].append(error)
+        else:
+            report.skipped_reasons.append(
+                f"Skipped {error.file}:{error.line} - outside safe path"
+            )
+    return errors_by_file
+
+
+def _record_fix(report: AgentReport, fix: Fix, verbose: bool) -> None:
+    """Record a successful fix in the report and optionally log it."""
+    if fix.strategy == "real-fix":
+        report.real_fixes += 1
+    else:
+        report.suppressions += 1
+    report.fixes_applied.append(
+        f"  [{fix.strategy}] {fix.file}:{fix.line} - {fix.description}"
+    )
+    if verbose:
+        logger.info(
+            "  FIX: %s:%d [%s] %s", fix.file, fix.line, fix.strategy, fix.description
+        )
+
+
+def _apply_strategies_to_error(
+    lines: list[str],
+    error: MypyError,
+    fix_strategies: list,
+    report: AgentReport,
+    verbose: bool,
+) -> bool:
+    """Try each strategy in order; record result in report. Return True if fixed."""
+    fix = next((s(lines, error) for s in fix_strategies if s(lines, error)), None)
+    if fix:
+        _record_fix(report, fix, verbose)
+        return True
+    report.skipped_reasons.append(
+        f"No fix available: {error.file}:{error.line}"
+        f" [{error.code}] {error.message[:60]}"
+    )
+    return False
+
+
+def _process_file(
+    filepath: str,
+    file_errors: list[MypyError],
+    fix_strategies: list,
+    report: AgentReport,
+    max_fixes: int,
+    dry_run: bool,
+    verbose: bool,
+    total_fixes: int,
+) -> tuple[int, int]:
+    """Apply fixes to one file; return (total_fixes, files_modified_delta)."""
+    lines = read_file_lines(filepath)
+    if not lines:
+        return total_fixes, 0
+    file_changed = False
+    for error in sorted(file_errors, key=lambda e: e.line, reverse=True):
+        if total_fixes >= max_fixes:
+            break
+        if _apply_strategies_to_error(lines, error, fix_strategies, report, verbose):
+            total_fixes += 1
+            file_changed = True
+    if file_changed:
+        if not dry_run:
+            write_file_lines(filepath, lines)
+        report.files_modified.append(filepath)
+        return total_fixes, 1
+    return total_fixes, 0
+
+
+_DEFAULT_FIX_STRATEGIES = [
+    fix_callable_as_type,
+    fix_union_attr,
+    fix_name_not_defined,
+    fix_import_errors,
+    fix_generic_suppression,
+]
+
+
+def _check_limits(
+    filepath: str, files_modified: int, total_fixes: int, max_files: int, max_fixes: int
+) -> str | None:
+    """Return a skip reason string if a limit is reached, else None."""
+    if files_modified >= max_files:
+        return f"Skipped {filepath} - max files ({max_files}) reached"
+    if total_fixes >= max_fixes:
+        return f"Skipped {filepath} - max fixes ({max_fixes}) reached"
+    return None
+
+
+def _apply_fixes_across_files(
+    errors_by_file: dict[str, list[MypyError]],
+    report: AgentReport,
+    max_fixes: int,
+    max_files: int,
+    dry_run: bool,
+    verbose: bool,
+) -> None:
+    """Iterate files in sorted order; apply fixes up to per-file/global limits."""
+    files_modified = 0
+    total_fixes = 0
+    for filepath, file_errors in sorted(errors_by_file.items()):
+        skip = _check_limits(
+            filepath, files_modified, total_fixes, max_files, max_fixes
+        )
+        if skip:
+            report.skipped_reasons.append(skip)
+            continue
+        total_fixes, delta = _process_file(
+            filepath,
+            file_errors,
+            _DEFAULT_FIX_STRATEGIES,
+            report,
+            max_fixes,
+            dry_run,
+            verbose,
+            total_fixes,
+        )
+        files_modified += delta
+    report.errors_fixed = total_fixes
+
+
 def run_agent(
     max_fixes: int = 20,
     max_files: int = 15,
@@ -112,95 +242,23 @@ def run_agent(
 ) -> AgentReport:
     """Main agent loop: observe, classify, fix, report."""
     report = AgentReport()
-
     if verbose:
         logger.info("Running mypy on targets: %s...", targets or "default")
-    output = run_mypy(config_file, targets)
-    errors = parse_mypy_output(output)
+    errors = parse_mypy_output(run_mypy(config_file, targets))
     report.total_errors = len(errors)
-
     if verbose:
         logger.info("Found %d mypy errors", len(errors))
-
     if not errors:
         logger.info("No mypy errors found.")
         return report
-
-    errors_by_file: dict[str, list[MypyError]] = defaultdict(list)
-    for error in errors:
-        if is_safe_path(error.file):
-            errors_by_file[error.file].append(error)
-        else:
-            report.skipped_reasons.append(
-                f"Skipped {error.file}:{error.line} - outside safe path"
-            )
-
-    files_modified = 0
-    total_fixes = 0
-    fix_strategies = [
-        fix_callable_as_type,
-        fix_union_attr,
-        fix_name_not_defined,
-        fix_import_errors,
-        fix_generic_suppression,
-    ]
-
-    for filepath, file_errors in sorted(errors_by_file.items()):
-        if files_modified >= max_files:
-            report.skipped_reasons.append(
-                f"Skipped {filepath} - max files ({max_files}) reached"
-            )
-            continue
-        if total_fixes >= max_fixes:
-            report.skipped_reasons.append(
-                f"Skipped {filepath} - max fixes ({max_fixes}) reached"
-            )
-            continue
-
-        lines = read_file_lines(filepath)
-        if not lines:
-            continue
-
-        file_changed = False
-        for error in sorted(file_errors, key=lambda e: e.line, reverse=True):
-            if total_fixes >= max_fixes:
-                break
-            fix = None
-            for strategy in fix_strategies:
-                fix = strategy(lines, error)
-                if fix:
-                    break
-            if fix:
-                total_fixes += 1
-                file_changed = True
-                if fix.strategy == "real-fix":
-                    report.real_fixes += 1
-                else:
-                    report.suppressions += 1
-                report.fixes_applied.append(
-                    f"  [{fix.strategy}] {fix.file}:{fix.line} - {fix.description}"
-                )
-                if verbose:
-                    logger.info(
-                        "  FIX: %s:%d [%s] %s",
-                        fix.file,
-                        fix.line,
-                        fix.strategy,
-                        fix.description,
-                    )
-            else:
-                report.skipped_reasons.append(
-                    f"No fix available: {error.file}:{error.line}"
-                    f" [{error.code}] {error.message[:60]}"
-                )
-
-        if file_changed:
-            if not dry_run:
-                write_file_lines(filepath, lines)
-            files_modified += 1
-            report.files_modified.append(filepath)
-
-    report.errors_fixed = total_fixes
+    _apply_fixes_across_files(
+        _partition_errors(errors, report),
+        report,
+        max_fixes,
+        max_files,
+        dry_run,
+        verbose,
+    )
     return report
 
 

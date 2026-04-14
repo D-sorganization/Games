@@ -167,3 +167,184 @@ def test_generate_report_is_thin_orchestrator(tmp_path: Path, monkeypatch) -> No
         text = f.read()
     assert "Completist Report" in text
     assert "## Executive Summary" in text
+
+
+# ---------------------------------------------------------------------------
+# _parse_marker_line  (extracted in issue #746)
+# ---------------------------------------------------------------------------
+
+
+def test_parse_marker_line_returns_todo_finding() -> None:
+    line = "src/games/shared/foo.py:42: do a TO" + "DO here"
+    result = acd._parse_marker_line(line)
+    assert result is not None
+    assert result["type"] == "TO" + "DO"
+    assert result["line"] == "42"
+    assert result["file"] == "src/games/shared/foo.py"
+
+
+def test_parse_marker_line_returns_fixme_finding() -> None:
+    line = "src/games/shared/bar.py:7: FIX" + "ME: broken"
+    result = acd._parse_marker_line(line)
+    assert result is not None
+    assert result["type"] == "FIX" + "ME"
+
+
+def test_parse_marker_line_returns_none_for_plain_line() -> None:
+    assert acd._parse_marker_line("no markers here") is None
+
+
+def test_parse_marker_line_returns_none_for_empty() -> None:
+    assert acd._parse_marker_line("") is None
+
+
+# ---------------------------------------------------------------------------
+# _build_issue_content  (extracted in issue #746)
+# ---------------------------------------------------------------------------
+
+
+def test_build_issue_content_contains_expected_fields() -> None:
+    item = _finding(
+        file="src/games/shared/python/core.py",
+        line="99",
+        type_="Stub",
+        name="missing_fn",
+    )
+    content = acd._build_issue_content(
+        item,
+        itype="Stub",
+        f_path="src/games/shared/python/core.py",
+        l_no="99",
+        context="missing_fn",
+        title="Incomplete Stub in core.py:99",
+    )
+    assert "src/games/shared/python/core.py" in content
+    assert "line 99" in content
+    assert "Stub" in content
+    assert "high-impact" in content  # impact=5 for shared/python
+
+
+def test_build_issue_content_no_high_impact_label_for_tools() -> None:
+    item = _finding(file="tools/helper.py", line="5", type_="Stub", name="fn")
+    content = acd._build_issue_content(
+        item,
+        itype="Stub",
+        f_path="tools/helper.py",
+        l_no="5",
+        context="fn",
+        title="Incomplete Stub in helper.py:5",
+    )
+    assert "high-impact" not in content
+
+
+# ---------------------------------------------------------------------------
+# _validate_chart_inputs  (extracted in issue #746)
+# ---------------------------------------------------------------------------
+
+
+def test_validate_chart_inputs_accepts_all_lists() -> None:
+    # Must not raise
+    acd._validate_chart_inputs([], [], [], [])
+
+
+def test_validate_chart_inputs_raises_on_non_list() -> None:
+    import pytest
+
+    with pytest.raises(TypeError, match="criticals"):
+        acd._validate_chart_inputs("oops", [], [], [])  # type: ignore[arg-type]
+
+
+# ---------------------------------------------------------------------------
+# _build_status_overview_chart  (extracted in issue #746)
+# ---------------------------------------------------------------------------
+
+
+def test_build_status_overview_chart_counts_match() -> None:
+    f = _finding()
+    lines = acd._build_status_overview_chart([f, f], [f], [], [])
+    joined = "\n".join(lines)
+    assert '"Impl Gaps (Critical)" : 2' in joined
+    assert '"Feature Requests' in joined
+    assert ": 1" in joined
+
+
+# ---------------------------------------------------------------------------
+# _build_module_breakdown_chart  (extracted in issue #746)
+# ---------------------------------------------------------------------------
+
+
+def test_build_module_breakdown_chart_empty_returns_empty() -> None:
+    assert acd._build_module_breakdown_chart([], [], []) == []
+
+
+def test_build_module_breakdown_chart_groups_by_root() -> None:
+    a = _finding(file="src/games/shared/foo.py")
+    b = _finding(file="src/games/shared/bar.py")
+    lines = acd._build_module_breakdown_chart([a, b], [], [])
+    joined = "\n".join(lines)
+    assert "games" in joined  # root after 'src' is 'games'
+
+
+# ---------------------------------------------------------------------------
+# _build_critical_table  (extracted in issue #746)
+# ---------------------------------------------------------------------------
+
+
+def test_build_critical_table_header_present() -> None:
+    lines = acd._build_critical_table([])
+    joined = "\n".join(lines)
+    assert "## Critical Incomplete" in joined
+    assert "| File |" in joined
+
+
+def test_build_critical_table_rows_for_findings() -> None:
+    f = _finding(file="src/games/shared/python/thing.py", line="10", type_="Stub")
+    lines = acd._build_critical_table([f])
+    joined = "\n".join(lines)
+    assert "thing.py" in joined
+    assert "| 10 |" in joined
+
+
+# ---------------------------------------------------------------------------
+# _build_feature_and_debt_tables  (extracted in issue #746)
+# ---------------------------------------------------------------------------
+
+
+def test_build_feature_and_debt_tables_headers() -> None:
+    lines = acd._build_feature_and_debt_tables([], [])
+    joined = "\n".join(lines)
+    assert "## Feature Gap Matrix" in joined
+    assert "## Technical Debt Register" in joined
+
+
+def test_build_feature_and_debt_tables_truncates_long_text() -> None:
+    long_text = "x" * 200
+    todo = _finding(file="src/foo.py", line="1", type_="TO" + "DO", name="n")
+    todo["text"] = long_text  # type: ignore[typeddict-unknown-key]
+    lines = acd._build_feature_and_debt_tables([todo], [])
+    # Each row text is truncated to 100 chars
+    for line in lines:
+        if "foo.py" in line:
+            assert len(line) < 300
+
+
+# ---------------------------------------------------------------------------
+# _build_implementation_order  (extracted in issue #746)
+# ---------------------------------------------------------------------------
+
+
+def test_build_implementation_order_header_present() -> None:
+    lines = acd._build_implementation_order([], [])
+    joined = "\n".join(lines)
+    assert "## Recommended Implementation Order" in joined
+    assert "| Priority |" in joined
+
+
+def test_build_implementation_order_ranks_high_impact_first() -> None:
+    high = _finding(file="src/games/shared/python/core.py", name="do_core")
+    low = _finding(file="tools/helper.py", name="do_helper")
+    lines = acd._build_implementation_order([low, high], [])
+    # First data row should reference the high-impact file
+    data_rows = [row for row in lines if row.startswith("| 1 |")]
+    assert len(data_rows) == 1
+    assert "core.py" in data_rows[0]

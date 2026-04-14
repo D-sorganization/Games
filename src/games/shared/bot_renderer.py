@@ -172,7 +172,7 @@ class BotRenderer:
         """Calculate death animation transforms; return dims or None if not drawn."""
         render_y, render_width, render_height, base_color = (
             BotRenderer._compute_melt_transforms(
-                sprite_y, render_width, render_height, base_color, bot.death_timer
+                sprite_y, render_width, render_height, base_color, int(bot.death_timer)
             )
         )
         if bot.disintegrate_timer > 0:

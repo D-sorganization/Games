@@ -4,6 +4,7 @@ import math
 import random
 from collections import OrderedDict
 from collections.abc import Sequence
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
@@ -53,6 +54,20 @@ if TYPE_CHECKING:
         Projectile,
         WorldParticle,
     )
+
+
+@dataclass(slots=True)
+class _PerRayLists:
+    """Bundle of per-ray Python lists produced by _build_per_ray_lists."""
+
+    distances: list[float]
+    wall_types: list[int]
+    wall_x_hits: list[float]
+    wall_heights: list[int]
+    wall_tops: list[int]
+    shades: list[float]
+    fog_factors: list[float]
+
 
 # Type alias for the 5-array tuple returned by _calculate_rays.
 # Placed after imports to avoid E402; uses string literals since numpy
@@ -280,6 +295,42 @@ class Raycaster:
 
         return dist, wall_type, wall_x_hit, map_x, map_y
 
+    def _render_walls_and_sprites(
+        self,
+        player: Player,
+        bots: Sequence[Bot],
+        level: int,
+        view_offset_y: float,
+        projectiles: Sequence[Projectile],
+        particles: Sequence[WorldParticle],
+        flash_intensity: float,
+        current_fov: float,
+    ) -> None:
+        """Raycast walls and render sprites to the view surface."""
+        rays = self._calculate_rays(player)
+        perp_wall_dist, wall_types, wall_x_hit, side, fisheye_factors = rays
+        self.z_buffer = perp_wall_dist
+        self._render_walls_vectorized(
+            perp_wall_dist,
+            wall_types,
+            wall_x_hit,
+            side,
+            player,
+            fisheye_factors,
+            level,
+            view_offset_y,
+            flash_intensity,
+        )
+        self._render_sprites(
+            player,
+            bots,
+            projectiles,
+            particles,
+            current_fov / 2,
+            view_offset_y,
+            flash_intensity,
+        )
+
     def render_3d(
         self,
         screen: pygame.Surface,
@@ -294,54 +345,20 @@ class Raycaster:
         """Render 3D view using vectorized raycasting."""
         self.update_cache()
         self._update_map_cache_if_needed()
-
-        # Determine current FOV
         current_fov = self.config.FOV * (
             self.config.ZOOM_FOV_MULT if player.zoomed else 1.0
         )
-
-        # Clear view surface
         self.view_surface.fill((0, 0, 0, 0))
-
-        # Vectorized Raycasting
-        (
-            perp_wall_dist,
-            wall_types,
-            wall_x_hit,
-            side,
-            fisheye_factors,
-        ) = self._calculate_rays(player)
-
-        # Update Z Buffer
-        self.z_buffer = perp_wall_dist
-
-        # Render Walls
-        self._render_walls_vectorized(
-            perp_wall_dist,
-            wall_types,
-            wall_x_hit,
-            side,
-            player,
-            fisheye_factors,
-            level,
-            view_offset_y,
-            flash_intensity,
-        )
-
-        # Render Sprites
-        projs = projectiles if projectiles is not None else []
-        parts = particles if particles is not None else []
-        self._render_sprites(
+        self._render_walls_and_sprites(
             player,
             bots,
-            projs,
-            parts,
-            current_fov / 2,
+            level,
             view_offset_y,
+            projectiles if projectiles is not None else [],
+            particles if particles is not None else [],
             flash_intensity,
+            current_fov,
         )
-
-        # Blit to Screen
         self._blit_view_to_screen(screen)
 
     def _update_map_cache_if_needed(self) -> None:
@@ -350,47 +367,32 @@ class Raycaster:
             self.grid = self.game_map.grid
             self.np_grid = np.array(self.game_map.grid, dtype=np.int8)
 
+    def _run_dda(
+        self,
+        player: Player,
+        ray_dir_x: np.ndarray[Any, Any],
+        ray_dir_y: np.ndarray[Any, Any],
+    ) -> tuple[Any, Any, Any, Any, Any, Any, Any, Any, Any, Any]:
+        """Run DDA setup + loop.
+
+        Returns (hits, wall_types, side, side_dists, deltas, steps).
+        """
+        map_x, map_y, ddx, ddy, sdx, sdy, sx, sy = self._init_dda_params(
+            player, ray_dir_x, ray_dir_y
+        )
+        hits, wall_types, side = self._perform_dda_loop(
+            map_x, map_y, sdx, sdy, ddx, ddy, sx, sy
+        )
+        return hits, wall_types, side, sdx, sdy, ddx, ddy, ray_dir_x, ray_dir_y, map_x
+
     def _calculate_rays(self, player: Player) -> _RayArrays:
         """Perform vectorized raycasting math."""
-        # 1. Setup ray directions
         ray_dir_x, ray_dir_y = self._get_ray_directions(player)
-
-        # 2. Setup DDA parameters
-        (
-            map_x,
-            map_y,
-            delta_dist_x,
-            delta_dist_y,
-            side_dist_x,
-            side_dist_y,
-            step_x,
-            step_y,
-        ) = self._init_dda_params(player, ray_dir_x, ray_dir_y)
-
-        # 3. Perform DDA
-        hits, wall_types, side = self._perform_dda_loop(
-            map_x,
-            map_y,
-            side_dist_x,
-            side_dist_y,
-            delta_dist_x,
-            delta_dist_y,
-            step_x,
-            step_y,
+        hits, wall_types, side, sdx, sdy, ddx, ddy, rdx, rdy, _mx = self._run_dda(
+            player, ray_dir_x, ray_dir_y
         )
-
-        # 4. Calculate final distances and hit points
         return self._finalize_ray_data(
-            player,
-            hits,
-            wall_types,
-            side,
-            side_dist_x,
-            side_dist_y,
-            delta_dist_x,
-            delta_dist_y,
-            ray_dir_x,
-            ray_dir_y,
+            player, hits, wall_types, side, sdx, sdy, ddx, ddy, rdx, rdy
         )
 
     def _get_ray_directions(
@@ -448,29 +450,26 @@ class Raycaster:
         hits: np.ndarray[Any, Any],
         wall_types: np.ndarray[Any, Any],
         side: np.ndarray[Any, Any],
-        side_dist_x: np.ndarray[Any, Any],
-        side_dist_y: np.ndarray[Any, Any],
-        delta_dist_x: np.ndarray[Any, Any],
-        delta_dist_y: np.ndarray[Any, Any],
-        ray_dir_x: np.ndarray[Any, Any],
-        ray_dir_y: np.ndarray[Any, Any],
+        sdx: np.ndarray[Any, Any],
+        sdy: np.ndarray[Any, Any],
+        ddx: np.ndarray[Any, Any],
+        ddy: np.ndarray[Any, Any],
+        rdx: np.ndarray[Any, Any],
+        rdy: np.ndarray[Any, Any],
     ) -> tuple[Any, ...]:
-        """Calculate final distances and wall-hit X coordinates.
-
-        Delegates to raycaster_math.finalize_ray_data.
-        """
+        """Calculate final distances and wall-hit X; delegates to raycaster_math."""
         return finalize_ray_data(
             player,
             self.num_rays,
             hits,
             wall_types,
             side,
-            side_dist_x,
-            side_dist_y,
-            delta_dist_x,
-            delta_dist_y,
-            ray_dir_x,
-            ray_dir_y,
+            sdx,
+            sdy,
+            ddx,
+            ddy,
+            rdx,
+            rdy,
             self.cos_deltas,
             self.cos_deltas_zoomed,
         )
@@ -484,6 +483,99 @@ class Raycaster:
                 self.view_surface, (self.config.SCREEN_WIDTH, self.config.SCREEN_HEIGHT)
             )
             screen.blit(scaled_surface, (0, 0))
+
+    def _build_per_ray_lists(
+        self,
+        distances: np.ndarray[Any, Any],
+        wall_types: np.ndarray[Any, Any],
+        wall_x_hits: np.ndarray[Any, Any],
+        player: Player,
+        fisheye_factors: np.ndarray[Any, Any],
+        view_offset_y: float,
+    ) -> _PerRayLists:
+        """Convert array inputs to Python lists for fast per-ray access.
+
+        Python list indexing is ~5-10x faster than numpy scalar indexing
+        for pure-Python per-ray loops.  (See issue #477.)
+        """
+        wall_heights, wall_tops, shades, fog_factors = self._prepare_wall_render_data(
+            distances, player, fisheye_factors, view_offset_y
+        )
+        return _PerRayLists(
+            distances=distances.tolist(),
+            wall_types=wall_types.tolist(),
+            wall_x_hits=wall_x_hits.tolist(),
+            wall_heights=wall_heights,
+            wall_tops=wall_tops,
+            shades=shades,
+            fog_factors=fog_factors,
+        )
+
+    def _draw_wall_column(  # noqa: PLR0913
+        self,
+        i: int,
+        wt: int,
+        h: int,
+        top: int,
+        wall_x_hit: float,
+        shade: float,
+        fog: float,
+        use_textures: bool,
+        wall_strips: dict[int, list[pygame.Surface]],
+        wall_colors: dict[int, tuple[int, int, int]],
+        view_surface: pygame.Surface,
+        blits_sequence: list[Any],
+    ) -> None:
+        """Dispatch one ray column to the textured or solid wall renderer."""
+        if use_textures and wt in wall_strips:
+            self._render_textured_wall(
+                i,
+                wt,
+                h,
+                top,
+                wall_x_hit,
+                shade,
+                fog,
+                wall_strips,
+                wall_colors,
+                view_surface,
+                blits_sequence,
+            )
+        else:
+            self._render_solid_wall(
+                i, wt, h, top, shade, fog, wall_colors, view_surface
+            )
+
+    def _iterate_visible_rays(
+        self,
+        prl: _PerRayLists,
+        use_textures: bool,
+        wall_strips: dict[int, list[pygame.Surface]],
+        wall_colors: dict[int, tuple[int, int, int]],
+        view_surface: pygame.Surface,
+        blits_sequence: list[Any],
+    ) -> None:
+        """Loop over rays and dispatch each visible wall column to the renderer."""
+        for i in range(self.num_rays):
+            if prl.distances[i] >= self.config.MAX_DEPTH:
+                continue
+            wt = prl.wall_types[i]
+            if wt == 0:
+                continue
+            self._draw_wall_column(
+                i,
+                wt,
+                prl.wall_heights[i],
+                prl.wall_tops[i],
+                prl.wall_x_hits[i],
+                prl.shades[i],
+                prl.fog_factors[i],
+                use_textures,
+                wall_strips,
+                wall_colors,
+                view_surface,
+                blits_sequence,
+            )
 
     def _render_walls_vectorized(
         self,
@@ -499,78 +591,16 @@ class Raycaster:
     ) -> None:
         """Render walls using computed arrays."""
         wall_colors = self._resolve_wall_theme(level)
-
-        # Pre-compute geometry and shading arrays
-        (
-            wall_heights_int_list,
-            wall_tops_list,
-            shades_list,
-            fog_factors_list,
-        ) = self._prepare_wall_render_data(
-            distances, player, fisheye_factors, view_offset_y
+        prl = self._build_per_ray_lists(
+            distances, wall_types, wall_x_hits, player, fisheye_factors, view_offset_y
         )
-
         use_textures = self.use_textures and len(self.textures) > 0
-
-        # Pre-fetch texture strips via TextureManager
         wall_strips = self._texture_mgr.build_wall_strips_for_render(wall_colors)
-
         view_surface = self.view_surface
-        blits_sequence: list[
-            tuple[pygame.Surface, tuple[int, int]]
-            | tuple[pygame.Surface, tuple[int, int], tuple[int, int, int, int]]
-        ] = []
-
-        # Optimization: Convert numpy arrays to Python lists for faster per-element
-        # access in the per-ray loop below.  Python list __getitem__ with an int
-        # index is ~5-10x faster than numpy scalar indexing (arr[i]) because numpy
-        # must box the result into a Python scalar on every access.  Since the loop
-        # is pure-Python ``for i in range(num_rays)`` with individual element reads,
-        # pre-converting via .tolist() is the optimal approach.  (See issue #477.)
-        distances_list = distances.tolist()
-        wall_types_list = wall_types.tolist()
-        wall_x_hits_list = wall_x_hits.tolist()
-
-        # Per-ray loop
-        for i in range(self.num_rays):
-            dist = distances_list[i]
-            if dist >= self.config.MAX_DEPTH:
-                continue
-
-            wt = wall_types_list[i]
-            if wt == 0:
-                continue
-
-            h = wall_heights_int_list[i]
-            top = wall_tops_list[i]
-
-            if use_textures and wt in wall_strips:
-                self._render_textured_wall(
-                    i,
-                    wt,
-                    h,
-                    top,
-                    wall_x_hits_list[i],
-                    shades_list[i],
-                    fog_factors_list[i],
-                    wall_strips,
-                    wall_colors,
-                    view_surface,
-                    blits_sequence,
-                )
-            else:
-                self._render_solid_wall(
-                    i,
-                    wt,
-                    h,
-                    top,
-                    shades_list[i],
-                    fog_factors_list[i],
-                    wall_colors,
-                    view_surface,
-                )
-
-        # Perform batched blits
+        blits_sequence: list[Any] = []
+        self._iterate_visible_rays(
+            prl, use_textures, wall_strips, wall_colors, view_surface, blits_sequence
+        )
         if blits_sequence:
             view_surface.blits(blits_sequence, doreturn=False)
 
@@ -611,6 +641,40 @@ class Raycaster:
             view_offset_y,
         )
 
+    def _build_textured_wall_context(  # noqa: PLR0913
+        self,
+        i: int,
+        wt: int,
+        h: int,
+        top: int,
+        wall_x_hit: float,
+        shade: float,
+        fog: float,
+        wall_strips: dict[int, list[pygame.Surface]],
+        wall_colors: dict[int, tuple[int, int, int]],
+        view_surface: pygame.Surface,
+        blits_sequence: list[Any],
+    ) -> TexturedWallColumnContext:
+        """Build a TexturedWallColumnContext from renderer state for one column."""
+        return TexturedWallColumnContext(
+            i,
+            wt,
+            h,
+            top,
+            wall_x_hit,
+            shade,
+            fog,
+            wall_strips,
+            wall_colors,
+            view_surface,
+            blits_sequence,
+            self.config.GRAY,
+            self.texture_map,
+            self.shading_surfaces,
+            self.fog_surfaces,
+            self._get_cached_strip,
+        )
+
     def _render_textured_wall(  # noqa: PLR0913
         self,
         i: int,
@@ -627,7 +691,7 @@ class Raycaster:
     ) -> None:
         """Render a single textured wall column with shading and fog."""
         render_textured_wall_column(
-            TexturedWallColumnContext(
+            self._build_textured_wall_context(
                 i,
                 wt,
                 h,
@@ -639,11 +703,6 @@ class Raycaster:
                 wall_colors,
                 view_surface,
                 blits_sequence,
-                self.config.GRAY,
-                self.texture_map,
-                self.shading_surfaces,
-                self.fog_surfaces,
-                self._get_cached_strip,
             )
         )
 
@@ -672,6 +731,39 @@ class Raycaster:
             self.config.FOG_COLOR,
         )
 
+    def _build_sprite_context(
+        self,
+        player: Player,
+        bots: Sequence[Bot],
+        projectiles: Sequence[Projectile],
+        particles: Sequence[WorldParticle],
+        half_fov: float,
+        view_offset_y: float,
+        flash_intensity: float,
+    ) -> SpriteRenderContext:
+        """Build a SpriteRenderContext from current renderer state."""
+        return SpriteRenderContext(
+            player,
+            bots,
+            projectiles,
+            particles,
+            half_fov,
+            view_offset_y,
+            flash_intensity,
+            self.config,
+            self.num_rays,
+            self.render_scale,
+            self.view_surface,
+            self.z_buffer,
+            self.sprite_cache,
+            self._SPRITE_CACHE_MAX,
+            self._SPRITE_CACHE_EVICT,
+            self._scaled_sprite_cache,
+            self._SCALED_SPRITE_CACHE_MAX,
+            self._SCALED_SPRITE_CACHE_EVICT,
+            self._evict_lru,
+        )
+
     def _render_sprites(
         self,
         player: Player,
@@ -682,12 +774,9 @@ class Raycaster:
         view_offset_y: float = 0.0,
         flash_intensity: float = 0.0,
     ) -> None:
-        """Render all sprites (bots, projectiles, particles) to the view surface.
-
-        Delegates to raycaster_sprites module for the actual rendering logic.
-        """
+        """Render all sprites (bots, projectiles, particles) to the view surface."""
         _render_sprites_fn(
-            SpriteRenderContext(
+            self._build_sprite_context(
                 player,
                 bots,
                 projectiles,
@@ -695,18 +784,6 @@ class Raycaster:
                 half_fov,
                 view_offset_y,
                 flash_intensity,
-                self.config,
-                self.num_rays,
-                self.render_scale,
-                self.view_surface,
-                self.z_buffer,
-                self.sprite_cache,
-                self._SPRITE_CACHE_MAX,
-                self._SPRITE_CACHE_EVICT,
-                self._scaled_sprite_cache,
-                self._SCALED_SPRITE_CACHE_MAX,
-                self._SCALED_SPRITE_CACHE_EVICT,
-                self._evict_lru,
             )
         )
 
@@ -718,7 +795,7 @@ class Raycaster:
             self._cached_background_theme_idx,
         ) = _generate_background_surface_fn(
             level,
-            self.config.LEVEL_THEMES or [],
+            self.config.LEVEL_THEMES or [],  # type: ignore[arg-type]
             self.config.SCREEN_WIDTH,
             self.config.SCREEN_HEIGHT,
             self.config.GRAY,
@@ -741,7 +818,7 @@ class Raycaster:
             screen,
             player,
             level,
-            self.config.LEVEL_THEMES or [],
+            self.config.LEVEL_THEMES or [],  # type: ignore[arg-type]
             self.config.SCREEN_WIDTH,
             self.config.SCREEN_HEIGHT,
             self.stars,
@@ -766,6 +843,38 @@ class Raycaster:
             self.config.GRAY,
         )
 
+    def _build_minimap_context(
+        self,
+        screen: pygame.Surface,
+        player: Player,
+        bots: Sequence[Bot],
+        minimap_x: int,
+        minimap_y: int,
+        visited_cells: set[tuple[int, int]] | None,
+        portal: Portal | None,
+    ) -> MinimapRenderContext:
+        """Construct a MinimapRenderContext from current renderer state."""
+        assert self.minimap_surface is not None, "call _generate_minimap_cache first"
+        return MinimapRenderContext(
+            screen,
+            player,
+            bots,
+            self.minimap_surface,
+            self.minimap_size,
+            self.minimap_scale,
+            minimap_x,
+            minimap_y,
+            self._fog_surface,
+            self._fog_visited_count,
+            visited_cells,
+            portal,
+            self.config.ENEMY_TYPES,
+            self.config.BLACK,
+            self.config.RED,
+            self.config.GREEN,
+            self.config.CYAN,
+        )
+
     def render_minimap(
         self,
         screen: pygame.Surface,
@@ -777,28 +886,8 @@ class Raycaster:
         """Render 2D minimap with fog of war support."""
         if self.minimap_surface is None:
             self._generate_minimap_cache()
-
         minimap_x = self.config.SCREEN_WIDTH - self.minimap_size - 20
-        minimap_y = 20
-
-        self._fog_surface, self._fog_visited_count = _render_minimap_fn(
-            MinimapRenderContext(
-                screen,
-                player,
-                bots,
-                self.minimap_surface,
-                self.minimap_size,
-                self.minimap_scale,
-                minimap_x,
-                minimap_y,
-                self._fog_surface,
-                self._fog_visited_count,
-                visited_cells,
-                portal,
-                self.config.ENEMY_TYPES,
-                self.config.BLACK,
-                self.config.RED,
-                self.config.GREEN,
-                self.config.CYAN,
-            )
+        ctx = self._build_minimap_context(
+            screen, player, bots, minimap_x, 20, visited_cells, portal
         )
+        self._fog_surface, self._fog_visited_count = _render_minimap_fn(ctx)

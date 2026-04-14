@@ -24,23 +24,30 @@ class TetrisGame:
 
     def __init__(self) -> None:
         """Initialize the Tetris game with display and initial state"""
+        self._init_display()
+        self._init_subsystems()
+        self._init_ui_state()
+
+    def _init_display(self) -> None:
+        """Set up display surface and game clock."""
         self.screen = pygame.display.set_mode((C.SCREEN_WIDTH, C.SCREEN_HEIGHT))
         pygame.display.set_caption("Enhanced Tetris")
         self.clock = pygame.time.Clock()
 
+    def _init_subsystems(self) -> None:
+        """Create logic, renderer, and input-handler subsystems."""
         self.logic = TetrisLogic()
         self.renderer = TetrisRenderer(self.screen)
         self.input_handler = InputHandler()
-
         self.state = C.GameState.MENU
 
-        # UI State
+    def _init_ui_state(self) -> None:
+        """Initialize UI toggle flags and button rectangles."""
         self.show_next_piece = True
         self.show_hold_piece = True
         self.show_ghost_piece = True
         self.show_controls_panel = True
         self.settings_selection = 0
-
         self.restart_button = pygame.Rect(
             C.SCREEN_WIDTH - C.BUTTON_WIDTH - 20,
             C.SCREEN_HEIGHT - C.BUTTON_HEIGHT - 10,
@@ -119,13 +126,34 @@ class TetrisGame:
 
         return entries
 
+    def _toggle_bool_setting(self, key: str) -> None:
+        """Toggle a boolean setting located on self, input_handler, or logic."""
+        if hasattr(self, key):
+            setattr(self, key, not getattr(self, key))
+        elif hasattr(self.input_handler, key):
+            setattr(self.input_handler, key, not getattr(self.input_handler, key))
+        elif hasattr(self.logic, key):
+            setattr(self.logic, key, not getattr(self.logic, key))
+            if key == "allow_rewind":
+                self.logic.clear_rewind_history()
+
+    def _activate_selected_entry(self, entries: list[dict[str, Any]]) -> None:
+        """Apply the action for the currently-selected settings entry."""
+        entry = entries[self.settings_selection]
+        if entry["type"] == "bool":
+            self._toggle_bool_setting(entry["key"])
+        elif (
+            entry["type"] == "mapping"
+            and self.input_handler.controller_enabled
+            and self.input_handler.joystick
+        ):
+            self.input_handler.awaiting_controller_action = entry["key"]
+
     def handle_settings_input(self, event: pygame.event.Event) -> None:
         """Handle input events in the settings menu"""
         if event.type != pygame.KEYDOWN:
             return
-
         entries = self.get_settings_entries()
-
         if event.key == pygame.K_ESCAPE:
             self.input_handler.awaiting_controller_action = None
             self.state = C.GameState.MENU
@@ -134,28 +162,7 @@ class TetrisGame:
         elif event.key == pygame.K_DOWN:
             self.settings_selection = min(len(entries) - 1, self.settings_selection + 1)
         elif event.key in [pygame.K_LEFT, pygame.K_RIGHT, pygame.K_RETURN]:
-            entry = entries[self.settings_selection]
-            if entry["type"] == "bool":
-                key = entry["key"]
-                # key might be on self or input_handler or logic
-                if hasattr(self, key):
-                    current = getattr(self, key)
-                    setattr(self, key, not current)
-                elif hasattr(self.input_handler, key):
-                    current = getattr(self.input_handler, key)
-                    setattr(self.input_handler, key, not current)
-                elif hasattr(self.logic, key):
-                    current = getattr(self.logic, key)
-                    setattr(self.logic, key, not current)
-                    if key == "allow_rewind":
-                        self.logic.clear_rewind_history()
-
-            elif (
-                entry["type"] == "mapping"
-                and self.input_handler.controller_enabled
-                and self.input_handler.joystick
-            ):
-                self.input_handler.awaiting_controller_action = entry["key"]
+            self._activate_selected_entry(entries)
 
     def _get_entry_value_text(self, entry: dict) -> str:
         """Return the display string for a settings entry."""
@@ -190,14 +197,26 @@ class TetrisGame:
                 self.screen.blit(value_render, (520, y_offset + 6))
             y_offset += 40
 
+    def _draw_settings_awaiting_banner(self) -> None:
+        """Draw the 'waiting for controller input' banner if remapping."""
+        if not self.input_handler.awaiting_controller_action:
+            return
+        action_label = self.input_handler.get_action_label(
+            self.input_handler.awaiting_controller_action
+        )
+        waiting = self.renderer.render_small_text(
+            f"Waiting for input to bind {action_label}",
+            True,
+            C.YELLOW,
+        )
+        center = (C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT - 100)
+        self.screen.blit(waiting, waiting.get_rect(center=center))
+
     def draw_settings(self) -> None:
         """Render the settings menu"""
-        # Implementing draw_settings here as it was missing from
-        # renderer and needs state access
         self.screen.fill(C.BLACK)
         title = self.renderer.render_large_text("Settings", True, C.CYAN)
-        title_rect = title.get_rect(center=(C.SCREEN_WIDTH // 2, 80))
-        self.screen.blit(title, title_rect)
+        self.screen.blit(title, title.get_rect(center=(C.SCREEN_WIDTH // 2, 80)))
 
         entries = self.get_settings_entries()
         self._draw_settings_entries(entries, y_offset=160)
@@ -209,19 +228,7 @@ class TetrisGame:
         )
         hint_rect = hint.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT - 60))
         self.screen.blit(hint, hint_rect)
-
-        if self.input_handler.awaiting_controller_action:
-            action_label = self.input_handler.get_action_label(
-                self.input_handler.awaiting_controller_action
-            )
-            waiting = self.renderer.render_small_text(
-                f"Waiting for input to bind {action_label}",
-                True,
-                C.YELLOW,
-            )
-            center = (C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT - 100)
-            waiting_rect = waiting.get_rect(center=center)
-            self.screen.blit(waiting, waiting_rect)
+        self._draw_settings_awaiting_banner()
 
     def handle_mouse_input(self, pos: tuple[int, int]) -> None:
         """Handle mouse clicks on UI buttons"""

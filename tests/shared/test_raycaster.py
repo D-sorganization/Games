@@ -592,3 +592,124 @@ class TestRaycasterInit:
                 blits_sequence=blits_sequence,
             )
             assert len(blits_sequence) == 3
+
+    # -----------------------------------------------------------------------
+    # _PerRayLists dataclass  (added in issue #746)
+    # -----------------------------------------------------------------------
+
+    def test_per_ray_lists_dataclass_stores_fields(self) -> None:
+        from games.shared.raycaster import _PerRayLists
+
+        prl = _PerRayLists(
+            distances=[1.0, 2.0],
+            wall_types=[1, 2],
+            wall_x_hits=[0.5, 0.6],
+            wall_heights=[100, 80],
+            wall_tops=[50, 60],
+            shades=[0.8, 0.6],
+            fog_factors=[0.0, 0.1],
+        )
+        assert prl.distances == [1.0, 2.0]
+        assert prl.wall_types == [1, 2]
+        assert prl.wall_x_hits == [0.5, 0.6]
+        assert prl.wall_heights == [100, 80]
+        assert prl.wall_tops == [50, 60]
+        assert prl.shades == [0.8, 0.6]
+        assert prl.fog_factors == [0.0, 0.1]
+
+    # -----------------------------------------------------------------------
+    # _build_per_ray_lists  (extracted in issue #746)
+    # -----------------------------------------------------------------------
+
+    @patch("games.shared.raycaster.cast_ray_dda")
+    def test_build_per_ray_lists_returns_per_ray_lists(
+        self, mock_dda: MagicMock, raycaster: Raycaster
+    ) -> None:
+        import numpy as np
+
+        from games.shared.raycaster import _PerRayLists
+
+        n = raycaster.num_rays
+        distances = np.full(n, 5.0)
+        wall_types = np.ones(n, dtype=int)
+        wall_x_hits = np.full(n, 0.5)
+        fisheye_factors = np.ones(n)
+        player = MagicMock(x=1.0, y=1.0, angle=0.0, pitch=0)
+
+        prl = raycaster._build_per_ray_lists(
+            distances=distances,
+            wall_types=wall_types,
+            wall_x_hits=wall_x_hits,
+            player=player,
+            fisheye_factors=fisheye_factors,
+            view_offset_y=0.0,
+        )
+        assert isinstance(prl, _PerRayLists)
+        assert len(prl.distances) == n
+        assert len(prl.wall_types) == n
+        assert len(prl.wall_x_hits) == n
+        assert len(prl.wall_heights) == n
+        assert len(prl.wall_tops) == n
+        assert len(prl.shades) == n
+        assert len(prl.fog_factors) == n
+
+    # -----------------------------------------------------------------------
+    # _iterate_visible_rays  (extracted in issue #746)
+    # -----------------------------------------------------------------------
+
+    def test_iterate_visible_rays_skips_beyond_max_depth(
+        self, raycaster: Raycaster
+    ) -> None:
+        from games.shared.raycaster import _PerRayLists
+
+        n = 3
+        raycaster.num_rays = n
+        prl = _PerRayLists(
+            distances=[raycaster.config.MAX_DEPTH + 1.0] * n,
+            wall_types=[1] * n,
+            wall_x_hits=[0.5] * n,
+            wall_heights=[100] * n,
+            wall_tops=[50] * n,
+            shades=[0.8] * n,
+            fog_factors=[0.0] * n,
+        )
+        blits: list = []
+        view_surface = DummySurface((800, 600))
+        # No columns drawn — all beyond MAX_DEPTH
+        raycaster._iterate_visible_rays(
+            prl=prl,
+            use_textures=False,
+            wall_strips={},
+            wall_colors={1: (255, 0, 0)},
+            view_surface=view_surface,  # type: ignore[arg-type]
+            blits_sequence=blits,
+        )
+        assert blits == []
+
+    def test_iterate_visible_rays_skips_wall_type_zero(
+        self, raycaster: Raycaster
+    ) -> None:
+        from games.shared.raycaster import _PerRayLists
+
+        n = 2
+        raycaster.num_rays = n
+        prl = _PerRayLists(
+            distances=[1.0] * n,
+            wall_types=[0] * n,  # wall_type 0 = no wall
+            wall_x_hits=[0.5] * n,
+            wall_heights=[100] * n,
+            wall_tops=[50] * n,
+            shades=[0.8] * n,
+            fog_factors=[0.0] * n,
+        )
+        blits: list = []
+        view_surface = DummySurface((800, 600))
+        raycaster._iterate_visible_rays(
+            prl=prl,
+            use_textures=False,
+            wall_strips={},
+            wall_colors={},
+            view_surface=view_surface,  # type: ignore[arg-type]
+            blits_sequence=blits,
+        )
+        assert blits == []
