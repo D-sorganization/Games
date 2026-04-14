@@ -280,23 +280,9 @@ class CombatSystem:
             weapon_range = 100
 
         weapon_damage = self.player.get_current_weapon_damage()
-
-        current_spread = C.SPREAD_ZOOM if self.player.zoomed else C.SPREAD_BASE
-        if angle_offset == 0.0:
-            spread_offset = random.uniform(-current_spread, current_spread)
-            aim_angle = self.player.angle + spread_offset
-        else:
-            aim_angle = self.player.angle + angle_offset
-
-        aim_angle %= 2 * math.pi
-
-        wall_dist, _, _, _, _ = self.game.raycaster.cast_ray(
-            self.player.x, self.player.y, aim_angle
+        aim_angle, wall_dist = self._compute_aim_and_wall_dist(
+            angle_offset, weapon_range
         )
-
-        if wall_dist > weapon_range:
-            wall_dist = float(weapon_range)
-
         closest_bot, closest_dist, is_headshot = self._find_closest_bot(
             aim_angle, wall_dist
         )
@@ -318,6 +304,25 @@ class CombatSystem:
             self._apply_damage(
                 closest_bot, closest_dist, weapon_range, weapon_damage, is_headshot
             )
+
+    def _compute_aim_and_wall_dist(
+        self, angle_offset: float, weapon_range: float
+    ) -> tuple[float, float]:
+        """Compute spread-adjusted aim angle and clamped wall distance."""
+        current_spread = C.SPREAD_ZOOM if self.player.zoomed else C.SPREAD_BASE
+        if angle_offset == 0.0:
+            spread_offset = random.uniform(-current_spread, current_spread)
+            aim_angle = self.player.angle + spread_offset
+        else:
+            aim_angle = self.player.angle + angle_offset
+        aim_angle %= 2 * math.pi
+
+        wall_dist, _, _, _, _ = self.game.raycaster.cast_ray(
+            self.player.x, self.player.y, aim_angle
+        )
+        if wall_dist > weapon_range:
+            wall_dist = float(weapon_range)
+        return aim_angle, wall_dist
 
     def _handle_secondary_hit(
         self, closest_bot: Bot | None, closest_dist: float, wall_dist: float
@@ -372,20 +377,9 @@ class CombatSystem:
         base_damage: int,
         is_headshot: bool,
     ) -> None:
-        range_factor = max(0.3, 1.0 - (distance / weapon_range))
-
-        dx = bot.x - self.player.x
-        dy = bot.y - self.player.y
-        bot_angle = math.atan2(dy, dx)
-        angle = bot_angle if bot_angle >= 0 else bot_angle + 2 * math.pi
-
-        angle_diff = abs(angle - self.player.angle)
-        if angle_diff > math.pi:
-            angle_diff = 2 * math.pi - angle_diff
-
-        accuracy_factor = max(0.5, 1.0 - (angle_diff / 0.15))
-        final_damage = int(base_damage * range_factor * accuracy_factor)
-
+        final_damage = self._compute_final_damage(
+            bot, distance, weapon_range, base_damage
+        )
         bot.take_damage(final_damage, is_headshot=is_headshot)
 
         if self.game.show_damage:
@@ -407,6 +401,25 @@ class CombatSystem:
 
         if not bot.alive:
             self._handle_kill(bot)
+
+    def _compute_final_damage(
+        self,
+        bot: Bot,
+        distance: float,
+        weapon_range: float,
+        base_damage: int,
+    ) -> int:
+        """Calculate range- and accuracy-adjusted damage for a hit."""
+        range_factor = max(0.3, 1.0 - (distance / weapon_range))
+        dx = bot.x - self.player.x
+        dy = bot.y - self.player.y
+        bot_angle = math.atan2(dy, dx)
+        angle = bot_angle if bot_angle >= 0 else bot_angle + 2 * math.pi
+        angle_diff = abs(angle - self.player.angle)
+        if angle_diff > math.pi:
+            angle_diff = 2 * math.pi - angle_diff
+        accuracy_factor = max(0.5, 1.0 - (angle_diff / 0.15))
+        return int(base_damage * range_factor * accuracy_factor)
 
     def _handle_kill(self, bot: Bot) -> None:
         self.game.kills += 1
@@ -473,11 +486,25 @@ class CombatSystem:
             logger.exception("Bomb Audio Failed")
 
         if dist_to_player < 30:
-            shake = max(0, 30 - dist_to_player)
-            self.game.screen_shake = shake
+            self.game.screen_shake = max(0, 30 - dist_to_player)
 
         self._add_bomb_particles(dist_to_player)
+        self._apply_bomb_damage_to_bots(projectile, dist_to_player)
+        self.game.damage_texts.append(
+            {
+                "x": C.SCREEN_WIDTH // 2,
+                "y": C.SCREEN_HEIGHT // 2 - 100,
+                "text": "BOOM!",
+                "color": C.ORANGE,
+                "timer": 90,
+                "vy": -0.5,
+            }
+        )
 
+    def _apply_bomb_damage_to_bots(
+        self, projectile: Projectile, dist_to_player: float
+    ) -> None:
+        """Apply radius-falloff damage to every bot within the bomb blast."""
         for bot in self.game.bots:
             if not bot.alive:
                 continue
@@ -493,17 +520,6 @@ class CombatSystem:
                     self.game.particle_system.add_explosion(
                         C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2, count=3
                     )
-
-        self.game.damage_texts.append(
-            {
-                "x": C.SCREEN_WIDTH // 2,
-                "y": C.SCREEN_HEIGHT // 2 - 100,
-                "text": "BOOM!",
-                "color": C.ORANGE,
-                "timer": 90,
-                "vy": -0.5,
-            }
-        )
 
     def _add_laser_particles(self) -> None:
         """Spawn laser impact particles at screen center."""

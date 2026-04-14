@@ -393,11 +393,7 @@ class Bot:
         move_dy: float,
         game_map: Map,
     ) -> tuple[bool, bool]:
-        """Check collisions against other bots and optionally push them (beast).
-
-        Returns:
-            (can_move_x, can_move_y) flags after accounting for collisions.
-        """
+        """Check collisions against other bots and optionally push them (beast)."""
         collision_radius = 0.5 + (0.5 if self.enemy_type == "beast" else 0)
         col_sq = collision_radius * collision_radius
         can_move_x = not game_map.is_wall(new_x, self.y)
@@ -411,22 +407,41 @@ class Bot:
                 or abs(self.y - other_bot.y) > C.MAX_COLLISION_DIST
             ):
                 continue
-            if can_move_x:
-                if (new_x - other_bot.x) ** 2 + (self.y - other_bot.y) ** 2 < col_sq:
-                    can_move_x = False
-                    if self.enemy_type == "beast":
-                        push_x = other_bot.x + move_dx * 2
-                        if not game_map.is_wall(push_x, other_bot.y):
-                            other_bot.x = push_x
-            if can_move_y:
-                if (self.x - other_bot.x) ** 2 + (new_y - other_bot.y) ** 2 < col_sq:
-                    can_move_y = False
-                    if self.enemy_type == "beast":
-                        push_y = other_bot.y + move_dy * 2
-                        if not game_map.is_wall(other_bot.x, push_y):
-                            other_bot.y = push_y
+            can_move_x, can_move_y = self._test_bot_collision(
+                other_bot, new_x, new_y, move_dx, move_dy,
+                col_sq, can_move_x, can_move_y, game_map,
+            )
             if not can_move_x and not can_move_y:
                 break
+        return can_move_x, can_move_y
+
+    def _test_bot_collision(
+        self,
+        other_bot: "Bot",
+        new_x: float,
+        new_y: float,
+        move_dx: float,
+        move_dy: float,
+        col_sq: float,
+        can_move_x: bool,
+        can_move_y: bool,
+        game_map: "Map",
+    ) -> tuple[bool, bool]:
+        """Test one bot pair for x/y collision and apply beast push if needed."""
+        if can_move_x:
+            if (new_x - other_bot.x) ** 2 + (self.y - other_bot.y) ** 2 < col_sq:
+                can_move_x = False
+                if self.enemy_type == "beast":
+                    push_x = other_bot.x + move_dx * 2
+                    if not game_map.is_wall(push_x, other_bot.y):
+                        other_bot.x = push_x
+        if can_move_y:
+            if (self.x - other_bot.x) ** 2 + (new_y - other_bot.y) ** 2 < col_sq:
+                can_move_y = False
+                if self.enemy_type == "beast":
+                    push_y = other_bot.y + move_dy * 2
+                    if not game_map.is_wall(other_bot.x, push_y):
+                        other_bot.y = push_y
         return can_move_x, can_move_y
 
     def _update_walk_animation(self) -> None:
