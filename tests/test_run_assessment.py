@@ -53,7 +53,8 @@ class TestFileDiscovery:
     def test_count_matches_list_length(self) -> None:
         """Count returned must equal len(files)."""
         fake_files = [Path("a.py"), Path("b.py"), Path("c.py")]
-        with patch("scripts.assessment_modules.find_python_files", return_value=fake_files):
+        patch_target = "scripts.assessment_modules.find_python_files"
+        with patch(patch_target, return_value=fake_files):
             files, count = file_discovery()
         assert count == len(files)
         assert count == 3
@@ -68,7 +69,8 @@ class TestFileDiscovery:
     def test_returns_same_files_as_find_python_files(self) -> None:
         """file_discovery() must pass through all files from find_python_files."""
         expected = [Path("x.py"), Path("y.py")]
-        with patch("scripts.assessment_modules.find_python_files", return_value=expected):
+        patch_target = "scripts.assessment_modules.find_python_files"
+        with patch(patch_target, return_value=expected):
             files, count = file_discovery()
         assert files == expected
 
