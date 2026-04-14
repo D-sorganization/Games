@@ -9,7 +9,11 @@ on:
       - "**.md"
       - "LICENSE"
       - ".gitignore"
-      - ".github/**"
+      # NOTE: .github/** is NOT ignored so that CI runs on workflow-file changes
+      # (required for branch protection enforcement of quality-gate on CI-fix PRs)
+      - ".github/ISSUE_TEMPLATE/**"
+      - ".github/PULL_REQUEST_TEMPLATE/**"
+      - ".github/FUNDING.yml"
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
     paths-ignore:
@@ -17,7 +21,11 @@ on:
       - "**.md"
       - "LICENSE"
       - ".gitignore"
-      - ".github/**"
+      # NOTE: .github/** is NOT ignored so that CI runs on workflow-file changes
+      # (required for branch protection enforcement of quality-gate on CI-fix PRs)
+      - ".github/ISSUE_TEMPLATE/**"
+      - ".github/PULL_REQUEST_TEMPLATE/**"
+      - ".github/FUNDING.yml"
   workflow_dispatch:
 
 permissions:
