@@ -14,25 +14,8 @@ def screen():
     return s
 
 
-@pytest.fixture
-def game():
-    g = MagicMock()
-    g.player = MagicMock()
-    g.player.is_moving = True
-    g.player.x = 10.0
-    g.player.y = 10.0
-    g.player.angle = 0.0
-    g.player.shooting = True
-    g.player.current_weapon = "pistol"
-
-    g.raycaster = MagicMock()
-    g.level = 1
-    g.bots = []
-    g.projectiles = []
-
-    g.particle_system = MagicMock()
-    g.particle_system.world_particles = []
-
+def _make_test_particles():
+    """Build laser, trace, and normal particle mocks for renderer tests."""
     p_laser = MagicMock()
     p_laser.ptype = "laser"
     p_laser.timer = 5
@@ -55,9 +38,30 @@ def game():
     p_normal.x = 5
     p_normal.y = 5
     p_normal.size = 2
-    p_normal.color = (0, 0, 255, 255)  # RGBA
+    p_normal.color = (0, 0, 255, 255)
 
-    g.particle_system.particles = [p_laser, p_trace, p_normal]
+    return [p_laser, p_trace, p_normal]
+
+
+@pytest.fixture
+def game():
+    g = MagicMock()
+    g.player = MagicMock()
+    g.player.is_moving = True
+    g.player.x = 10.0
+    g.player.y = 10.0
+    g.player.angle = 0.0
+    g.player.shooting = True
+    g.player.current_weapon = "pistol"
+
+    g.raycaster = MagicMock()
+    g.level = 1
+    g.bots = []
+    g.projectiles = []
+
+    g.particle_system = MagicMock()
+    g.particle_system.world_particles = []
+    g.particle_system.particles = _make_test_particles()
 
     g.portal = {"x": 10.5, "y": 10.5, "radius": 1.0, "active": True}
     g.ui_renderer = MagicMock()

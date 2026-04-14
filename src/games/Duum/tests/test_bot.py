@@ -47,57 +47,47 @@ def test_bot_visual_animations():
     assert bot.mouth_timer == 0
 
 
-def test_behavior_ball():
+def _make_ball_bot_fixtures():
+    """Return a (bot, player, game_map) triple for ball-bot tests."""
     bot = Bot(0, 0, 1, enemy_type="ball")
     player = MagicMock()
     player.x = 10.0
     player.y = 0.0
     player.god_mode = False
-
     game_map = MagicMock()
     game_map.is_wall.return_value = False
+    return bot, player, game_map
+
+
+def test_behavior_ball():
+    bot, player, game_map = _make_ball_bot_fixtures()
 
     # Normal roll
     bot.update(game_map, player, [])
     assert bot.vx > 0
     assert bot.x > 0
 
-    # Hit wall X
+    _test_ball_wall_bounces(bot, player, game_map)
+    _test_ball_player_crush(bot, player, game_map)
+
+
+def _test_ball_wall_bounces(bot, player, game_map):
+    """Assert ball bounces off X and Y walls."""
     bot.x = 0.0
     bot.vx = 0.1
     bot.speed = 100.0
-
-    def wall_mock(x, y):
-        return x > 0.05
-
-    game_map.is_wall.side_effect = wall_mock
+    game_map.is_wall.side_effect = lambda x, y: x > 0.05
     bot.update(game_map, player, [])
     assert bot.vx < 0
     assert bot.x == 0.0
 
-    # Hit wall Y
     bot.y = 0.0
     bot.vy = 0.1
     bot.speed = 100.0
-
-    def wall_mock_y(x, y):
-        return y > 0.05
-
-    game_map.is_wall.side_effect = wall_mock_y
+    game_map.is_wall.side_effect = lambda x, y: y > 0.05
     bot.update(game_map, player, [])
     assert bot.vy < 0
     assert bot.y == 0.0
-
-    # Hit player (crush)
-    bot.vx = 1.0
-    bot.vy = 0.0
-    bot.x = 9.5
-    bot.y = 0.0
-    game_map.is_wall.side_effect = lambda x, y: False
-
-    bot.update(game_map, player, [])
-    player.take_damage.assert_called()
-    assert bot.vx < 0
 
     # Max speed cap
     bot.speed = 0.1
@@ -105,11 +95,13 @@ def test_behavior_ball():
     bot.vy = 100.0
     bot.x = 0.0
     bot.y = 0.0
+    game_map.is_wall.side_effect = None
+    game_map.is_wall.return_value = False
     bot.update(game_map, player, [])
     assert bot.vx < 100.0
     assert bot.vy < 100.0
 
-    # Distance == 0
+    # Distance == 0 edge case
     bot.x = 10.0
     bot.y = 0.0
     player.x = 10.0
@@ -119,7 +111,23 @@ def test_behavior_ball():
     bot.update(game_map, player, [])
     assert abs(bot.vx) < 0.0001
 
-    # Hit player (crush god mode)
+
+def _test_ball_player_crush(bot, player, game_map):
+    """Assert ball crushes player and respects god mode."""
+    player.x = 10.0
+    player.y = 0.0
+    game_map.is_wall.side_effect = None
+    game_map.is_wall.return_value = False
+
+    bot.vx = 1.0
+    bot.vy = 0.0
+    bot.x = 9.5
+    bot.y = 0.0
+    player.god_mode = False
+    bot.update(game_map, player, [])
+    player.take_damage.assert_called()
+    assert bot.vx < 0
+
     player.take_damage.reset_mock()
     bot.vx = 1.0
     bot.vy = 0.0
@@ -269,50 +277,50 @@ def test_behavior_standard():
 
 def test_update_default_movement_collisions():
     bot = Bot(0, 0, 1, enemy_type="zombie")
-
     player = MagicMock()
     player.x = 10.0
     player.y = 0.0
-
     game_map = MagicMock()
     game_map.is_wall.return_value = False
 
-    # Collide with another bot (X and Y axis manually separated)
     other = Bot(0, 0, 1, enemy_type="zombie")
+    _test_bot_collision_axes(bot, other, player, game_map)
+    _test_bot_collision_edge_cases(bot, other, player, game_map)
+
+
+def _test_bot_collision_axes(bot, other, player, game_map):
+    """Verify that bots block each other on X and Y axes."""
     other.x = bot.speed
     other.y = 0
     bot.update(game_map, player, [other])
-    assert bot.x == 0.0  # Blocked in X
+    assert bot.x == 0.0
 
     other.dead = True
-    bot.update(game_map, player, [other])  # Should ignore dead bots
+    bot.update(game_map, player, [other])
     other.dead = False
 
-    bot.update(game_map, player, [bot])  # Should ignore self
+    bot.update(game_map, player, [bot])
 
     other.x = 0
     other.y = bot.speed
-    bot.angle = math.pi / 2  # Face down
+    bot.angle = math.pi / 2
     bot.update(game_map, player, [other])
-    assert bot.y == 0.0  # Blocked in Y
+    assert bot.y == 0.0
 
-    # Walk animation ticking over 2*pi
+
+def _test_bot_collision_edge_cases(bot, other, player, game_map):
+    """Cover walk-animation wrap-around and distant/diagonal bots."""
     bot.walk_animation = 2 * math.pi
-    bot.y = 1.0  # Force Y movement
+    bot.y = 1.0
     bot.x = 1.0
-    bot.update(game_map, player, [])  # Move freely
+    bot.update(game_map, player, [])
     assert bot.walk_animation < 2 * math.pi
 
-    # Check "pass" branch (X far away)
     other.x = 10.0
     other.y = 1.0
     bot.x = 0.0
     bot.update(game_map, player, [other])
 
-    # Check circle vs square collision diff (inside square, outside circle)
-    # radius is 0.5, so col_sq is 0.25
-    # Place other bot at dx=0.45, dy=0.45.
-    # dx^2+dy^2 = 0.405 > 0.25 (False for collision check)
     other.x = 0.45
     other.y = 0.45
     bot.x = 0.0
