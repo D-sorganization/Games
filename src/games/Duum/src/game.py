@@ -128,6 +128,17 @@ class Game(FPSGameBase):
 
     def start_game(self) -> None:
         """Start new game"""
+        self._reset_game_state()
+        self.game_map = Map(self.selected_map_size)
+        self.raycaster = Raycaster(self.game_map, self.raycaster_config)
+        self.raycaster.set_render_scale(self.render_scale)
+        self.last_death_pos = None
+        pygame.mouse.set_visible(False)
+        pygame.event.set_grab(True)
+        self.start_level()
+
+    def _reset_game_state(self) -> None:
+        """Reset all game-level counters, flags, and subsystem state."""
         self.level = self.selected_start_level
         self.lives = self.selected_lives
         self.kills = 0
@@ -136,37 +147,19 @@ class Game(FPSGameBase):
         self.particle_system.particles = []
         self.damage_texts = []
         self.entity_manager.reset()
-
-        # Reset Cheats/Progress
         self.unlocked_weapons = {"pistol"}
         self.god_mode = False
         self.cheat_mode_active = False
-
-        # Reset Combo & Atmosphere
         self.kill_combo_count = 0
         self.kill_combo_timer = 0
         self.heartbeat_timer = 0
         self.breath_timer = 0
         self.groan_timer = 0
         self.beast_timer = 0
-
-        # Reset combat manager state
         self.combat_manager.kills = 0
         self.combat_manager.kill_combo_count = 0
         self.combat_manager.kill_combo_timer = 0
         self.combat_manager.last_death_pos = None
-
-        # Create map with selected size
-        self.game_map = Map(self.selected_map_size)
-        self.raycaster = Raycaster(self.game_map, self.raycaster_config)
-        self.raycaster.set_render_scale(self.render_scale)
-        self.last_death_pos = None
-
-        # Grab mouse
-        pygame.mouse.set_visible(False)
-        pygame.event.set_grab(True)
-
-        self.start_level()
 
     def start_level(self) -> None:
         """Start a new level; orchestrates reset, spawn, and music."""

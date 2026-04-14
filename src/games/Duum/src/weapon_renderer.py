@@ -22,28 +22,31 @@ class WeaponRenderer:
     def render_weapon(self, player: Player) -> tuple[int, int]:
         """Render weapon model and return its screen position (cx, cy)"""
         weapon = player.current_weapon
+        w_state = player.weapon_state[weapon]
+        cx, cy = self._compute_weapon_position(player, w_state)
+        self._dispatch_weapon_render(weapon, cx, cy, player, w_state)
+        return cx, cy
+
+    def _compute_weapon_position(
+        self, player: Player, w_state: dict
+    ) -> tuple[int, int]:
+        """Compute the (cx, cy) screen position including sway, bob, and reload dip."""
         cx = C.SCREEN_WIDTH // 2
         cy = C.SCREEN_HEIGHT
 
-        # Weapon Sway (Horizontal lag)
         sway_x = int(player.sway_amount * -300.0)
         cx += sway_x
 
-        # Bobbing (Distance based now)
         bob_y = 0
         if player.is_moving:
-            # Bobbing frequency based on distance
             bob_y = int(math.sin(player.bob_phase * 0.8) * 15)
-            # Add some horizontal bob too
             bob_x = int(math.cos(player.bob_phase * 0.4) * 10)
             cx += bob_x
         else:
-            # Subtle breathing bob when idle
             bob_y = int(math.sin(pygame.time.get_ticks() * 0.003) * 5)
 
-        w_state = player.weapon_state[weapon]
         if w_state["reloading"]:
-            w_data = C.WEAPONS.get(weapon, {})
+            w_data = C.WEAPONS.get(player.current_weapon, {})
             reload_max = int(w_data.get("reload_time", 60))
             if reload_max > 0:
                 pct = w_state["reload_timer"] / reload_max
@@ -51,27 +54,31 @@ class WeaponRenderer:
                 cy += int(dip)
 
         cy += bob_y
+        return cx, cy
 
+    def _dispatch_weapon_render(
+        self,
+        weapon: str,
+        cx: int,
+        cy: int,
+        player: Player,
+        w_state: dict,
+    ) -> None:
+        """Dispatch rendering to the correct per-weapon method."""
         gun_metal = (40, 45, 50)
         gun_highlight = (70, 75, 80)
         gun_dark = (20, 25, 30)
 
         if weapon == "pistol":
             self._render_pistol(cx, cy, player, gun_metal, gun_highlight, gun_dark)
-
         elif weapon == "shotgun":
             self._render_shotgun(cx, cy, gun_metal, gun_dark)
-
         elif weapon == "rifle":
             self._render_rifle(cx, cy, player, gun_metal, gun_highlight)
-
         elif weapon == "minigun":
             self._render_minigun(cx, cy, player)
-
         elif weapon == "plasma":
             self._render_plasma(cx, cy, player, w_state)
-
-        return cx, cy
 
     def render_muzzle_flash(
         self, weapon_name: str, weapon_pos: tuple[int, int]
