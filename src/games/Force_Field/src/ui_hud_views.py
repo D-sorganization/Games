@@ -58,18 +58,16 @@ def render_health_bar(renderer: UIRenderer, game: Any) -> None:
     )
 
 
-def render_status_bars(renderer: UIRenderer, game: Any) -> None:
-    """Render shield bar, secondary charge bar, and stamina bar."""
-    player = game.player
-    bar_height = 12
-    bar_spacing = 8
-    bar_width = 150
-    start_x = 20
-    start_y = C.SCREEN_HEIGHT - 40
-
-    health_y = start_y
-
-    # Shield Bar
+def _draw_shield_bar(
+    renderer: UIRenderer,
+    player: Player,
+    start_x: int,
+    health_y: int,
+    bar_width: int,
+    bar_height: int,
+    bar_spacing: int,
+) -> int:
+    """Render the shield bar and return its y position."""
     shield_y = health_y - (bar_height + bar_spacing)
     render_bar(
         renderer,
@@ -85,8 +83,19 @@ def render_status_bars(renderer: UIRenderer, game: Any) -> None:
         status = "RECHRG" if player.shield_active else "COOL"
         txt = renderer.tiny_font.render(status, True, C.GRAY)
         renderer.screen.blit(txt, (start_x + bar_width + 5, shield_y - 2))
+    return shield_y
 
-    # Secondary Charge
+
+def _draw_charge_and_stamina_bars(
+    renderer: UIRenderer,
+    player: Player,
+    start_x: int,
+    shield_y: int,
+    bar_width: int,
+    bar_height: int,
+    bar_spacing: int,
+) -> None:
+    """Render secondary charge and stamina bars below the shield bar."""
     charge_y = shield_y - (bar_height + bar_spacing)
     charge_pct = 1.0 - (player.secondary_cooldown / C.SECONDARY_COOLDOWN)
     render_bar(
@@ -99,8 +108,6 @@ def render_status_bars(renderer: UIRenderer, game: Any) -> None:
         (255, 100, 100),
         "CHRG",
     )
-
-    # Stamina
     stamina_y = charge_y - (bar_height + bar_spacing)
     render_bar(
         renderer,
@@ -111,6 +118,23 @@ def render_status_bars(renderer: UIRenderer, game: Any) -> None:
         player.stamina / player.max_stamina,
         C.YELLOW,
         "STM",
+    )
+
+
+def render_status_bars(renderer: UIRenderer, game: Any) -> None:
+    """Render shield bar, secondary charge bar, and stamina bar."""
+    player = game.player
+    bar_height = 12
+    bar_spacing = 8
+    bar_width = 150
+    start_x = 20
+    start_y = C.SCREEN_HEIGHT - 40
+
+    shield_y = _draw_shield_bar(
+        renderer, player, start_x, start_y, bar_width, bar_height, bar_spacing
+    )
+    _draw_charge_and_stamina_bars(
+        renderer, player, start_x, shield_y, bar_width, bar_height, bar_spacing
     )
 
 
@@ -189,41 +213,42 @@ def render_damage_flash(renderer: UIRenderer, timer: int) -> None:
         )
 
 
+def _draw_shield_active(renderer: UIRenderer, player: Player) -> None:
+    """Render shield overlay, text, and timer when the shield is active."""
+    pygame.draw.rect(
+        renderer.overlay_surface,
+        (*C.SHIELD_COLOR, C.SHIELD_ALPHA),
+        (0, 0, C.SCREEN_WIDTH, C.SCREEN_HEIGHT),
+    )
+    pygame.draw.rect(
+        renderer.overlay_surface,
+        C.SHIELD_COLOR,
+        (0, 0, C.SCREEN_WIDTH, C.SCREEN_HEIGHT),
+        10,
+    )
+    shield_text = renderer.title_font.render("SHIELD ACTIVE", True, C.SHIELD_COLOR)
+    renderer.screen.blit(
+        shield_text,
+        (C.SCREEN_WIDTH // 2 - shield_text.get_width() // 2, 100),
+    )
+    time_left = player.shield_timer / 60.0
+    timer_text = renderer.small_font.render(f"{time_left:.1f}s", True, C.WHITE)
+    renderer.screen.blit(
+        timer_text,
+        (C.SCREEN_WIDTH // 2 - timer_text.get_width() // 2, 160),
+    )
+    if player.shield_timer < 120 and (player.shield_timer // 10) % 2 == 0:
+        pygame.draw.rect(
+            renderer.overlay_surface,
+            (255, 0, 0, 50),
+            (0, 0, C.SCREEN_WIDTH, C.SCREEN_HEIGHT),
+        )
+
+
 def render_shield_effect(renderer: UIRenderer, player: Player) -> None:
     """Render shield activation visual effects and status."""
     if player.shield_active:
-        pygame.draw.rect(
-            renderer.overlay_surface,
-            (*C.SHIELD_COLOR, C.SHIELD_ALPHA),
-            (0, 0, C.SCREEN_WIDTH, C.SCREEN_HEIGHT),
-        )
-        pygame.draw.rect(
-            renderer.overlay_surface,
-            C.SHIELD_COLOR,
-            (0, 0, C.SCREEN_WIDTH, C.SCREEN_HEIGHT),
-            10,
-        )
-
-        shield_text = renderer.title_font.render("SHIELD ACTIVE", True, C.SHIELD_COLOR)
-        renderer.screen.blit(
-            shield_text,
-            (C.SCREEN_WIDTH // 2 - shield_text.get_width() // 2, 100),
-        )
-
-        time_left = player.shield_timer / 60.0
-        timer_text = renderer.small_font.render(f"{time_left:.1f}s", True, C.WHITE)
-        renderer.screen.blit(
-            timer_text,
-            (C.SCREEN_WIDTH // 2 - timer_text.get_width() // 2, 160),
-        )
-
-        if player.shield_timer < 120 and (player.shield_timer // 10) % 2 == 0:
-            pygame.draw.rect(
-                renderer.overlay_surface,
-                (255, 0, 0, 50),
-                (0, 0, C.SCREEN_WIDTH, C.SCREEN_HEIGHT),
-            )
-
+        _draw_shield_active(renderer, player)
     elif (
         player.shield_timer == C.SHIELD_MAX_DURATION
         and player.shield_recharge_delay <= 0

@@ -195,70 +195,68 @@ class UIRenderer(UIRendererBase):
     def render_intro(self, intro_phase: int, intro_step: int, elapsed: int) -> None:
         """Render intro"""
         self.screen.fill(C.BLACK)
-
         if intro_phase == 0:
-            text = self.subtitle_font.render(
-                "A Willy Wonk Production", True, (255, 182, 193)
-            )
-            self.screen.blit(text, text.get_rect(center=(C.SCREEN_WIDTH // 2, 100)))
-            if "willy" in self.intro_images:
-                img = self.intro_images["willy"]
-                r = img.get_rect(
-                    center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 30)
-                )
-                self.screen.blit(img, r)
-                pygame.draw.rect(self.screen, (255, 192, 203), r, 4, border_radius=10)
-
+            self._render_intro_phase0()
         elif intro_phase == 1:
-            stylish = pygame.font.SysFont("impact", 70)
-            pulse = abs(math.sin(elapsed * 0.003))
-            color = (0, int(150 + 100 * pulse), int(200 + 55 * pulse))
+            self._render_intro_phase1(elapsed)
+        elif intro_phase == 2:
+            self._render_intro_slide(intro_step, elapsed)
+        pygame.display.flip()
 
-            t2 = stylish.render("DUUM", True, color)
-            self.screen.blit(
-                t2,
-                t2.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 - 180)),
-            )
+    def _render_intro_phase0(self) -> None:
+        """Render the Willy Wonk production card."""
+        text = self.subtitle_font.render(
+            "A Willy Wonk Production", True, (255, 182, 193)
+        )
+        self.screen.blit(text, text.get_rect(center=(C.SCREEN_WIDTH // 2, 100)))
+        if "willy" in self.intro_images:
+            img = self.intro_images["willy"]
+            r = img.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 30))
+            self.screen.blit(img, r)
+            pygame.draw.rect(self.screen, (255, 192, 203), r, 4, border_radius=10)
 
-            t1 = self.tiny_font.render("a reimagining", True, C.RED)
-            self.screen.blit(
-                t1,
-                t1.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 - 230)),
-            )
-
-            if self.intro_video and self.intro_video.isOpened():
-                ret, frame = self.intro_video.read()
-                if ret:
-                    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                    frame = frame.swapaxes(0, 1)
-                    surf = pygame.surfarray.make_surface(frame)
-                    target_h = 400
-                    scale = target_h / surf.get_height()
-                    surf = pygame.transform.scale(
-                        surf,
-                        (int(surf.get_width() * scale), int(surf.get_height() * scale)),
-                    )
-                    self.screen.blit(
-                        surf,
-                        surf.get_rect(
-                            center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 50)
-                        ),
-                    )
-                else:
-                    self.intro_video.set(cv2.CAP_PROP_POS_FRAMES, 0)
-            elif "deadfish" in self.intro_images:
-                img = self.intro_images["deadfish"]
+    def _render_intro_phase1_media(self) -> None:
+        """Render the video or fallback image for intro phase 1."""
+        if self.intro_video and self.intro_video.isOpened():
+            ret, frame = self.intro_video.read()
+            if ret:
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                frame = frame.swapaxes(0, 1)
+                surf = pygame.surfarray.make_surface(frame)
+                scale = 400 / surf.get_height()
+                surf = pygame.transform.scale(
+                    surf,
+                    (int(surf.get_width() * scale), int(surf.get_height() * scale)),
+                )
                 self.screen.blit(
-                    img,
-                    img.get_rect(
+                    surf,
+                    surf.get_rect(
                         center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 50)
                     ),
                 )
+            else:
+                self.intro_video.set(cv2.CAP_PROP_POS_FRAMES, 0)
+        elif "deadfish" in self.intro_images:
+            img = self.intro_images["deadfish"]
+            self.screen.blit(
+                img,
+                img.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 50)),
+            )
 
-        elif intro_phase == 2:
-            self._render_intro_slide(intro_step, elapsed)
-
-        pygame.display.flip()
+    def _render_intro_phase1(self, elapsed: int) -> None:
+        """Render pulsing game title and media for intro phase 1."""
+        stylish = pygame.font.SysFont("impact", 70)
+        pulse = abs(math.sin(elapsed * 0.003))
+        color = (0, int(150 + 100 * pulse), int(200 + 55 * pulse))
+        t2 = stylish.render("DUUM", True, color)
+        self.screen.blit(
+            t2, t2.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 - 180))
+        )
+        t1 = self.tiny_font.render("a reimagining", True, C.RED)
+        self.screen.blit(
+            t1, t1.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 - 230))
+        )
+        self._render_intro_phase1_media()
 
     def _get_intro_slides(self) -> list[dict[str, Any]]:
         """Return Duum-specific intro slide data."""

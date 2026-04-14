@@ -194,39 +194,43 @@ class GameInputHandler:
             self._open_cheat_input()
             self._game.add_message("CHEAT MODE: TYPE CODE", C.PURPLE)
         elif not self._game.paused:
-            if self.input_manager.is_action_just_pressed(event, "weapon_1"):
-                self._game.switch_weapon_with_message("pistol")
-            elif self.input_manager.is_action_just_pressed(event, "weapon_2"):
-                self._game.switch_weapon_with_message("rifle")
-            elif self.input_manager.is_action_just_pressed(event, "weapon_3"):
-                self._game.switch_weapon_with_message("shotgun")
-            elif self.input_manager.is_action_just_pressed(event, "weapon_4"):
-                self._game.switch_weapon_with_message("laser")
-            elif self.input_manager.is_action_just_pressed(event, "weapon_5"):
-                self._game.switch_weapon_with_message("plasma")
-            elif self.input_manager.is_action_just_pressed(event, "weapon_6"):
-                self._game.switch_weapon_with_message("rocket")
-            elif event.key == pygame.K_7:
-                self._game.switch_weapon_with_message("minigun")
-            elif event.key == pygame.K_9:
-                self._game.switch_weapon_with_message("flamethrower")
-            elif self.input_manager.is_action_just_pressed(event, "reload"):
-                self.player.reload()
-            elif self.input_manager.is_action_just_pressed(event, "zoom"):
-                self.player.zoomed = not self.player.zoomed
-            elif event.key == pygame.K_q:
-                if self.player.melee_attack():
-                    self._game.execute_melee_attack()
-            elif self.input_manager.is_action_just_pressed(event, "bomb"):
-                self._spawn_bomb()
-            elif self.input_manager.is_action_just_pressed(event, "shoot_alt"):
-                self._shoot_primary()
-            elif event.key == pygame.K_m:
-                self._game.show_minimap = not self._game.show_minimap
-            elif event.key == pygame.K_F9:
-                self._game.cycle_render_scale()
-            elif self.input_manager.is_action_just_pressed(event, "dash"):
-                self.player.dash()
+            self._handle_weapon_switch_keys(event)
+
+    def _handle_weapon_switch_keys(self, event: pygame.event.Event) -> None:
+        """Dispatch weapon-select, action, and utility key events during gameplay."""
+        if self.input_manager.is_action_just_pressed(event, "weapon_1"):
+            self._game.switch_weapon_with_message("pistol")
+        elif self.input_manager.is_action_just_pressed(event, "weapon_2"):
+            self._game.switch_weapon_with_message("rifle")
+        elif self.input_manager.is_action_just_pressed(event, "weapon_3"):
+            self._game.switch_weapon_with_message("shotgun")
+        elif self.input_manager.is_action_just_pressed(event, "weapon_4"):
+            self._game.switch_weapon_with_message("laser")
+        elif self.input_manager.is_action_just_pressed(event, "weapon_5"):
+            self._game.switch_weapon_with_message("plasma")
+        elif self.input_manager.is_action_just_pressed(event, "weapon_6"):
+            self._game.switch_weapon_with_message("rocket")
+        elif event.key == pygame.K_7:
+            self._game.switch_weapon_with_message("minigun")
+        elif event.key == pygame.K_9:
+            self._game.switch_weapon_with_message("flamethrower")
+        elif self.input_manager.is_action_just_pressed(event, "reload"):
+            self.player.reload()
+        elif self.input_manager.is_action_just_pressed(event, "zoom"):
+            self.player.zoomed = not self.player.zoomed
+        elif event.key == pygame.K_q:
+            if self.player.melee_attack():
+                self._game.execute_melee_attack()
+        elif self.input_manager.is_action_just_pressed(event, "bomb"):
+            self._spawn_bomb()
+        elif self.input_manager.is_action_just_pressed(event, "shoot_alt"):
+            self._shoot_primary()
+        elif event.key == pygame.K_m:
+            self._game.show_minimap = not self._game.show_minimap
+        elif event.key == pygame.K_F9:
+            self._game.cycle_render_scale()
+        elif self.input_manager.is_action_just_pressed(event, "dash"):
+            self.player.dash()
 
     def _handle_pause_menu_click(self, event: pygame.event.Event) -> None:
         """Handle clicks in pause menu."""
@@ -238,6 +242,17 @@ class GameInputHandler:
             "CONTROLS",
             "QUIT TO MENU",
         ]
+        if self._handle_pause_menu_item_click(mx, my, menu_items):
+            return
+        self._handle_speed_slider_click(mx, my, menu_items)
+
+    def _handle_pause_menu_item_click(
+        self, mx: int, my: int, menu_items: list[str]
+    ) -> bool:
+        """Test if (mx, my) hits a menu button and execute its action.
+
+        Returns True if a button was clicked (caller should return early).
+        """
         max_text_width = 0
         for item in menu_items:
             text_surf = self.ui_renderer.render_subtitle_text(item, True, C.WHITE)
@@ -268,8 +283,13 @@ class GameInputHandler:
                     self._game.state = "menu"
                     self._game.paused = False
                     self.sound_manager.start_music("music_loop")
-                return
+                return True
+        return False
 
+    def _handle_speed_slider_click(
+        self, mx: int, my: int, menu_items: list[str]
+    ) -> None:
+        """Handle a click on the speed slider below the pause menu."""
         slider_y = 350 + len(menu_items) * 60 + 30 + 30
         slider_width = 200
         slider_height = 10

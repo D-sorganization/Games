@@ -20,6 +20,12 @@ def _make_constants():
         CYAN=(0, 255, 255),
         SPAWN_SAFETY_MARGIN=5,
         DEFAULT_PLAYER_SPAWN=(5.5, 5.5, 0.0),
+        PLAYER_HEALTH=100,
+        DEFAULT_MAP_SIZE=40,
+        DEFAULT_RENDER_SCALE=2,
+        DEFAULT_DIFFICULTY="NORMAL",
+        DEFAULT_LIVES=3,
+        DEFAULT_START_LEVEL=1,
     )
 
 
@@ -377,3 +383,111 @@ class TestInitFPSGame:
         assert game.visited_cells == set()
         assert game.show_minimap is True
         assert game.joystick is fake_joystick
+
+
+class TestInitSubMethods:
+    """Direct unit tests for each _init_* helper, called without pygame mocks."""
+
+    def _make_base(self):
+        game = FPSGameBase()
+        game.damage_texts = []
+        game.entity_manager = MagicMock()
+        return game
+
+    def test_init_game_state(self) -> None:
+        game = self._make_base()
+        C = _make_constants()
+        game._init_game_state(C)
+        assert game.state.name == "INTRO"
+        assert game.intro_phase == 0
+        assert game.intro_step == 0
+        assert game.intro_timer == 0
+        assert game.intro_start_time == 0
+        assert game.last_death_pos is None
+
+    def test_init_gameplay_state(self) -> None:
+        game = self._make_base()
+        C = _make_constants()
+        game._init_gameplay_state(C)
+        assert game.level == 1
+        assert game.kills == 0
+        assert game.level_times == []
+        assert game.paused is False
+        assert game.pause_start_time == 0
+        assert game.total_paused_time == 0
+        assert game.show_damage is True
+        assert game.selected_difficulty == "NORMAL"
+        assert game.selected_lives == 3
+        assert game.selected_start_level == 1
+        assert game.render_scale == 2
+        assert game.selected_map_size == 40
+
+    def test_init_atmosphere_state(self) -> None:
+        game = self._make_base()
+        game._init_atmosphere_state()
+        assert game.kill_combo_count == 0
+        assert game.kill_combo_timer == 0
+        assert game.heartbeat_timer == 0
+        assert game.breath_timer == 0
+        assert game.groan_timer == 0
+        assert game.beast_timer == 0
+
+    def test_init_visual_effects(self) -> None:
+        game = self._make_base()
+        fake_ps = MagicMock()
+        game._init_visual_effects(fake_ps)
+        assert game.particle_system is fake_ps
+        assert game.damage_texts == []
+        assert game.damage_flash_timer == 0
+
+    def test_init_game_objects(self) -> None:
+        game = self._make_base()
+        C = _make_constants()
+        em = MagicMock()
+        game._init_game_objects(C, em)
+        assert game.game_map is None
+        assert game.player is None
+        assert game.entity_manager is em
+        assert game.raycaster is None
+        assert game.portal is None
+        assert game.health == 100
+        assert game.lives == 3
+
+    def test_init_player_options(self) -> None:
+        game = self._make_base()
+        C = _make_constants()
+        game._init_player_options(C, {"pistol"})
+        assert game.unlocked_weapons == {"pistol"}
+        assert game.cheat_mode_active is False
+        assert game.current_cheat_input == ""
+        assert game.god_mode is False
+        assert game.game_over_timer == 0
+
+    def test_init_sound_uses_injected_manager(self) -> None:
+        game = self._make_base()
+        game._wire_event_bus = MagicMock()
+        fake_sm = MagicMock()
+        game._init_sound(fake_sm, MagicMock())
+        assert game.sound_manager is fake_sm
+        fake_sm.start_music.assert_called_once()
+
+    def test_init_sound_uses_factory_when_none(self) -> None:
+        game = self._make_base()
+        game._wire_event_bus = MagicMock()
+        fake_sm = MagicMock()
+        factory = MagicMock(return_value=fake_sm)
+        game._init_sound(None, factory)
+        factory.assert_called_once()
+        assert game.sound_manager is fake_sm
+
+    def test_init_input_and_fog_no_joystick(self) -> None:
+        game = self._make_base()
+        with patch(
+            "games.shared.fps_game_base.pygame.joystick",
+            new=MagicMock(get_count=MagicMock(return_value=0)),
+        ):
+            game._init_input_and_fog(MagicMock())
+        assert game.joystick is None
+        assert game.visited_cells == set()
+        assert game.show_minimap is True
+        assert game.binding_action is None

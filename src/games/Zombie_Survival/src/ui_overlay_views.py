@@ -43,6 +43,19 @@ def render_key_config(renderer: UIRenderer, game: Any) -> None:
     title = renderer.title_font.render("CONTROLS", True, C.RED)
     renderer.screen.blit(title, title.get_rect(center=(C.SCREEN_WIDTH // 2, 50)))
 
+    _render_binding_rows(renderer, game)
+
+    back_text = renderer.subtitle_font.render("BACK", True, C.WHITE)
+    back_rect = back_text.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT - 60))
+    renderer.screen.blit(back_text, back_rect)
+    if back_rect.collidepoint(pygame.mouse.get_pos()):
+        pygame.draw.rect(renderer.screen, C.RED, back_rect, 2)
+
+    pygame.display.flip()
+
+
+def _render_binding_rows(renderer: UIRenderer, game: Any) -> None:
+    """Render each key-binding row in two columns."""
     bindings = game.input_manager.bindings
     start_y = 120
     column_one_x = C.SCREEN_WIDTH // 4
@@ -69,11 +82,3 @@ def render_key_config(renderer: UIRenderer, game: Any) -> None:
 
         renderer.screen.blit(name_surface, (x_pos - 150, y_pos))
         renderer.screen.blit(key_surface, (x_pos + 20, y_pos))
-
-    back_text = renderer.subtitle_font.render("BACK", True, C.WHITE)
-    back_rect = back_text.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT - 60))
-    renderer.screen.blit(back_text, back_rect)
-    if back_rect.collidepoint(pygame.mouse.get_pos()):
-        pygame.draw.rect(renderer.screen, C.RED, back_rect, 2)
-
-    pygame.display.flip()

@@ -16,31 +16,10 @@ def render_level_complete(renderer: UIRenderer, game: Game) -> None:
     """Render the level-complete screen."""
     renderer.screen.fill(C.BLACK)
 
-    if game.particle_system:
-        if random.random() < 0.1:
-            game.particle_system.add_victory_fireworks()
-
-        renderer.particle_surface.fill((0, 0, 0, 0))
-
-        for particle in game.particle_system.particles:
-            life_ratio = particle.timer / particle.max_timer
-            alpha = int(255 * life_ratio)
-            color = (
-                (*particle.color, alpha) if len(particle.color) == 3 else particle.color
-            )
-            pygame.draw.circle(
-                renderer.particle_surface,
-                color,
-                (int(particle.x), int(particle.y)),
-                int(particle.size),
-            )
-
-        renderer.screen.blit(renderer.particle_surface, (0, 0))
-        game.particle_system.update()
+    _render_victory_fireworks(renderer, game)
 
     title = renderer.title_font.render("SECTOR CLEARED", True, C.GREEN)
-    title_rect = title.get_rect(center=(C.SCREEN_WIDTH // 2, 150))
-    renderer.screen.blit(title, title_rect)
+    renderer.screen.blit(title, title.get_rect(center=(C.SCREEN_WIDTH // 2, 150)))
 
     level_time = game.level_times[-1] if game.level_times else 0
     total_time = sum(game.level_times)
@@ -57,6 +36,31 @@ def render_level_complete(renderer: UIRenderer, game: Game) -> None:
     ]
     render_stats_lines(renderer, stats, 250)
     pygame.display.flip()
+
+
+def _render_victory_fireworks(renderer: UIRenderer, game: Game) -> None:
+    """Spawn and draw particle fireworks on the level-complete screen."""
+    if not game.particle_system:
+        return
+
+    if random.random() < 0.1:
+        game.particle_system.add_victory_fireworks()
+
+    renderer.particle_surface.fill((0, 0, 0, 0))
+
+    for particle in game.particle_system.particles:
+        life_ratio = particle.timer / particle.max_timer
+        alpha = int(255 * life_ratio)
+        color = (*particle.color, alpha) if len(particle.color) == 3 else particle.color
+        pygame.draw.circle(
+            renderer.particle_surface,
+            color,
+            (int(particle.x), int(particle.y)),
+            int(particle.size),
+        )
+
+    renderer.screen.blit(renderer.particle_surface, (0, 0))
+    game.particle_system.update()
 
 
 def render_game_over(renderer: UIRenderer, game: Game) -> None:

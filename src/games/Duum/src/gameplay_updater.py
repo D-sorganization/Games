@@ -64,6 +64,59 @@ def handle_keyboard_movement(game: Game, keys) -> None:
         game.player.pitch_view(-5)
 
 
+def _resolve_weapon_pickup(
+    game: Game, weapon_name: str
+) -> tuple[str, tuple[int, int, int]]:
+    """Grant a weapon or ammo; return (message, color)."""
+    if weapon_name not in game.unlocked_weapons:
+        game.unlocked_weapons.add(weapon_name)
+        game.player.switch_weapon(weapon_name)
+        return f"{weapon_name.upper()} ACQUIRED!", C.CYAN
+    if weapon_name in game.player.ammo:
+        clip_size = int(C.WEAPONS[weapon_name]["clip_size"])
+        game.player.ammo[weapon_name] += clip_size * 2
+        return f"{weapon_name.upper()} AMMO", C.YELLOW
+    return "", C.WHITE
+
+
+def _apply_pickup_effect(game: Game, bot: object) -> str:
+    """Apply the pickup effect for a bot and return the pickup message (or '')."""
+    pickup_msg = ""
+    color = C.GREEN
+    enemy_type = getattr(bot, "enemy_type", "")
+    if enemy_type == "health_pack":
+        if game.player.health < 100:
+            game.player.health = min(100, game.player.health + 50)
+            pickup_msg = "HEALTH +50"
+    elif enemy_type == "ammo_box":
+        for weapon_name in game.player.ammo:
+            game.player.ammo[weapon_name] += 20
+        pickup_msg = "AMMO FOUND"
+        color = C.YELLOW
+    elif enemy_type == "bomb_item":
+        game.player.bombs += 1
+        pickup_msg = "BOMB +1"
+        color = C.ORANGE
+    elif enemy_type.startswith("pickup_"):
+        weapon_name = enemy_type.replace("pickup_", "")
+        pickup_msg, color = _resolve_weapon_pickup(game, weapon_name)
+
+    if pickup_msg:
+        bot.alive = False  # type: ignore[attr-defined]
+        bot.removed = True  # type: ignore[attr-defined]
+        game.damage_texts.append(
+            {
+                "x": C.SCREEN_WIDTH // 2,
+                "y": C.SCREEN_HEIGHT // 2 - 50,
+                "text": pickup_msg,
+                "color": color,
+                "timer": 60,
+                "vy": -1,
+            }
+        )
+    return pickup_msg
+
+
 def check_item_pickups(game: Game) -> None:
     """Apply nearby pickup effects and announce successful pickups."""
     if not (game.player is not None):
@@ -79,47 +132,7 @@ def check_item_pickups(game: Game) -> None:
         if dx * dx + dy * dy >= PICKUP_RADIUS_SQ:
             continue
 
-        pickup_msg = ""
-        color = C.GREEN
-        if bot.enemy_type == "health_pack":
-            if game.player.health < 100:
-                game.player.health = min(100, game.player.health + 50)
-                pickup_msg = "HEALTH +50"
-        elif bot.enemy_type == "ammo_box":
-            for weapon_name in game.player.ammo:
-                game.player.ammo[weapon_name] += 20
-            pickup_msg = "AMMO FOUND"
-            color = C.YELLOW
-        elif bot.enemy_type == "bomb_item":
-            game.player.bombs += 1
-            pickup_msg = "BOMB +1"
-            color = C.ORANGE
-        elif bot.enemy_type.startswith("pickup_"):
-            weapon_name = bot.enemy_type.replace("pickup_", "")
-            if weapon_name not in game.unlocked_weapons:
-                game.unlocked_weapons.add(weapon_name)
-                game.player.switch_weapon(weapon_name)
-                pickup_msg = f"{weapon_name.upper()} ACQUIRED!"
-                color = C.CYAN
-            elif weapon_name in game.player.ammo:
-                clip_size = int(C.WEAPONS[weapon_name]["clip_size"])
-                game.player.ammo[weapon_name] += clip_size * 2
-                pickup_msg = f"{weapon_name.upper()} AMMO"
-                color = C.YELLOW
-
-        if pickup_msg:
-            bot.alive = False
-            bot.removed = True
-            game.damage_texts.append(
-                {
-                    "x": C.SCREEN_WIDTH // 2,
-                    "y": C.SCREEN_HEIGHT // 2 - 50,
-                    "text": pickup_msg,
-                    "color": color,
-                    "timer": 60,
-                    "vy": -1,
-                }
-            )
+        _apply_pickup_effect(game, bot)
 
 
 def update_game(game: Game) -> None:

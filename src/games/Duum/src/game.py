@@ -60,12 +60,17 @@ class Game(FPSGameBase):
             render_cls=GameRenderer,
             ui_render_cls=UIRenderer,
         )
+        self._init_audio_flags()
+        self._init_game_managers()
+        self._init_raycaster_config()
 
-        # Audio Flags for Intro
+    def _init_audio_flags(self) -> None:
+        """Set intro audio one-shot flags."""
         self.laugh_played = False
         self.water_played = False
 
-        # Managers (decomposed from Game god object -- constructor injection)
+    def _init_game_managers(self) -> None:
+        """Construct and wire the game-specific subsystem managers."""
         self.spawn_manager = DuumSpawnManager(self.entity_manager)
         self.combat_manager = DuumCombatManager(
             self.entity_manager,
@@ -78,7 +83,8 @@ class Game(FPSGameBase):
         self.weapon_system = WeaponSystem(self)
         self.flash_intensity = 0.0
 
-        # Raycaster Config
+    def _init_raycaster_config(self) -> None:
+        """Build the RaycasterConfig from game constants."""
         self.raycaster_config = RaycasterConfig(
             SCREEN_WIDTH=C.SCREEN_WIDTH,
             SCREEN_HEIGHT=C.SCREEN_HEIGHT,
@@ -92,7 +98,6 @@ class Game(FPSGameBase):
             LEVEL_THEMES=C.LEVEL_THEMES,
             WALL_COLORS=C.WALL_COLORS,
             ENEMY_TYPES=C.ENEMY_TYPES,
-            # Colors
             DARK_GRAY=C.DARK_GRAY,
             BLACK=C.BLACK,
             CYAN=C.CYAN,
@@ -123,6 +128,17 @@ class Game(FPSGameBase):
 
     def start_game(self) -> None:
         """Start new game"""
+        self._reset_game_state()
+        self.game_map = Map(self.selected_map_size)
+        self.raycaster = Raycaster(self.game_map, self.raycaster_config)
+        self.raycaster.set_render_scale(self.render_scale)
+        self.last_death_pos = None
+        pygame.mouse.set_visible(False)
+        pygame.event.set_grab(True)
+        self.start_level()
+
+    def _reset_game_state(self) -> None:
+        """Reset all game-level counters, flags, and subsystem state."""
         self.level = self.selected_start_level
         self.lives = self.selected_lives
         self.kills = 0
@@ -131,88 +147,68 @@ class Game(FPSGameBase):
         self.particle_system.particles = []
         self.damage_texts = []
         self.entity_manager.reset()
-
-        # Reset Cheats/Progress
         self.unlocked_weapons = {"pistol"}
         self.god_mode = False
         self.cheat_mode_active = False
-
-        # Reset Combo & Atmosphere
         self.kill_combo_count = 0
         self.kill_combo_timer = 0
         self.heartbeat_timer = 0
         self.breath_timer = 0
         self.groan_timer = 0
         self.beast_timer = 0
-
-        # Reset combat manager state
         self.combat_manager.kills = 0
         self.combat_manager.kill_combo_count = 0
         self.combat_manager.kill_combo_timer = 0
         self.combat_manager.last_death_pos = None
 
-        # Create map with selected size
-        self.game_map = Map(self.selected_map_size)
-        self.raycaster = Raycaster(self.game_map, self.raycaster_config)
-        self.raycaster.set_render_scale(self.render_scale)
-        self.last_death_pos = None
-
-        # Grab mouse
-        pygame.mouse.set_visible(False)
-        pygame.event.set_grab(True)
-
-        self.start_level()
-
     def start_level(self) -> None:
-        """Start a new level"""
+        """Start a new level; orchestrates reset, spawn, and music."""
         if not (self.game_map is not None):
             raise ValueError("DbC Blocked: Precondition failed.")
+        self._reset_level_state()
+        player_pos = self._get_best_spawn_point()
+        self._spawn_player(player_pos)
+        self._spawn_entities(player_pos)
+        self._start_level_music()
+
+    def _reset_level_state(self) -> None:
+        """Reset timers, particles, and fog for the new level."""
         self.level_start_time = pygame.time.get_ticks()
         self.total_paused_time = 0
         self.pause_start_time = 0
         self.particle_system.particles = []
         self.damage_texts = []
         self.damage_flash_timer = 0
-        self.visited_cells = set()  # Reset fog of war
+        self.visited_cells = set()
         self.portal = None
-
-        # Grab mouse for FPS gameplay
         pygame.mouse.set_visible(False)
         pygame.event.set_grab(True)
 
-        # Player Spawn Logic
-        player_pos = self._get_best_spawn_point()
-
-        # Preserve ammo and weapon selection from previous level if player exists
+    def _spawn_player(self, player_pos: tuple[float, float, float]) -> None:
+        """Create player at spawn point, preserving ammo and weapon if available."""
         previous_ammo = None
         previous_weapon = "pistol"
-        old_player = self.player
-        if old_player:
-            previous_ammo = old_player.ammo
-            previous_weapon = old_player.current_weapon
-
+        if self.player:
+            previous_ammo = self.player.ammo
+            previous_weapon = self.player.current_weapon
         self.player = Player(player_pos[0], player_pos[1], player_pos[2])
         if previous_ammo:
             self.player.ammo = previous_ammo
-            if previous_weapon in self.unlocked_weapons:
-                self.player.current_weapon = previous_weapon
-            else:
-                self.player.current_weapon = "pistol"
-        # Validate current weapon is unlocked
-        # (e.g. Player init sets 'rifle' but it might be locked)
+            unlocked = previous_weapon in self.unlocked_weapons
+            self.player.current_weapon = previous_weapon if unlocked else "pistol"
         if self.player.current_weapon not in self.unlocked_weapons:
             self.player.current_weapon = "pistol"
-
-        # Propagate God Mode state
         self.player.god_mode = self.god_mode
 
-        # Delegate spawning to SpawnManager
+    def _spawn_entities(self, player_pos: tuple[float, float, float]) -> None:
+        """Reset entity manager and spawn all level entities."""
         self.entity_manager.reset()
         self.spawn_manager.spawn_all(
             player_pos, self.game_map, self.level, self.selected_difficulty
         )
 
-        # Start Music
+    def _start_level_music(self) -> None:
+        """Pick and start a random music track for this level."""
         music_tracks = [
             "music_loop",
             "music_drums",
@@ -340,9 +336,17 @@ class Game(FPSGameBase):
         return False
 
     def _handle_joystick_input(self, shield_active: bool) -> bool:
+        """Process all joystick inputs; return updated shield_active flag."""
+        self._joystick_move_axes()
+        self._joystick_look_axes()
+        shield_active = self._joystick_action_buttons(shield_active)
+        self._joystick_hat_weapon_select()
+        return shield_active
+
+    def _joystick_move_axes(self) -> None:
+        """Apply left-stick strafe/move axes to the player."""
         axis_x = self.joystick.get_axis(0)
         axis_y = self.joystick.get_axis(1)
-
         if abs(axis_x) > C.JOYSTICK_DEADZONE:
             self.player.strafe(
                 self.game_map,
@@ -360,43 +364,41 @@ class Game(FPSGameBase):
             )
             self.player.is_moving = True
 
-        look_x = 0.0
-        look_y = 0.0
-        if self.joystick.get_numaxes() >= 4:
-            look_x = self.joystick.get_axis(2)
-            look_y = self.joystick.get_axis(3)
-
+    def _joystick_look_axes(self) -> None:
+        """Apply right-stick look axes for rotation and pitch."""
+        look_x = self.joystick.get_axis(2) if self.joystick.get_numaxes() >= 4 else 0.0
+        look_y = self.joystick.get_axis(3) if self.joystick.get_numaxes() >= 4 else 0.0
         if abs(look_x) > C.JOYSTICK_DEADZONE:
             self.player.rotate(look_x * C.PLAYER_ROT_SPEED * 15 * C.SENSITIVITY_X)
         if abs(look_y) > C.JOYSTICK_DEADZONE:
             self.player.pitch_view(-look_y * 10 * C.SENSITIVITY_Y)
 
-        if self.joystick.get_numbuttons() > 0 and self.joystick.get_button(0):
+    def _joystick_action_buttons(self, shield_active: bool) -> bool:
+        """Handle fire, reload, secondary-fire, and shield buttons."""
+        n = self.joystick.get_numbuttons()
+        if n > 0 and self.joystick.get_button(0):
             shield_active = True
-
-        if self.joystick.get_numbuttons() > 2 and self.joystick.get_button(2):
+        if n > 2 and self.joystick.get_button(2):
             self.player.reload()
-
-        if self.joystick.get_numbuttons() > 5 and self.joystick.get_button(5):
-            if self.player.shoot():
-                self.fire_weapon()
-
-        if self.joystick.get_numbuttons() > 4 and self.joystick.get_button(4):
-            if self.player.fire_secondary():
-                self.fire_weapon(is_secondary=True)
-
-        if self.joystick.get_numhats() > 0:
-            hat = self.joystick.get_hat(0)
-            if hat[0] == -1:
-                self.switch_weapon_with_message("pistol")
-            if hat[0] == 1:
-                self.switch_weapon_with_message("rifle")
-            if hat[1] == 1:
-                self.switch_weapon_with_message("shotgun")
-            if hat[1] == -1:
-                self.switch_weapon_with_message("plasma")
-
+        if n > 5 and self.joystick.get_button(5) and self.player.shoot():
+            self.fire_weapon()
+        if n > 4 and self.joystick.get_button(4) and self.player.fire_secondary():
+            self.fire_weapon(is_secondary=True)
         return shield_active
+
+    def _joystick_hat_weapon_select(self) -> None:
+        """Use the D-pad hat to cycle weapons."""
+        if self.joystick.get_numhats() < 1:
+            return
+        hat = self.joystick.get_hat(0)
+        if hat[0] == -1:
+            self.switch_weapon_with_message("pistol")
+        if hat[0] == 1:
+            self.switch_weapon_with_message("rifle")
+        if hat[1] == 1:
+            self.switch_weapon_with_message("shotgun")
+        if hat[1] == -1:
+            self.switch_weapon_with_message("plasma")
 
     def update_game(self) -> None:
         """Update game state through the extracted gameplay updater."""

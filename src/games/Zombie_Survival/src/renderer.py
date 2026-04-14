@@ -28,19 +28,8 @@ class GameRenderer:
         size = (C.SCREEN_WIDTH, C.SCREEN_HEIGHT)
         self.effects_surface = pygame.Surface(size, pygame.SRCALPHA)
 
-    def render_game(self, game: Game) -> None:
-        """Render gameplay"""
-        if not (game.raycaster is not None):
-            raise ValueError("DbC Blocked: Precondition failed.")
-        if not (game.player is not None):
-            raise ValueError("DbC Blocked: Precondition failed.")
-
-        # Calculate Head Bob
-        bob_offset = 0.0
-        if game.player.is_moving:
-            bob_offset = math.sin(pygame.time.get_ticks() * 0.015) * 15.0
-
-        # 1. 3D World (Raycaster)
+    def _render_3d_world(self, game: Game, bob_offset: float) -> None:
+        """Render the raycaster floor/ceiling and 3D scene."""
         game.raycaster.render_floor_ceiling(
             self.screen, game.player, game.level, view_offset_y=bob_offset
         )
@@ -53,24 +42,28 @@ class GameRenderer:
             projectiles=game.projectiles,
         )
 
-        # 2. Effects
+    def render_game(self, game: Game) -> None:
+        """Render gameplay"""
+        if not (game.raycaster is not None):
+            raise ValueError("DbC Blocked: Precondition failed.")
+        if not (game.player is not None):
+            raise ValueError("DbC Blocked: Precondition failed.")
+        bob_offset = (
+            math.sin(pygame.time.get_ticks() * 0.015) * 15.0
+            if game.player.is_moving
+            else 0.0
+        )
+        self._render_3d_world(game, bob_offset)
         self.effects_surface.fill((0, 0, 0, 0))
         self._render_particles(game.particle_system.particles)
         self.screen.blit(self.effects_surface, (0, 0))
-
-        # 3. Portal
         self._render_portal(game.portal, game.player)
-
-        # 4. Weapon Model
         weapon_pos = self.weapon_renderer.render_weapon(game.player)
         if game.player.shooting:
             self.weapon_renderer.render_muzzle_flash(
                 game.player.current_weapon, weapon_pos
             )
-
-        # 5. UI / HUD
         game.ui_renderer.render_hud(game)
-
         pygame.display.flip()
 
     def _render_particles(self, particles: list[Any]) -> None:

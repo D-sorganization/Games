@@ -65,7 +65,11 @@ class Game(FPSGameBase):
         self.game_input_handler = GameInputHandler(self)
 
         # Raycaster Config
-        self.raycaster_config = RaycasterConfig(
+        self.raycaster_config = self._make_raycaster_config()
+
+    def _make_raycaster_config(self) -> RaycasterConfig:
+        """Build and return the RaycasterConfig from game constants."""
+        return RaycasterConfig(
             SCREEN_WIDTH=C.SCREEN_WIDTH,
             SCREEN_HEIGHT=C.SCREEN_HEIGHT,
             FOV=C.FOV,

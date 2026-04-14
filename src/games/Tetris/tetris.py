@@ -157,35 +157,28 @@ class TetrisGame:
             ):
                 self.input_handler.awaiting_controller_action = entry["key"]
 
-    def draw_settings(self) -> None:
-        """Render the settings menu"""
-        # Implementing draw_settings here as it was missing from
-        # renderer and needs state access
-        self.screen.fill(C.BLACK)
-        title = self.renderer.render_large_text("Settings", True, C.CYAN)
-        title_rect = title.get_rect(center=(C.SCREEN_WIDTH // 2, 80))
-        self.screen.blit(title, title_rect)
+    def _get_entry_value_text(self, entry: dict) -> str:
+        """Return the display string for a settings entry."""
+        if entry["type"] == "bool":
+            key = entry["key"]
+            value = False
+            if hasattr(self, key):
+                value = getattr(self, key)
+            elif hasattr(self.input_handler, key):
+                value = getattr(self.input_handler, key)
+            elif hasattr(self.logic, key):
+                value = getattr(self.logic, key)
+            return "On" if value else "Off"
+        if entry["type"] == "mapping":
+            return self.input_handler.get_binding_label(entry["key"])
+        return ""
 
-        entries = self.get_settings_entries()
-        y_offset = 160
-
+    def _draw_settings_entries(self, entries: list[dict], y_offset: int) -> None:
+        """Render each settings entry row."""
         for idx, entry in enumerate(entries):
             color = C.GOLD if idx == self.settings_selection else C.WHITE
             label = entry["label"]
-            value_text = ""
-
-            if entry["type"] == "bool":
-                key = entry["key"]
-                value = False
-                if hasattr(self, key):
-                    value = getattr(self, key)
-                elif hasattr(self.input_handler, key):
-                    value = getattr(self.input_handler, key)
-                elif hasattr(self.logic, key):
-                    value = getattr(self.logic, key)
-                value_text = "On" if value else "Off"
-            elif entry["type"] == "mapping":
-                value_text = self.input_handler.get_binding_label(entry["key"])
+            value_text = self._get_entry_value_text(entry)
 
             label_text = self.renderer.render_normal_text(label, True, color)
             value_render = self.renderer.render_small_text(
@@ -196,6 +189,18 @@ class TetrisGame:
             if value_text:
                 self.screen.blit(value_render, (520, y_offset + 6))
             y_offset += 40
+
+    def draw_settings(self) -> None:
+        """Render the settings menu"""
+        # Implementing draw_settings here as it was missing from
+        # renderer and needs state access
+        self.screen.fill(C.BLACK)
+        title = self.renderer.render_large_text("Settings", True, C.CYAN)
+        title_rect = title.get_rect(center=(C.SCREEN_WIDTH // 2, 80))
+        self.screen.blit(title, title_rect)
+
+        entries = self.get_settings_entries()
+        self._draw_settings_entries(entries, y_offset=160)
 
         hint = self.renderer.render_tiny_text(
             "Arrow keys to navigate, ENTER to toggle or remap, ESC to return",

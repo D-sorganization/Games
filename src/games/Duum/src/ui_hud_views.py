@@ -172,43 +172,50 @@ def render_minimap(renderer: UIRenderer, game: Game) -> None:
         )
 
 
-def render_status_bars(renderer: UIRenderer, game: Game) -> None:
-    """Render shield, laser cooldown, and stamina bars."""
-    hud_bottom = C.SCREEN_HEIGHT - 80
-    health_x = 20
-    health_y = hud_bottom
-
-    shield_width = 150
-    shield_height = 10
-    shield_x = health_x
-    shield_y = health_y - 20
-
+def _render_shield_bar(
+    renderer: UIRenderer,
+    game: Game,
+    shield_x: int,
+    shield_y: int,
+    shield_width: int,
+    shield_height: int,
+) -> None:
+    """Render the shield percentage bar with recharge/cooldown label."""
     shield_pct = game.player.shield_timer / C.SHIELD_MAX_DURATION
     pygame.draw.rect(
+        renderer.screen, C.DARK_GRAY, (shield_x, shield_y, shield_width, shield_height)
+    )
+    pygame.draw.rect(
         renderer.screen,
-        C.DARK_GRAY,
-        (shield_x, shield_y, shield_width, shield_height),
+        C.CYAN,
+        (shield_x, shield_y, int(shield_width * shield_pct), shield_height),
     )
-    shield_rect = (
-        shield_x,
-        shield_y,
-        int(shield_width * shield_pct),
-        shield_height,
+    pygame.draw.rect(
+        renderer.screen, C.WHITE, (shield_x, shield_y, shield_width, shield_height), 1
     )
-    pygame.draw.rect(renderer.screen, C.CYAN, shield_rect)
-    border_rect = (shield_x, shield_y, shield_width, shield_height)
-    pygame.draw.rect(renderer.screen, C.WHITE, border_rect, 1)
-
     if game.player.shield_recharge_delay > 0:
         status_text = "RECHARGING" if game.player.shield_active else "COOLDOWN"
         status_surf = renderer.tiny_font.render(status_text, True, C.WHITE)
         renderer.screen.blit(status_surf, (shield_x + shield_width + 5, shield_y - 2))
 
+
+def render_status_bars(renderer: UIRenderer, game: Game) -> None:
+    """Render shield, laser cooldown, and stamina bars."""
+    hud_bottom = C.SCREEN_HEIGHT - 80
+    shield_x = 20
+    shield_y = hud_bottom - 20
+    shield_width = 150
+    shield_height = 10
+
+    _render_shield_bar(renderer, game, shield_x, shield_y, shield_width, shield_height)
+
     laser_y = shield_y - 15
-    laser_pct = 1.0 - (game.player.secondary_cooldown / C.SECONDARY_COOLDOWN)
-    laser_pct = max(0, min(1, laser_pct))
-    bg_rect = (shield_x, laser_y, shield_width, shield_height)
-    pygame.draw.rect(renderer.screen, C.DARK_GRAY, bg_rect)
+    laser_pct = max(
+        0, min(1, 1.0 - (game.player.secondary_cooldown / C.SECONDARY_COOLDOWN))
+    )
+    pygame.draw.rect(
+        renderer.screen, C.DARK_GRAY, (shield_x, laser_y, shield_width, shield_height)
+    )
     pygame.draw.rect(
         renderer.screen,
         (255, 50, 50),
@@ -218,9 +225,7 @@ def render_status_bars(renderer: UIRenderer, game: Game) -> None:
     stamina_y = laser_y - 15
     stamina_pct = game.player.stamina / game.player.max_stamina
     pygame.draw.rect(
-        renderer.screen,
-        C.DARK_GRAY,
-        (shield_x, stamina_y, shield_width, shield_height),
+        renderer.screen, C.DARK_GRAY, (shield_x, stamina_y, shield_width, shield_height)
     )
     pygame.draw.rect(
         renderer.screen,
@@ -229,10 +234,7 @@ def render_status_bars(renderer: UIRenderer, game: Game) -> None:
     )
     if stamina_pct < 1.0:
         stamina_text = renderer.tiny_font.render("STAMINA", True, C.WHITE)
-        renderer.screen.blit(
-            stamina_text,
-            (shield_x + shield_width + 5, stamina_y - 2),
-        )
+        renderer.screen.blit(stamina_text, (shield_x + shield_width + 5, stamina_y - 2))
 
 
 def render_messages(renderer: UIRenderer, game: Game) -> None:
@@ -290,41 +292,40 @@ def render_damage_flash(renderer: UIRenderer, timer: int) -> None:
         )
 
 
+def _render_active_shield(renderer: UIRenderer, player: Player) -> None:
+    """Render overlay, label, timer, and low-time warning for active shield."""
+    pygame.draw.rect(
+        renderer.overlay_surface,
+        (*C.SHIELD_COLOR, C.SHIELD_ALPHA),
+        (0, 0, C.SCREEN_WIDTH, C.SCREEN_HEIGHT),
+    )
+    pygame.draw.rect(
+        renderer.overlay_surface,
+        C.SHIELD_COLOR,
+        (0, 0, C.SCREEN_WIDTH, C.SCREEN_HEIGHT),
+        10,
+    )
+    shield_text = renderer.title_font.render("SHIELD ACTIVE", True, C.SHIELD_COLOR)
+    renderer.screen.blit(
+        shield_text, (C.SCREEN_WIDTH // 2 - shield_text.get_width() // 2, 100)
+    )
+    time_left = player.shield_timer / 60.0
+    timer_text = renderer.small_font.render(f"{time_left:.1f}s", True, C.WHITE)
+    renderer.screen.blit(
+        timer_text, (C.SCREEN_WIDTH // 2 - timer_text.get_width() // 2, 160)
+    )
+    if player.shield_timer < 120 and (player.shield_timer // 10) % 2 == 0:
+        pygame.draw.rect(
+            renderer.overlay_surface,
+            (255, 0, 0, 50),
+            (0, 0, C.SCREEN_WIDTH, C.SCREEN_HEIGHT),
+        )
+
+
 def render_shield_effect(renderer: UIRenderer, player: Player) -> None:
     """Render shield activation visual effects and status."""
     if player.shield_active:
-        pygame.draw.rect(
-            renderer.overlay_surface,
-            (*C.SHIELD_COLOR, C.SHIELD_ALPHA),
-            (0, 0, C.SCREEN_WIDTH, C.SCREEN_HEIGHT),
-        )
-        pygame.draw.rect(
-            renderer.overlay_surface,
-            C.SHIELD_COLOR,
-            (0, 0, C.SCREEN_WIDTH, C.SCREEN_HEIGHT),
-            10,
-        )
-
-        shield_text = renderer.title_font.render("SHIELD ACTIVE", True, C.SHIELD_COLOR)
-        renderer.screen.blit(
-            shield_text,
-            (C.SCREEN_WIDTH // 2 - shield_text.get_width() // 2, 100),
-        )
-
-        time_left = player.shield_timer / 60.0
-        timer_text = renderer.small_font.render(f"{time_left:.1f}s", True, C.WHITE)
-        renderer.screen.blit(
-            timer_text,
-            (C.SCREEN_WIDTH // 2 - timer_text.get_width() // 2, 160),
-        )
-
-        if player.shield_timer < 120 and (player.shield_timer // 10) % 2 == 0:
-            pygame.draw.rect(
-                renderer.overlay_surface,
-                (255, 0, 0, 50),
-                (0, 0, C.SCREEN_WIDTH, C.SCREEN_HEIGHT),
-            )
-
+        _render_active_shield(renderer, player)
     elif (
         player.shield_timer == C.SHIELD_MAX_DURATION
         and player.shield_recharge_delay <= 0
@@ -343,75 +344,36 @@ def render_low_health_tint(renderer: UIRenderer, player: Player) -> None:
         )
 
 
+def _draw_crosshair_arms(
+    screen: pygame.Surface,
+    cx: int,
+    cy: int,
+    gap: int,
+    length: int,
+    color: tuple[int, int, int],
+    width: int,
+) -> None:
+    """Draw the four arm lines of the crosshair at the given colour and width."""
+    pygame.draw.line(screen, color, (cx - length, cy), (cx - gap, cy), width)
+    pygame.draw.line(screen, color, (cx + gap, cy), (cx + length, cy), width)
+    pygame.draw.line(screen, color, (cx, cy - length), (cx, cy - gap), width)
+    pygame.draw.line(screen, color, (cx, cy + gap), (cx, cy + length), width)
+
+
 def render_crosshair(renderer: UIRenderer) -> None:
     """Render the enhanced aiming crosshair at the center of the screen."""
     center_x = C.SCREEN_WIDTH // 2
     center_y = C.SCREEN_HEIGHT // 2
     gap = 5
     length = 10
-    color = (255, 255, 255)
-    outline = (0, 0, 0)
-
-    pygame.draw.line(
-        renderer.screen,
-        outline,
-        (center_x - length - 2, center_y),
-        (center_x - gap + 2, center_y),
-        4,
+    _draw_crosshair_arms(
+        renderer.screen, center_x, center_y, gap - 2, length + 2, (0, 0, 0), 4
     )
-    pygame.draw.line(
-        renderer.screen,
-        outline,
-        (center_x + gap - 2, center_y),
-        (center_x + length + 2, center_y),
-        4,
+    _draw_crosshair_arms(
+        renderer.screen, center_x, center_y, gap, length, (255, 255, 255), 2
     )
-    pygame.draw.line(
-        renderer.screen,
-        outline,
-        (center_x, center_y - length - 2),
-        (center_x, center_y - gap + 2),
-        4,
-    )
-    pygame.draw.line(
-        renderer.screen,
-        outline,
-        (center_x, center_y + gap - 2),
-        (center_x, center_y + length + 2),
-        4,
-    )
-
-    pygame.draw.line(
-        renderer.screen,
-        color,
-        (center_x - length, center_y),
-        (center_x - gap, center_y),
-        2,
-    )
-    pygame.draw.line(
-        renderer.screen,
-        color,
-        (center_x + gap, center_y),
-        (center_x + length, center_y),
-        2,
-    )
-    pygame.draw.line(
-        renderer.screen,
-        color,
-        (center_x, center_y - length),
-        (center_x, center_y - gap),
-        2,
-    )
-    pygame.draw.line(
-        renderer.screen,
-        color,
-        (center_x, center_y + gap),
-        (center_x, center_y + length),
-        2,
-    )
-
-    pygame.draw.circle(renderer.screen, outline, (center_x, center_y), 3)
-    pygame.draw.circle(renderer.screen, color, (center_x, center_y), 1)
+    pygame.draw.circle(renderer.screen, (0, 0, 0), (center_x, center_y), 3)
+    pygame.draw.circle(renderer.screen, (255, 255, 255), (center_x, center_y), 1)
 
 
 def render_secondary_charge(renderer: UIRenderer, player: Player) -> None:

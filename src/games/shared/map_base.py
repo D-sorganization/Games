@@ -102,35 +102,28 @@ class MapBase:
                 self.grid[y][j] = wall_type
                 self.grid[y + h - 1][j] = wall_type
 
-    def _ensure_connectivity(self) -> None:
-        """Ensure map connectivity using flood fill."""
-        size = self.size
+    def _find_flood_fill_start(self, size: int) -> tuple[int, int]:
+        """Return the nearest open cell to the map centre for flood fill."""
         cx, cy = size // 2, size // 2
-        start_x, start_y = -1, -1
-
-        # Find valid start point near center
         for r in range(size // 2):
             for angle in range(0, 360, 45):
                 rad = math.radians(angle)
                 tx = int(cx + math.cos(rad) * r)
                 ty = int(cy + math.sin(rad) * r)
                 if 0 < tx < size and 0 < ty < size and self.grid[ty][tx] == 0:
-                    start_x, start_y = tx, ty
-                    break
-            if start_x != -1:
-                break
+                    return tx, ty
+        self.grid[cy][cx] = 0
+        return cx, cy
 
-        if start_x == -1:
-            start_x, start_y = cx, cy
-            self.grid[cy][cx] = 0
+    def _ensure_connectivity(self) -> None:
+        """Ensure map connectivity using flood fill."""
+        size = self.size
+        start_x, start_y = self._find_flood_fill_start(size)
 
-        # Identify connected region
         queue = [(start_x, start_y)]
         visited = {(start_x, start_y)}
-
         while queue:
             x, y = queue.pop(0)
-
             for dx, dy in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
                 nx, ny = x + dx, y + dy
                 if (
@@ -142,7 +135,6 @@ class MapBase:
                     visited.add((nx, ny))
                     queue.append((nx, ny))
 
-        # Close off unconnected areas
         for i in range(size):
             for j in range(size):
                 if self.grid[i][j] == 0 and (j, i) not in visited:

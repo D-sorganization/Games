@@ -247,76 +247,57 @@ class TetrisLogic:
             y for y in range(GRID_HEIGHT) if all(cell != BLACK for cell in self.grid[y])
         ]
 
-        # Create particles for cleared lines
         for y in lines_to_clear:
             self.create_particles(y)
 
-        # Remove cleared lines
         for y in sorted(lines_to_clear, reverse=True):
             del self.grid[y]
             self.grid.insert(0, [BLACK for _ in range(GRID_WIDTH)])
 
-        # Update score and statistics
         if lines_to_clear:
-            num_lines = len(lines_to_clear)
-            self.lines_cleared += num_lines
-            self.lines_cleared_this_drop = num_lines
-
-            # Base score values (classic Tetris scoring)
-            score_values = {
-                1: 100,  # Single
-                2: 300,  # Double
-                3: 500,  # Triple
-                4: 800,  # Tetris
-            }
-
-            # Calculate score with level multiplier
-            base_score = score_values.get(num_lines, 0)
-            earned_score = base_score * self.level
-
-            # Add combo bonus (calculate before incrementing combo)
-            combo_for_bonus = self.combo
-            if combo_for_bonus > 0:
-                combo_bonus = 50 * combo_for_bonus * self.level
-                earned_score += combo_bonus
-
-            self.score += earned_score
-            self.combo += 1
-
-            # Track statistics
-            if num_lines == 1:
-                self.total_singles += 1
-            elif num_lines == 2:
-                self.total_doubles += 1
-            elif num_lines == 3:
-                self.total_triples += 1
-            elif num_lines == 4:
-                self.total_tetrises += 1
-
-            # Create score popup
-            popup_text = self.get_line_clear_text(num_lines)
-            if combo_for_bonus > 1:
-                popup_text += f" x{combo_for_bonus + 1} COMBO!"
-            popup_x = TOP_LEFT_X + PLAY_WIDTH // 2
-            popup_y = TOP_LEFT_Y + PLAY_HEIGHT // 2
-            self.score_popups.append(ScorePopup(popup_text, popup_x, popup_y))
-
-            # Level up every 10 lines
-            new_level = self.starting_level + (self.lines_cleared // 10)
-            if new_level > self.level:
-                self.level = new_level
-                self.fall_speed = max(50, 500 - (self.level - 1) * 40)
-                # Level up popup
-                level_popup = ScorePopup(
-                    f"LEVEL {self.level}!",
-                    popup_x,
-                    popup_y - 40,
-                    SILVER,
-                )
-                self.score_popups.append(level_popup)
+            self._update_score_and_stats(len(lines_to_clear))
         else:
-            # Reset combo if no lines cleared
             self.combo = 0
+
+    def _update_score_and_stats(self, num_lines: int) -> None:
+        """Update score, combo, line statistics, and level after clearing lines."""
+        self.lines_cleared += num_lines
+        self.lines_cleared_this_drop = num_lines
+
+        score_values = {1: 100, 2: 300, 3: 500, 4: 800}
+        base_score = score_values.get(num_lines, 0)
+        earned_score = base_score * self.level
+
+        combo_for_bonus = self.combo
+        if combo_for_bonus > 0:
+            earned_score += 50 * combo_for_bonus * self.level
+
+        self.score += earned_score
+        self.combo += 1
+
+        if num_lines == 1:
+            self.total_singles += 1
+        elif num_lines == 2:
+            self.total_doubles += 1
+        elif num_lines == 3:
+            self.total_triples += 1
+        elif num_lines == 4:
+            self.total_tetrises += 1
+
+        popup_text = self.get_line_clear_text(num_lines)
+        if combo_for_bonus > 1:
+            popup_text += f" x{combo_for_bonus + 1} COMBO!"
+        popup_x = TOP_LEFT_X + PLAY_WIDTH // 2
+        popup_y = TOP_LEFT_Y + PLAY_HEIGHT // 2
+        self.score_popups.append(ScorePopup(popup_text, popup_x, popup_y))
+
+        new_level = self.starting_level + (self.lines_cleared // 10)
+        if new_level > self.level:
+            self.level = new_level
+            self.fall_speed = max(50, 500 - (self.level - 1) * 40)
+            self.score_popups.append(
+                ScorePopup(f"LEVEL {self.level}!", popup_x, popup_y - 40, SILVER)
+            )
 
     def get_line_clear_text(self, num_lines: int) -> str:
         """Get text description for line clear"""

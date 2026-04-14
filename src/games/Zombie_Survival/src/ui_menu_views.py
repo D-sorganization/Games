@@ -82,47 +82,55 @@ def draw_blood_drips(renderer: UIRenderer, drips: list[dict[str, Any]]) -> None:
         )
 
 
-def render_map_select(renderer: UIRenderer, game: Game) -> None:
-    """Render the Zombie Survival map-selection screen."""
-    renderer.screen.fill(C.BLACK)
-
+def _draw_map_select_title(renderer: UIRenderer) -> None:
+    """Render the 'MISSION SETUP' title with shadow outline."""
     title = renderer.subtitle_font.render("MISSION SETUP", True, C.RED)
     for off_x, off_y in [(-2, 0), (2, 0), (0, -2), (0, 2)]:
         shadow = renderer.subtitle_font.render("MISSION SETUP", True, (50, 0, 0))
         shadow_rect = shadow.get_rect(center=(C.SCREEN_WIDTH // 2 + off_x, 100 + off_y))
         renderer.screen.blit(shadow, shadow_rect)
-
     title_rect = title.get_rect(center=(C.SCREEN_WIDTH // 2, 100))
     renderer.screen.blit(title, title_rect)
 
+
+def _draw_map_settings_rows(
+    renderer: UIRenderer,
+    settings: list[tuple[str, str]],
+    start_y: int,
+    line_height: int,
+) -> None:
+    """Render label/value rows for the settings list."""
     mouse_pos = pygame.mouse.get_pos()
-    start_y = 200
-    line_height = 80
+    for index, (label, value) in enumerate(settings):
+        y_pos = start_y + index * line_height
+        color = C.YELLOW if abs(mouse_pos[1] - y_pos) < 20 else C.WHITE
+        label_surface = renderer.subtitle_font.render(f"{label}:", True, C.GRAY)
+        label_rect = label_surface.get_rect(
+            right=C.SCREEN_WIDTH // 2 - 20,
+            centery=y_pos,
+        )
+        value_surface = renderer.subtitle_font.render(value, True, color)
+        value_rect = value_surface.get_rect(
+            left=C.SCREEN_WIDTH // 2 + 20,
+            centery=y_pos,
+        )
+        renderer.screen.blit(label_surface, label_rect)
+        renderer.screen.blit(value_surface, value_rect)
+
+
+def render_map_select(renderer: UIRenderer, game: Game) -> None:
+    """Render the Zombie Survival map-selection screen."""
+    renderer.screen.fill(C.BLACK)
+
+    _draw_map_select_title(renderer)
+
     settings = [
         ("Map Size", str(game.selected_map_size)),
         ("Difficulty", game.selected_difficulty),
         ("Start Level", str(game.selected_start_level)),
         ("Lives", str(game.selected_lives)),
     ]
-
-    for index, (label, value) in enumerate(settings):
-        y_pos = start_y + index * line_height
-        color = C.YELLOW if abs(mouse_pos[1] - y_pos) < 20 else C.WHITE
-
-        label_surface = renderer.subtitle_font.render(f"{label}:", True, C.GRAY)
-        label_rect = label_surface.get_rect(
-            right=C.SCREEN_WIDTH // 2 - 20,
-            centery=y_pos,
-        )
-
-        value_surface = renderer.subtitle_font.render(value, True, color)
-        value_rect = value_surface.get_rect(
-            left=C.SCREEN_WIDTH // 2 + 20,
-            centery=y_pos,
-        )
-
-        renderer.screen.blit(label_surface, label_rect)
-        renderer.screen.blit(value_surface, value_rect)
+    _draw_map_settings_rows(renderer, settings, start_y=200, line_height=80)
 
     renderer.start_button.draw(renderer.screen, renderer.font)
 

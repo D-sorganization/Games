@@ -26,49 +26,44 @@ class BeastStyleRenderer(BaseBotStyleRenderer):
         config: RaycasterConfig,
     ) -> None:
         """Render the beast enemy visual style."""
-        # Large imposing figure
-        # Main Body
+        head_size = rw * 0.8
         pygame.draw.rect(
             screen,
             color,
             (int(cx - rw / 2), int(ry + rh * 0.3), int(rw), int(rh * 0.7)),
         )
+        self._render_head(screen, cx, ry, head_size)
+        self._render_horns(screen, cx, ry, head_size)
 
-        # Head (Horns)
-        head_size = rw * 0.8
-        head_rect = (int(cx - head_size / 2), int(ry), int(head_size), int(head_size))
-        pygame.draw.rect(screen, (100, 0, 0), head_rect)
+    def _render_head(
+        self, screen: pygame.Surface, cx: float, ry: float, head_size: float
+    ) -> None:
+        """Draw the dark red head box and two yellow eyes."""
+        pygame.draw.rect(
+            screen,
+            (100, 0, 0),
+            (int(cx - head_size / 2), int(ry), int(head_size), int(head_size)),
+        )
+        eye_y = int(ry + head_size * 0.4)
+        for x_sign in (-1, 1):
+            pygame.draw.circle(
+                screen,
+                (255, 255, 0),
+                (int(cx + x_sign * head_size * 0.2), eye_y),
+                5,
+            )
 
-        # Eyes
-        pygame.draw.circle(
-            screen,
-            (255, 255, 0),
-            (int(cx - head_size * 0.2), int(ry + head_size * 0.4)),
-            5,
-        )
-        pygame.draw.circle(
-            screen,
-            (255, 255, 0),
-            (int(cx + head_size * 0.2), int(ry + head_size * 0.4)),
-            5,
-        )
-
-        # Horns (Poly)
-        pygame.draw.polygon(
-            screen,
-            (50, 50, 50),
-            [
-                (int(cx - head_size * 0.4), int(ry)),
-                (int(cx - head_size * 0.6), int(ry - 20)),
-                (int(cx - head_size * 0.2), int(ry + 10)),
-            ],
-        )
-        pygame.draw.polygon(
-            screen,
-            (50, 50, 50),
-            [
-                (int(cx + head_size * 0.4), int(ry)),
-                (int(cx + head_size * 0.6), int(ry - 20)),
-                (int(cx + head_size * 0.2), int(ry + 10)),
-            ],
-        )
+    def _render_horns(
+        self, screen: pygame.Surface, cx: float, ry: float, head_size: float
+    ) -> None:
+        """Draw two dark grey horn polygons above the head."""
+        for x_sign in (-1, 1):
+            pygame.draw.polygon(
+                screen,
+                (50, 50, 50),
+                [
+                    (int(cx + x_sign * head_size * 0.4), int(ry)),
+                    (int(cx + x_sign * head_size * 0.6), int(ry - 20)),
+                    (int(cx + x_sign * head_size * 0.2), int(ry + 10)),
+                ],
+            )

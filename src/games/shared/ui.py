@@ -117,37 +117,37 @@ class BloodButton(Button):
             drip["length"] = drip["max_length"] * factor
 
     def draw(self, screen: pygame.Surface, font: pygame.font.Font) -> None:
-        """Draw blood button"""
-        # Determine color (pulse if hovered)
+        """Draw blood button: body, drips, gloss, border, and text."""
+        current_color = self._compute_current_color()
+        pygame.draw.rect(screen, current_color, self.rect, border_radius=5)
+        self._draw_drips(screen, current_color)
+        self._draw_gloss(screen)
+        self._draw_border(screen)
+        self._draw_text(screen, font)
+
+    def _compute_current_color(self) -> tuple[int, int, int]:
+        """Return the display color, brightened if hovered."""
         base_color = self.color
         if self.hovered:
-            # Pulse brighter red
-            pulse = (math.sin(self.pulse_timer * 2) + 1) / 2  # 0 to 1
+            pulse = (math.sin(self.pulse_timer * 2) + 1) / 2
             r = min(255, base_color[0] + int(50 * pulse))
-            current_color = (r, base_color[1], base_color[2])
-        else:
-            current_color = base_color
+            return (r, base_color[1], base_color[2])
+        return base_color
 
-        # Draw drips first (behind the main rect effectively, or joined)
-        # We want them to look like part of the button
-
-        # Main body
-        pygame.draw.rect(screen, current_color, self.rect, border_radius=5)
-
-        # Draw drips
+    def _draw_drips(
+        self, screen: pygame.Surface, current_color: tuple[int, int, int]
+    ) -> None:
+        """Draw the animated blood drip shapes below the button."""
         for drip in self.drips:
             drip_x = self.rect.x + drip["x"]
             drip_y = self.rect.bottom
             drip_h = drip["length"]
             drip_w = drip["width"]
-
-            # Draw rect for the flow
             pygame.draw.rect(
                 screen,
                 current_color,
                 (drip_x - drip_w // 2, drip_y - 2, drip_w, drip_h + 2),
             )
-            # Draw circle for the drop at end
             pygame.draw.circle(
                 screen,
                 current_color,
@@ -155,7 +155,8 @@ class BloodButton(Button):
                 int(drip_w // 2),
             )
 
-        # Add a "glossy" highlight on top
+    def _draw_gloss(self, screen: pygame.Surface) -> None:
+        """Draw the semi-transparent gloss highlight on the top half."""
         highlight_rect = pygame.Rect(
             self.rect.x, self.rect.y, self.rect.width, self.rect.height // 2
         )
@@ -171,21 +172,20 @@ class BloodButton(Button):
         )
         screen.blit(highlight_surf, highlight_rect)
 
-        # Border (Top, Left, Right) - No Bottom to blend drips
+    def _draw_border(self, screen: pygame.Surface) -> None:
+        """Draw top, left, and right dark-red border lines (no bottom)."""
         color = (50, 0, 0)
         pygame.draw.line(screen, color, self.rect.topleft, self.rect.topright, 2)
         pygame.draw.line(screen, color, self.rect.topleft, self.rect.bottomleft, 2)
         pygame.draw.line(screen, color, self.rect.topright, self.rect.bottomright, 2)
 
-        # Text with shadow
+    def _draw_text(self, screen: pygame.Surface, font: pygame.font.Font) -> None:
+        """Render the button label with a drop shadow."""
         text_surf = font.render(self.text, True, WHITE)
         text_rect = text_surf.get_rect(center=self.rect.center)
-
-        # Shadow
         shadow_surf = font.render(self.text, True, (0, 0, 0))
         shadow_rect = text_rect.copy()
         shadow_rect.x += 2
         shadow_rect.y += 2
         screen.blit(shadow_surf, shadow_rect)
-
         screen.blit(text_surf, text_rect)

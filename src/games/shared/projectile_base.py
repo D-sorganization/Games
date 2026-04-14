@@ -29,42 +29,37 @@ class ProjectileBase:
         vz: float = 0.0,
         gravity: float = 0.0,
     ):
-        """Initialize projectile.
-
-        Args:
-            x: Initial x position
-            y: Initial y position
-            angle: Direction angle in radians
-            damage: Damage dealt on hit
-            speed: Movement speed
-            is_player: Whether shot by player
-            color: RGB color tuple
-            size: Projectile size
-            weapon_type: Type of weapon (normal, bomb, freezer, etc.)
-            z: Initial height (for 3D games)
-            vz: Initial vertical velocity
-            gravity: Gravity acceleration
-        """
+        """Initialize projectile with position, damage, physics, and appearance."""
         validate_non_negative(damage, "damage")
         validate_positive(speed, "speed")
-        self.x = x
-        self.y = y
-        self.angle = angle
-        self.damage = damage
-        self.speed = speed
-        self.is_player = is_player
-        self.color = color
-        self.size = size
-        self.weapon_type = weapon_type
-        self.alive = True
+        self._init_core(x, y, angle, damage, speed, is_player, color, size, weapon_type)
+        self._init_arc_physics(z, vz, gravity)
 
-        # 3D Arc Physics
+    def _init_core(
+        self,
+        x: float,
+        y: float,
+        angle: float,
+        damage: int,
+        speed: float,
+        is_player: bool,
+        color: tuple[int, int, int],
+        size: float,
+        weapon_type: str,
+    ) -> None:
+        """Set core position, combat, and appearance attributes."""
+        self.x, self.y, self.angle = x, y, angle
+        self.damage, self.speed = damage, speed
+        self.is_player = is_player
+        self.color, self.size, self.weapon_type = color, size, weapon_type
+        self.alive = True
+        self.hit_hidden_pos: tuple[int, int] | None = None
+
+    def _init_arc_physics(self, z: float, vz: float, gravity: float) -> None:
+        """Set 3D arc physics attributes."""
         self.z = z
         self.vz = vz
         self.gravity = gravity
-
-        # Optional: Hidden wall hit tracking
-        self.hit_hidden_pos: tuple[int, int] | None = None
 
     def update(self, game_map: Map) -> None:
         """Update projectile position and check collisions.

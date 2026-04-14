@@ -71,10 +71,7 @@ class SoundBoard:
             except pygame.error:
                 return None
         sample_rate = 22050
-        duration_ms = 3000
-        sample_count = int(sample_rate * duration_ms / 1000)
-        waveform = array("h")
-
+        sample_count = int(sample_rate * 3000 / 1000)
         melody = [
             (523, 300),
             (659, 300),
@@ -84,7 +81,26 @@ class SoundBoard:
             (659, 300),
             (523, 600),
         ]
+        waveform = array("h")
+        current_sample = self._append_melody_notes(
+            waveform, melody, sample_rate, sample_count
+        )
+        while current_sample < sample_count:
+            waveform.append(0)
+            current_sample += 1
+        return pygame.mixer.Sound(buffer=waveform.tobytes())
 
+    def _append_melody_notes(
+        self,
+        waveform: array,
+        melody: list[tuple[int, int]],
+        sample_rate: int,
+        sample_count: int,
+    ) -> int:
+        """Append square-wave note samples plus inter-note pauses.
+
+        Returns the final sample index.
+        """
         current_sample = 0
         for freq, note_duration_ms in melody:
             note_samples = int(sample_rate * note_duration_ms / 1000)
@@ -93,22 +109,15 @@ class SoundBoard:
                     break
                 envelope = min(1.0, (note_samples - i) / (note_samples * 0.1))
                 square_wave = 1 if (i * freq // sample_rate) % 2 else -1
-                value = int(8000 * envelope * square_wave)
-                waveform.append(value)
+                waveform.append(int(8000 * envelope * square_wave))
                 current_sample += 1
-
             pause_samples = int(sample_rate * 0.05)
             for _ in range(pause_samples):
                 if current_sample >= sample_count:
                     break
                 waveform.append(0)
                 current_sample += 1
-
-        while current_sample < sample_count:
-            waveform.append(0)
-            current_sample += 1
-
-        return pygame.mixer.Sound(buffer=waveform.tobytes())
+        return current_sample
 
     def play(self, name: str) -> None:
         """Play a sound effect by name."""

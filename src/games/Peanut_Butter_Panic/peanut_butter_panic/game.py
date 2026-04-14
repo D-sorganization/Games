@@ -53,14 +53,8 @@ def _build_input_state() -> InputState:
     )
 
 
-def _render_world(
-    surface: pygame.Surface,
-    world: GameWorld,
-    hud_font: pygame.font.Font,
-) -> None:
-    """Render the game world and HUD."""
-    surface.fill((20, 16, 28))
-
+def _render_entities(surface: pygame.Surface, world: GameWorld) -> None:
+    """Draw all interactive game entities onto *surface*."""
     for trap in world.traps:
         _draw_circle(surface, (100, 160, 255), trap.position, trap.radius)
 
@@ -88,6 +82,16 @@ def _render_world(
     for powerup in world.powerups:
         color = (255, 215, 0) if powerup.kind == "golden_bread" else (255, 180, 60)
         _draw_circle(surface, color, powerup.position, powerup.radius)
+
+
+def _render_world(
+    surface: pygame.Surface,
+    world: GameWorld,
+    hud_font: pygame.font.Font,
+) -> None:
+    """Render the game world and HUD."""
+    surface.fill((20, 16, 28))
+    _render_entities(surface, world)
 
     hud_lines = [
         f"Score: {world.stats.score}",

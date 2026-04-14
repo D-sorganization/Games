@@ -56,11 +56,8 @@ def start_game(game: Game) -> None:
     start_level(game)
 
 
-def start_level(game: Game) -> None:
-    """Start a new level and respawn the player into a fresh world state."""
-    if not (game.game_map is not None):
-        raise ValueError("DbC Blocked: Precondition failed.")
-
+def _reset_level_state(game: Game) -> None:
+    """Clear per-level transient state before spawning a new level."""
     game.level_start_time = pygame.time.get_ticks()
     game.total_paused_time = 0
     game.pause_start_time = 0
@@ -69,12 +66,12 @@ def start_level(game: Game) -> None:
     game.damage_flash_timer = 0
     game.visited_cells = set()
     game.portal = None
-
     pygame.mouse.set_visible(False)
     pygame.event.set_grab(True)
 
-    player_pos = game._get_best_spawn_point()
 
+def _respawn_player(game: Game, player_pos: tuple[float, float, float]) -> None:
+    """Create a new Player, restoring ammo/weapon from the previous instance."""
     previous_ammo = None
     previous_weapon = "pistol"
     old_player = game.player
@@ -91,8 +88,18 @@ def start_level(game: Game) -> None:
             game.player_current_weapon = "pistol"
     if game.player_current_weapon not in game.unlocked_weapons:
         game.player_current_weapon = "pistol"
-
     game.player.god_mode = game.god_mode
+
+
+def start_level(game: Game) -> None:
+    """Start a new level and respawn the player into a fresh world state."""
+    if not (game.game_map is not None):
+        raise ValueError("DbC Blocked: Precondition failed.")
+
+    _reset_level_state(game)
+
+    player_pos = game._get_best_spawn_point()
+    _respawn_player(game, player_pos)
 
     game.entity_manager.reset()
     game.spawn_manager.spawn_all(
