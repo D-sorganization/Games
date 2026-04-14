@@ -48,36 +48,37 @@ class Dungeon:
 
     def _build_classic_maze(self) -> None:
         """Build a maze similar to classic Wizard of Wor with more roomy layout."""
-        # Border walls
-        for i in range(self.rows):
-            self.grid[i][0] = 1  # Left wall
-            self.grid[i][self.cols - 1] = 1  # Right wall
-
-        for j in range(self.cols):
-            self.grid[0][j] = 1  # Top wall
-            self.grid[self.rows - 1][j] = 1  # Bottom wall
-
+        self._build_border_walls()
         mid_row = self.rows // 2
         mid_col = self.cols // 2
+        self._build_interior_walls(mid_row, mid_col)
+        self._carve_entry_tunnels(mid_row)
 
-        # Horizontal corridors framing the map
+    def _build_border_walls(self) -> None:
+        """Place solid border walls on all four edges."""
+        for i in range(self.rows):
+            self.grid[i][0] = 1
+            self.grid[i][self.cols - 1] = 1
+        for j in range(self.cols):
+            self.grid[0][j] = 1
+            self.grid[self.rows - 1][j] = 1
+
+    def _build_interior_walls(self, mid_row: int, mid_col: int) -> None:
+        """Place horizontal corridors, vertical pillars, alcoves, and cruciform."""
         for j in range(3, self.cols - 3):
             self.grid[4][j] = 1
             self.grid[mid_row][j] = 1
             self.grid[self.rows - 5][j] = 1
 
-        # Vertical pillars creating mirrored chambers
         for i in range(6, self.rows - 6):
             if i % 2 == 0:
                 self.grid[i][4] = 1
                 self.grid[i][self.cols - 5] = 1
 
-        # Side alcoves
         for j in range(8, self.cols - 8, 6):
             self.grid[mid_row - 3][j] = 1
             self.grid[mid_row + 3][j] = 1
 
-        # Center cruciform and corner nooks
         for offset in range(-3, 4):
             self.grid[mid_row + offset][mid_col] = 1
             self.grid[mid_row][mid_col + offset] = 1
@@ -86,7 +87,8 @@ class Dungeon:
             self.grid[mid_row - 2][mid_col + offset] = 1
             self.grid[mid_row + 2][mid_col + offset] = 1
 
-        # Entry tunnels on each side (leave gaps for doors)
+    def _carve_entry_tunnels(self, mid_row: int) -> None:
+        """Clear side-door cells so enemies can enter from the left and right."""
         for j in range(2, 6):
             self.grid[mid_row - 1][j] = 0
             self.grid[mid_row][j] = 0
