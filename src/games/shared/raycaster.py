@@ -37,7 +37,7 @@ from .raycaster_rendering import (
     render_minimap as _render_minimap_fn,
 )
 from .raycaster_sprites import render_sprites as _render_sprites_fn
-from .texture_generator import TextureGenerator
+from .raycaster_textures import TextureManager
 from .utils import cast_ray_dda
 
 if TYPE_CHECKING:
@@ -50,6 +50,17 @@ if TYPE_CHECKING:
         Projectile,
         WorldParticle,
     )
+
+# Type alias for the 5-array tuple returned by _calculate_rays.
+# Placed after imports to avoid E402; uses string literals since numpy
+# is available at runtime but the alias is only used for annotations.
+_RayArrays = tuple[
+    np.ndarray[Any, np.dtype[Any]],
+    np.ndarray[Any, np.dtype[Any]],
+    np.ndarray[Any, np.dtype[Any]],
+    np.ndarray[Any, np.dtype[Any]],
+    np.ndarray[Any, np.dtype[Any]],
+]
 
 
 class Raycaster:
@@ -83,24 +94,17 @@ class Raycaster:
         self._cached_wall_colors: dict[int, tuple[int, int, int]] = {}
 
     def _init_textures(self) -> None:
-        """Initialize texture mapping and caches."""
-        self.use_textures = True
-        self.textures = TextureGenerator.generate_textures()
-        self.texture_map = {1: "stone", 2: "brick", 3: "metal", 4: "tech", 5: "hidden"}
-
-        self.texture_strips: dict[str, list[pygame.Surface]] = {}
-        for name, tex in self.textures.items():
-            w = tex.get_width()
-            h = tex.get_height()
-            self.texture_strips[name] = [tex.subsurface((x, 0, 1, h)) for x in range(w)]
-
-        # Bounded LRU cache -- eviction handled by update_cache() each frame.
-        # 512 entries keeps memory bounded (see issue #583).
-        self._strip_cache: OrderedDict[tuple[str, int, int], pygame.Surface] = (
-            OrderedDict()
+        """Initialize texture management via TextureManager (see raycaster_textures)."""
+        self._texture_mgr = TextureManager(
+            strip_cache_max=512,
+            strip_cache_evict=64,
         )
-        self._STRIP_CACHE_MAX: int = 512
-        self._STRIP_CACHE_EVICT: int = 64
+        # Expose frequently-accessed attributes at the Raycaster level for
+        # backward compatibility with callers that read these directly.
+        self.use_textures: bool = self._texture_mgr.use_textures
+        self.textures = self._texture_mgr.textures
+        self.texture_map = self._texture_mgr.texture_map
+        self.texture_strips = self._texture_mgr.texture_strips
 
     def _init_atmosphere(self) -> None:
         """Initialize sky backgrounds and stars."""
@@ -226,6 +230,9 @@ class Raycaster:
     def update_cache(self) -> None:
         """Perform cache maintenance once per frame.
 
+        Delegates strip-cache eviction to :class:`TextureManager` and handles
+        sprite caches locally (they remain in the Raycaster for now).
+
         Caches use OrderedDict with LRU eviction: on hit, entries are
         moved to the end via ``move_to_end``; on eviction, the *least*
         recently used entries are popped from the front.
@@ -233,9 +240,7 @@ class Raycaster:
         Hard limits are intentionally conservative to bound peak VRAM.
         See issue #583.
         """
-        self._evict_lru(
-            self._strip_cache, self._STRIP_CACHE_MAX, self._STRIP_CACHE_EVICT
-        )
+        self._texture_mgr.evict_cache()
         self._evict_lru(
             self.sprite_cache, self._SPRITE_CACHE_MAX, self._SPRITE_CACHE_EVICT
         )
@@ -248,25 +253,8 @@ class Raycaster:
     def _get_cached_strip(
         self, texture_name: str, strip_x: int, height: int
     ) -> pygame.Surface | None:
-        """Get or create a scaled texture strip."""
-        cache_key = (texture_name, strip_x, height)
-
-        if cache_key in self._strip_cache:
-            self._strip_cache.move_to_end(cache_key)
-            return self._strip_cache[cache_key]
-
-        strips = self.texture_strips.get(texture_name)
-        if not strips:
-            return None
-        try:
-            # Optimization: Check if height is reasonable to prevent memory errors
-            if height > 16000:  # Arbitrary safe limit
-                return None
-            scaled_strip = pygame.transform.scale(strips[strip_x], (1, height))
-            self._strip_cache[cache_key] = scaled_strip
-            return scaled_strip
-        except (pygame.error, ValueError, IndexError):
-            return None
+        """Get or create a scaled texture strip (delegates to TextureManager)."""
+        return self._texture_mgr.get_cached_strip(texture_name, strip_x, height)
 
     def cast_ray(
         self,
@@ -359,13 +347,7 @@ class Raycaster:
             self.grid = self.game_map.grid
             self.np_grid = np.array(self.game_map.grid, dtype=np.int8)
 
-    def _calculate_rays(self, player: Player) -> tuple[
-        np.ndarray[Any, np.dtype[Any]],
-        np.ndarray[Any, np.dtype[Any]],
-        np.ndarray[Any, np.dtype[Any]],
-        np.ndarray[Any, np.dtype[Any]],
-        np.ndarray[Any, np.dtype[Any]],
-    ]:
+    def _calculate_rays(self, player: Player) -> _RayArrays:
         """Perform vectorized raycasting math."""
         # 1. Setup ray directions
         ray_dir_x, ray_dir_y = self._get_ray_directions(player)
@@ -527,12 +509,8 @@ class Raycaster:
 
         use_textures = self.use_textures and len(self.textures) > 0
 
-        # Pre-fetch texture strips
-        wall_strips: dict[int, list[pygame.Surface]] = {}
-        for wt in wall_colors.keys():
-            tname = self.texture_map.get(wt, "brick")
-            if tname in self.texture_strips:
-                wall_strips[wt] = self.texture_strips[tname]
+        # Pre-fetch texture strips via TextureManager
+        wall_strips = self._texture_mgr.build_wall_strips_for_render(wall_colors)
 
         view_surface = self.view_surface
         blits_sequence: list[
