@@ -141,3 +141,31 @@ def update_game(game: Game) -> None:
         return
     if not (game.player is not None):
         raise ValueError("DbC Blocked: Precondition failed.")
+    if not (game.game_map is not None):
+        raise ValueError("DbC Blocked: Precondition failed.")
+    if game._check_game_over():
+        return
+    if game._check_portal_completion():
+        return
+
+    keys = pygame.key.get_pressed()
+    shield_active = game.input_manager.is_action_pressed("shield")
+    if game.joystick and game.player.alive:
+        shield_active = game._handle_joystick_input(shield_active)
+
+    game.player.set_shield(shield_active)
+    game.particle_system.update()
+    update_damage_texts(game)
+    handle_keyboard_movement(game, keys)
+    game.player.update()
+
+    game.entity_manager.update_bots(game.game_map, game.player, game)
+    check_item_pickups(game)
+    game.entity_manager.update_projectiles(game.game_map, game.player, game)
+
+    game.atmosphere_manager.update_fog_reveal()
+    game.atmosphere_manager.update_atmosphere()
+    game.atmosphere_manager.check_kill_combo()
+
+    if game.flash_intensity > 0:
+        game.flash_intensity = max(0.0, game.flash_intensity - 0.1)
