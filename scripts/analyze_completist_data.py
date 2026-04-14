@@ -103,7 +103,7 @@ def _scan_completist_file(
 
 
 def _parse_marker_line(line: str) -> Finding | None:
-    """Parse a single grep line into a TODO/FIXME Finding, or None."""
+    """Parse a single grep line into a marker Finding (todo or fixme), or None."""
     # Obfuscate strings to avoid finding this script itself in greedy scans
     todo_str = "TO" + "DO"
     fixme_markers = ["FIX" + "ME", "XXX", "HACK", "TEMP"]

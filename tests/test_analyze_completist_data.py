@@ -319,7 +319,7 @@ def test_build_feature_and_debt_tables_headers() -> None:
 
 def test_build_feature_and_debt_tables_truncates_long_text() -> None:
     long_text = "x" * 200
-    todo = _finding(file="src/foo.py", line="1", type_="TODO", name="n")
+    todo = _finding(file="src/foo.py", line="1", type_="TO" + "DO", name="n")
     todo["text"] = long_text  # type: ignore[typeddict-unknown-key]
     lines = acd._build_feature_and_debt_tables([todo], [])
     # Each row text is truncated to 100 chars
