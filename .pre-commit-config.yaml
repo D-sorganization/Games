@@ -263,7 +263,7 @@ repos:
       - id: semgrep
         name: "semgrep (security + quality)"
         stages: [push]
-        args: ["--config", "auto", "--error", "--quiet"]
+        args: ["--config", "auto", "--error", "--quiet", "--no-autofix"]
         types: [python]
         exclude: ^(tests/|archive/|legacy/|experimental/|\.github/)
 
