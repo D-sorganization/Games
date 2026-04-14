@@ -40,23 +40,29 @@ class PlayerBase:
         validate_not_none(weapons_config, "weapons_config")
         validate_not_none(constants, "constants")
         self.C = constants
+        self._init_position(x, y, angle)
+        self._init_health()
+        self._init_weapons(weapons_config)
+        self._init_combat_state(constants)
+        self._init_movement_state()
 
-        # Position and orientation
+    def _init_position(self, x: float, y: float, angle: float) -> None:
+        """Set initial world position and camera orientation."""
         self.x = x
         self.y = y
         self.angle = angle
-        self.pitch = 0.0  # Vertical look offset
-        self.z = 0.5  # Camera height
+        self.pitch = 0.0
+        self.z = 0.5
 
-        # Health
+    def _init_health(self) -> None:
+        """Set initial health values."""
         validate_non_negative(100, "initial_health")
         self.health = 100
         self.max_health = 100
 
-        # Movement
-        self.is_moving = False  # Track movement for bobbing
-
-        # Weapon State - initialize for all weapons
+    def _init_weapons(self, weapons_config: dict[str, Any]) -> None:
+        """Initialize weapon states and ammo reserves for all configured weapons."""
+        self.is_moving = False
         self.weapon_state: dict[str, dict[str, Any]] = {}
         for w_name, w_data in weapons_config.items():
             self.weapon_state[w_name] = {
@@ -68,37 +74,29 @@ class PlayerBase:
                 "overheat_timer": 0,
                 "spin_timer": 0,
             }
-
-        # Ammo reserves
         self.ammo: dict[str, int] = {
             w: int(weapons_config[w]["ammo"]) for w in weapons_config
         }
-
-        # Current weapon and shooting state
         self.current_weapon = "rifle"
         self.shooting = False
         self.shoot_timer = 0
         self.alive = True
 
-        # Shield system
+    def _init_combat_state(self, constants: Any) -> None:
+        """Initialize shield, bomb, zoom, and sway state."""
         self.shield_active = False
         self.shield_timer = getattr(constants, "SHIELD_MAX_DURATION", 600)
         self.shield_recharge_delay = 0
-
-        # Bombs
         self.bomb_cooldown = 0
         self.bombs = getattr(constants, "BOMBS_START", 1)
         self.secondary_cooldown = 0
-
-        # Zoom
         self.zoomed = False
         self.god_mode = False
-
-        # Weapon Sway / Turn tracking
         self.frame_turn = 0.0
         self.sway_amount = 0.0
 
-        # Stamina
+    def _init_movement_state(self) -> None:
+        """Initialize stamina and movement tracking fields."""
         self.stamina = 100.0
         self.max_stamina = 100.0
         self.stamina_recharge_delay = 0
@@ -170,20 +168,27 @@ class PlayerBase:
         weapon_data = weapons[self.current_weapon]
         w_state = self.weapon_state[self.current_weapon]
 
-        # Check global cooldown
         if self.shoot_timer > 0:
             return False
-
-        # Check reloading/overheat
         if w_state["reloading"] or w_state["overheated"]:
             return False
-
-        # Check clip/heat
         if self.current_weapon != "plasma" and w_state["clip"] <= 0:
             self.reload()
             return False
+        if not self._check_spinup(w_state, weapon_data):
+            return False
 
-        # Minigun spin-up logic
+        self.shooting = True
+        self.shoot_timer = int(weapon_data["cooldown"])
+        self._consume_shot_resource(w_state, weapon_data)
+        if self.current_weapon != "plasma" and w_state["clip"] <= 0:
+            self.reload()
+        return True
+
+    def _check_spinup(
+        self, w_state: dict[str, Any], weapon_data: dict[str, Any]
+    ) -> bool:
+        """Advance minigun spin-up timer; return True when ready to fire."""
         if self.current_weapon == "minigun":
             spin_up = int(weapon_data.get("spin_up_time", 30))
             if w_state["spin_timer"] < spin_up:
@@ -191,11 +196,12 @@ class PlayerBase:
                 return False
         else:
             w_state["spin_timer"] = 0
+        return True
 
-        self.shooting = True
-        self.shoot_timer = int(weapon_data["cooldown"])
-
-        # Consumables
+    def _consume_shot_resource(
+        self, w_state: dict[str, Any], weapon_data: dict[str, Any]
+    ) -> None:
+        """Deduct ammo or increase plasma heat for the shot just fired."""
         if self.current_weapon == "plasma":
             w_state["heat"] += weapon_data.get("heat_per_shot", 0.0)
             if w_state["heat"] >= weapon_data.get("max_heat", 1.0):
@@ -203,12 +209,6 @@ class PlayerBase:
                 w_state["overheat_timer"] = weapon_data.get("overheat_penalty", 180)
         else:
             w_state["clip"] -= 1
-
-        # Auto-reload if empty
-        if self.current_weapon != "plasma" and w_state["clip"] <= 0:
-            self.reload()
-
-        return True
 
     def can_secondary_fire(self) -> bool:
         """Check if secondary fire is ready."""

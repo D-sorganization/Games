@@ -47,86 +47,98 @@ def render_sprites(
     context: SpriteRenderContext,
 ) -> None:
     """Render all sprites (bots, projectiles, particles) to the view surface."""
-    sprites_to_render: list[tuple[Any, int]] = []
-
     player = context.player
     p_cos = math.cos(player.angle)
     p_sin = math.sin(player.angle)
     max_dist_sq = context.config.MAX_DEPTH * context.config.MAX_DEPTH
 
-    for bot in context.bots:
-        if bot.removed:
-            continue
-        sprites_to_render.append((bot, 0))
-
-    for proj in context.projectiles:
-        if not proj.alive:
-            continue
-        sprites_to_render.append((proj, 1))
-
-    for part in context.particles:
-        if not part.alive:
-            continue
-        sprites_to_render.append((part, 2))
-
+    sprites_to_render = _collect_sprites(context)
     final_sprites = _cull_and_sort_sprites(
         sprites_to_render, player, p_cos, p_sin, max_dist_sq, context.half_fov
     )
-
     for entity, dist, angle, type_id in final_sprites:
-        if type_id == 1:
-            proj = cast("Projectile", entity)
-            _draw_single_projectile(
-                player,
-                proj,
-                dist,
-                angle,
-                context.half_fov,
-                context.view_offset_y,
-                context.config,
-                context.num_rays,
-                context.render_scale,
-                context.view_surface,
-                context.z_buffer,
-            )
-        elif type_id == 2:
-            part = cast("WorldParticle", entity)
-            _draw_single_particle(
-                player,
-                part,
-                dist,
-                angle,
-                context.half_fov,
-                context.view_offset_y,
-                context.config,
-                context.num_rays,
-                context.render_scale,
-                context.view_surface,
-                context.z_buffer,
-            )
-        else:
-            bot = cast("Bot", entity)
-            _draw_single_sprite(
-                player,
-                bot,
-                dist,
-                angle,
-                context.half_fov,
-                context.view_offset_y,
-                context.flash_intensity,
-                context.config,
-                context.num_rays,
-                context.render_scale,
-                context.view_surface,
-                context.z_buffer,
-                context.sprite_cache,
-                context.sprite_cache_max,
-                context.sprite_cache_evict,
-                context.scaled_sprite_cache,
-                context.scaled_cache_max,
-                context.scaled_cache_evict,
-                context.evict_fn,
-            )
+        _dispatch_sprite_draw(context, player, entity, dist, angle, type_id)
+
+
+def _collect_sprites(
+    context: SpriteRenderContext,
+) -> list[tuple[Any, int]]:
+    """Build the unsorted list of (entity, type_id) pairs to render."""
+    sprites: list[tuple[Any, int]] = []
+    for bot in context.bots:
+        if not bot.removed:
+            sprites.append((bot, 0))
+    for proj in context.projectiles:
+        if proj.alive:
+            sprites.append((proj, 1))
+    for part in context.particles:
+        if part.alive:
+            sprites.append((part, 2))
+    return sprites
+
+
+def _dispatch_sprite_draw(
+    context: SpriteRenderContext,
+    player: Player,
+    entity: Any,
+    dist: float,
+    angle: float,
+    type_id: int,
+) -> None:
+    """Call the appropriate draw helper for a single sprite by type_id."""
+    if type_id == 1:
+        proj = cast("Projectile", entity)
+        _draw_single_projectile(
+            player,
+            proj,
+            dist,
+            angle,
+            context.half_fov,
+            context.view_offset_y,
+            context.config,
+            context.num_rays,
+            context.render_scale,
+            context.view_surface,
+            context.z_buffer,
+        )
+    elif type_id == 2:
+        part = cast("WorldParticle", entity)
+        _draw_single_particle(
+            player,
+            part,
+            dist,
+            angle,
+            context.half_fov,
+            context.view_offset_y,
+            context.config,
+            context.num_rays,
+            context.render_scale,
+            context.view_surface,
+            context.z_buffer,
+        )
+    else:
+        bot = cast("Bot", entity)
+        _draw_single_sprite(
+            player,
+            bot,
+            dist,
+            angle,
+            context.half_fov,
+            context.view_offset_y,
+            context.flash_intensity,
+            context.config,
+            context.num_rays,
+            context.render_scale,
+            context.view_surface,
+            context.z_buffer,
+            context.sprite_cache,
+            context.sprite_cache_max,
+            context.sprite_cache_evict,
+            context.scaled_sprite_cache,
+            context.scaled_cache_max,
+            context.scaled_cache_evict,
+            context.evict_fn,
+        )
 
 
 # ---------------------------------------------------------------------------
