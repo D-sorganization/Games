@@ -67,6 +67,60 @@ class EntityManager:
         self.projectiles.extend(new_projectiles)
         self.cleanup_dead_bots()
 
+    def _trigger_aoe_on_wall_death(
+        self, projectile: Projectile, game: Game
+    ) -> None:
+        """Trigger AoE effects when a projectile dies by hitting a wall."""
+        w_type = getattr(projectile, "weapon_type", "normal")
+        if w_type == "plasma":
+            game.combat_system.explode_plasma(projectile)
+        elif w_type == "rocket":
+            game.combat_system.explode_rocket(projectile)
+        elif w_type == "bomb":
+            game.combat_system.explode_bomb(projectile)
+
+    def _handle_enemy_projectile(
+        self, projectile: Projectile, player: Player, game: Game
+    ) -> None:
+        """Check enemy projectile collision against the player."""
+        dx = projectile.x - player.x
+        dy = projectile.y - player.y
+        if dx * dx + dy * dy < 0.25:
+            old_health = player.health
+            player.take_damage(projectile.damage)
+            if player.health < old_health:
+                game.damage_flash_timer = 10
+                game.sound_manager.play_sound("oww")
+            projectile.alive = False
+
+    def _handle_player_projectile(
+        self, projectile: Projectile, player: Player, game: Game
+    ) -> None:
+        """Check player projectile collision against nearby bots."""
+        potential_targets = self.get_nearby_bots(projectile.x, projectile.y)
+        for bot in potential_targets:
+            if not bot.alive:
+                continue
+            dx = projectile.x - bot.x
+            dy = projectile.y - bot.y
+            if dx * dx + dy * dy < PICKUP_RADIUS_SQ:
+                if bot.take_damage(projectile.damage):
+                    game.sound_manager.play_sound("scream")
+                    game.kills += 1
+                    game.kill_combo_count += 1
+                    game.kill_combo_timer = COMBO_TIMER_FRAMES
+                    game.last_death_pos = (bot.x, bot.y)
+                game.particle_system.add_explosion(
+                    C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2, count=5
+                )
+                projectile.alive = False
+                w_type = getattr(projectile, "weapon_type", "normal")
+                if w_type == "plasma":
+                    game.combat_system.explode_plasma(projectile)
+                elif w_type == "rocket":
+                    game.combat_system.explode_rocket(projectile)
+                break
+
     def update_projectiles(self, game_map: Map, player: Player, game: Game) -> None:
         """Update all projectiles."""
         for projectile in self.projectiles[:]:
@@ -74,54 +128,13 @@ class EntityManager:
             projectile.update(game_map)
 
             if was_alive and not projectile.alive:
-                w_type = getattr(projectile, "weapon_type", "normal")
-                if w_type == "plasma":
-                    game.combat_system.explode_plasma(projectile)
-                elif w_type == "rocket":
-                    game.combat_system.explode_rocket(projectile)
-                elif w_type == "bomb":
-                    game.combat_system.explode_bomb(projectile)
+                self._trigger_aoe_on_wall_death(projectile, game)
 
             if projectile.alive:
                 if not projectile.is_player:
-                    # Enemy projectile hitting player
-                    dx = projectile.x - player.x
-                    dy = projectile.y - player.y
-                    dist_sq = dx * dx + dy * dy
-                    if dist_sq < 0.25:
-                        old_health = player.health
-                        player.take_damage(projectile.damage)
-                        if player.health < old_health:
-                            game.damage_flash_timer = 10
-                            game.sound_manager.play_sound("oww")
-                        projectile.alive = False
+                    self._handle_enemy_projectile(projectile, player, game)
                 else:
-                    # Player projectile hitting bots
-                    potential_targets = self.get_nearby_bots(projectile.x, projectile.y)
-                    for bot in potential_targets:
-                        if not bot.alive:
-                            continue
-                        dx = projectile.x - bot.x
-                        dy = projectile.y - bot.y
-                        dist_sq = dx * dx + dy * dy
-                        if dist_sq < PICKUP_RADIUS_SQ:
-                            if bot.take_damage(projectile.damage):
-                                game.sound_manager.play_sound("scream")
-                                game.kills += 1
-                                game.kill_combo_count += 1
-                                game.kill_combo_timer = COMBO_TIMER_FRAMES
-                                game.last_death_pos = (bot.x, bot.y)
-
-                            game.particle_system.add_explosion(
-                                C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2, count=5
-                            )
-                            projectile.alive = False
-                            w_type = getattr(projectile, "weapon_type", "normal")
-                            if w_type == "plasma":
-                                game.combat_system.explode_plasma(projectile)
-                            elif w_type == "rocket":
-                                game.combat_system.explode_rocket(projectile)
-                            break
+                    self._handle_player_projectile(projectile, player, game)
 
         self.projectiles = [p for p in self.projectiles if p.alive]
 
@@ -140,15 +153,6 @@ class EntityManager:
     def get_nearest_enemy_distance(self, x: float, y: float) -> float:
         """Get the distance to the nearest enemy."""
         min_dist_sq = float("inf")
-
-        # Optimization: Only check nearby cells in spatial grid if possible?
-        # For now, we can iterate all or optimize using spatial grid.
-        # Since sound effect range is global/large, checking all active bots is robust,
-        # but using spatial grid for neighbors is better if sound range is small.
-        # However, the original code checked ALL bots.
-
-        # If we just want "nearest" globally, we have to check all or do a BFS.
-        # Iterating all active bots for correctness matches original logic.
 
         for bot in self.bots:
             if bot.alive:
