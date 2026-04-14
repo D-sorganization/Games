@@ -9,7 +9,11 @@ on:
       - "**.md"
       - "LICENSE"
       - ".gitignore"
-      - ".github/**"
+      # NOTE: .github/** is NOT ignored so that CI runs on workflow-file changes
+      # (required for branch protection enforcement of quality-gate on CI-fix PRs)
+      - ".github/ISSUE_TEMPLATE/**"
+      - ".github/PULL_REQUEST_TEMPLATE/**"
+      - ".github/FUNDING.yml"
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
     paths-ignore:
@@ -17,7 +21,11 @@ on:
       - "**.md"
       - "LICENSE"
       - ".gitignore"
-      - ".github/**"
+      # NOTE: .github/** is NOT ignored so that CI runs on workflow-file changes
+      # (required for branch protection enforcement of quality-gate on CI-fix PRs)
+      - ".github/ISSUE_TEMPLATE/**"
+      - ".github/PULL_REQUEST_TEMPLATE/**"
+      - ".github/FUNDING.yml"
   workflow_dispatch:
 
 permissions:
@@ -161,7 +169,7 @@ jobs:
       - run: pip install -r requirements.lock
       - run: pip install -e .
       - name: Install SDL dependencies
-        run: sudo apt-get update && sudo apt-get install -y libsdl2-dev libsdl2-mixer-dev libsdl2-image-dev libsdl2-ttf-dev xvfb
+        run: sudo apt-get -o DPkg::Lock::Timeout=300 update && sudo apt-get -o DPkg::Lock::Timeout=300 install -y libsdl2-dev libsdl2-mixer-dev libsdl2-image-dev libsdl2-ttf-dev xvfb
       - name: Run tests with coverage
         env:
           SDL_VIDEODRIVER: dummy
