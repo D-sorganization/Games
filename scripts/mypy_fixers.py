@@ -155,12 +155,8 @@ def get_line_indent(line: str) -> str:
     return line[: len(line) - len(line.lstrip())]
 
 
-def _ensure_import(lines: list[str], import_statement: str) -> bool:
-    """Add an import statement if not already present. Returns True if added."""
-    for line in lines:
-        if import_statement in line:
-            return False
-
+def _find_last_import_index(lines: list[str]) -> int:
+    """Return the index of the last import line before non-import code, or -1."""
     last_import_idx = -1
     in_docstring = False
     for i, line in enumerate(lines):
@@ -178,26 +174,34 @@ def _ensure_import(lines: list[str], import_statement: str) -> bool:
             last_import_idx = i
         elif stripped and not stripped.startswith("#") and last_import_idx >= 0:
             break
+    return last_import_idx
 
+
+def _find_post_docstring_index(lines: list[str]) -> int:
+    """Return the line index at which to insert imports when no imports exist."""
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if stripped.startswith('"""') or stripped.startswith("'''"):
+            if stripped.count('"""') >= 2 or stripped.count("'''") >= 2:
+                return i + 1
+            for j in range(i + 1, len(lines)):
+                if '"""' in lines[j] or "'''" in lines[j]:
+                    return j + 1
+            break
+        if stripped and not stripped.startswith("#"):
+            return i
+    return 0
+
+
+def _ensure_import(lines: list[str], import_statement: str) -> bool:
+    """Add an import statement if not already present. Returns True if added."""
+    if any(import_statement in line for line in lines):
+        return False
+    last_import_idx = _find_last_import_index(lines)
     if last_import_idx >= 0:
         lines.insert(last_import_idx + 1, import_statement + "\n")
     else:
-        insert_at = 0
-        for i, line in enumerate(lines):
-            stripped = line.strip()
-            if stripped.startswith('"""') or stripped.startswith("'''"):
-                if stripped.count('"""') >= 2 or stripped.count("'''") >= 2:
-                    insert_at = i + 1
-                    break
-                for j in range(i + 1, len(lines)):
-                    if '"""' in lines[j] or "'''" in lines[j]:
-                        insert_at = j + 1
-                        break
-                break
-            elif stripped and not stripped.startswith("#"):
-                insert_at = i
-                break
-        lines.insert(insert_at, import_statement + "\n")
+        lines.insert(_find_post_docstring_index(lines), import_statement + "\n")
     return True
 
 
@@ -214,6 +218,23 @@ def is_safe_path(filepath: str) -> bool:
     return True
 
 
+def _replace_callable_annotation(lines: list[str], idx: int) -> str | None:
+    """Replace 'callable' annotation with 'Callable[..., Any]'; return original or None.
+
+    Returns None when the target line does not contain a bare 'callable' annotation.
+    """
+    line = lines[idx]
+    if ": callable" not in line.lower():
+        return None
+    original = line
+    lines[idx] = re.sub(
+        r":\s*callable\b", ": Callable[..., Any]", line, flags=re.IGNORECASE
+    )
+    _ensure_import(lines, "from collections.abc import Callable")
+    _ensure_import(lines, "from typing import Any")
+    return original
+
+
 def fix_callable_as_type(lines: list[str], error: MypyError) -> Fix | None:
     """Fix 'callable is not valid as a type' by replacing with Callable."""
     if not isinstance(lines, list):
@@ -224,28 +245,72 @@ def fix_callable_as_type(lines: list[str], error: MypyError) -> Fix | None:
         return None
     if '"callable" is not valid as a type' not in error.message.lower():
         return None
-
     idx = error.line - 1
     if idx >= len(lines):
         return None
+    original = _replace_callable_annotation(lines, idx)
+    if original is None:
+        return None
+    return Fix(
+        file=error.file,
+        line=error.line,
+        description="Replace 'callable' with 'Callable[..., Any]'",
+        strategy="real-fix",
+        original_code=original.strip(),
+    )
 
+
+def _extract_union_attr_parts(
+    error: MypyError,
+) -> tuple[str, str, str] | None:
+    """Parse the union-attr error message.
+
+    Returns (bad_type, attr, good_type) or None if the message doesn't match.
+    """
+    match = re.search(
+        r'Item "(\w+)" of "([^"]+)" has no attribute "(\w+)"', error.message
+    )
+    if not match:
+        return None
+    bad_type, union_type, attr = match.groups()
+    types_in_union = [t.strip() for t in union_type.split("|")]
+    good_types = [t for t in types_in_union if t != bad_type and t != "None"]
+    if not good_types:
+        return None
+    return bad_type, attr, good_types[0]
+
+
+def _insert_isinstance_narrowing(
+    lines: list[str], idx: int, var_name: str, target_type: str
+) -> str:
+    """Insert an assert isinstance guard before lines[idx]; return the original line."""
+    original = lines[idx]
+    lines.insert(
+        idx,
+        f"{get_line_indent(original)}assert isinstance({var_name}, {target_type})\n",
+    )
+    return original
+
+
+def _resolve_union_narrowing(
+    lines: list[str], error: MypyError
+) -> tuple[str, str, str, int] | None:
+    """Return (var_name, target_type, original_line, idx) or None if not applicable."""
+    parts = _extract_union_attr_parts(error)
+    if parts is None:
+        return None
+    _bad_type, attr, target_type = parts
+    idx = error.line - 1
+    if idx >= len(lines):
+        return None
     line = lines[idx]
-    if ": callable" in line.lower():
-        original = line
-        line = re.sub(
-            r":\s*callable\b", ": Callable[..., Any]", line, flags=re.IGNORECASE
-        )
-        lines[idx] = line
-        _ensure_import(lines, "from collections.abc import Callable")
-        _ensure_import(lines, "from typing import Any")
-        return Fix(
-            file=error.file,
-            line=error.line,
-            description="Replace 'callable' with 'Callable[..., Any]'",
-            strategy="real-fix",
-            original_code=original.strip(),
-        )
-    return None
+    var_match = re.search(rf"(\w+)\.{re.escape(attr)}", line)
+    if not var_match:
+        return None
+    var_name = var_match.group(1)
+    if any(f"isinstance({var_name}" in lines[j] for j in range(max(0, idx - 3), idx)):
+        return None
+    return var_name, target_type, line, idx
 
 
 def fix_union_attr(lines: list[str], error: MypyError) -> Fix | None:
@@ -256,47 +321,18 @@ def fix_union_attr(lines: list[str], error: MypyError) -> Fix | None:
         raise TypeError(f"error must be a MypyError, got {type(error).__name__}")
     if error.code != "union-attr":
         return None
-
-    match = re.search(
-        r'Item "(\w+)" of "([^"]+)" has no attribute "(\w+)"', error.message
-    )
-    if not match:
+    result = _resolve_union_narrowing(lines, error)
+    if result is None:
         return None
-
-    bad_type, union_type, attr = match.groups()
-    types_in_union = [t.strip() for t in union_type.split("|")]
-    good_types = [t for t in types_in_union if t != bad_type and t != "None"]
-    if not good_types:
-        return None
-
-    idx = error.line - 1
-    if idx >= len(lines):
-        return None
-
-    line = lines[idx]
-    indent = get_line_indent(line)
-    var_match = re.search(rf"(\w+)\.{re.escape(attr)}", line)
-    if not var_match:
-        return None
-
-    var_name = var_match.group(1)
-    target_type = good_types[0]
-
-    for check_idx in range(max(0, idx - 3), idx):
-        if f"isinstance({var_name}" in lines[check_idx]:
-            return None
-
-    assert_line = f"{indent}assert isinstance({var_name}, {target_type})\n"
-    lines.insert(idx, assert_line)
-    narrowing_desc = (
-        f"Add isinstance({var_name}, {target_type}) narrowing for union-attr"
-    )
+    var_name, target_type, _line, idx = result
+    original = _insert_isinstance_narrowing(lines, idx, var_name, target_type)
+    desc = f"Add isinstance({var_name}, {target_type}) narrowing for union-attr"
     return Fix(
         file=error.file,
         line=error.line,
-        description=narrowing_desc,
+        description=desc,
         strategy="real-fix",
-        original_code=line.strip(),
+        original_code=original.strip(),
     )
 
 
@@ -340,9 +376,8 @@ def fix_import_errors(lines: list[str], error: MypyError) -> Fix | None:
     )
 
 
-def fix_generic_suppression(lines: list[str], error: MypyError) -> Fix | None:
-    """Last resort: add targeted # type: ignore[code] suppression."""
-    suppressible_codes = {
+_SUPPRESSIBLE_CODES: frozenset[str] = frozenset(
+    {
         "assignment",
         "arg-type",
         "return-value",
@@ -357,7 +392,12 @@ def fix_generic_suppression(lines: list[str], error: MypyError) -> Fix | None:
         "redundant-cast",
         "var-annotated",
     }
-    if error.code not in suppressible_codes:
+)
+
+
+def fix_generic_suppression(lines: list[str], error: MypyError) -> Fix | None:
+    """Last resort: add targeted # type: ignore[code] suppression."""
+    if error.code not in _SUPPRESSIBLE_CODES:
         return None
     idx = error.line - 1
     if idx >= len(lines):

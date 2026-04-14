@@ -54,6 +54,20 @@ class Enemy:
         enemy_type: str,
     ) -> None:
         """Initialize enemy."""
+        self._init_position(x, y, speed, color, points, enemy_type)
+        self._init_ai_timers()
+        self._init_animation_state()
+
+    def _init_position(
+        self,
+        x: float,
+        y: float,
+        speed: float,
+        color: tuple[int, int, int],
+        points: int,
+        enemy_type: str,
+    ) -> None:
+        """Set positional and identity attributes."""
         self.x = x
         self.y = y
         self.speed = speed
@@ -68,11 +82,17 @@ class Enemy:
             ENEMY_SIZE,
             ENEMY_SIZE,
         )
+
+    def _init_ai_timers(self) -> None:
+        """Set AI movement and shooting timer attributes."""
         self.direction = random.choice([UP, DOWN, LEFT, RIGHT])
         self.move_timer = 0
         self.direction_change_interval = random.randint(30, 90)
         self.shoot_timer = random.randint(60, 180)
         self.can_shoot = True
+
+    def _init_animation_state(self) -> None:
+        """Set animation and visibility state attributes."""
         self.animation_timer = 0
         self.step_frame = 0
         self.invisibility_cooldown = 0
@@ -322,36 +342,34 @@ class Wizard(Enemy):
             else:
                 self.direction = DOWN if dy > 0 else UP
 
+    def _draw_materializing_aura(self, screen: pygame.Surface) -> None:
+        """Draw the semi-transparent flickering aura while materializing."""
+        body_rect = pygame.Rect(self.rect)
+        body_rect.inflate_ip(-ENEMY_OUTLINE, -ENEMY_OUTLINE)
+        aura_radius = ENEMY_GLOW * 2
+        aura_surface = pygame.Surface(
+            (body_rect.width + aura_radius * 2, body_rect.height + aura_radius * 2),
+            pygame.SRCALPHA,
+        )
+        alpha = int(100 + 50 * math.sin(self.appearance_timer / 10))
+        pygame.draw.ellipse(
+            aura_surface,
+            (self.color[0], self.color[1], self.color[2], alpha),
+            aura_surface.get_rect(),
+        )
+        screen.blit(
+            aura_surface,
+            (
+                body_rect.centerx - aura_surface.get_width() // 2,
+                body_rect.centery - aura_surface.get_height() // 2,
+            ),
+        )
+
     def draw(self, screen: pygame.Surface) -> None:
         """Draw the wizard (with special appearance effect)."""
         if self.appearance_timer > 0:
-            # Show materializing effect during countdown
-            if self.appearance_timer % 20 < 10:  # Flicker effect
-                # Draw semi-transparent version
-                body_rect = pygame.Rect(self.rect)
-                body_rect.inflate_ip(-ENEMY_OUTLINE, -ENEMY_OUTLINE)
-
-                # Fading aura
-                aura_radius = ENEMY_GLOW * 2
-                aura_surface = pygame.Surface(
-                    (
-                        body_rect.width + aura_radius * 2,
-                        body_rect.height + aura_radius * 2,
-                    ),
-                    pygame.SRCALPHA,
-                )
-                alpha = int(100 + 50 * math.sin(self.appearance_timer / 10))
-                pygame.draw.ellipse(
-                    aura_surface,
-                    (self.color[0], self.color[1], self.color[2], alpha),
-                    aura_surface.get_rect(),
-                )
-                screen.blit(
-                    aura_surface,
-                    (
-                        body_rect.centerx - aura_surface.get_width() // 2,
-                        body_rect.centery - aura_surface.get_height() // 2,
-                    ),
-                )
+            # Flicker effect during materializing countdown
+            if self.appearance_timer % 20 < 10:
+                self._draw_materializing_aura(screen)
         else:
             super().draw(screen)
