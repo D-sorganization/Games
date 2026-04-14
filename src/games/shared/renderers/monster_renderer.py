@@ -89,37 +89,46 @@ class MonsterStyleRenderer(BaseBotStyleRenderer):
         """Render the monster head and facial features."""
         head_size = int(rw * 0.6)
         head_y = int(ry + rh * 0.05)
-        head_rect = pygame.Rect(
-            int(cx - head_size // 2),
-            int(head_y),
-            int(head_size),
-            int(head_size),
-        )
-        pygame.draw.rect(screen, color, head_rect)
-
-        eye_color = (255, 50, 0)
-        if bot.enemy_type == "boss":
-            eye_color = (255, 255, 0)
-
-        pygame.draw.polygon(
+        pygame.draw.rect(
             screen,
-            eye_color,
-            [
-                (int(cx - head_size * 0.3), int(head_y + head_size * 0.3)),
-                (int(cx - head_size * 0.1), int(head_y + head_size * 0.3)),
-                (int(cx - head_size * 0.2), int(head_y + head_size * 0.45)),
-            ],
+            color,
+            pygame.Rect(int(cx - head_size // 2), head_y, head_size, head_size),
         )
-        pygame.draw.polygon(
-            screen,
-            eye_color,
-            [
-                (int(cx + head_size * 0.3), int(head_y + head_size * 0.3)),
-                (int(cx + head_size * 0.1), int(head_y + head_size * 0.3)),
-                (int(cx + head_size * 0.2), int(head_y + head_size * 0.45)),
-            ],
-        )
+        eye_color = (255, 255, 0) if bot.enemy_type == "boss" else (255, 50, 0)
+        self._render_head_eyes(screen, cx, head_y, head_size, eye_color)
+        self._render_head_mouth(screen, bot, cx, head_y, head_size)
 
+    def _render_head_eyes(
+        self,
+        screen: pygame.Surface,
+        cx: float,
+        head_y: int,
+        head_size: int,
+        eye_color: tuple[int, int, int],
+    ) -> None:
+        """Draw the two triangle-shaped eyes."""
+        for x_sign in (-1, 1):
+            ey = head_y + head_size * 0.3
+            eye_tip_y = head_y + head_size * 0.45
+            pygame.draw.polygon(
+                screen,
+                eye_color,
+                [
+                    (int(cx + x_sign * head_size * 0.3), int(ey)),
+                    (int(cx + x_sign * head_size * 0.1), int(ey)),
+                    (int(cx + x_sign * head_size * 0.2), int(eye_tip_y)),
+                ],
+            )
+
+    def _render_head_mouth(
+        self,
+        screen: pygame.Surface,
+        bot: Bot,
+        cx: float,
+        head_y: int,
+        head_size: int,
+    ) -> None:
+        """Draw the mouth as an open rect or closed line."""
         mouth_y = head_y + head_size * 0.65
         mouth_w = head_size * 0.6
         if getattr(bot, "mouth_open", False):

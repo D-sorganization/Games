@@ -132,46 +132,41 @@ class GameRenderer:
     def _render_particles(
         self, particles: list[Any], offset: tuple[int, int] = (0, 0)
     ) -> None:
-        """Render particle effects including lasers and explosion particles.
-
-        Args:
-            particles: List of Particle objects.
-            offset: (x, y) offset for rendering (e.g. screen shake).
-        """
+        """Dispatch each particle to its type-specific sub-renderer."""
         ox, oy = offset
         for p in particles:
-            # Handle Particle Object
             if p.ptype == "laser":
-                alpha = int(255 * (p.timer / C.LASER_DURATION))
-                start = (p.start_pos[0] + ox, p.start_pos[1] + oy)
-                end = (p.end_pos[0] + ox, p.end_pos[1] + oy)
-                color = (*p.color, alpha)
-                pygame.draw.line(self.effects_surface, color, start, end, p.width)
-                # Spread
-                for i in range(5):
-                    offset_val = (i - 2) * 20
-                    target_end = (end[0] + offset_val, end[1])
-                    pygame.draw.line(
-                        self.effects_surface,
-                        (*p.color, max(0, alpha - 50)),
-                        start,
-                        target_end,
-                        max(1, p.width // 2),
-                    )
+                self._render_laser_particle(p, ox, oy)
             elif p.ptype == "normal":
-                ratio = p.timer / p.max_timer
-                alpha = int(255 * ratio)
-                alpha = max(0, min(255, alpha))
-                color = p.color
-                rgba = (*color, alpha) if len(color) == 3 else (*color[:3], alpha)
+                self._render_normal_particle(p, ox, oy)
 
-                # Optimized drawing on shared surface
-                pygame.draw.circle(
-                    self.effects_surface,
-                    rgba,
-                    (int(p.x + ox), int(p.y + oy)),
-                    int(p.size),
-                )
+    def _render_laser_particle(self, p: Any, ox: int, oy: int) -> None:
+        """Draw a laser beam with fanned spread lines."""
+        alpha = int(255 * (p.timer / C.LASER_DURATION))
+        start = (p.start_pos[0] + ox, p.start_pos[1] + oy)
+        end = (p.end_pos[0] + ox, p.end_pos[1] + oy)
+        pygame.draw.line(self.effects_surface, (*p.color, alpha), start, end, p.width)
+        for i in range(5):
+            target_end = (end[0] + (i - 2) * 20, end[1])
+            pygame.draw.line(
+                self.effects_surface,
+                (*p.color, max(0, alpha - 50)),
+                start,
+                target_end,
+                max(1, p.width // 2),
+            )
+
+    def _render_normal_particle(self, p: Any, ox: int, oy: int) -> None:
+        """Draw a fading circular explosion particle."""
+        alpha = max(0, min(255, int(255 * p.timer / p.max_timer)))
+        color = p.color
+        rgba = (*color, alpha) if len(color) == 3 else (*color[:3], alpha)
+        pygame.draw.circle(
+            self.effects_surface,
+            rgba,
+            (int(p.x + ox), int(p.y + oy)),
+            int(p.size),
+        )
 
     def _render_portal(self, portal: Portal | None, player: Player) -> None:
         """Render portal visual effects if active.

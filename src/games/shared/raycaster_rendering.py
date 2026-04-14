@@ -409,67 +409,114 @@ def render_floor_ceiling(  # noqa: PLR0913
     level_themes_list = level_themes or []
     theme_idx = (level - 1) % len(level_themes_list) if level_themes_list else 0
     theme = level_themes_list[theme_idx] if level_themes_list else None
-    player_angle = player.angle
 
+    background_surface, scaled_background_surface, cached_background_theme_idx = (
+        _ensure_background_surface(
+            level,
+            level_themes_list,
+            screen_width,
+            screen_height,
+            gray,
+            dark_gray,
+            cached_background_theme_idx,
+            theme_idx,
+            background_surface,
+            scaled_background_surface,
+        )
+    )
+
+    horizon = screen_height // 2 + int(player.pitch + view_offset_y)
+    _blit_background(
+        screen, scaled_background_surface, screen_width, screen_height, horizon
+    )
+    _draw_stars(screen, stars, player, screen_width, horizon, view_offset_y)
+    _draw_moon(screen, player, screen_width, horizon, view_offset_y, theme, gray)
+    return background_surface, scaled_background_surface, cached_background_theme_idx
+
+
+def _ensure_background_surface(  # noqa: PLR0913
+    level: int,
+    level_themes_list: list[dict[str, Any]],
+    screen_width: int,
+    screen_height: int,
+    gray: tuple[int, int, int],
+    dark_gray: tuple[int, int, int],
+    cached_background_theme_idx: int,
+    theme_idx: int,
+    background_surface: pygame.Surface | None,
+    scaled_background_surface: pygame.Surface | None,
+) -> tuple[pygame.Surface | None, pygame.Surface | None, int]:
+    """Regenerate the background surface if the theme changed, else ensure scaling."""
     if cached_background_theme_idx != theme_idx or background_surface is None:
         background_surface, scaled_background_surface, theme_idx = (
             generate_background_surface(
-                level,
-                level_themes_list,
-                screen_width,
-                screen_height,
-                gray,
-                dark_gray,
+                level, level_themes_list, screen_width, screen_height, gray, dark_gray
             )
         )
         cached_background_theme_idx = theme_idx
-
-    horizon = screen_height // 2 + int(player.pitch + view_offset_y)
-
-    bg = scaled_background_surface
-    if bg is None and background_surface is not None:
+    elif scaled_background_surface is None:
         scaled_background_surface = pygame.transform.scale(
             background_surface, (screen_width, screen_height * 2)
         )
-        bg = scaled_background_surface
+    return background_surface, scaled_background_surface, cached_background_theme_idx
 
-    if not (bg is not None):
-        raise ValueError("DbC Blocked: Precondition failed.")
 
+def _blit_background(
+    screen: pygame.Surface,
+    bg: pygame.Surface | None,
+    screen_width: int,
+    screen_height: int,
+    horizon: int,
+) -> None:
+    """Blit the sky (above horizon) and floor (below horizon) bands."""
+    if bg is None:
+        raise ValueError("DbC Blocked: background surface must not be None")
     if horizon > 0:
         screen.blit(
-            bg,
-            (0, horizon - screen_height),
-            (0, 0, screen_width, screen_height),
+            bg, (0, horizon - screen_height), (0, 0, screen_width, screen_height)
         )
-
     if horizon < screen_height:
-        screen.blit(
-            bg,
-            (0, horizon),
-            (0, screen_height, screen_width, screen_height),
-        )
+        screen.blit(bg, (0, horizon), (0, screen_height, screen_width, screen_height))
 
-    star_offset = int(player_angle * 200) % screen_width
+
+def _draw_stars(
+    screen: pygame.Surface,
+    stars: list[tuple[int, int, float, tuple[int, int, int]]],
+    player: Player,
+    screen_width: int,
+    horizon: int,
+    view_offset_y: float,
+) -> None:
+    """Draw scrolling star field in the sky portion."""
+    star_offset = int(player.angle * 200) % screen_width
     for sx, sy, size, color in stars:
         x = (sx + star_offset) % screen_width
         y = int(sy + player.pitch + view_offset_y)
         if 0 <= y < horizon:
             pygame.draw.circle(screen, color, (x, int(y)), int(size))
 
-    moon_x = (screen_width - 200 - int(player_angle * 100)) % (
+
+def _draw_moon(
+    screen: pygame.Surface,
+    player: Player,
+    screen_width: int,
+    horizon: int,
+    view_offset_y: float,
+    theme: dict[str, Any] | None,
+    gray: tuple[int, int, int],
+) -> None:
+    """Draw the moon disc with a shadow overlay."""
+    moon_x = (screen_width - 200 - int(player.angle * 100)) % (
         screen_width * 2
     ) - screen_width // 2
     moon_y = 100 + int(player.pitch + view_offset_y)
-
-    if -100 < moon_x < screen_width + 100:
-        if 0 <= moon_y < horizon + 40:
-            pygame.draw.circle(screen, (220, 220, 200), (int(moon_x), moon_y), 40)
-            shadow_pos = (int(moon_x) - 10, moon_y)
-            moon_color = theme["ceiling"] if theme else gray
-            pygame.draw.circle(screen, moon_color, shadow_pos, 40)
-
-    return background_surface, scaled_background_surface, cached_background_theme_idx
+    if not (-100 < moon_x < screen_width + 100):
+        return
+    if not (0 <= moon_y < horizon + 40):
+        return
+    pygame.draw.circle(screen, (220, 220, 200), (int(moon_x), moon_y), 40)
+    moon_color = theme["ceiling"] if theme else gray
+    pygame.draw.circle(screen, moon_color, (int(moon_x) - 10, moon_y), 40)
 
 
 # ---------------------------------------------------------------------------
@@ -517,6 +564,18 @@ def render_minimap(
     Returns:
         (fog_surface, fog_visited_count) -- caller should update its cached state.
     """
+    _draw_minimap_border(context)
+    fog_surface, fog_visited_count = _draw_minimap_tiles(
+        context, context.fog_surface, context.fog_visited_count
+    )
+    _draw_minimap_portal(context)
+    _draw_minimap_bots(context)
+    _draw_minimap_player(context)
+    return fog_surface, fog_visited_count
+
+
+def _draw_minimap_border(context: MinimapRenderContext) -> None:
+    """Draw the black border around the minimap."""
     pygame.draw.rect(
         context.screen,
         context.black,
@@ -528,89 +587,85 @@ def render_minimap(
         ),
     )
 
-    fog_surface = context.fog_surface
-    fog_visited_count = context.fog_visited_count
 
-    if context.minimap_surface:
-        if context.visited_cells is not None:
-            visited_count = len(context.visited_cells)
-            if fog_surface is None or fog_visited_count != visited_count:
-                fog_surface = pygame.Surface(
-                    (context.minimap_size, context.minimap_size), pygame.SRCALPHA
+def _draw_minimap_tiles(
+    context: MinimapRenderContext,
+    fog_surface: pygame.Surface | None,
+    fog_visited_count: int,
+) -> tuple[pygame.Surface | None, int]:
+    """Blit the static minimap surface with optional fog of war."""
+    if not context.minimap_surface:
+        return fog_surface, fog_visited_count
+
+    if context.visited_cells is not None:
+        visited_count = len(context.visited_cells)
+        if fog_surface is None or fog_visited_count != visited_count:
+            fog_surface = pygame.Surface(
+                (context.minimap_size, context.minimap_size), pygame.SRCALPHA
+            )
+            fog_surface.fill((0, 0, 0, 255))
+            for vx, vy in context.visited_cells:
+                fog_surface.fill(
+                    (0, 0, 0, 0),
+                    rect=(
+                        vx * context.minimap_scale,
+                        vy * context.minimap_scale,
+                        context.minimap_scale,
+                        context.minimap_scale,
+                    ),
                 )
-                fog_surface.fill((0, 0, 0, 255))
-                for vx, vy in context.visited_cells:
-                    fog_surface.fill(
-                        (0, 0, 0, 0),
-                        rect=(
-                            vx * context.minimap_scale,
-                            vy * context.minimap_scale,
-                            context.minimap_scale,
-                            context.minimap_scale,
-                        ),
-                    )
-                fog_visited_count = visited_count
-            context.screen.blit(
-                context.minimap_surface,
-                (context.minimap_x, context.minimap_y),
-            )
-            context.screen.blit(fog_surface, (context.minimap_x, context.minimap_y))
-        else:
-            context.screen.blit(
-                context.minimap_surface,
-                (context.minimap_x, context.minimap_y),
-            )
+            fog_visited_count = visited_count
+        context.screen.blit(
+            context.minimap_surface, (context.minimap_x, context.minimap_y)
+        )
+        context.screen.blit(fog_surface, (context.minimap_x, context.minimap_y))
+    else:
+        context.screen.blit(
+            context.minimap_surface, (context.minimap_x, context.minimap_y)
+        )
+    return fog_surface, fog_visited_count
 
-    if context.portal is not None:
-        px, py = int(context.portal["x"]), int(context.portal["y"])
-        if context.visited_cells is None or (px, py) in context.visited_cells:
-            portal_map_x = context.minimap_x + px * context.minimap_scale
-            portal_map_y = context.minimap_y + py * context.minimap_scale
-            pygame.draw.circle(
-                context.screen,
-                context.cyan,
-                (int(portal_map_x), int(portal_map_y)),
-                int(context.minimap_scale * 2),
-            )
 
+def _draw_minimap_portal(context: MinimapRenderContext) -> None:
+    """Draw the portal indicator dot on the minimap."""
+    if context.portal is None:
+        return
+    px, py = int(context.portal["x"]), int(context.portal["y"])
+    if context.visited_cells is None or (px, py) in context.visited_cells:
+        portal_map_x = context.minimap_x + px * context.minimap_scale
+        portal_map_y = context.minimap_y + py * context.minimap_scale
+        pygame.draw.circle(
+            context.screen,
+            context.cyan,
+            (int(portal_map_x), int(portal_map_y)),
+            int(context.minimap_scale * 2),
+        )
+
+
+def _draw_minimap_bots(context: MinimapRenderContext) -> None:
+    """Draw red enemy dots on the minimap for visible bots."""
     for bot in context.bots:
-        if (
+        if not (
             bot.alive
             and bot.enemy_type != "health_pack"
             and context.enemy_types is not None
             and context.enemy_types[bot.enemy_type].get("visual_style") != "item"
         ):
-            bot_cell_x = int(bot.x)
-            bot_cell_y = int(bot.y)
-            if (
-                context.visited_cells is None
-                or (
-                    bot_cell_x,
-                    bot_cell_y,
-                )
-                in context.visited_cells
-            ):
-                bot_x = context.minimap_x + bot.x * context.minimap_scale
-                bot_y = context.minimap_y + bot.y * context.minimap_scale
-                pygame.draw.circle(
-                    context.screen,
-                    context.red,
-                    (int(bot_x), int(bot_y)),
-                    3,
-                )
+            continue
+        bot_cell = (int(bot.x), int(bot.y))
+        if context.visited_cells is None or bot_cell in context.visited_cells:
+            bot_x = context.minimap_x + bot.x * context.minimap_scale
+            bot_y = context.minimap_y + bot.y * context.minimap_scale
+            pygame.draw.circle(context.screen, context.red, (int(bot_x), int(bot_y)), 3)
 
+
+def _draw_minimap_player(context: MinimapRenderContext) -> None:
+    """Draw the player dot and direction arrow on the minimap."""
     player_x = context.minimap_x + context.player.x * context.minimap_scale
     player_y = context.minimap_y + context.player.y * context.minimap_scale
     pygame.draw.circle(context.screen, context.green, (int(player_x), int(player_y)), 3)
-
     dir_x = player_x + math.cos(context.player.angle) * 10
     dir_y = player_y + math.sin(context.player.angle) * 10
     pygame.draw.line(
-        context.screen,
-        context.green,
-        (player_x, player_y),
-        (dir_x, dir_y),
-        2,
+        context.screen, context.green, (player_x, player_y), (dir_x, dir_y), 2
     )
-
-    return fog_surface, fog_visited_count

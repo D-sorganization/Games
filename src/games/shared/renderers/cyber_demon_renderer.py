@@ -108,34 +108,39 @@ class CyberDemonStyleRenderer(BaseBotStyleRenderer):
     ) -> None:
         """Draw the horned head and red visor."""
         head_size = rw * 0.3
-        head_y = ry
-        head_rect = pygame.Rect(
-            int(cx - head_size / 2), int(head_y), int(head_size), int(head_size)
-        )
-        pygame.draw.rect(screen, (60, 60, 60), head_rect)
-
-        # Horns (Technological)
-        pygame.draw.line(
+        pygame.draw.rect(
             screen,
-            (150, 150, 150),
-            (int(cx - head_size / 2), int(head_y)),
-            (int(cx - head_size), int(head_y - 20)),
-            5,
+            (60, 60, 60),
+            pygame.Rect(
+                int(cx - head_size / 2), int(ry), int(head_size), int(head_size)
+            ),
         )
-        pygame.draw.line(
-            screen,
-            (150, 150, 150),
-            (int(cx + head_size / 2), int(head_y)),
-            (int(cx + head_size), int(head_y - 20)),
-            5,
-        )
+        self._render_head_horns(screen, cx, ry, head_size)
+        self._render_head_visor(screen, cx, ry, head_size)
 
+    def _render_head_horns(
+        self, screen: pygame.Surface, cx: float, ry: float, head_size: float
+    ) -> None:
+        """Draw two technological side horns."""
+        for x_sign in (-1, 1):
+            pygame.draw.line(
+                screen,
+                (150, 150, 150),
+                (int(cx + x_sign * head_size / 2), int(ry)),
+                (int(cx + x_sign * head_size), int(ry - 20)),
+                5,
+            )
+
+    def _render_head_visor(
+        self, screen: pygame.Surface, cx: float, ry: float, head_size: float
+    ) -> None:
+        """Draw the red scanner visor band."""
         pygame.draw.rect(
             screen,
             (255, 0, 0),
             (
                 int(cx - head_size * 0.4),
-                int(head_y + head_size * 0.4),
+                int(ry + head_size * 0.4),
                 int(head_size * 0.8),
                 int(head_size * 0.2),
             ),

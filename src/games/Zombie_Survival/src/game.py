@@ -224,14 +224,21 @@ class Game(FPSGameBase):
         return progression_flow.check_portal_completion(self)
 
     def _handle_joystick_input(self, shield_active: bool) -> bool:
-        """Process joystick axes and buttons; returns updated shield_active."""
+        """Process all joystick inputs; return updated shield_active flag."""
         if not (self.player is not None):
             raise ValueError("DbC Blocked: Precondition failed.")
         if not (self.game_map is not None):
             raise ValueError("DbC Blocked: Precondition failed.")
+        self._joystick_move_axes()
+        self._joystick_look_axes()
+        shield_active = self._joystick_action_buttons(shield_active)
+        self._joystick_hat_weapon_select()
+        return shield_active
+
+    def _joystick_move_axes(self) -> None:
+        """Apply left-stick strafe/move axes to the player."""
         axis_x = self.joystick.get_axis(0)
         axis_y = self.joystick.get_axis(1)
-
         if abs(axis_x) > C.JOYSTICK_DEADZONE:
             self.player.strafe(
                 self.game_map,
@@ -249,40 +256,41 @@ class Game(FPSGameBase):
             )
             self.player_is_moving = True
 
-        look_x = 0.0
-        look_y = 0.0
-        if self.joystick.get_numaxes() >= 4:
-            look_x = self.joystick.get_axis(2)
-            look_y = self.joystick.get_axis(3)
-
+    def _joystick_look_axes(self) -> None:
+        """Apply right-stick look axes for rotation and pitch."""
+        look_x = self.joystick.get_axis(2) if self.joystick.get_numaxes() >= 4 else 0.0
+        look_y = self.joystick.get_axis(3) if self.joystick.get_numaxes() >= 4 else 0.0
         if abs(look_x) > C.JOYSTICK_DEADZONE:
             self.player.rotate(look_x * C.PLAYER_ROT_SPEED * 15 * C.SENSITIVITY_X)
         if abs(look_y) > C.JOYSTICK_DEADZONE:
             self.player.pitch_view(-look_y * 10 * C.SENSITIVITY_Y)
 
-        if self.joystick.get_numbuttons() > 0 and self.joystick.get_button(0):
+    def _joystick_action_buttons(self, shield_active: bool) -> bool:
+        """Handle fire, reload, secondary-fire, and shield buttons."""
+        n = self.joystick.get_numbuttons()
+        if n > 0 and self.joystick.get_button(0):
             shield_active = True
-        if self.joystick.get_numbuttons() > 2 and self.joystick.get_button(2):
+        if n > 2 and self.joystick.get_button(2):
             self.player.reload()
-        if self.joystick.get_numbuttons() > 5 and self.joystick.get_button(5):
-            if self.player.shoot():
-                self.fire_weapon()
-        if self.joystick.get_numbuttons() > 4 and self.joystick.get_button(4):
-            if self.player.fire_secondary():
-                self.fire_weapon(is_secondary=True)
-
-        if self.joystick.get_numhats() > 0:
-            hat = self.joystick.get_hat(0)
-            if hat[0] == -1:
-                self.switch_weapon_with_message("pistol")
-            if hat[0] == 1:
-                self.switch_weapon_with_message("rifle")
-            if hat[1] == 1:
-                self.switch_weapon_with_message("shotgun")
-            if hat[1] == -1:
-                self.switch_weapon_with_message("plasma")
-
+        if n > 5 and self.joystick.get_button(5) and self.player.shoot():
+            self.fire_weapon()
+        if n > 4 and self.joystick.get_button(4) and self.player.fire_secondary():
+            self.fire_weapon(is_secondary=True)
         return shield_active
+
+    def _joystick_hat_weapon_select(self) -> None:
+        """Use the D-pad hat to cycle weapons."""
+        if self.joystick.get_numhats() < 1:
+            return
+        hat = self.joystick.get_hat(0)
+        if hat[0] == -1:
+            self.switch_weapon_with_message("pistol")
+        if hat[0] == 1:
+            self.switch_weapon_with_message("rifle")
+        if hat[1] == 1:
+            self.switch_weapon_with_message("shotgun")
+        if hat[1] == -1:
+            self.switch_weapon_with_message("plasma")
 
     def update_game(self) -> None:
         """Update game state through the extracted gameplay updater."""
