@@ -77,6 +77,24 @@ def _init_dda_params(
     )
 
 
+def _advance_dda(
+    map_x: int,
+    map_y: int,
+    step_x: int,
+    step_y: int,
+    sdx: float,
+    sdy: float,
+    ddx: float,
+    ddy: float,
+) -> tuple[int, int, float, float, float, int]:
+    """Advance one DDA grid step; return (mx, my, sdx, sdy, dist, side)."""
+    if sdx < sdy:
+        sdx += ddx
+        return map_x + step_x, map_y, sdx, sdy, sdx - ddx, 0
+    sdy += ddy
+    return map_x, map_y + step_y, sdx, sdy, sdy - ddy, 1
+
+
 def _run_dda_loop(
     map_x: int,
     map_y: int,
@@ -91,37 +109,21 @@ def _run_dda_loop(
 ) -> tuple[bool, int, float, int, int, int]:
     """Run the DDA march until a wall is hit or max_dist is exceeded.
 
-    Returns:
-        (hit, wall_type, dist, side, map_x, map_y)
+    Returns: (hit, wall_type, dist, side, map_x, map_y)
     """
-    grid = game_map.grid
-    width = game_map.width
-    height = game_map.height
-    max_steps = int(max_dist * 1.5)
-    hit = False
-    wall_type = 0
-    side = 0
-    dist = 0.0
-    for _ in range(max_steps):
-        if side_dist_x < side_dist_y:
-            side_dist_x += delta_dist_x
-            map_x += step_x
-            dist = side_dist_x - delta_dist_x
-            side = 0
-        else:
-            side_dist_y += delta_dist_y
-            map_y += step_y
-            dist = side_dist_y - delta_dist_y
-            side = 1
+    grid, width, height = game_map.grid, game_map.width, game_map.height
+    hit, wall_type, side, dist = False, 0, 0, 0.0
+    for _ in range(int(max_dist * 1.5)):
+        map_x, map_y, side_dist_x, side_dist_y, dist, side = _advance_dda(
+            map_x, map_y, step_x, step_y, side_dist_x, side_dist_y, delta_dist_x, delta_dist_y
+        )
         if dist > max_dist:
             break
         if not (0 <= map_x < width and 0 <= map_y < height):
-            hit = True
-            wall_type = 1
+            hit, wall_type = True, 1
             break
         if grid[map_y][map_x] > 0:
-            hit = True
-            wall_type = grid[map_y][map_x]
+            hit, wall_type = True, grid[map_y][map_x]
             break
     return hit, wall_type, dist, side, map_x, map_y
 
