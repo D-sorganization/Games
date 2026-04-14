@@ -115,7 +115,14 @@ def _run_dda_loop(
     hit, wall_type, side, dist = False, 0, 0, 0.0
     for _ in range(int(max_dist * 1.5)):
         map_x, map_y, side_dist_x, side_dist_y, dist, side = _advance_dda(
-            map_x, map_y, step_x, step_y, side_dist_x, side_dist_y, delta_dist_x, delta_dist_y
+            map_x,
+            map_y,
+            step_x,
+            step_y,
+            side_dist_x,
+            side_dist_y,
+            delta_dist_x,
+            delta_dist_y,
         )
         if dist > max_dist:
             break
