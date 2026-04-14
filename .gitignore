@@ -15,6 +15,9 @@ env/
 *.cover
 htmlcov/
 coverage.xml
+cov.json
+cov_test*/
+cov_annot*/
 .hypothesis/
 
 # MATLAB/Simulink
