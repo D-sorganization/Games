@@ -38,6 +38,9 @@ from .raycaster_rendering import (
 )
 from .raycaster_sprites import render_sprites as _render_sprites_fn
 from .raycaster_textures import TextureManager
+from .texture_generator import (
+    TextureGenerator,  # noqa: F401  (re-exported for test patching)
+)
 from .utils import cast_ray_dda
 
 if TYPE_CHECKING:
