@@ -795,7 +795,7 @@ class Raycaster:
             self._cached_background_theme_idx,
         ) = _generate_background_surface_fn(
             level,
-            self.config.LEVEL_THEMES or [],
+            self.config.LEVEL_THEMES or [],  # type: ignore[arg-type]
             self.config.SCREEN_WIDTH,
             self.config.SCREEN_HEIGHT,
             self.config.GRAY,
@@ -818,7 +818,7 @@ class Raycaster:
             screen,
             player,
             level,
-            self.config.LEVEL_THEMES or [],
+            self.config.LEVEL_THEMES or [],  # type: ignore[arg-type]
             self.config.SCREEN_WIDTH,
             self.config.SCREEN_HEIGHT,
             self.stars,
