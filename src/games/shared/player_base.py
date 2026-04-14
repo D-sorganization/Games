@@ -284,38 +284,10 @@ class PlayerBase:
                     w_state["heat"] -= w_data.get("cooling_rate", 0.01)
                     w_state["heat"] = max(0.0, w_state["heat"])
 
-    def update_timers(self) -> None:
-        """Update common player timers."""
-        # Sway
-        self.sway_amount = self.sway_amount * 0.8 + self.frame_turn * 0.2
-        self.frame_turn = 0.0
-
-        # Shoot timer
-        if self.shoot_timer > 0:
-            self.shoot_timer -= 1
-        else:
-            self.shooting = False
-            if self.current_weapon == "minigun":
-                w_state = self.weapon_state.get("minigun", {})
-                if w_state.get("spin_timer", 0) > 0:
-                    w_state["spin_timer"] -= 1
-
-        # Cooldowns
-        if self.bomb_cooldown > 0:
-            self.bomb_cooldown -= 1
-        if self.secondary_cooldown > 0:
-            self.secondary_cooldown -= 1
-
-        # Stamina regen
-        if self.stamina_recharge_delay > 0:
-            self.stamina_recharge_delay -= 1
-        elif self.stamina < self.max_stamina:
-            self.stamina = min(self.max_stamina, self.stamina + 0.5)
-
-        # Shield logic
+    def _update_shield_timer(self) -> None:
+        """Tick the shield activation, depletion, and recharge cycle."""
         shield_max = getattr(self.C, "SHIELD_MAX_DURATION", 600)
         shield_depleted = getattr(self.C, "SHIELD_COOLDOWN_DEPLETED", 300)
-
         if self.shield_active:
             if self.shield_timer > 0:
                 self.shield_timer -= 1
@@ -325,5 +297,30 @@ class PlayerBase:
         elif self.shield_recharge_delay > 0:
             self.shield_recharge_delay -= 1
         elif self.shield_timer < shield_max:
-            self.shield_timer += 2
-            self.shield_timer = min(self.shield_timer, shield_max)
+            self.shield_timer = min(self.shield_timer + 2, shield_max)
+
+    def update_timers(self) -> None:
+        """Update common player timers."""
+        self.sway_amount = self.sway_amount * 0.8 + self.frame_turn * 0.2
+        self.frame_turn = 0.0
+
+        if self.shoot_timer > 0:
+            self.shoot_timer -= 1
+        else:
+            self.shooting = False
+            if self.current_weapon == "minigun":
+                w_state = self.weapon_state.get("minigun", {})
+                if w_state.get("spin_timer", 0) > 0:
+                    w_state["spin_timer"] -= 1
+
+        if self.bomb_cooldown > 0:
+            self.bomb_cooldown -= 1
+        if self.secondary_cooldown > 0:
+            self.secondary_cooldown -= 1
+
+        if self.stamina_recharge_delay > 0:
+            self.stamina_recharge_delay -= 1
+        elif self.stamina < self.max_stamina:
+            self.stamina = min(self.max_stamina, self.stamina + 0.5)
+
+        self._update_shield_timer()
