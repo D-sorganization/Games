@@ -1,90 +1,299 @@
 {
-  "timestamp": "2026-04-02T09:05:01.868253",
-  "overall_score": 9.85,
-  "category_scores": {
-    "I": {
-      "score": 10.0,
-      "name": "Code Style",
-      "weight": 8.33
-    },
-    "G": {
-      "score": 10.0,
-      "name": "Dependencies",
-      "weight": 2.5
-    },
-    "J": {
-      "score": 10.0,
-      "name": "API Design",
-      "weight": 2.5
-    },
-    "O": {
-      "score": 10.0,
-      "name": "Maintainability",
-      "weight": 8.34
-    },
-    "D": {
-      "score": 10.0,
-      "name": "Error Handling",
-      "weight": 2.5
-    },
-    "C": {
-      "score": 10.0,
-      "name": "Test Coverage",
-      "weight": 15.0
-    },
-    "F": {
-      "score": 9.0,
-      "name": "Security",
-      "weight": 15.0
-    },
-    "M": {
-      "score": 10.0,
-      "name": "Configuration",
-      "weight": 2.5
-    },
-    "A": {
-      "score": 10.0,
-      "name": "Code Structure",
-      "weight": 8.33
-    },
-    "N": {
-      "score": 10.0,
-      "name": "Scalability",
-      "weight": 2.5
-    },
-    "H": {
-      "score": 10.0,
-      "name": "CI/CD",
-      "weight": 2.5
-    },
-    "K": {
-      "score": 10.0,
-      "name": "Data Handling",
-      "weight": 2.5
-    },
-    "L": {
-      "score": 10.0,
-      "name": "Logging",
-      "weight": 2.5
-    },
-    "E": {
-      "score": 10.0,
-      "name": "Performance",
-      "weight": 15.0
-    },
-    "B": {
-      "score": 10.0,
-      "name": "Documentation",
-      "weight": 10.0
-    }
-  },
-  "top_recommendations": [
+  "repository": "Games",
+  "assessment_date": "2026-04-17",
+  "run_at_utc": "2026-04-17T08:01:19.6221680Z",
+  "sync_status": "blocked",
+  "sync_notes": "stash failed: warning: unable to access '.pytest_cache/.gitignore': Permission denied\nwarning: unable to access '.pytest_cache/.gitignore': Permission denied\nerror: open(\".pytest_cache/.gitignore\"): Permission denied\nfatal: Unable to process path .pytest_cache/.gitignore\nCannot save the untracked files",
+  "overall_grade": "C",
+  "overall_score": 74,
+  "category_grades": [
     {
-      "severity": "WARNING",
-      "description": "Potential secrets found in 3 files (vars)",
-      "source": "Assessment_F_Security"
+      "id": "A",
+      "name": "Architecture and Boundaries",
+      "grade": "B",
+      "score": 82,
+      "evidence": [
+        "759 tracked first-party files",
+        "473 files under source-like directories"
+      ],
+      "notes": "Assesses source organization and boundary clarity from tracked first-party layout."
+    },
+    {
+      "id": "B",
+      "name": "Build and Dependency Management",
+      "grade": "B",
+      "score": 84,
+      "evidence": [
+        "CMakeLists.txt",
+        "pyproject.toml",
+        "requirements.txt",
+        "ruff.toml",
+        "src/games/QuatGolf/CMakeLists.txt",
+        "src/games/Wizard_of_Wor/wizard_of_wor/requirements.txt",
+        "src/games/shared/cpp/CMakeLists.txt"
+      ],
+      "notes": "Assesses committed build, dependency, and tool configuration."
+    },
+    {
+      "id": "C",
+      "name": "Configuration and Environment Hygiene",
+      "grade": "C",
+      "score": 78,
+      "evidence": [
+        "CMakeLists.txt",
+        "pyproject.toml",
+        "requirements.txt",
+        "ruff.toml",
+        "src/games/QuatGolf/CMakeLists.txt",
+        "src/games/Wizard_of_Wor/wizard_of_wor/requirements.txt",
+        "src/games/shared/cpp/CMakeLists.txt"
+      ],
+      "notes": "Checks whether runtime and developer configuration is explicit."
+    },
+    {
+      "id": "D",
+      "name": "Contracts, Types, and Domain Modeling",
+      "grade": "B",
+      "score": 82,
+      "evidence": [
+        "game_launcher.py",
+        "run_tests.py",
+        "scripts/analyze_completist_data.py",
+        "scripts/create_issues_from_assessment.py",
+        "scripts/generate_assessment_summary.py",
+        "scripts/mypy_autofix_agent.py",
+        "scripts/run_assessment.py",
+        "scripts/setup_hooks.py",
+        "src/contracts.py",
+        "src/games/Duum/src/atmosphere_manager.py"
+      ],
+      "notes": "Design by Contract evidence includes validation, assertions, typed models, explicit raised errors, and invariants."
+    },
+    {
+      "id": "E",
+      "name": "Reliability and Error Handling",
+      "grade": "C",
+      "score": 76,
+      "evidence": [
+        ".agent/skills/tests/SKILL.md",
+        ".claude/skills/tests/SKILL.md",
+        "docs/assessments/Assessment_C_Test_Coverage.md",
+        "docs/assessments/archive/Assessment_C_Test_Coverage.md",
+        "src/games/Duum/tests/__init__.py",
+        "game_launcher.py",
+        "run_tests.py",
+        "scripts/analyze_completist_data.py",
+        "scripts/create_issues_from_assessment.py",
+        "scripts/generate_assessment_summary.py"
+      ],
+      "notes": "Reliability is graded from test presence plus explicit validation/error-handling signals."
+    },
+    {
+      "id": "F",
+      "name": "Function, Module Size, and SRP",
+      "grade": "F",
+      "score": 55,
+      "evidence": [
+        "conftest.py (524 lines)",
+        "scripts/mypy_autofix_agent.py (732 lines)",
+        "scripts/run_assessment.py (629 lines)",
+        "src/games/Force_Field/src/bot.py (510 lines)",
+        "src/games/Force_Field/src/combat_system.py (612 lines)",
+        "src/games/Force_Field/src/gameplay_runtime.py (501 lines)",
+        "src/games/Force_Field/src/weapon_renderer.py (556 lines)",
+        "scripts/generate_assessment_summary.py (coarse avg 84 lines/definition)",
+        "scripts/run_all_assessments.py (coarse avg 95 lines/definition)",
+        "src/games/shared/bot_base.py (coarse avg 108 lines/definition)"
+      ],
+      "notes": "Evaluates function size, script/module size, and single responsibility using static size signals."
+    },
+    {
+      "id": "G",
+      "name": "Testing and TDD Posture",
+      "grade": "B",
+      "score": 82,
+      "evidence": [
+        ".agent/skills/tests/SKILL.md",
+        ".claude/skills/tests/SKILL.md",
+        "docs/assessments/Assessment_C_Test_Coverage.md",
+        "docs/assessments/archive/Assessment_C_Test_Coverage.md",
+        "src/games/Duum/tests/__init__.py",
+        "src/games/Duum/tests/test_bot.py",
+        "src/games/Duum/tests/test_entity_manager.py",
+        "src/games/Duum/tests/test_fps.py",
+        "src/games/Duum/tests/test_game_logic.py",
+        "src/games/Duum/tests/test_managers.py",
+        "src/games/Duum/tests/test_ninja.py",
+        "src/games/Duum/tests/test_particle_system.py"
+      ],
+      "notes": "TDD history cannot be confirmed statically; grade reflects committed automated test posture."
+    },
+    {
+      "id": "H",
+      "name": "CI/CD and Automation",
+      "grade": "C",
+      "score": 78,
+      "evidence": [
+        ".github/workflows/Bot-CI-Trigger.yml",
+        ".github/workflows/Jules-Auto-Assign-Issues.yml",
+        ".github/workflows/Jules-Auto-Rebase.yml",
+        ".github/workflows/Jules-Auto-Refactor.yml",
+        ".github/workflows/Jules-Auto-Repair.yml",
+        ".github/workflows/Jules-Cleaner.yml",
+        ".github/workflows/Jules-Code-Quality-Fixer.yml",
+        ".github/workflows/Jules-Control-Tower.yml",
+        ".github/workflows/Jules-Documentation-Auditor.yml",
+        ".github/workflows/Jules-Hotfix-Creator.yml"
+      ],
+      "notes": "Checks for tracked CI/CD workflow files."
+    },
+    {
+      "id": "I",
+      "name": "Security and Secret Hygiene",
+      "grade": "B",
+      "score": 82,
+      "evidence": [],
+      "notes": "Secret scan is regex-based; findings require manual confirmation."
+    },
+    {
+      "id": "J",
+      "name": "Documentation and Onboarding",
+      "grade": "B",
+      "score": 82,
+      "evidence": [
+        ".Jules/palette.md",
+        ".agent/skills/issues-10-sequential/SKILL.md",
+        ".agent/skills/issues-5-combined/SKILL.md",
+        ".agent/skills/lint/SKILL.md",
+        ".agent/skills/tests/SKILL.md",
+        ".agent/skills/update-issues/SKILL.md",
+        ".agent/workflows/issues-10-sequential.md",
+        ".agent/workflows/issues-5-combined.md",
+        ".agent/workflows/lint.md",
+        ".agent/workflows/tests.md",
+        ".agent/workflows/update-issues.md",
+        ".claude/skills/issues-10-sequential/SKILL.md"
+      ],
+      "notes": "Checks docs, README, onboarding, and release documents."
+    },
+    {
+      "id": "K",
+      "name": "Maintainability, DRY, and Duplication",
+      "grade": "F",
+      "score": 55,
+      "evidence": [
+        "constants appears in 6 files",
+        "game appears in 5 files",
+        "particle_system appears in 4 files",
+        "player appears in 4 files",
+        "projectile appears in 4 files",
+        "scripts/analyze_completist_data.py",
+        "scripts/pragmatic_programmer_review.py",
+        "scripts/shared/quality_checks_common.py",
+        "src/games/QuatGolf/src/course/CourseBuilder.h",
+        "src/games/Tetris/tests/test_tetris.py"
+      ],
+      "notes": "DRY is assessed through duplicate filename clusters and TODO/FIXME density as static heuristics."
+    },
+    {
+      "id": "L",
+      "name": "API Surface and Law of Demeter",
+      "grade": "F",
+      "score": 58,
+      "evidence": [
+        "create_desktop_shortcut.ps1",
+        "src/games/Duum/tests/test_bot.py",
+        "src/games/Duum/tests/test_entity_manager.py",
+        "src/games/Duum/tests/test_particle_system.py",
+        "src/games/Duum/tests/test_player.py",
+        "src/games/Duum/tests/test_renderer.py",
+        "src/games/Force_Field/src/combat_system.py",
+        "src/games/Force_Field/src/game_input.py",
+        "src/games/Force_Field/tests/test_entity_manager.py",
+        "src/games/Force_Field/tests/test_fps.py"
+      ],
+      "notes": "Law of Demeter is approximated with deep member-chain hints; confirmed violations require semantic review."
+    },
+    {
+      "id": "M",
+      "name": "Observability and Operability",
+      "grade": "C",
+      "score": 74,
+      "evidence": [
+        "docs/assessments/Assessment_L_Logging.md",
+        "docs/assessments/archive/Assessment_L_Logging.md",
+        "scripts/shared/logging_config.py"
+      ],
+      "notes": "Checks for logging, metrics, monitoring, and operational artifacts."
+    },
+    {
+      "id": "N",
+      "name": "Governance, Licensing, and Release Hygiene",
+      "grade": "C",
+      "score": 74,
+      "evidence": [
+        ".github/CODEOWNERS",
+        ".github/agents/security-agent.md",
+        "CHANGELOG.md",
+        "CONTRIBUTING.md",
+        "LICENSE",
+        "SECURITY.md",
+        "docs/assessments/Assessment_F_Security.md",
+        "docs/assessments/archive/Assessment_F_Security.md"
+      ],
+      "notes": "Checks ownership, release, contribution, security, and license metadata."
     }
   ],
-  "total_issues": 1,
-  "reports_analyzed": 15
+  "key_risks": [
+    "Large modules/scripts reduce maintainability and SRP clarity.",
+    "Repeated filename clusters suggest possible duplicated responsibilities.",
+    "Deep member-chain usage may indicate Law of Demeter pressure points."
+  ],
+  "recommendations": [
+    "Split the largest modules by responsibility and add characterization tests before refactoring.",
+    "Review duplicate filename/responsibility clusters and extract shared helpers only where behavior is truly repeated.",
+    "Review deep member chains and introduce boundary methods where object graph traversal leaks across modules."
+  ],
+  "issue_candidates": [
+    {
+      "title": "Split oversized modules by responsibility",
+      "severity": "medium",
+      "problem": "Oversized files found: conftest.py (524 lines); scripts/mypy_autofix_agent.py (732 lines); scripts/run_assessment.py (629 lines); src/games/Force_Field/src/bot.py (510 lines); src/games/Force_Field/src/combat_system.py (612 lines); src/games/Force_Field/src/gameplay_runtime.py (501 lines); src/games/Force_Field/src/weapon_renderer.py (556 lines); src/games/Peanut_Butter_Panic/peanut_butter_panic/core.py (560 lines); src/games/QuatGolf/src/main.cpp (835 lines); src/games/shared/combat_manager.py (625 lines); src/games/shared/cpp/tests/test_core_game_ai.cpp (727 lines); src/games/shared/cpp/tests/test_loaders.cpp (866 lines); src/games/shared/fps_game_base.py (550 lines); src/games/shared/raycaster.py (824 lines); src/games/shared/raycaster_rendering.py (617 lines); tests/shared/cpp/test_math.cpp (540 lines); tests/shared/test_combat_manager.py (670 lines); tests/shared/test_player_base.py (698 lines); tests/shared/test_raycaster.py (586 lines); tests/tetris/test_tetris_comprehensive.py (657 lines)",
+      "evidence": "Category F lists files over 500 lines or coarse long-definition signals.",
+      "impact": "Large modules obscure ownership, complicate review, and weaken SRP.",
+      "fix": "Add characterization tests, then split cohesive responsibilities into smaller modules.",
+      "acceptance": "Largest files are reduced or justified; extracted modules have focused tests.",
+      "refs": "SRP, function size, module size, maintainability"
+    },
+    {
+      "title": "Review duplicated responsibility clusters",
+      "severity": "medium",
+      "problem": "Repeated filename clusters found: constants appears in 6 files; game appears in 5 files; particle_system appears in 4 files; player appears in 4 files; projectile appears in 4 files",
+      "evidence": "Category K duplicate-name clustering found repeated responsibility names.",
+      "impact": "Potential duplicated logic increases maintenance cost and drift risk.",
+      "fix": "Review clusters, remove accidental duplication, and extract shared helpers where behavior is truly common.",
+      "acceptance": "Documented review of clusters; duplicated implementations are consolidated or justified.",
+      "refs": "DRY, maintainability, SRP"
+    },
+    {
+      "title": "Review deep object traversal hotspots",
+      "severity": "medium",
+      "problem": "Deep member-chain hints found in: create_desktop_shortcut.ps1; src/games/Duum/tests/test_bot.py; src/games/Duum/tests/test_entity_manager.py; src/games/Duum/tests/test_particle_system.py; src/games/Duum/tests/test_player.py; src/games/Duum/tests/test_renderer.py; src/games/Force_Field/src/combat_system.py; src/games/Force_Field/src/game_input.py",
+      "evidence": "Category L found repeated chains with three or more member hops.",
+      "impact": "Law of Demeter pressure can make APIs brittle and increase coupling.",
+      "fix": "Review hotspots and introduce boundary methods or DTOs where callers traverse object graphs.",
+      "acceptance": "Hotspots are documented, simplified, or justified; tests cover any API boundary changes.",
+      "refs": "Law of Demeter, SRP, maintainability"
+    }
+  ],
+  "coverage": {
+    "tracked_files": 759,
+    "code_files": 365,
+    "test_files": 142,
+    "ci_files": 30,
+    "config_files": 7,
+    "docs_files": 128,
+    "exclusions": "cache/build/vendor/virtualenv/temp/generated output directories excluded",
+    "static_limits": "TDD workflow history and confirmed Law of Demeter semantics require deeper review."
+  }
 }
