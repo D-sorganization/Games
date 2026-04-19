@@ -8,7 +8,7 @@ checks, projectile spawning, and explosion delegation.
 from __future__ import annotations
 
 import random
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from games.shared.combat_manager import ShotResolutionRequest
 from games.shared.constants import MINIGUN_BULLETS_PER_SHOT, MINIGUN_SPREAD
@@ -18,6 +18,7 @@ from .projectile import Projectile
 
 if TYPE_CHECKING:
     from .game import Game
+    from .player import Player
 
 
 class WeaponSystem:
@@ -40,7 +41,8 @@ class WeaponSystem:
         game = self._game
         if not (game.player is not None):
             raise ValueError("DbC Blocked: Precondition failed.")
-        weapon_name = game.player.current_weapon
+        player = cast("Player", game.player)
+        weapon_name = player.current_weapon
         weapon_data = C.WEAPONS[weapon_name]
 
         game.sound_manager.play_sound(f"shoot_{weapon_name}")
@@ -66,9 +68,10 @@ class WeaponSystem:
             raise ValueError("DbC Blocked: Precondition failed.")
         if not (game.raycaster is not None):
             raise ValueError("DbC Blocked: Precondition failed.")
+        player = cast("Player", game.player)
         game.damage_texts = game.combat_manager.check_shot_hit(
             ShotResolutionRequest(
-                player=game.player,
+                player=player,
                 raycaster=game.raycaster,
                 bots=game.bots,
                 damage_texts=game.damage_texts,
@@ -85,8 +88,9 @@ class WeaponSystem:
         game = self._game
         if not (game.player is not None):
             raise ValueError("DbC Blocked: Precondition failed.")
+        player = cast("Player", game.player)
         game.damage_texts = game.combat_manager.handle_bomb_explosion(
-            player=game.player,
+            player=player,
             bots=game.bots,
             damage_texts=game.damage_texts,
         )
@@ -105,11 +109,12 @@ class WeaponSystem:
         game = self._game
         if not (game.player is not None):
             raise ValueError("DbC Blocked: Precondition failed.")
+        player = cast("Player", game.player)
         game.damage_flash_timer = game.combat_manager.explode_generic(
             projectile,
             C.PLASMA_AOE_RADIUS,
             "plasma",
-            game.player,
+            player,
             game.damage_flash_timer,
         )
         game.sync_combat_state()
@@ -119,12 +124,13 @@ class WeaponSystem:
         game = self._game
         if not (game.player is not None):
             raise ValueError("DbC Blocked: Precondition failed.")
+        player = cast("Player", game.player)
         radius = float(C.WEAPONS["rocket"].get("aoe_radius", 6.0))
         game.damage_flash_timer = game.combat_manager.explode_generic(
             projectile,
             radius,
             "rocket",
-            game.player,
+            player,
             game.damage_flash_timer,
         )
         game.sync_combat_state()
@@ -138,13 +144,14 @@ class WeaponSystem:
         game = self._game
         if not (game.player is not None):
             raise ValueError("DbC Blocked: Precondition failed.")
+        player = cast("Player", game.player)
         size_map = {"plasma": 0.225, "rocket": 0.3}
         projectile = Projectile(
-            game.player.x,
-            game.player.y,
-            game.player.angle,
+            player.x,
+            player.y,
+            player.angle,
             speed=float(weapon_data.get("projectile_speed", 0.5)),
-            damage=game.player.get_current_weapon_damage(),
+            damage=player.get_current_weapon_damage(),
             is_player=True,
             color=weapon_data.get("projectile_color", (0, 255, 255)),
             size=size_map.get(weapon_name, 0.3),
@@ -169,13 +176,14 @@ class WeaponSystem:
         game = self._game
         if not (game.player is not None):
             raise ValueError("DbC Blocked: Precondition failed.")
-        damage = game.player.get_current_weapon_damage()
+        player = cast("Player", game.player)
+        damage = player.get_current_weapon_damage()
         for _ in range(MINIGUN_BULLETS_PER_SHOT):
             angle_off = random.uniform(-MINIGUN_SPREAD, MINIGUN_SPREAD)
-            final_angle = game.player.angle + angle_off
+            final_angle = player.angle + angle_off
             projectile = Projectile(
-                game.player.x,
-                game.player.y,
+                player.x,
+                player.y,
                 final_angle,
                 damage,
                 speed=2.0,

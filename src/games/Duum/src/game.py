@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import random
+from typing import cast
 
 import pygame
 
@@ -88,11 +89,11 @@ class Game(FPSGameBase):
         self.raycaster_config = RaycasterConfig(
             SCREEN_WIDTH=C.SCREEN_WIDTH,
             SCREEN_HEIGHT=C.SCREEN_HEIGHT,
-            FOV=C.FOV,
-            HALF_FOV=C.HALF_FOV,
+            FOV=C.FOV,  # type: ignore[attr-defined]
+            HALF_FOV=C.HALF_FOV,  # type: ignore[attr-defined]
             ZOOM_FOV_MULT=C.ZOOM_FOV_MULT,
-            DEFAULT_RENDER_SCALE=C.DEFAULT_RENDER_SCALE,
-            MAX_DEPTH=C.MAX_DEPTH,
+            DEFAULT_RENDER_SCALE=C.DEFAULT_RENDER_SCALE,  # type: ignore[attr-defined]
+            MAX_DEPTH=C.MAX_DEPTH,  # type: ignore[attr-defined]
             FOG_START=C.FOG_START,
             FOG_COLOR=C.FOG_COLOR,
             LEVEL_THEMES=C.LEVEL_THEMES,
@@ -142,10 +143,10 @@ class Game(FPSGameBase):
         self.level = self.selected_start_level
         self.lives = self.selected_lives
         self.kills = 0
-        self.level_times = []
+        self.level_times: list[float] = []
         self.paused = False
         self.particle_system.particles = []
-        self.damage_texts = []
+        self.damage_texts: list[dict] = []
         self.entity_manager.reset()
         self.unlocked_weapons = {"pistol"}
         self.god_mode = False
@@ -179,7 +180,7 @@ class Game(FPSGameBase):
         self.particle_system.particles = []
         self.damage_texts = []
         self.damage_flash_timer = 0
-        self.visited_cells = set()
+        self.visited_cells: set[tuple[int, int]] = set()
         self.portal = None
         pygame.mouse.set_visible(False)
         pygame.event.set_grab(True)
@@ -189,8 +190,9 @@ class Game(FPSGameBase):
         previous_ammo = None
         previous_weapon = "pistol"
         if self.player:
-            previous_ammo = self.player.ammo
-            previous_weapon = self.player.current_weapon
+            player = cast(Player, self.player)
+            previous_ammo = player.ammo
+            previous_weapon = player.current_weapon
         self.player = Player(player_pos[0], player_pos[1], player_pos[2])
         if previous_ammo:
             self.player.ammo = previous_ammo
@@ -352,7 +354,7 @@ class Game(FPSGameBase):
                 self.game_map,
                 self.bots,
                 right=(axis_x > 0),
-                speed=abs(axis_x) * C.PLAYER_SPEED,
+                speed=abs(axis_x) * C.PLAYER_SPEED,  # type: ignore[attr-defined]
             )
             self.player.is_moving = True
         if abs(axis_y) > C.JOYSTICK_DEADZONE:
@@ -360,7 +362,7 @@ class Game(FPSGameBase):
                 self.game_map,
                 self.bots,
                 forward=(axis_y < 0),
-                speed=abs(axis_y) * C.PLAYER_SPEED,
+                speed=abs(axis_y) * C.PLAYER_SPEED,  # type: ignore[attr-defined]
             )
             self.player.is_moving = True
 
@@ -369,7 +371,7 @@ class Game(FPSGameBase):
         look_x = self.joystick.get_axis(2) if self.joystick.get_numaxes() >= 4 else 0.0
         look_y = self.joystick.get_axis(3) if self.joystick.get_numaxes() >= 4 else 0.0
         if abs(look_x) > C.JOYSTICK_DEADZONE:
-            self.player.rotate(look_x * C.PLAYER_ROT_SPEED * 15 * C.SENSITIVITY_X)
+            self.player.rotate(look_x * C.PLAYER_ROT_SPEED * 15 * C.SENSITIVITY_X)  # type: ignore[attr-defined]
         if abs(look_y) > C.JOYSTICK_DEADZONE:
             self.player.pitch_view(-look_y * 10 * C.SENSITIVITY_Y)
 
