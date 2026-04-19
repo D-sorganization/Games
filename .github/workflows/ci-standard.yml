@@ -16,13 +16,11 @@ on:
       - ".github/FUNDING.yml"
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
+    # NOTE: **.md intentionally NOT in paths-ignore for PRs so quality-gate
+    # runs and satisfies branch protection even for docs-only PRs.
     paths-ignore:
-      - "docs/**"
-      - "**.md"
       - "LICENSE"
       - ".gitignore"
-      # NOTE: .github/** is NOT ignored so that CI runs on workflow-file changes
-      # (required for branch protection enforcement of quality-gate on CI-fix PRs)
       - ".github/ISSUE_TEMPLATE/**"
       - ".github/PULL_REQUEST_TEMPLATE/**"
       - ".github/FUNDING.yml"
