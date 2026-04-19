@@ -568,3 +568,29 @@ class FPSGameBase:
                 f.write(f"{self.level}")
         except OSError:
             logger.exception("Save failed")
+
+    # --- Abstract methods to be implemented by subclasses ---
+
+    def _wire_event_bus(self) -> None:
+        """Subscribe subsystems to game events via the event bus.
+
+        Must be implemented by subclasses to set up game-specific event handlers.
+        """
+        raise NotImplementedError("Subclasses must implement _wire_event_bus")
+
+    def fire_weapon(self, is_secondary: bool = False) -> None:
+        """Handle weapon firing.
+
+        Args:
+            is_secondary (bool): Whether to fire secondary weapon. Defaults to False.
+
+        Must be implemented by subclasses to handle weapon-specific firing logic.
+        """
+        raise NotImplementedError("Subclasses must implement fire_weapon")
+
+    def handle_bomb_explosion(self) -> None:
+        """Handle bomb explosion logic.
+
+        Must be implemented by subclasses to handle game-specific bomb mechanics.
+        """
+        raise NotImplementedError("Subclasses must implement handle_bomb_explosion")
