@@ -61,6 +61,9 @@ jobs:
     needs: pick-runner
     runs-on: ${{ needs.pick-runner.outputs.runner }}
     timeout-minutes: 20
+    env:
+      # Shared wheel/download cache for self-hosted runners. See issue #673.
+      PIP_CACHE_DIR: /home/dieterolson/actions-runners/.shared-tool-cache/pip
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
@@ -156,6 +159,9 @@ jobs:
   tests:
     needs: [pick-runner, quality-gate]
     runs-on: ${{ needs.pick-runner.outputs.runner }}
+    env:
+      # Shared wheel/download cache for self-hosted runners. See issue #673.
+      PIP_CACHE_DIR: /home/dieterolson/actions-runners/.shared-tool-cache/pip
     strategy:
       matrix:
         python: ["3.11"]
