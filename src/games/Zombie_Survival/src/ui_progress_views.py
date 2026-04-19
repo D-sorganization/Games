@@ -18,13 +18,13 @@ def render_level_complete(renderer: UIRenderer, game: Game) -> None:
     title_rect = title.get_rect(center=(C.SCREEN_WIDTH // 2, 150))
     renderer.screen.blit(title, title_rect)
 
-    level_time = game.level_times[-1] if game.level_times else 0
-    total_time = sum(game.level_times)
+    level_time = game.level_times[-1] if game.level_times else 0  # type: float
+    total_time = sum(game.level_times)  # type: float
     stats = [
         (f"Level {game.level} cleared!", C.WHITE),
         (f"Time: {level_time:.1f}s", C.GREEN),
         (f"Total Time: {total_time:.1f}s", C.GREEN),
-        (f"Total Kills: {game.kills}", C.WHITE),
+        (f"Total Kills: {int(game.kills)}", C.WHITE),  # type: ignore[has-type]
         ("", C.WHITE),
         ("Next level: Enemies get stronger!", C.YELLOW),
         ("", C.WHITE),
@@ -42,9 +42,9 @@ def render_game_over(renderer: UIRenderer, game: Game) -> None:
     title_rect = title.get_rect(center=(C.SCREEN_WIDTH // 2, 200))
     renderer.screen.blit(title, title_rect)
 
-    completed_levels = max(0, game.level - 1)
-    total_time = sum(game.level_times)
-    avg_time = total_time / len(game.level_times) if game.level_times else 0
+    completed_levels = max(0, game.level - 1)  # type: int
+    total_time = sum(game.level_times)  # type: float
+    avg_time = total_time / len(game.level_times) if game.level_times else 0  # type: float
 
     stats = [
         (
@@ -52,7 +52,7 @@ def render_game_over(renderer: UIRenderer, game: Game) -> None:
             f"level{'s' if completed_levels != 1 else ''}",
             C.WHITE,
         ),
-        (f"Total Kills: {game.kills}", C.WHITE),
+        (f"Total Kills: {int(game.kills)}", C.WHITE),  # type: ignore[has-type]
         (f"Total Time: {total_time:.1f}s", C.GREEN),
         (
             (f"Average Time/Level: {avg_time:.1f}s", C.GREEN)

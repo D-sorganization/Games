@@ -86,6 +86,36 @@ class FPSGameBase:
     sound_manager: Any
     show_minimap: bool
     show_damage: bool
+    # Game state attributes
+    kills: int
+    kill_combo_count: int
+    kill_combo_timer: int
+    heartbeat_timer: int
+    breath_timer: int
+    groan_timer: int
+    beast_timer: int
+    lives: int
+    level: int
+    selected_difficulty: int
+    selected_lives: int
+    selected_start_level: int
+    level_start_time: int
+    level_times: list[float]
+    damage_flash_timer: int
+    visited_cells: set[tuple[int, int]]
+    game_over_timer: int
+    screen: Any
+    clock: Any
+    renderer: Any
+    ui_renderer: Any
+    particle_system: Any
+    joystick: Any
+    event_bus: Any
+    intro_phase: int
+    intro_step: int
+    intro_timer: int
+    intro_start_time: int
+    health: int
 
     # --- Properties ---
 

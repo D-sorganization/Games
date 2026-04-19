@@ -102,10 +102,10 @@ class EntityManager:
             if dx * dx + dy * dy < PICKUP_RADIUS_SQ:
                 if bot.take_damage(projectile.damage):
                     game.sound_manager.play_sound("scream")
-                    game.kills += 1
-                    game.kill_combo_count += 1
-                    game.kill_combo_timer = COMBO_TIMER_FRAMES
-                    game.last_death_pos = (bot.x, bot.y)
+                    game.kills = game.kills + 1  # type: ignore[has-type]
+                    game.kill_combo_count = game.kill_combo_count + 1  # type: ignore[has-type]
+                    game.kill_combo_timer = COMBO_TIMER_FRAMES  # type: ignore[has-type]
+                    game.last_death_pos = (bot.x, bot.y)  # type: ignore[has-type]
                 game.particle_system.add_explosion(
                     C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2, count=5
                 )

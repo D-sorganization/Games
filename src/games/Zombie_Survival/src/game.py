@@ -151,10 +151,10 @@ class Game(FPSGameBase):
 
     def sync_combat_state(self) -> None:
         """Synchronize kill/combo state from the combat manager back to Game."""
-        self.kills = self.kills
-        self.kill_combo_count = self.kill_combo_count
-        self.kill_combo_timer = self.kill_combo_timer
-        self.last_death_pos = self.last_death_pos
+        self.kills = self.kills  # type: ignore[has-type]
+        self.kill_combo_count = self.kill_combo_count  # type: ignore[has-type]
+        self.kill_combo_timer = self.kill_combo_timer  # type: ignore[has-type]
+        self.last_death_pos = self.last_death_pos  # type: ignore[has-type]
 
     def start_game(self) -> None:
         """Start new game"""

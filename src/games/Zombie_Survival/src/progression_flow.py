@@ -23,7 +23,7 @@ def start_game(game: Game) -> None:
     """Reset the full game session and initialize the first level."""
     game.level = game.selected_start_level
     game.lives = game.selected_lives
-    game.kills = 0
+    game.kills = 0  # type: ignore[has-type]
     game.level_times = []
     game.paused = False
     game.particle_system.particles = []
@@ -34,17 +34,17 @@ def start_game(game: Game) -> None:
     game.god_mode = False
     game.cheat_mode_active = False
 
-    game.kill_combo_count = 0
-    game.kill_combo_timer = 0
+    game.kill_combo_count = 0  # type: ignore[has-type]
+    game.kill_combo_timer = 0  # type: ignore[has-type]
     game.heartbeat_timer = 0
     game.breath_timer = 0
     game.groan_timer = 0
     game.beast_timer = 0
 
-    game.kills = 0
-    game.kill_combo_count = 0
-    game.kill_combo_timer = 0
-    game.last_death_pos = None
+    game.kills = 0  # type: ignore[has-type]
+    game.kill_combo_count = 0  # type: ignore[has-type]
+    game.kill_combo_timer = 0  # type: ignore[has-type]
+    game.last_death_pos = None  # type: ignore[has-type]
 
     game.game_map = Map(game.selected_map_size)
     game.raycaster = Raycaster(game.game_map, _build_raycaster_config(game))

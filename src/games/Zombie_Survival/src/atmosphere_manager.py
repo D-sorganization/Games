@@ -82,10 +82,10 @@ class AtmosphereManager:
     def check_kill_combo(self) -> None:
         """Tick the kill-combo timer and trigger combo announcement if earned."""
         game = self._game
-        if game.kill_combo_timer > 0:
-            game.kill_combo_timer -= 1
-            if game.kill_combo_timer <= 0:
-                if game.kill_combo_count >= 3:
+        if game.kill_combo_timer > 0:  # type: ignore[has-type]
+            game.kill_combo_timer = game.kill_combo_timer - 1  # type: ignore[has-type]
+            if game.kill_combo_timer <= 0:  # type: ignore[has-type]
+                if game.kill_combo_count >= 3:  # type: ignore[has-type]
                     phrases = ["phrase_cool", "phrase_awesome", "phrase_brutal"]
                     phrase = random.choice(phrases)
                     game.sound_manager.play_sound(phrase)
@@ -99,4 +99,4 @@ class AtmosphereManager:
                             "vy": -0.2,
                         }
                     )
-                game.kill_combo_count = 0
+                game.kill_combo_count = 0  # type: ignore[has-type]

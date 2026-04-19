@@ -168,7 +168,7 @@ def render_level_info(renderer: UIRenderer, game: Game) -> None:
         kills_text.get_rect(topright=(C.SCREEN_WIDTH - 20, 50)),
     )
     score_text = renderer.small_font.render(
-        f"Score: {game.kills * 100}", True, C.YELLOW
+        f"Score: {int(game.kills) * 100}", True, C.YELLOW  # type: ignore[has-type]
     )
     renderer.screen.blit(
         score_text, score_text.get_rect(topright=(C.SCREEN_WIDTH - 20, 80))
