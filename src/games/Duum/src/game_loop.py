@@ -23,7 +23,7 @@ def run(game: Game) -> None:
     try:
         while game.running:
             run_frame(game)
-            game.clock.tick(C.FPS)
+            game.clock.tick(C.FPS)  # type: ignore[attr-defined]
     except (RuntimeError, pygame.error, OSError, ValueError, TypeError) as exc:
         logger.critical("CRASH: %s", exc, exc_info=True)
         raise

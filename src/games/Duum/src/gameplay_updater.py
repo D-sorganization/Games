@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import pygame
 
@@ -12,6 +12,7 @@ from . import constants as C  # noqa: N812
 
 if TYPE_CHECKING:
     from .game import Game
+    from .player import Player
 
 
 def update_damage_texts(game: Game) -> None:
@@ -29,39 +30,40 @@ def handle_keyboard_movement(game: Game, keys) -> None:
     if not (game.game_map is not None):
         raise ValueError("DbC Blocked: Precondition failed.")
 
+    player = cast("Player", game.player)
     sprint_key = keys[pygame.K_RSHIFT]
     is_sprinting = game.input_manager.is_action_pressed("sprint") or sprint_key
-    if is_sprinting and game.player.stamina > 0:
-        current_speed = C.PLAYER_SPRINT_SPEED
-        game.player.stamina -= 1
-        game.player.stamina_recharge_delay = 60
+    if is_sprinting and player.stamina > 0:
+        current_speed = C.PLAYER_SPRINT_SPEED  # type: ignore[attr-defined]
+        player.stamina -= 1
+        player.stamina_recharge_delay = 60
     else:
-        current_speed = C.PLAYER_SPEED
+        current_speed = C.PLAYER_SPEED  # type: ignore[attr-defined]
 
     moving = False
     if game.input_manager.is_action_pressed("move_forward"):
-        game.player.move(game.game_map, game.bots, forward=True, speed=current_speed)
+        player.move(game.game_map, game.bots, forward=True, speed=current_speed)
         moving = True
     if game.input_manager.is_action_pressed("move_backward"):
-        game.player.move(game.game_map, game.bots, forward=False, speed=current_speed)
+        player.move(game.game_map, game.bots, forward=False, speed=current_speed)
         moving = True
     if game.input_manager.is_action_pressed("strafe_left"):
-        game.player.strafe(game.game_map, game.bots, right=False, speed=current_speed)
+        player.strafe(game.game_map, game.bots, right=False, speed=current_speed)
         moving = True
     if game.input_manager.is_action_pressed("strafe_right"):
-        game.player.strafe(game.game_map, game.bots, right=True, speed=current_speed)
+        player.strafe(game.game_map, game.bots, right=True, speed=current_speed)
         moving = True
 
-    game.player.is_moving = moving
+    player.is_moving = moving
 
     if game.input_manager.is_action_pressed("turn_left"):
-        game.player.rotate(-0.05)
+        player.rotate(-0.05)
     if game.input_manager.is_action_pressed("turn_right"):
-        game.player.rotate(0.05)
+        player.rotate(0.05)
     if game.input_manager.is_action_pressed("look_up"):
-        game.player.pitch_view(5)
+        player.pitch_view(5)
     if game.input_manager.is_action_pressed("look_down"):
-        game.player.pitch_view(-5)
+        player.pitch_view(-5)
 
 
 def _resolve_weapon_pickup(
@@ -81,20 +83,21 @@ def _resolve_weapon_pickup(
 
 def _apply_pickup_effect(game: Game, bot: object) -> str:
     """Apply the pickup effect for a bot and return the pickup message (or '')."""
+    player = cast("Player", game.player)
     pickup_msg = ""
     color = C.GREEN
     enemy_type = getattr(bot, "enemy_type", "")
     if enemy_type == "health_pack":
-        if game.player.health < 100:
-            game.player.health = min(100, game.player.health + 50)
+        if player.health < 100:
+            player.health = min(100, player.health + 50)
             pickup_msg = "HEALTH +50"
     elif enemy_type == "ammo_box":
-        for weapon_name in game.player.ammo:
-            game.player.ammo[weapon_name] += 20
+        for weapon_name in player.ammo:
+            player.ammo[weapon_name] += 20
         pickup_msg = "AMMO FOUND"
         color = C.YELLOW
     elif enemy_type == "bomb_item":
-        game.player.bombs += 1
+        player.bombs += 1
         pickup_msg = "BOMB +1"
         color = C.ORANGE
     elif enemy_type.startswith("pickup_"):

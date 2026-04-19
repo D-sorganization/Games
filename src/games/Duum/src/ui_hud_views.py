@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import pygame
 
@@ -20,16 +20,17 @@ def render_hud(renderer: UIRenderer, game: Game) -> None:
     if not (game.raycaster is not None):
         raise ValueError("DbC Blocked: Precondition failed.")
 
+    player = cast("Player", game.player)
     renderer.overlay_surface.fill((0, 0, 0, 0))
-    render_low_health_tint(renderer, game.player)
+    render_low_health_tint(renderer, player)
     render_damage_flash(renderer, game.damage_flash_timer)
-    render_shield_effect(renderer, game.player)
+    render_shield_effect(renderer, player)
     renderer.screen.blit(renderer.overlay_surface, (0, 0))
 
     renderer.screen.blit(renderer.vignette, (0, 0))
 
     render_crosshair(renderer)
-    render_secondary_charge(renderer, game.player)
+    render_secondary_charge(renderer, player)
 
     render_messages(renderer, game)
     render_health_bar(renderer, game)
@@ -44,6 +45,7 @@ def render_hud(renderer: UIRenderer, game: Game) -> None:
 
 def render_health_bar(renderer: UIRenderer, game: Game) -> None:
     """Render the player health bar."""
+    player = cast("Player", game.player)
     hud_bottom = C.SCREEN_HEIGHT - 80
     health_width = 150
     health_height = 25
@@ -55,7 +57,7 @@ def render_health_bar(renderer: UIRenderer, game: Game) -> None:
         C.DARK_GRAY,
         (health_x, health_y, health_width, health_height),
     )
-    health_percent = max(0, game.player.health / game.player.max_health)
+    health_percent = max(0, player.health / player.max_health)
     fill_width = int(health_width * health_percent)
     health_color = C.RED
     if health_percent > 0.5:
@@ -63,7 +65,7 @@ def render_health_bar(renderer: UIRenderer, game: Game) -> None:
     elif health_percent > 0.25:
         health_color = C.ORANGE
     health_rect = (health_x, health_y, fill_width, health_height)
-    pygame.draw.rect(renderer.screen, health_color, health_rect)
+    pygame.draw.rect(renderer.screen, health_color, health_rect)  # type: ignore[attr-defined]
     pygame.draw.rect(
         renderer.screen,
         C.WHITE,
@@ -74,10 +76,11 @@ def render_health_bar(renderer: UIRenderer, game: Game) -> None:
 
 def render_ammo_display(renderer: UIRenderer, game: Game) -> None:
     """Render the ammo counter and weapon name."""
+    player = cast("Player", game.player)
     hud_bottom = C.SCREEN_HEIGHT - 80
 
-    weapon_state = game.player.weapon_state[game.player.current_weapon]
-    weapon_name = C.WEAPONS[game.player.current_weapon]["name"]
+    weapon_state = player.weapon_state[player.current_weapon]
+    weapon_name = C.WEAPONS[player.current_weapon]["name"]
 
     status_text = ""
     status_color = C.WHITE
@@ -95,9 +98,9 @@ def render_ammo_display(renderer: UIRenderer, game: Game) -> None:
         )
         renderer.screen.blit(text, text_rect)
 
-    ammo_val = game.player.ammo[game.player.current_weapon]
+    ammo_val = player.ammo[player.current_weapon]
     ammo_text = f"{weapon_name}: {weapon_state['clip']} / {ammo_val}"
-    bomb_text = f"BOMBS: {game.player.bombs}"
+    bomb_text = f"BOMBS: {player.bombs}"
 
     ammo_surface = renderer.font.render(ammo_text, True, C.WHITE)
     bomb_surface = renderer.font.render(bomb_text, True, C.ORANGE)
@@ -113,6 +116,7 @@ def render_ammo_display(renderer: UIRenderer, game: Game) -> None:
 
 def render_weapon_slots(renderer: UIRenderer, game: Game) -> None:
     """Render the weapon inventory slots."""
+    player = cast("Player", game.player)
     hud_bottom = C.SCREEN_HEIGHT - 80
     inv_y = hud_bottom - 80
 
@@ -127,7 +131,7 @@ def render_weapon_slots(renderer: UIRenderer, game: Game) -> None:
     ):
         color = C.GRAY
         if weapon_name in game.unlocked_weapons:
-            color = C.GREEN if weapon_name == game.player.current_weapon else C.WHITE
+            color = C.GREEN if weapon_name == player.current_weapon else C.WHITE
 
         key_display = C.WEAPONS[weapon_name]["key"]
         text_str = f"[{key_display}] {C.WEAPONS[weapon_name]['name']}"
@@ -163,9 +167,10 @@ def render_level_info(renderer: UIRenderer, game: Game) -> None:
 def render_minimap(renderer: UIRenderer, game: Game) -> None:
     """Render the minimap when enabled."""
     if game.show_minimap:
+        player = cast("Player", game.player)
         game.raycaster.render_minimap(
             renderer.screen,
-            game.player,
+            player,
             game.bots,
             game.visited_cells,
             game.portal,
@@ -181,7 +186,8 @@ def _render_shield_bar(
     shield_height: int,
 ) -> None:
     """Render the shield percentage bar with recharge/cooldown label."""
-    shield_pct = game.player.shield_timer / C.SHIELD_MAX_DURATION
+    player = cast("Player", game.player)
+    shield_pct = player.shield_timer / C.SHIELD_MAX_DURATION
     pygame.draw.rect(
         renderer.screen, C.DARK_GRAY, (shield_x, shield_y, shield_width, shield_height)
     )
@@ -193,14 +199,15 @@ def _render_shield_bar(
     pygame.draw.rect(
         renderer.screen, C.WHITE, (shield_x, shield_y, shield_width, shield_height), 1
     )
-    if game.player.shield_recharge_delay > 0:
-        status_text = "RECHARGING" if game.player.shield_active else "COOLDOWN"
+    if player.shield_recharge_delay > 0:
+        status_text = "RECHARGING" if player.shield_active else "COOLDOWN"
         status_surf = renderer.tiny_font.render(status_text, True, C.WHITE)
         renderer.screen.blit(status_surf, (shield_x + shield_width + 5, shield_y - 2))
 
 
 def render_status_bars(renderer: UIRenderer, game: Game) -> None:
     """Render shield, laser cooldown, and stamina bars."""
+    player = cast("Player", game.player)
     hud_bottom = C.SCREEN_HEIGHT - 80
     shield_x = 20
     shield_y = hud_bottom - 20
@@ -211,7 +218,7 @@ def render_status_bars(renderer: UIRenderer, game: Game) -> None:
 
     laser_y = shield_y - 15
     laser_pct = max(
-        0, min(1, 1.0 - (game.player.secondary_cooldown / C.SECONDARY_COOLDOWN))
+        0, min(1, 1.0 - (player.secondary_cooldown / C.SECONDARY_COOLDOWN))
     )
     pygame.draw.rect(
         renderer.screen, C.DARK_GRAY, (shield_x, laser_y, shield_width, shield_height)
@@ -223,7 +230,7 @@ def render_status_bars(renderer: UIRenderer, game: Game) -> None:
     )
 
     stamina_y = laser_y - 15
-    stamina_pct = game.player.stamina / game.player.max_stamina
+    stamina_pct = player.stamina / player.max_stamina
     pygame.draw.rect(
         renderer.screen, C.DARK_GRAY, (shield_x, stamina_y, shield_width, shield_height)
     )

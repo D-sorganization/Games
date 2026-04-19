@@ -5,7 +5,7 @@ from games.shared.constants import FPS_SHARED_CONSTANTS
 
 from .custom_types import EnemyData, LevelTheme, WeaponData
 
-globals().update(FPS_SHARED_CONSTANTS)
+globals().update(FPS_SHARED_CONSTANTS)  # type: ignore[attr-defined]
 
 # Constants (shared values pulled from shared constants)
 SCREEN_WIDTH = 1200

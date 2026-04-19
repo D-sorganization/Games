@@ -24,7 +24,7 @@ for _attr in (
     "encode_file_path",
     "get_init",
 ):
-    setattr(_pg, _attr, MagicMock())
+    setattr(_pg, _attr, MagicMock())  # type: ignore[attr-defined]
 
 _SUB_NAMES = [
     "base",
@@ -65,20 +65,20 @@ for _name in _SUB_NAMES:
     sys.modules[f"pygame.{_name}"] = _mod
 
 # Wire convenience attributes on the top-level fake module
-_pg.display = sys.modules["pygame.display"]
-_pg.draw = sys.modules["pygame.draw"]
-_pg.event = sys.modules["pygame.event"]
-_pg.font = sys.modules["pygame.font"]
-_pg.image = sys.modules["pygame.image"]
-_pg.joystick = sys.modules["pygame.joystick"]
-_pg.key = sys.modules["pygame.key"]
-_pg.math = sys.modules["pygame.math"]
-_pg.mixer = sys.modules["pygame.mixer"]
-_pg.mouse = sys.modules["pygame.mouse"]
-_pg.sprite = sys.modules["pygame.sprite"]
-_pg.time = sys.modules["pygame.time"]
-_pg.transform = sys.modules["pygame.transform"]
-_pg.locals = sys.modules["pygame.locals"]
+_pg.display = sys.modules["pygame.display"]  # type: ignore[attr-defined]
+_pg.draw = sys.modules["pygame.draw"]  # type: ignore[attr-defined]
+_pg.event = sys.modules["pygame.event"]  # type: ignore[attr-defined]
+_pg.font = sys.modules["pygame.font"]  # type: ignore[attr-defined]
+_pg.image = sys.modules["pygame.image"]  # type: ignore[attr-defined]
+_pg.joystick = sys.modules["pygame.joystick"]  # type: ignore[attr-defined]
+_pg.key = sys.modules["pygame.key"]  # type: ignore[attr-defined]
+_pg.math = sys.modules["pygame.math"]  # type: ignore[attr-defined]
+_pg.mixer = sys.modules["pygame.mixer"]  # type: ignore[attr-defined]
+_pg.mouse = sys.modules["pygame.mouse"]  # type: ignore[attr-defined]
+_pg.sprite = sys.modules["pygame.sprite"]  # type: ignore[attr-defined]
+_pg.time = sys.modules["pygame.time"]  # type: ignore[attr-defined]
+_pg.transform = sys.modules["pygame.transform"]  # type: ignore[attr-defined]
+_pg.locals = sys.modules["pygame.locals"]  # type: ignore[attr-defined]
 
 # Common pygame top-level classes/constants
 
