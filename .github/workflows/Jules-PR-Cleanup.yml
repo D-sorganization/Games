@@ -4,6 +4,31 @@ name: Jules PR Cleanup
 # Preserves PRs that are actively being iterated on (recent commits)
 
 on:
+  workflow_call:
+    inputs:
+      max_age_days:
+        required: false
+        type: string
+        default: "7"
+      dry_run:
+        required: false
+        type: string
+        default: "true"
+  workflow_dispatch:
+    inputs:
+      max_age_days:
+        description: "Maximum age in days before a PR is considered stale"
+        required: false
+        default: "7"
+        type: string
+      dry_run:
+        description: "Dry run - report only without closing PRs"
+        required: false
+        default: "true"
+        type: choice
+        options:
+          - "true"
+          - "false"
 
 permissions:
   contents: read
