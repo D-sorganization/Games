@@ -6,7 +6,7 @@ It reads game state but never mutates it.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import pygame
 from constants import (
@@ -46,6 +46,23 @@ class RenderMixin:
     ``self.level`` are all initialised by WizardOfWorGame.__init__ before
     any draw method is called.
     """
+
+    # Type annotations for attributes
+    screen: pygame.Surface
+    state: str
+    font_large: pygame.font.Font
+    font_medium: pygame.font.Font
+    font_small: pygame.font.Font
+    dungeon: Any
+    player: Any
+    enemies: list[Any]
+    bullets: list[Any]
+    effects: list[Any]
+    vignette: Any
+    radar: Any
+    score: int
+    lives: int
+    level: int
 
     # ------------------------------------------------------------------
     # Public entry point
@@ -131,7 +148,7 @@ class RenderMixin:
         level_text = self.font_medium.render(f"LEVEL: {self.level}", True, WHITE)  # type: ignore[attr-defined]
         self.screen.blit(level_text, (GAME_AREA_X + 450, 10))  # type: ignore[attr-defined]
 
-        alive_enemies = sum(1 for e in self.enemies if e.alive)  # type: ignore[attr-defined]
+        alive_enemies: int = sum(1 for e in self.enemies if e.alive)  # type: ignore[attr-defined]
         enemies_text = self.font_small.render(f"Enemies: {alive_enemies}", True, CYAN)  # type: ignore[attr-defined]
         self.screen.blit(enemies_text, (RADAR_X, RADAR_Y + RADAR_SIZE + 10))  # type: ignore[attr-defined]
 
@@ -265,7 +282,7 @@ class RenderMixin:
 
         :param alive_enemies: number of enemies currently alive.
         """
-        total_enemies = sum(1 for _ in self.enemies)  # type: ignore[attr-defined]
+        total_enemies: int = sum(1 for _ in self.enemies)  # type: ignore[attr-defined]
         if total_enemies <= 0:
             return
         progress = 1 - (alive_enemies / max(1, total_enemies))

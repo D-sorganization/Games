@@ -28,6 +28,7 @@ class Bot:
     health: int
     max_health: int
     speed: float
+    damage: int
     alive: bool
     attack_timer: int
     level: int

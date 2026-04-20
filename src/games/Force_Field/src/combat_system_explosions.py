@@ -17,6 +17,7 @@ import pygame
 from . import constants as C
 
 if TYPE_CHECKING:
+    from .bot import Bot
     from .game import Game
     from .player import Player
     from .projectile import Projectile
@@ -35,7 +36,7 @@ class _CombatSystemExplosionsMixin:
         """Return the active player, raising ValueError if none exists."""
         ...
 
-    def _handle_kill(self, bot: object) -> None:  # type: ignore[empty-body]
+    def _handle_kill(self, bot: Bot) -> None:  # type: ignore[empty-body]
         """Record a kill -- implemented in CombatSystem."""
         ...
 

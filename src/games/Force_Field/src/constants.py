@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 import os
+from typing import Any
 
 from games.shared.asset_catalog import AssetCatalog
 from games.shared.constants import FPS_SHARED_CONSTANTS
@@ -7,6 +10,18 @@ from .custom_types import EnemyData, LevelTheme, WeaponData
 
 # Constants (shared values pulled from shared constants)
 globals().update(FPS_SHARED_CONSTANTS)
+
+# Type annotations for constants from FPS_SHARED_CONSTANTS
+FPS: int
+DIFFICULTIES: dict[str, dict[str, float]]
+MAP_SIZES: list[int]
+PLAYER_ROT_SPEED: float
+SENSITIVITY_X: float
+SENSITIVITY_Y: float
+FOV: float
+HALF_FOV: float
+DEFAULT_RENDER_SCALE: int
+MAX_DEPTH: int
 
 SCREEN_WIDTH = 1024
 SCREEN_HEIGHT = 600
