@@ -10,6 +10,7 @@ from __future__ import annotations
 import random
 from typing import TYPE_CHECKING, Any
 
+from games.shared.combat_manager import ShotResolutionRequest
 from games.shared.constants import MINIGUN_BULLETS_PER_SHOT, MINIGUN_SPREAD
 
 from . import constants as C  # noqa: N812
@@ -74,14 +75,16 @@ class WeaponSystem:
         if not (game.raycaster is not None):
             raise ValueError("DbC Blocked: Precondition failed.")
         game.damage_texts = game.combat_manager.check_shot_hit(
-            player=game.player,
-            raycaster=game.raycaster,
-            bots=game.bots,
-            damage_texts=game.damage_texts,
-            show_damage=game.show_damage,
-            is_secondary=is_secondary,
-            angle_offset=angle_offset,
-            is_laser=is_laser,
+            ShotResolutionRequest(
+                player=game.player,
+                raycaster=game.raycaster,
+                bots=game.bots,
+                damage_texts=game.damage_texts,
+                show_damage=game.show_damage,
+                is_secondary=is_secondary,
+                angle_offset=angle_offset,
+                is_laser=is_laser,
+            )
         )
         game.sync_combat_state()
 
@@ -145,6 +148,8 @@ class WeaponSystem:
     def _fire_projectile(self, weapon_data: dict[str, Any], weapon_name: str) -> None:
         """Spawn a projectile based on weapon data."""
         game = self._game
+        if not (game.player is not None):
+            raise ValueError("DbC Blocked: Precondition failed.")
         size_map = {"plasma": 0.225, "rocket": 0.3}
         p = Projectile(
             game.player_x,
@@ -174,6 +179,8 @@ class WeaponSystem:
     def _fire_burst(self, weapon_data: dict[str, Any], weapon_name: str) -> None:
         """Fire a burst of fast projectiles."""
         game = self._game
+        if not (game.player is not None):
+            raise ValueError("DbC Blocked: Precondition failed.")
         damage = game.player.get_current_weapon_damage()
         for _ in range(MINIGUN_BULLETS_PER_SHOT):
             angle_off = random.uniform(-MINIGUN_SPREAD, MINIGUN_SPREAD)

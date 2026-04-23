@@ -1,21 +1,12 @@
 from __future__ import annotations
 
 import logging
-import math
-import random
 from typing import Any
 
 import pygame
 
 from games.shared.config import RaycasterConfig
 from games.shared.constants import (
-    BEAST_TIMER_MAX,
-    BEAST_TIMER_MIN,
-    COMBO_TIMER_FRAMES,
-    FOG_REVEAL_RADIUS,
-    GROAN_TIMER_DELAY,
-    PICKUP_RADIUS_SQ,
-    PORTAL_RADIUS_SQ,
     GameState,
 )
 from games.shared.event_bus import EventBus
@@ -26,6 +17,7 @@ from games.shared.interfaces import Portal
 from games.shared.raycaster import Raycaster
 from games.shared.sound_manager_base import SoundManagerBase
 
+from . import combat_actions, game_loop, game_session, gameplay_runtime, screen_flow
 from . import constants as C  # noqa: N812
 from .combat_system import CombatSystem
 from .entity_manager import EntityManager
@@ -193,121 +185,12 @@ class Game(FPSGameBase):
         )
 
     def start_game(self) -> None:
-        """Start new game"""
-        self.level = self.selected_start_level
-        self.lives = self.selected_lives
-        self.kills = 0
-        self.level_times = []
-        self.paused = False
-        self.particle_system.particles = []
-        self.damage_texts = []
-        self.entity_manager.reset()
-
-        # Roguelike Weapon Start
-        # Always have pistol, plus one random higher-tier weapon
-        possible_starters = [
-            "rifle",
-            "shotgun",
-            "minigun",
-            "plasma",
-            "laser",
-            "rocket",
-            "flamethrower",
-            "pulse",
-            "freezer",
-        ]
-        starter = random.choice(possible_starters)
-        self.unlocked_weapons = {"pistol", starter}
-        self.god_mode = False
-        self.cheat_mode_active = False
-
-        # Reset Combo & Atmosphere
-        self.kill_combo_count = 0
-        self.kill_combo_timer = 0
-        self.heartbeat_timer = 0
-        self.breath_timer = 0
-        self.groan_timer = 0
-        self.beast_timer = 0
-
-        # Create map with selected size
-        self.game_map = Map(self.selected_map_size)
-        self.raycaster = Raycaster(self.game_map, self.raycaster_config)
-        self.raycaster.set_render_scale(self.render_scale)
-        self.last_death_pos = None
-
-        # Grab mouse
-        pygame.mouse.set_visible(False)
-        pygame.event.set_grab(True)
-
-        self.start_level()
+        """Start a new run using the configured campaign options."""
+        game_session.start_game(self)
 
     def start_level(self) -> None:
-        """Start a new level"""
-        if not (self.game_map is not None):
-            raise ValueError("DbC Blocked: Precondition failed.")
-        self.level_start_time = pygame.time.get_ticks()
-        self.total_paused_time = 0
-        self.pause_start_time = 0
-        self.particle_system.particles = []
-        self.damage_texts = []
-        self.damage_flash_timer = 0
-        self.screen_shake = 0.0
-        self.visited_cells = set()  # Reset fog of war
-        self.portal = None
-
-        # Grab mouse for FPS gameplay
-        pygame.mouse.set_visible(False)
-        pygame.event.set_grab(True)
-
-        # Player Spawn Logic
-        player_pos = self._get_best_spawn_point()
-
-        # Preserve ammo and weapon selection from previous level if player exists
-        previous_ammo = None
-        previous_weapon = "pistol"
-        old_player = self.player
-        if old_player:
-            previous_ammo = old_player.ammo
-            previous_weapon = old_player.current_weapon
-
-        self.player = Player(player_pos[0], player_pos[1], player_pos[2])
-        if previous_ammo:
-            self.player.ammo = previous_ammo
-            if previous_weapon in self.unlocked_weapons:
-                self.player.current_weapon = previous_weapon
-            else:
-                self.player.current_weapon = "pistol"
-
-        # If Level 1 (New Game), equip the non-pistol starter
-        if self.level == 1:
-            for w in self.unlocked_weapons:
-                if w != "pistol":
-                    self.player.current_weapon = w
-                    break
-        # Validate current weapon is unlocked
-        if self.player.current_weapon not in self.unlocked_weapons:
-            self.player.current_weapon = "pistol"
-
-        # Propagate God Mode state
-        self.player.god_mode = self.god_mode
-
-        # Delegate spawning to SpawnManager
-        self.entity_manager.reset()
-        self.spawn_manager.spawn_all(
-            player_pos, self.game_map, self.level, self.selected_difficulty
-        )
-
-        # Start Music
-        music_tracks = [
-            "music_loop",
-            "music_drums",
-            "music_wind",
-            "music_horror",
-            "music_piano",
-            "music_action",
-        ]
-        if hasattr(self, "sound_manager"):
-            self.sound_manager.start_music(random.choice(music_tracks))
+        """Start the current level with a fresh spawn and preserved loadout."""
+        game_session.start_level(self)
 
     # save_game is inherited from FPSGameBase.
 
@@ -336,716 +219,93 @@ class Game(FPSGameBase):
         self.combat_system.explode_freezer(projectile)
 
     def execute_melee_attack(self) -> None:
-        """Execute melee attack - wide sweeping damage in front of player"""
-        if not (self.player is not None):
-            raise ValueError("DbC Blocked: Precondition failed.")
-
-        melee_range = 3.0
-        melee_damage = 75
-        melee_arc = math.pi / 3
-
-        self.create_melee_sweep_effect()
-
-        try:
-            self.sound_manager.play_sound("shoot_shotgun")
-        except (pygame.error, OSError):
-            pass
-
-        player_x, player_y = self.player.x, self.player.y
-        player_angle = self.player.angle
-
-        hits = 0
-        for bot in self.bots:
-            if not bot.alive:
-                continue
-
-            dx = bot.x - player_x
-            dy = bot.y - player_y
-            distance = math.sqrt(dx * dx + dy * dy)
-
-            if distance <= melee_range:
-                bot_angle = math.atan2(dy, dx)
-                angle_diff = abs(bot_angle - player_angle)
-
-                while angle_diff > math.pi:
-                    angle_diff -= 2 * math.pi
-                angle_diff = abs(angle_diff)
-
-                if angle_diff <= melee_arc / 2:
-                    if bot.take_damage(melee_damage):
-                        self.sound_manager.play_sound("scream")
-                        self.kills += 1
-                        self.kill_combo_count += 1
-                        self.kill_combo_timer = COMBO_TIMER_FRAMES
-                        self.last_death_pos = (bot.x, bot.y)
-                        self.event_bus.emit("bot_killed", x=bot.x, y=bot.y)
-
-                    hits += 1
-
-                    for _ in range(5):
-                        self.particle_system.add_particle(
-                            x=bot.x * 64 + 32,
-                            y=bot.y * 64 + 32,
-                            dx=random.uniform(-3, 3),
-                            dy=random.uniform(-3, 3),
-                            color=(200, 0, 0),
-                            timer=30,
-                            size=random.randint(2, 4),
-                        )
-
-        if hits > 0:
-            if hits == 1:
-                self.add_message("CRITICAL HIT!", C.RED)
-            else:
-                self.add_message(f"COMBO x{hits}!", C.RED)
+        """Execute the melee attack owned by the combat-actions subsystem."""
+        combat_actions.execute_melee_attack(self)
 
     def create_melee_sweep_effect(self) -> None:
-        """Create enhanced visual sweep effect for melee attack"""
-        if not (self.player is not None):
-            raise ValueError("DbC Blocked: Precondition failed.")
-
-        player_angle = self.player.angle
-        arc_start = player_angle - math.pi / 4
-        arc_end = player_angle + math.pi / 4
-
-        for layer in range(3):
-            layer_distance = 80 + layer * 40
-
-            for i in range(30):
-                t = i / 29.0
-                angle = arc_start + t * (arc_end - arc_start)
-
-                distance = layer_distance + random.randint(-20, 20)
-
-                x = C.SCREEN_WIDTH // 2 + math.cos(angle) * distance
-                y = C.SCREEN_HEIGHT // 2 + math.sin(angle) * distance
-
-                if layer == 0:
-                    color = (255, 255, 200)
-                elif layer == 1:
-                    color = (255, 150, 0)
-                else:
-                    color = (255, 50, 0)
-
-                self.particle_system.add_particle(
-                    x=x,
-                    y=y,
-                    dx=math.cos(angle) * 8,
-                    dy=math.sin(angle) * 8,
-                    color=color,
-                    timer=20 - layer * 5,
-                    size=4 + layer,
-                    gravity=0.05,
-                    fade_color=(100, 0, 0),
-                )
-
-        for _ in range(15):
-            angle = random.uniform(0, 2 * math.pi)
-            speed = random.uniform(3, 12)
-            self.particle_system.add_particle(
-                x=C.SCREEN_WIDTH // 2,
-                y=C.SCREEN_HEIGHT // 2,
-                dx=math.cos(angle) * speed,
-                dy=math.sin(angle) * speed,
-                color=(255, 255, 255),
-                timer=25,
-                size=random.randint(2, 6),
-                gravity=0.1,
-                fade_color=(255, 100, 0),
-            )
+        """Create the melee slash particles via the combat-actions module."""
+        combat_actions.create_melee_sweep_effect(self)
 
     def _check_game_over(self) -> bool:
-        if not self.player.alive:
-            if self.lives > 1:
-                self.lives -= 1
-                self.respawn_player()
-                return True
-            level_time = (
-                pygame.time.get_ticks() - self.level_start_time - self.total_paused_time
-            ) / 1000.0
-            self.level_times.append(level_time)
-            self.lives = 0
-
-            self.state = GameState.GAME_OVER
-            self.game_over_timer = 0
-            self.sound_manager.play_sound("game_over1")
-            pygame.mouse.set_visible(True)
-            pygame.event.set_grab(False)
-            return True
-        return False
+        """Delegate death handling to the gameplay runtime subsystem."""
+        return gameplay_runtime.check_game_over(self)
 
     def _update_screen_shake(self) -> None:
-        if self.screen_shake > 0:
-            self.screen_shake *= 0.9
-            if self.screen_shake < 0.5:
-                self.screen_shake = 0.0
+        """Delegate screen-shake decay to the gameplay runtime subsystem."""
+        gameplay_runtime.update_screen_shake(self)
 
     def _check_portal_completion(self) -> bool:
-        enemies_alive = self.entity_manager.get_active_enemies()
-        if not enemies_alive:
-            if self.portal is None:
-                self.spawn_portal()
-                self.damage_texts.append(
-                    {
-                        "x": C.SCREEN_WIDTH // 2,
-                        "y": C.SCREEN_HEIGHT // 2,
-                        "text": "PORTAL OPENED!",
-                        "color": C.CYAN,
-                        "timer": 180,
-                        "vy": 0,
-                    }
-                )
-
-        if self.portal:
-            dx = self.portal["x"] - self.player.x
-            dy = self.portal["y"] - self.player.y
-            dist_sq = dx * dx + dy * dy
-            if dist_sq < PORTAL_RADIUS_SQ:
-                paused = self.total_paused_time
-                now = pygame.time.get_ticks()
-                level_time = (now - self.level_start_time - paused) / 1000.0
-                self.level_times.append(level_time)
-                self.state = GameState.LEVEL_COMPLETE
-                pygame.mouse.set_visible(True)
-                pygame.event.set_grab(False)
-                return True
-        return False
+        """Delegate portal logic to the gameplay runtime subsystem."""
+        return gameplay_runtime.check_portal_completion(self)
 
     def _handle_combat_input(self) -> None:
-        is_firing = (
-            self.input_manager.is_action_pressed("shoot")
-            or pygame.mouse.get_pressed()[0]
-        )
-
-        if is_firing:
-            w_data = C.WEAPONS.get(self.player.current_weapon, {})
-            if w_data.get("automatic", False):
-                if self.player.shoot():
-                    self.combat_system.fire_weapon()
+        """Delegate held-fire handling to the gameplay runtime subsystem."""
+        gameplay_runtime.handle_combat_input(self)
 
     def _handle_joystick_input(self, shield_active: bool) -> bool:
-        axis_x = self.joystick.get_axis(0)
-        axis_y = self.joystick.get_axis(1)
-
-        if abs(axis_x) > C.JOYSTICK_DEADZONE:
-            self.player.strafe(
-                self.game_map,
-                self.bots,
-                right=(axis_x > 0),
-                speed=abs(axis_x) * C.PLAYER_SPEED * self.movement_speed_multiplier,
-            )
-            self.player.is_moving = True
-        if abs(axis_y) > C.JOYSTICK_DEADZONE:
-            self.player.move(
-                self.game_map,
-                self.bots,
-                forward=(axis_y < 0),
-                speed=abs(axis_y) * C.PLAYER_SPEED * self.movement_speed_multiplier,
-            )
-            self.player.is_moving = True
-
-        look_x = 0.0
-        look_y = 0.0
-        if self.joystick.get_numaxes() >= 4:
-            look_x = self.joystick.get_axis(2)
-            look_y = self.joystick.get_axis(3)
-
-        if abs(look_x) > C.JOYSTICK_DEADZONE:
-            self.player.rotate(look_x * C.PLAYER_ROT_SPEED * 15 * C.SENSITIVITY_X)
-        if abs(look_y) > C.JOYSTICK_DEADZONE:
-            self.player.pitch_view(-look_y * 10 * C.SENSITIVITY_Y)
-
-        if self.joystick.get_numbuttons() > 0 and self.joystick.get_button(0):
-            shield_active = True
-
-        if self.joystick.get_numbuttons() > 2 and self.joystick.get_button(2):
-            self.player.reload()
-
-        if self.joystick.get_numbuttons() > 5 and self.joystick.get_button(5):
-            if self.player.shoot():
-                self.combat_system.fire_weapon()
-
-        if self.joystick.get_numbuttons() > 4 and self.joystick.get_button(4):
-            if self.player.fire_secondary():
-                self.combat_system.fire_weapon(is_secondary=True)
-
-        if self.joystick.get_numhats() > 0:
-            hat = self.joystick.get_hat(0)
-            if hat[0] == -1:
-                self.switch_weapon_with_message("pistol")
-            if hat[0] == 1:
-                self.switch_weapon_with_message("rifle")
-            if hat[1] == 1:
-                self.switch_weapon_with_message("shotgun")
-            if hat[1] == -1:
-                self.switch_weapon_with_message("plasma")
-
-        return shield_active
+        """Delegate controller input handling to the gameplay runtime."""
+        return gameplay_runtime.handle_joystick_input(self, shield_active)
 
     def _update_damage_texts(self) -> None:
-        for t in self.damage_texts:
-            t["y"] += t["vy"]
-            t["timer"] -= 1
-        self.damage_texts = [t for t in self.damage_texts if t["timer"] > 0]
+        """Delegate damage-text animation to the gameplay runtime."""
+        gameplay_runtime.update_damage_texts(self)
 
     def _handle_keyboard_movement(self, keys) -> None:
-        sprint_key = keys[pygame.K_RSHIFT]
-        is_sprinting = self.input_manager.is_action_pressed("sprint") or sprint_key
-
-        if is_sprinting and self.player.stamina > 0:
-            current_speed = C.PLAYER_SPRINT_SPEED * self.movement_speed_multiplier
-            self.player.stamina -= 1
-            self.player.stamina_recharge_delay = 60
-        else:
-            current_speed = C.PLAYER_SPEED * self.movement_speed_multiplier
-
-        moving = False
-
-        if self.input_manager.is_action_pressed("move_forward"):
-            self.player.move(
-                self.game_map, self.bots, forward=True, speed=current_speed
-            )
-            moving = True
-        if self.input_manager.is_action_pressed("move_backward"):
-            self.player.move(
-                self.game_map, self.bots, forward=False, speed=current_speed
-            )
-            moving = True
-        if self.input_manager.is_action_pressed("strafe_left"):
-            self.player.strafe(
-                self.game_map, self.bots, right=False, speed=current_speed
-            )
-            moving = True
-        if self.input_manager.is_action_pressed("strafe_right"):
-            self.player.strafe(
-                self.game_map, self.bots, right=True, speed=current_speed
-            )
-            moving = True
-
-        self.player.is_moving = moving
-
-        if self.input_manager.is_action_pressed("turn_left"):
-            self.player.rotate(-0.05)
-        if self.input_manager.is_action_pressed("turn_right"):
-            self.player.rotate(0.05)
-        if self.input_manager.is_action_pressed("look_up"):
-            self.player.pitch_view(5)
-        if self.input_manager.is_action_pressed("look_down"):
-            self.player.pitch_view(-5)
+        """Delegate keyboard movement to the gameplay runtime subsystem."""
+        gameplay_runtime.handle_keyboard_movement(self, keys)
 
     def _update_fog_of_war(self) -> None:
-        px, py = int(self.player.x), int(self.player.y)
-        for dy in range(-4, 5):
-            for dx in range(-4, 5):
-                if dx * dx + dy * dy <= 16:
-                    cx, cy = px + dx, py + dy
-                    if (
-                        self.game_map
-                        and 0 <= cx < self.game_map.width
-                        and 0 <= cy < self.game_map.height
-                    ):
-                        self.visited_cells.add((cx, cy))
+        """Delegate near-field fog reveal to the gameplay runtime."""
+        gameplay_runtime.update_fog_of_war(self)
 
     def _check_item_pickups(self) -> None:
-        for bot in self.bots:
-            is_item = bot.enemy_type.startswith(("health", "ammo", "bomb", "pickup"))
-            if bot.alive and is_item:
-                dx = bot.x - self.player.x
-                dy = bot.y - self.player.y
-                dist_sq = dx * dx + dy * dy
-                if dist_sq < PICKUP_RADIUS_SQ:
-                    pickup_msg = ""
-                    color = C.GREEN
-
-                    if bot.enemy_type == "health_pack":
-                        if self.player.health < C.PLAYER_HEALTH:
-                            self.player.health = min(
-                                C.PLAYER_HEALTH, self.player.health + 50
-                            )
-                            pickup_msg = "HEALTH +50"
-                    elif bot.enemy_type == "ammo_box":
-                        for w in self.player.ammo:
-                            self.player.ammo[w] += 20
-                        pickup_msg = "AMMO FOUND"
-                        color = C.YELLOW
-                    elif bot.enemy_type == "bomb_item":
-                        self.player.bombs += 1
-                        pickup_msg = "BOMB +1"
-                        color = C.ORANGE
-                    elif bot.enemy_type.startswith("pickup_"):
-                        w_name = bot.enemy_type.replace("pickup_", "")
-                        if w_name not in self.unlocked_weapons:
-                            self.unlocked_weapons.add(w_name)
-                            self.player.switch_weapon(w_name)
-                            pickup_msg = f"{w_name.upper()} ACQUIRED!"
-                            color = C.CYAN
-                        else:
-                            if w_name in self.player.ammo:
-                                clip_size = int(C.WEAPONS[w_name]["clip_size"])
-                                self.player.ammo[w_name] += clip_size * 2
-                                pickup_msg = f"{w_name.upper()} AMMO"
-                                color = C.YELLOW
-
-                    if pickup_msg:
-                        bot.alive = False
-                        bot.removed = True
-                        self.damage_texts.append(
-                            {
-                                "x": C.SCREEN_WIDTH // 2,
-                                "y": C.SCREEN_HEIGHT // 2 - 50,
-                                "text": pickup_msg,
-                                "color": color,
-                                "timer": 60,
-                                "vy": -1,
-                            }
-                        )
+        """Delegate pickup handling to the gameplay runtime subsystem."""
+        gameplay_runtime.check_item_pickups(self)
 
     def _update_large_fog_reveal(self) -> None:
-        cx, cy = int(self.player.x), int(self.player.y)
-        reveal_radius = FOG_REVEAL_RADIUS
-        for r_i in range(-reveal_radius, reveal_radius + 1):
-            for r_j in range(-reveal_radius, reveal_radius + 1):
-                if r_i * r_i + r_j * r_j <= reveal_radius * reveal_radius:
-                    self.visited_cells.add((cx + r_j, cy + r_i))
+        """Delegate wide minimap reveal to the gameplay runtime."""
+        gameplay_runtime.update_large_fog_reveal(self)
 
     def _update_atmosphere(self) -> None:
-        min_dist = self.entity_manager.get_nearest_enemy_distance(
-            self.player.x, self.player.y
-        )
-
-        if min_dist < 15:
-            self.beast_timer -= 1
-            if self.beast_timer <= 0:
-                self.sound_manager.play_sound("beast")
-                self.beast_timer = random.randint(BEAST_TIMER_MIN, BEAST_TIMER_MAX)
-
-        if min_dist < 20:
-            beat_delay = int(min(1.5, max(0.4, min_dist / 10.0)) * C.FPS)
-            self.heartbeat_timer -= 1
-            if self.heartbeat_timer <= 0:
-                self.sound_manager.play_sound("heartbeat")
-                self.sound_manager.play_sound("breath")
-                self.heartbeat_timer = beat_delay
-
-        if self.player.health < 50:
-            self.groan_timer -= 1
-            if self.groan_timer <= 0:
-                self.sound_manager.play_sound("groan")
-                self.groan_timer = GROAN_TIMER_DELAY
+        """Delegate ambient audio updates to the gameplay runtime."""
+        gameplay_runtime.update_atmosphere(self)
 
     def _check_kill_combo(self) -> None:
-        if self.kill_combo_timer > 0:
-            self.kill_combo_timer -= 1
-            if self.kill_combo_timer <= 0:
-                if self.kill_combo_count >= 3:
-                    phrases = [
-                        "DAMN, I'M GOOD!",
-                        "COME GET SOME!",
-                        "HAIL TO THE KING!",
-                        "GROOVY!",
-                        "PIECE OF CAKE!",
-                        "WHO WANTS SOME?",
-                        "EAT THIS!",
-                        "SHAKE IT BABY!",
-                        "NOBODY STEALS OUR CHICKS!",
-                        "IT'S TIME TO KICK ASS!",
-                        "DAMN, THOSE ALIEN BASTARDS!",
-                        "YOUR FACE, YOUR ASS!",
-                        "WHAT'S THE DIFFERENCE?",
-                        "HOLY COW!",
-                        "TERMINATED!",
-                        "WASTED!",
-                        "OWNED!",
-                        "DOMINATING!",
-                        "UNSTOPPABLE!",
-                        "RAMPAGE!",
-                        "GODLIKE!",
-                        "BOOM BABY!",
-                    ]
-
-                    phrase = random.choice(phrases)
-                    self.sound_manager.play_sound("phrase_cool")
-
-                    self.damage_texts.append(
-                        {
-                            "x": C.SCREEN_WIDTH // 2,
-                            "y": C.SCREEN_HEIGHT // 2 - 150,
-                            "text": phrase,
-                            "color": C.YELLOW,
-                            "timer": 180,
-                            "vy": -0.2,
-                            "size": "large",
-                            "effect": "glow",
-                        }
-                    )
-                self.kill_combo_count = 0
+        """Delegate combo expiry logic to the gameplay runtime."""
+        gameplay_runtime.check_kill_combo(self)
 
     def update_game(self) -> None:
-        """Update game state"""
-        if self.paused:
-            return
-
-        if not (self.player is not None):
-            raise ValueError("DbC Blocked: Precondition failed.")
-
-        if self._check_game_over():
-            return
-
-        self._update_screen_shake()
-
-        if self._check_portal_completion():
-            return
-
-        keys = pygame.key.get_pressed()
-        shield_active = self.input_manager.is_action_pressed("shield")
-
-        if not self.paused and self.player and self.player.alive:
-            self._handle_combat_input()
-
-        if self.joystick and not self.paused and self.player and self.player.alive:
-            shield_active = self._handle_joystick_input(shield_active)
-
-        self.player.set_shield(shield_active)
-        self.particle_system.update()
-        self._update_damage_texts()
-
-        self._handle_keyboard_movement(keys)
-        self.player.update()
-
-        self._update_fog_of_war()
-        self.entity_manager.update_bots(self.game_map, self.player, self)
-        self._check_item_pickups()
-        self.entity_manager.update_projectiles(self.game_map, self.player, self)
-        self._update_large_fog_reveal()
-
-        self._update_atmosphere()
-        self._check_kill_combo()
+        """Update one active gameplay frame through the runtime subsystem."""
+        gameplay_runtime.update_game(self)
 
     def handle_intro_events(self) -> None:
-        """Handle intro screen events"""
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                self.ui_renderer.release_intro_video()
-                self.running = False
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_SPACE or event.key == pygame.K_ESCAPE:
-                    self.ui_renderer.release_intro_video()
-                    self.state = GameState.MENU
-            elif event.type == pygame.MOUSEBUTTONDOWN:
-                self.ui_renderer.release_intro_video()
-                self.state = GameState.MENU
+        """Delegate intro events to the screen-flow subsystem."""
+        screen_flow.handle_intro_events(self)
 
     def handle_menu_events(self) -> None:
-        """Handle main menu events"""
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                self.running = False
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_RETURN or event.key == pygame.K_SPACE:
-                    self.state = GameState.MAP_SELECT
-                elif event.key == pygame.K_ESCAPE:
-                    self.running = False
-            elif event.type == pygame.MOUSEBUTTONDOWN:
-                self.state = GameState.MAP_SELECT
+        """Delegate main-menu events to the screen-flow subsystem."""
+        screen_flow.handle_menu_events(self)
 
     def handle_map_select_events(self) -> None:
-        """Handle map selection events"""
-        self.ui_renderer.update_start_button(pygame.mouse.get_pos())
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                self.running = False
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
-                    self.state = GameState.MENU
-                elif event.key == pygame.K_RETURN:
-                    self.start_game()
-                    self.state = GameState.PLAYING
-                    pygame.mouse.set_visible(False)
-                    pygame.event.set_grab(True)
-            elif event.type == pygame.MOUSEBUTTONDOWN:
-                if self.ui_renderer.is_start_button_clicked(event.pos):
-                    self.start_game()
-                    self.state = GameState.PLAYING
-                    pygame.mouse.set_visible(False)
-                    pygame.event.set_grab(True)
-
-                my = event.pos[1]
-                if 200 <= my < 200 + 4 * 80:
-                    row = (my - 200) // 80
-                    if row == 0:
-                        sizes = C.MAP_SIZES
-                        try:
-                            idx = sizes.index(self.selected_map_size)
-                            self.selected_map_size = sizes[(idx + 1) % len(sizes)]
-                        except ValueError:
-                            self.selected_map_size = 40
-                    elif row == 1:
-                        diffs = list(C.DIFFICULTIES.keys())
-                        try:
-                            idx = diffs.index(self.selected_difficulty)
-                            self.selected_difficulty = diffs[(idx + 1) % len(diffs)]
-                        except ValueError:
-                            self.selected_difficulty = "NORMAL"
-                    elif row == 2:
-                        self.selected_start_level = (self.selected_start_level % 5) + 1
-                    elif row == 3:
-                        self.selected_lives = (self.selected_lives % 5) + 1
+        """Delegate setup-screen events to the screen-flow subsystem."""
+        screen_flow.handle_map_select_events(self)
 
     def handle_level_complete_events(self) -> None:
-        """Handle input events during the level complete screen."""
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                self.running = False
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_SPACE:
-                    self.level += 1
-                    self.start_level()
-                    self.state = GameState.PLAYING
-                elif event.key == pygame.K_ESCAPE:
-                    self.state = GameState.MENU
+        """Delegate level-complete events to the screen-flow subsystem."""
+        screen_flow.handle_level_complete_events(self)
 
     def handle_game_over_events(self) -> None:
-        """Handle input events during the game over screen."""
-        self.game_over_timer += 1
-        if self.game_over_timer == 120:
-            self.sound_manager.play_sound("game_over2")
-
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                self.running = False
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_SPACE:
-                    self.start_game()
-                    self.state = GameState.PLAYING
-                elif event.key == pygame.K_ESCAPE:
-                    self.state = GameState.MENU
+        """Delegate game-over events to the screen-flow subsystem."""
+        screen_flow.handle_game_over_events(self)
 
     def handle_key_config_events(self) -> None:
-        """Handle input events in Key Config menu."""
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                self.running = False
-
-            elif event.type == pygame.KEYDOWN:
-                if self.binding_action:
-                    if event.key != pygame.K_ESCAPE:
-                        self.input_manager.bind_key(self.binding_action, event.key)
-                    self.binding_action = None
-                elif event.key == pygame.K_ESCAPE:
-                    self.state = GameState.PLAYING if self.paused else GameState.MENU
-
-            elif event.type == pygame.MOUSEBUTTONDOWN and not self.binding_action:
-                mx, my = event.pos
-
-                bindings = self.input_manager.bindings
-                actions = sorted(bindings.keys())
-                start_y = 120
-                col_1_x = C.SCREEN_WIDTH // 4
-                col_2_x = C.SCREEN_WIDTH * 3 // 4
-                limit = 12
-
-                for i, action in enumerate(actions):
-                    col = 0 if i < limit else 1
-                    idx = i if i < limit else i - limit
-                    x = col_1_x if col == 0 else col_2_x
-                    y = start_y + idx * 40
-
-                    rect = pygame.Rect(x - 150, y, 300, 30)
-                    if rect.collidepoint(mx, my):
-                        self.binding_action = action
-                        return
-
-                center_x = C.SCREEN_WIDTH // 2 - 50
-                top_y = C.SCREEN_HEIGHT - 80
-                back_rect = pygame.Rect(center_x, top_y, 100, 40)
-                if back_rect.collidepoint(mx, my):
-                    self.state = GameState.PLAYING if self.paused else GameState.MENU
+        """Delegate key-config events to the screen-flow subsystem."""
+        screen_flow.handle_key_config_events(self)
 
     def _update_intro_logic(self, elapsed: int) -> None:
-        """Update intro sequence logic and transitions."""
-        duration = 0
-        if self.intro_phase == 0:
-            duration = 3000
-        elif self.intro_phase == 1:
-            duration = 3000
-        elif self.intro_phase == 2:
-            slides_durations = [8000, 10000, 4000, 4000]
-            if self.intro_step < len(slides_durations):
-                duration = slides_durations[self.intro_step]
-
-                if self.intro_step == 0 and elapsed < 50:
-                    if not getattr(self, "laugh_played", False):
-                        self.sound_manager.play_sound("laugh")
-                        self.laugh_played = True
-
-                if elapsed > duration:
-                    self.intro_step += 1
-                    self.intro_start_time = 0
-                    if hasattr(self, "laugh_played"):
-                        del self.laugh_played
-            else:
-                self.state = GameState.MENU
-                return
-
-        if self.intro_phase < 2:
-            if self.intro_phase == 1 and elapsed < 50:
-                if not getattr(self, "water_played", False):
-                    self.sound_manager.play_sound("water")
-                    self.water_played = True
-
-            if elapsed > duration:
-                self.intro_phase += 1
-                self.intro_start_time = 0
-                if self.intro_phase == 2:
-                    self.ui_renderer.release_intro_video()
+        """Delegate intro timing to the screen-flow subsystem."""
+        screen_flow.update_intro_logic(self, elapsed)
 
     def run(self) -> None:
-        """Main game loop"""
-        try:
-            while self.running:
-                if self.state == GameState.INTRO:
-                    self.handle_intro_events()
-                    if self.intro_start_time == 0:
-                        self.intro_start_time = pygame.time.get_ticks()
-                    elapsed = pygame.time.get_ticks() - self.intro_start_time
-
-                    self.ui_renderer.render_intro(
-                        self.intro_phase, self.intro_step, elapsed
-                    )
-                    self._update_intro_logic(elapsed)
-
-                elif self.state == GameState.MENU:
-                    self.handle_menu_events()
-                    self.ui_renderer.render_menu()
-
-                elif self.state == GameState.KEY_CONFIG:
-                    self.handle_key_config_events()
-                    self.ui_renderer.render_key_config(self)
-
-                elif self.state == GameState.MAP_SELECT:
-                    self.handle_map_select_events()
-                    self.ui_renderer.render_map_select(self)
-
-                elif self.state == GameState.PLAYING:
-                    self.game_input_handler.handle_game_events()
-                    # Only update logic if not paused
-                    if not self.paused:
-                        self.update_game()
-
-                    self.renderer.render_game(self)
-
-                    if not self.paused and self.damage_flash_timer > 0:
-                        self.damage_flash_timer -= 1
-
-                elif self.state == GameState.LEVEL_COMPLETE:
-                    self.handle_level_complete_events()
-                    self.ui_renderer.render_level_complete(self)
-
-                elif self.state == GameState.GAME_OVER:
-                    self.handle_game_over_events()
-                    self.ui_renderer.render_game_over(self)
-
-                self.clock.tick(C.FPS)
-        except (RuntimeError, pygame.error, OSError, ValueError, TypeError) as e:
-            logger.critical("CRASH: %s", e, exc_info=True)
-            raise
+        """Delegate top-level frame dispatch to the loop subsystem."""
+        game_loop.run(self)

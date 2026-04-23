@@ -12,7 +12,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from games.shared.combat_manager import CombatManagerBase
+from games.shared.combat_manager import CombatManagerBase, ShotResolutionRequest
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -340,6 +340,29 @@ class TestExplodeGeneric:
 class TestCheckShotHit:
     """Tests for check_shot_hit, applying hit damage, and secondary hits."""
 
+    @staticmethod
+    def _make_request(
+        *,
+        player: Any,
+        raycaster: Any,
+        bots: list[Any],
+        damage_texts: list[dict[str, Any]] | None = None,
+        show_damage: bool = True,
+        is_secondary: bool = False,
+        angle_offset: float = 0.0,
+        is_laser: bool = False,
+    ) -> ShotResolutionRequest:
+        return ShotResolutionRequest(
+            player=player,
+            raycaster=raycaster,
+            bots=bots,
+            damage_texts=[] if damage_texts is None else damage_texts,
+            show_damage=show_damage,
+            is_secondary=is_secondary,
+            angle_offset=angle_offset,
+            is_laser=is_laser,
+        )
+
     def test_check_shot_hit_primary(self) -> None:
         mgr = CombatManagerBase(
             entity_manager=_make_entity_manager(),
@@ -363,7 +386,9 @@ class TestCheckShotHit:
         mock_rc = MagicMock()
         mock_rc.cast_ray.return_value = (50.0, 0, 0, 0, 0)
 
-        mgr.check_shot_hit(player, mock_rc, [bot], [], angle_offset=0.0)
+        mgr.check_shot_hit(
+            self._make_request(player=player, raycaster=mock_rc, bots=[bot])
+        )
         assert mock_rc.cast_ray.called
         assert mgr._apply_hit_damage.called
 
@@ -386,7 +411,14 @@ class TestCheckShotHit:
         mock_rc = MagicMock()
         mock_rc.cast_ray.return_value = (50.0, 0, 0, 0, 0)
 
-        mgr.check_shot_hit(player, mock_rc, [], [], angle_offset=0.0, is_laser=True)
+        mgr.check_shot_hit(
+            self._make_request(
+                player=player,
+                raycaster=mock_rc,
+                bots=[],
+                is_laser=True,
+            )
+        )
         assert mgr.particle_system.add_laser.called
 
     def test_check_shot_hit_secondary(self) -> None:
@@ -410,8 +442,48 @@ class TestCheckShotHit:
         mock_rc = MagicMock()
         mock_rc.cast_ray.return_value = (50.0, 0, 0, 0, 0)
 
-        mgr.check_shot_hit(player, mock_rc, [], [], angle_offset=0.0, is_secondary=True)
+        mgr.check_shot_hit(
+            self._make_request(
+                player=player,
+                raycaster=mock_rc,
+                bots=[],
+                is_secondary=True,
+            )
+        )
         assert mgr._handle_secondary_hit.called
+
+    def test_resolve_shot_target_separates_geometry_from_side_effects(self) -> None:
+        mgr = CombatManagerBase(
+            entity_manager=_make_entity_manager(),
+            particle_system=MagicMock(),
+            sound_manager=MagicMock(),
+            constants=_make_constants(),
+        )
+        player = SimpleNamespace(
+            x=0.0,
+            y=0.0,
+            angle=0.0,
+            zoomed=False,
+            get_current_weapon_range=lambda: 100.0,
+            get_current_weapon_damage=lambda: 10,
+        )
+        bot = _make_bot(x=10.0, y=0.0, alive=True)
+        mock_rc = MagicMock()
+        mock_rc.cast_ray.return_value = (50.0, 0, 0, 0, 0)
+
+        resolution = mgr.resolve_shot_target(
+            self._make_request(
+                player=player,
+                raycaster=mock_rc,
+                bots=[bot],
+                angle_offset=0.001,
+            )
+        )
+
+        assert resolution.closest_bot is bot
+        assert resolution.closest_distance == pytest.approx(10.0)
+        mgr.particle_system.add_trace.assert_not_called()
+        mgr.particle_system.add_explosion.assert_not_called()
 
     def test_handle_secondary_hit_creates_explosion(self) -> None:
         mgr = CombatManagerBase(
@@ -484,15 +556,25 @@ class TestCombatManagerEdgeCases:
         mock_rc.cast_ray.return_value = (200.0, 0, 0, 0, 0)
 
         mgr.check_shot_hit(
-            player,
-            mock_rc,
-            [bot_dead, bot_far, bot_behind, bot_wrap, bot_close, bot_further_in_line],
-            [],
-            angle_offset=0.1,
+            TestCheckShotHit._make_request(
+                player=player,
+                raycaster=mock_rc,
+                bots=[
+                    bot_dead,
+                    bot_far,
+                    bot_behind,
+                    bot_wrap,
+                    bot_close,
+                    bot_further_in_line,
+                ],
+                angle_offset=0.1,
+            )
         )
 
         # Exception
-        mgr.check_shot_hit(None, mock_rc, [], [])
+        mgr.check_shot_hit(  # type: ignore[arg-type]
+            TestCheckShotHit._make_request(player=None, raycaster=mock_rc, bots=[])
+        )
 
     def test_handle_secondary_hit_exception(self) -> None:
         mgr = CombatManagerBase(
