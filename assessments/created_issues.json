@@ -1,0 +1,37 @@
+[
+  {
+    "url": "https://github.com/D-sorganization/Games/issues/799",
+    "title": "[P0] [G] No lockfile",
+    "priority": "P0"
+  },
+  {
+    "url": "https://github.com/D-sorganization/Games/issues/800",
+    "title": "[P0] [I] No .env.example",
+    "priority": "P0"
+  },
+  {
+    "url": "https://github.com/D-sorganization/Games/issues/801",
+    "title": "[P1] [D] 27 except Exception blocks",
+    "priority": "P1"
+  },
+  {
+    "url": "https://github.com/D-sorganization/Games/issues/802",
+    "title": "[P1] [H] 41 subprocess calls",
+    "priority": "P1"
+  },
+  {
+    "url": "https://github.com/D-sorganization/Games/issues/803",
+    "title": "[P1] [H] 3 eval/exec occurrences",
+    "priority": "P1"
+  },
+  {
+    "url": "https://github.com/D-sorganization/Games/issues/804",
+    "title": "[P1] [E] No benchmark suite",
+    "priority": "P1"
+  },
+  {
+    "url": "https://github.com/D-sorganization/Games/issues/805",
+    "title": "[P2] [K] 48 TODO/FIXME in code",
+    "priority": "P2"
+  }
+]
