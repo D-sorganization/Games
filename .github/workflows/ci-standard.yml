@@ -1,4 +1,4 @@
-# CI dispatch marker 2026-04-10
+# CI dispatch marker 2026-04-18
 name: CI Standard
 # Refreshed to sync with local correct paths
 on:
@@ -16,13 +16,11 @@ on:
       - ".github/FUNDING.yml"
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
+    # NOTE: **.md intentionally NOT in paths-ignore for PRs so quality-gate
+    # runs and satisfies branch protection even for docs-only PRs.
     paths-ignore:
-      - "docs/**"
-      - "**.md"
       - "LICENSE"
       - ".gitignore"
-      # NOTE: .github/** is NOT ignored so that CI runs on workflow-file changes
-      # (required for branch protection enforcement of quality-gate on CI-fix PRs)
       - ".github/ISSUE_TEMPLATE/**"
       - ".github/PULL_REQUEST_TEMPLATE/**"
       - ".github/FUNDING.yml"
@@ -56,13 +54,16 @@ jobs:
             echo "runner=d-sorg-fleet" >> $GITHUB_OUTPUT
             echo "Self-hosted runner online — routing locally"
           else
-            echo "runner=ubuntu-latest" >> $GITHUB_OUTPUT
-            echo "No self-hosted runner — using GitHub-hosted"
+            echo "::error::No local self-hosted runner available; failing closed"
+            exit 1
           fi
   quality-gate:
     needs: pick-runner
     runs-on: ${{ needs.pick-runner.outputs.runner }}
     timeout-minutes: 20
+    env:
+      # Shared wheel/download cache for self-hosted runners. See issue #673.
+      PIP_CACHE_DIR: ~/.shared-tool-cache/pip
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
@@ -103,7 +104,7 @@ jobs:
         run: black --check .
 
       - run: pip install mypy types-PyYAML types-requests
-      - run: pip install -r requirements.lock
+      - run: pip install --ignore-installed -r requirements.lock
       # Type checking is advisory while the codebase is being annotated.
       # Tracked for enforcement in a future sprint.
       - name: Type Check (advisory)
@@ -158,6 +159,9 @@ jobs:
   tests:
     needs: [pick-runner, quality-gate]
     runs-on: ${{ needs.pick-runner.outputs.runner }}
+    env:
+      # Shared wheel/download cache for self-hosted runners. See issue #673.
+      PIP_CACHE_DIR: ~/.shared-tool-cache/pip
     strategy:
       matrix:
         python: ["3.11"]
@@ -166,7 +170,7 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python }}
-      - run: pip install -r requirements.lock
+      - run: pip install --ignore-installed -r requirements.lock
       - run: pip install -e .
       - name: Install SDL dependencies
         run: sudo apt-get -o DPkg::Lock::Timeout=300 update && sudo apt-get -o DPkg::Lock::Timeout=300 install -y libsdl2-dev libsdl2-mixer-dev libsdl2-image-dev libsdl2-ttf-dev xvfb
