@@ -109,7 +109,7 @@ jobs:
       # Tracked for enforcement in a future sprint.
       - name: Type Check (advisory)
         continue-on-error: true
-        run: mypy scripts/ tools/ *.py --ignore-missing-imports
+        run: mypy src/games --config-file mypy.ini
 
       # Placeholder detection
       - name: Verify No Placeholders
