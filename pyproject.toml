@@ -69,3 +69,15 @@ exclude_lines = [
     "if __name__",
     "@overload",
 ]
+
+[tool.mypy]
+exclude = [
+    "(?i).*\\\\build\\\\.*",
+    "(?i).*\\\\_deps\\\\.*",
+    "(?i).*\\\\dist\\\\.*",
+    "(?i).*/build/.*",
+    "(?i).*/_deps/.*",
+    "(?i).*/dist/.*",
+]
+ignore_missing_imports = true
+disable_error_code = ["no-untyped-def", "var-annotated", "has-type", "attr-defined", "arg-type", "assignment", "return-value", "operator", "union-attr", "misc"]

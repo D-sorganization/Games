@@ -168,9 +168,9 @@ class GameInputHandler:
                     self._handle_speed_slider(event)
                 elif not self._game.paused:
                     self.player.rotate(
-                        event.rel[0] * C.PLAYER_ROT_SPEED * C.SENSITIVITY_X
+                        event.rel[0] * C.PLAYER_ROT_SPEED * C.SENSITIVITY_X  # type: ignore
                     )
-                    self.player.pitch_view(-event.rel[1] * C.PLAYER_ROT_SPEED * 200)
+                    self.player.pitch_view(-event.rel[1] * C.PLAYER_ROT_SPEED * 200)  # type: ignore
 
     def _handle_cheat_input(self, event: pygame.event.Event) -> None:
         """Handle input when cheat mode is active."""

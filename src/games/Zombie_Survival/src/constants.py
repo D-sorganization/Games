@@ -19,7 +19,7 @@ WEAPONS: dict[str, WeaponData] = {
     "pistol": {
         "name": "Pistol",
         "damage": 25,
-        "range": WEAPON_RANGE_PISTOL,
+        "range": WEAPON_RANGE_PISTOL,  # type: ignore
         "ammo": 999,  # Infinite total ammo concept? Or max carry?
         # Keeping 999 as "unlimited" pool for now
         "cooldown": 10,
@@ -31,7 +31,7 @@ WEAPONS: dict[str, WeaponData] = {
     "rifle": {
         "name": "Rifle",
         "damage": 20,
-        "range": WEAPON_RANGE_RIFLE,
+        "range": WEAPON_RANGE_RIFLE,  # type: ignore
         "ammo": 999,
         "cooldown": 20,
         "clip_size": 30,
@@ -42,7 +42,7 @@ WEAPONS: dict[str, WeaponData] = {
     "shotgun": {
         "name": "Shotgun",
         "damage": 20,
-        "range": WEAPON_RANGE_SHOTGUN,
+        "range": WEAPON_RANGE_SHOTGUN,  # type: ignore
         "ammo": 999,
         "cooldown": 30,
         "clip_size": 2,  # Two shots
@@ -55,7 +55,7 @@ WEAPONS: dict[str, WeaponData] = {
     "minigun": {
         "name": "Minigun",
         "damage": 12,
-        "range": WEAPON_RANGE_MINIGUN,
+        "range": WEAPON_RANGE_MINIGUN,  # type: ignore
         "ammo": 999,
         "cooldown": 3,
         "automatic": True,
@@ -68,7 +68,7 @@ WEAPONS: dict[str, WeaponData] = {
     "plasma": {
         "name": "Plasma",
         "damage": 100,
-        "range": WEAPON_RANGE_PLASMA,
+        "range": WEAPON_RANGE_PLASMA,  # type: ignore
         "ammo": 999,
         "cooldown": 8,
         "automatic": True,

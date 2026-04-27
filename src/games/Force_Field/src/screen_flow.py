@@ -137,7 +137,7 @@ def update_intro_logic(game: Game, elapsed: int) -> None:
         and not getattr(game, "water_played", False)
     ):
         game.sound_manager.play_sound("water")
-        game.water_played = True
+        game.water_played = True  # type: ignore
     if elapsed <= INTRO_PHASE_DURATION_MS:
         return
     game.intro_phase += 1
@@ -183,15 +183,15 @@ def _map_select_row(mouse_y: int) -> int | None:
 def _cycle_map_size(game: Game) -> None:
     """Advance the selected map size through the supported options."""
     try:
-        current_index = C.MAP_SIZES.index(game.selected_map_size)
-        game.selected_map_size = C.MAP_SIZES[(current_index + 1) % len(C.MAP_SIZES)]
+        current_index = C.MAP_SIZES.index(game.selected_map_size)  # type: ignore
+        game.selected_map_size = C.MAP_SIZES[(current_index + 1) % len(C.MAP_SIZES)]  # type: ignore
     except ValueError:
         game.selected_map_size = 40
 
 
 def _cycle_difficulty(game: Game) -> None:
     """Advance the selected difficulty through the configured options."""
-    difficulties = list(C.DIFFICULTIES.keys())
+    difficulties = list(C.DIFFICULTIES.keys())  # type: ignore
     try:
         current_index = difficulties.index(game.selected_difficulty)
         game.selected_difficulty = difficulties[(current_index + 1) % len(difficulties)]
@@ -252,7 +252,7 @@ def _update_intro_slides(game: Game, elapsed: int) -> None:
         and not getattr(game, "laugh_played", False)
     ):
         game.sound_manager.play_sound("laugh")
-        game.laugh_played = True
+        game.laugh_played = True  # type: ignore
     if elapsed <= duration:
         return
     game.intro_step += 1

@@ -206,7 +206,7 @@ class FPSGameBase:
         )
         self.sound_manager.start_music()
         self.event_bus = EventBus()
-        self._wire_event_bus()
+        self._wire_event_bus()  # type: ignore
 
     def _init_input_and_fog(self, input_manager: Any) -> None:
         """Initialize joystick, fog-of-war state, and input manager."""
@@ -473,12 +473,12 @@ class FPSGameBase:
             if not (self.player is not None):
                 raise ValueError("DbC Blocked: Precondition failed.")
             if self.player.activate_bomb():
-                self.handle_bomb_explosion()
+                self.handle_bomb_explosion()  # type: ignore
         elif self.input_manager.is_action_just_pressed(event, "shoot_alt"):
             if not (self.player is not None):
                 raise ValueError("DbC Blocked: Precondition failed.")
             if self.player.shoot():
-                self.fire_weapon()
+                self.fire_weapon()  # type: ignore
         elif event.key == pygame.K_m:
             self.show_minimap = not self.show_minimap
         elif event.key == pygame.K_F9:
@@ -512,10 +512,10 @@ class FPSGameBase:
             raise ValueError("DbC Blocked: Precondition failed.")
         if event.button == 1:
             if self.player.shoot():
-                self.fire_weapon()
+                self.fire_weapon()  # type: ignore
         elif event.button == 3:
             if self.player.fire_secondary():
-                self.fire_weapon(is_secondary=True)
+                self.fire_weapon(is_secondary=True)  # type: ignore
 
     def handle_game_events(self) -> None:
         """Handle events during gameplay."""

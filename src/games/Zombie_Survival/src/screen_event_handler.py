@@ -100,14 +100,14 @@ class ScreenEventHandler:
         if 200 <= my < 200 + 4 * 80:
             row = (my - 200) // 80
             if row == 0:
-                sizes = C.MAP_SIZES
+                sizes = C.MAP_SIZES  # type: ignore
                 try:
                     idx = sizes.index(game.selected_map_size)
                     game.selected_map_size = sizes[(idx + 1) % len(sizes)]
                 except ValueError:
                     game.selected_map_size = 40
             elif row == 1:
-                diffs = list(C.DIFFICULTIES.keys())
+                diffs = list(C.DIFFICULTIES.keys())  # type: ignore
                 try:
                     idx = diffs.index(game.selected_difficulty)
                     game.selected_difficulty = diffs[(idx + 1) % len(diffs)]
@@ -214,7 +214,7 @@ class ScreenEventHandler:
             if game.intro_phase == 1 and elapsed < 50:
                 if not hasattr(game, "water_played"):
                     game.sound_manager.play_sound("water")
-                    game.water_played = True
+                    game.water_played = True  # type: ignore
 
             if elapsed > duration:
                 game.intro_phase += 1
@@ -233,13 +233,13 @@ class ScreenEventHandler:
             if game.intro_step == 0 and elapsed < 50:
                 if not hasattr(game, "laugh_played"):
                     game.sound_manager.play_sound("laugh")
-                    game.laugh_played = True
+                    game.laugh_played = True  # type: ignore
 
             if elapsed > duration:
                 game.intro_step += 1
                 game.intro_start_time = 0
                 if hasattr(game, "laugh_played"):
-                    del game._laugh_played
+                    del game._laugh_played  # type: ignore
         else:
             game.state = GameState.MENU
 

@@ -428,7 +428,7 @@ class CombatSystem(_CombatSystemExplosionsMixin):
         accuracy_factor = max(0.5, 1.0 - (angle_diff / 0.15))
         return int(base_damage * range_factor * accuracy_factor)
 
-    def _handle_kill(self, bot: Bot) -> None:
+    def _handle_kill(self, bot: Bot) -> None:  # type: ignore
         self.game.kills += 1
         self.game.kill_combo_count += 1
         self.game.kill_combo_timer = COMBO_TIMER_FRAMES

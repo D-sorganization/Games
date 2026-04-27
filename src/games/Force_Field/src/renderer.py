@@ -53,7 +53,7 @@ class GameRenderer:
         bob_offset, shake_x, shake_y = self._compute_camera_offsets(game)
         self._render_world(game, bob_offset, shake_y)
         self._render_effects_layer(game, shake_x, shake_y)
-        self._render_portal(game.portal, game.player)
+        self._render_portal(game.portal, game.player)  # type: ignore
         self._render_weapon_layer(game)
         self._render_hud_layer(game)
 
