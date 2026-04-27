@@ -46,7 +46,7 @@ class TestPhysicsProperties(unittest.TestCase):
         """Property: The entity should never move out of bounds (0 to 100)."""
         game_map = MockMap(100)
         entity = MockEntity(start_x, start_y)
-        try_move_entity(entity, dx, dy, game_map, [], radius=radius)
+        try_move_entity(entity, dx, dy, game_map, [], radius=radius)  # type: ignore
 
         self.assertTrue(0 <= entity.x <= 100)
         self.assertTrue(0 <= entity.y <= 100)
@@ -82,7 +82,7 @@ class TestPhysicsProperties(unittest.TestCase):
         entity = MockEntity(start_x, start_y)
         obstacle = MockEntity(ob_x, ob_y)
 
-        try_move_entity(entity, dx, dy, game_map, [obstacle], radius=radius)
+        try_move_entity(entity, dx, dy, game_map, [obstacle], radius=radius)  # type: ignore
 
         final_d_sq = (entity.x - ob_x) ** 2 + (entity.y - ob_y) ** 2
 

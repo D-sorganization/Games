@@ -72,11 +72,11 @@ class Game(FPSGameBase):
         return RaycasterConfig(
             SCREEN_WIDTH=C.SCREEN_WIDTH,
             SCREEN_HEIGHT=C.SCREEN_HEIGHT,
-            FOV=C.FOV,
-            HALF_FOV=C.HALF_FOV,
+            FOV=C.FOV,  # type: ignore
+            HALF_FOV=C.HALF_FOV,  # type: ignore
             ZOOM_FOV_MULT=C.ZOOM_FOV_MULT,
-            DEFAULT_RENDER_SCALE=C.DEFAULT_RENDER_SCALE,
-            MAX_DEPTH=C.MAX_DEPTH,
+            DEFAULT_RENDER_SCALE=C.DEFAULT_RENDER_SCALE,  # type: ignore
+            MAX_DEPTH=C.MAX_DEPTH,  # type: ignore
             FOG_START=C.FOG_START,
             FOG_COLOR=C.FOG_COLOR,
             LEVEL_THEMES=C.LEVEL_THEMES,

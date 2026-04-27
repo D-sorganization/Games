@@ -239,7 +239,7 @@ def render_status_bars(renderer: UIRenderer, game: Game) -> None:
 
 def render_messages(renderer: UIRenderer, game: Game) -> None:
     """Render floating damage texts and messages."""
-    render_damage_texts(renderer, game.damage_texts)
+    render_damage_texts(renderer, game.damage_texts)  # type: ignore
 
 
 def render_controls_hint(renderer: UIRenderer) -> None:

@@ -27,7 +27,7 @@ class Player(PlayerBase):
         game_map: Map,
         bots: list[Bot],
         forward: bool = True,
-        speed: float = C.PLAYER_SPEED,
+        speed: float = C.PLAYER_SPEED,  # type: ignore
     ) -> None:
         """Move player forward or backward"""
         if self.zoomed:
@@ -47,7 +47,7 @@ class Player(PlayerBase):
         game_map: Map,
         bots: list[Bot],
         right: bool = True,
-        speed: float = C.PLAYER_SPEED,
+        speed: float = C.PLAYER_SPEED,  # type: ignore
     ) -> None:
         """Strafe left or right"""
         if self.zoomed:

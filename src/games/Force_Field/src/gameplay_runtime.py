@@ -270,7 +270,7 @@ def update_atmosphere(game: Game) -> None:
             game.sound_manager.play_sound("beast")
             game.beast_timer = random.randint(BEAST_TIMER_MIN, BEAST_TIMER_MAX)
     if min_distance < 20:
-        beat_delay = int(min(1.5, max(0.4, min_distance / 10.0)) * C.FPS)
+        beat_delay = int(min(1.5, max(0.4, min_distance / 10.0)) * C.FPS)  # type: ignore
         game.heartbeat_timer -= 1
         if game.heartbeat_timer <= 0:
             game.sound_manager.play_sound("heartbeat")
@@ -373,7 +373,7 @@ def _look_from_joystick(player: Player, joystick: JoystickLike) -> None:
         look_x = joystick.get_axis(2)
         look_y = joystick.get_axis(3)
     if abs(look_x) > C.JOYSTICK_DEADZONE:
-        player.rotate(look_x * C.PLAYER_ROT_SPEED * 15 * C.SENSITIVITY_X)
+        player.rotate(look_x * C.PLAYER_ROT_SPEED * 15 * C.SENSITIVITY_X)  # type: ignore
     if abs(look_y) > C.JOYSTICK_DEADZONE:
         player.pitch_view(-look_y * 10 * C.SENSITIVITY_Y)
 

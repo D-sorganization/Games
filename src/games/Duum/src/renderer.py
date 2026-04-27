@@ -47,7 +47,7 @@ class GameRenderer:
         self._render_particles(game.particle_system.particles)
         self.screen.blit(self.effects_surface, (0, 0))
 
-        self._render_portal(game.portal, game.player)
+        self._render_portal(game.portal, game.player)  # type: ignore
         weapon_pos = self.weapon_renderer.render_weapon(game.player)
         if game.player.shooting:
             self.weapon_renderer.render_muzzle_flash(

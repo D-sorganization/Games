@@ -88,7 +88,7 @@ class Bot:
 
     def _init_stats(self, level: int, difficulty: str) -> None:
         """Compute and store health, damage, speed from level and difficulty."""
-        diff_stats = C.DIFFICULTIES.get(difficulty, C.DIFFICULTIES["NORMAL"])
+        diff_stats = C.DIFFICULTIES.get(difficulty, C.DIFFICULTIES["NORMAL"])  # type: ignore
         type_data: EnemyData = self.type_data
         base_health = int(C.BASE_BOT_HEALTH * float(type_data.get("health_mult", 1.0)))
         self.health = int((base_health + (level - 1) * 3) * diff_stats["health_mult"])

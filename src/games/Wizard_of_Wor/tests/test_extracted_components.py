@@ -318,7 +318,7 @@ class TestCollisionManager(unittest.TestCase):
             update_calls.append(len(objs))
             original_update(objs)
 
-        self.grid.update = counting_update  # type: ignore[method-assign]
+        self.grid.update = counting_update  # type: ignore[method-assign, assignment]
 
         enemy = _FakeEnemy(300, 300)
         self.manager.check([], [enemy], None, [])

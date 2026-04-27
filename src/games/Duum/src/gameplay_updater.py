@@ -32,11 +32,11 @@ def handle_keyboard_movement(game: Game, keys) -> None:
     sprint_key = keys[pygame.K_RSHIFT]
     is_sprinting = game.input_manager.is_action_pressed("sprint") or sprint_key
     if is_sprinting and game.player.stamina > 0:
-        current_speed = C.PLAYER_SPRINT_SPEED
+        current_speed = C.PLAYER_SPRINT_SPEED  # type: ignore
         game.player.stamina -= 1
         game.player.stamina_recharge_delay = 60
     else:
-        current_speed = C.PLAYER_SPEED
+        current_speed = C.PLAYER_SPEED  # type: ignore
 
     moving = False
     if game.input_manager.is_action_pressed("move_forward"):

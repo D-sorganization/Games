@@ -88,11 +88,11 @@ class Game(FPSGameBase):
         self.raycaster_config = RaycasterConfig(
             SCREEN_WIDTH=C.SCREEN_WIDTH,
             SCREEN_HEIGHT=C.SCREEN_HEIGHT,
-            FOV=C.FOV,
-            HALF_FOV=C.HALF_FOV,
+            FOV=C.FOV,  # type: ignore
+            HALF_FOV=C.HALF_FOV,  # type: ignore
             ZOOM_FOV_MULT=C.ZOOM_FOV_MULT,
-            DEFAULT_RENDER_SCALE=C.DEFAULT_RENDER_SCALE,
-            MAX_DEPTH=C.MAX_DEPTH,
+            DEFAULT_RENDER_SCALE=C.DEFAULT_RENDER_SCALE,  # type: ignore
+            MAX_DEPTH=C.MAX_DEPTH,  # type: ignore
             FOG_START=C.FOG_START,
             FOG_COLOR=C.FOG_COLOR,
             LEVEL_THEMES=C.LEVEL_THEMES,
@@ -345,14 +345,14 @@ class Game(FPSGameBase):
 
     def _joystick_move_axes(self) -> None:
         """Apply left-stick strafe/move axes to the player."""
-        axis_x = self.joystick.get_axis(0)
-        axis_y = self.joystick.get_axis(1)
+        axis_x = self.joystick.get_axis(0)  # type: ignore
+        axis_y = self.joystick.get_axis(1)  # type: ignore
         if abs(axis_x) > C.JOYSTICK_DEADZONE:
             self.player.strafe(
                 self.game_map,
                 self.bots,
                 right=(axis_x > 0),
-                speed=abs(axis_x) * C.PLAYER_SPEED,
+                speed=abs(axis_x) * C.PLAYER_SPEED,  # type: ignore
             )
             self.player.is_moving = True
         if abs(axis_y) > C.JOYSTICK_DEADZONE:
@@ -360,37 +360,37 @@ class Game(FPSGameBase):
                 self.game_map,
                 self.bots,
                 forward=(axis_y < 0),
-                speed=abs(axis_y) * C.PLAYER_SPEED,
+                speed=abs(axis_y) * C.PLAYER_SPEED,  # type: ignore
             )
             self.player.is_moving = True
 
     def _joystick_look_axes(self) -> None:
         """Apply right-stick look axes for rotation and pitch."""
-        look_x = self.joystick.get_axis(2) if self.joystick.get_numaxes() >= 4 else 0.0
-        look_y = self.joystick.get_axis(3) if self.joystick.get_numaxes() >= 4 else 0.0
+        look_x = self.joystick.get_axis(2) if self.joystick.get_numaxes() >= 4 else 0.0  # type: ignore
+        look_y = self.joystick.get_axis(3) if self.joystick.get_numaxes() >= 4 else 0.0  # type: ignore
         if abs(look_x) > C.JOYSTICK_DEADZONE:
-            self.player.rotate(look_x * C.PLAYER_ROT_SPEED * 15 * C.SENSITIVITY_X)
+            self.player.rotate(look_x * C.PLAYER_ROT_SPEED * 15 * C.SENSITIVITY_X)  # type: ignore
         if abs(look_y) > C.JOYSTICK_DEADZONE:
             self.player.pitch_view(-look_y * 10 * C.SENSITIVITY_Y)
 
     def _joystick_action_buttons(self, shield_active: bool) -> bool:
         """Handle fire, reload, secondary-fire, and shield buttons."""
-        n = self.joystick.get_numbuttons()
-        if n > 0 and self.joystick.get_button(0):
+        n = self.joystick.get_numbuttons()  # type: ignore
+        if n > 0 and self.joystick.get_button(0):  # type: ignore
             shield_active = True
-        if n > 2 and self.joystick.get_button(2):
+        if n > 2 and self.joystick.get_button(2):  # type: ignore
             self.player.reload()
-        if n > 5 and self.joystick.get_button(5) and self.player.shoot():
+        if n > 5 and self.joystick.get_button(5) and self.player.shoot():  # type: ignore
             self.fire_weapon()
-        if n > 4 and self.joystick.get_button(4) and self.player.fire_secondary():
+        if n > 4 and self.joystick.get_button(4) and self.player.fire_secondary():  # type: ignore
             self.fire_weapon(is_secondary=True)
         return shield_active
 
     def _joystick_hat_weapon_select(self) -> None:
         """Use the D-pad hat to cycle weapons."""
-        if self.joystick.get_numhats() < 1:
+        if self.joystick.get_numhats() < 1:  # type: ignore
             return
-        hat = self.joystick.get_hat(0)
+        hat = self.joystick.get_hat(0)  # type: ignore
         if hat[0] == -1:
             self.switch_weapon_with_message("pistol")
         if hat[0] == 1:

@@ -10,7 +10,7 @@ class TestEntityManager(unittest.TestCase):
     def setUp(self) -> None:
         """Set up test fixtures."""
         self.em = EntityManager()
-        self.em.grid_cell_size = 5
+        self.em.grid_cell_size = 5  # type: ignore
 
     def test_add_bot(self) -> None:
         """Test adding a bot to the manager."""

@@ -66,7 +66,7 @@ class AtmosphereManager:
                 game.beast_timer = random.randint(BEAST_TIMER_MIN, BEAST_TIMER_MAX)
 
         if min_dist < 20:
-            beat_delay = int(min(1.5, max(0.4, min_dist / 10.0)) * C.FPS)
+            beat_delay = int(min(1.5, max(0.4, min_dist / 10.0)) * C.FPS)  # type: ignore
             game.heartbeat_timer -= 1
             if game.heartbeat_timer <= 0:
                 game.sound_manager.play_sound("heartbeat")
