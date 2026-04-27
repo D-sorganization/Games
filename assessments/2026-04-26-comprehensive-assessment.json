@@ -1,0 +1,94 @@
+{
+  "repo": "Games",
+  "owner": "D-sorganization",
+  "branch": "chore/ci-d-sorg-fleet-temp",
+  "head_sha": "6c743dfd9c1493b1dba7c7007193c62608d4e2f9",
+  "date": "2026-04-26",
+  "total_score": 70.25,
+  "grade": "B",
+  "criteria": {
+    "A": {
+      "score": 85
+    },
+    "B": {
+      "score": 80
+    },
+    "C": {
+      "score": 50
+    },
+    "D": {
+      "score": 70
+    },
+    "E": {
+      "score": 35
+    },
+    "F": {
+      "score": 75
+    },
+    "G": {
+      "score": 55
+    },
+    "H": {
+      "score": 75
+    },
+    "I": {
+      "score": 35
+    },
+    "J": {
+      "score": 65
+    },
+    "K": {
+      "score": 70
+    },
+    "L": {
+      "score": 75
+    },
+    "M": {
+      "score": 45
+    },
+    "N": {
+      "score": 85
+    },
+    "O": {
+      "score": 85
+    }
+  },
+  "findings": [
+    {
+      "criterion": "G",
+      "priority": "P0",
+      "title": "No lockfile"
+    },
+    {
+      "criterion": "I",
+      "priority": "P0",
+      "title": "No .env.example"
+    },
+    {
+      "criterion": "D",
+      "priority": "P1",
+      "title": "27 except Exception blocks"
+    },
+    {
+      "criterion": "H",
+      "priority": "P1",
+      "title": "41 subprocess calls"
+    },
+    {
+      "criterion": "H",
+      "priority": "P1",
+      "title": "3 eval/exec occurrences"
+    },
+    {
+      "criterion": "E",
+      "priority": "P1",
+      "title": "No benchmark suite"
+    },
+    {
+      "criterion": "K",
+      "priority": "P2",
+      "title": "48 TODO/FIXME in code"
+    }
+  ],
+  "overall_score": 70.2
+}

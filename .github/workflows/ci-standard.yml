@@ -54,8 +54,8 @@ jobs:
             echo "runner=d-sorg-fleet" >> $GITHUB_OUTPUT
             echo "Self-hosted runner online — routing locally"
           else
-            echo "runner=ubuntu-latest" >> $GITHUB_OUTPUT
-            echo "No self-hosted runner — using GitHub-hosted"
+            echo "::error::No local self-hosted runner available; failing closed"
+            exit 1
           fi
   quality-gate:
     needs: pick-runner
@@ -63,7 +63,7 @@ jobs:
     timeout-minutes: 20
     env:
       # Shared wheel/download cache for self-hosted runners. See issue #673.
-      PIP_CACHE_DIR: /home/dieterolson/actions-runners/.shared-tool-cache/pip
+      PIP_CACHE_DIR: ~/.shared-tool-cache/pip
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
@@ -161,7 +161,7 @@ jobs:
     runs-on: ${{ needs.pick-runner.outputs.runner }}
     env:
       # Shared wheel/download cache for self-hosted runners. See issue #673.
-      PIP_CACHE_DIR: /home/dieterolson/actions-runners/.shared-tool-cache/pip
+      PIP_CACHE_DIR: ~/.shared-tool-cache/pip
     strategy:
       matrix:
         python: ["3.11"]
