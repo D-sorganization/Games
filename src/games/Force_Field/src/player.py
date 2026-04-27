@@ -136,54 +136,42 @@ class Player(PlayerBase):
             return True
         return False
 
-    def update(self) -> None:
-        """Update player state (timers, etc)"""
-        self.update_timers()
-
-        # Head Bob & Sway
+    def _update_bob_and_sway(self) -> None:
+        """Update head bob and idle sway, then constrain pitch."""
         if self.is_moving:
             bob_speed = 0.15 if self.dash_active else 0.1
             self.bob_phase += bob_speed
         else:
-            # Idle Sway (Breathing)
             self.sway_timer += 1
             sway_pitch = math.sin(self.sway_timer * 0.03) * 2.0
             sway_angle = math.cos(self.sway_timer * 0.015) * 0.001
-
             self.pitch += sway_pitch * 0.05
             self.angle += sway_angle
-
             target_phase = round(self.bob_phase / math.pi) * math.pi
             self.bob_phase = self.bob_phase * 0.9 + target_phase * 0.1
-
-        # Constrain pitch
         self.pitch = max(-C.PITCH_LIMIT, min(C.PITCH_LIMIT, self.pitch))
 
-        # Dash logic
+    def _update_dash_and_melee(self) -> None:
+        """Tick dash timer/cooldown and melee timer/cooldown."""
         if self.dash_active:
             self.dash_timer -= 1
             if self.dash_timer <= 0:
                 self.dash_active = False
-
         if self.dash_cooldown > 0:
             self.dash_cooldown -= 1
-
-        # Melee attack timers
         if self.melee_cooldown > 0:
             self.melee_cooldown -= 1
-
         if self.melee_timer > 0:
             self.melee_timer -= 1
             if self.melee_timer <= 0:
                 self.melee_active = False
 
-        # Invincibility timer
+    def _update_respawn(self) -> None:
+        """Tick invincibility, respawn delay, and damage flash timers."""
         if self.invincibility_timer > 0:
             self.invincibility_timer -= 1
             if self.invincibility_timer <= 0:
                 self.invincible = False
-
-        # Respawn delay
         if self.respawn_delay > 0:
             self.respawn_delay -= 1
             if self.respawn_delay <= 0:
@@ -192,9 +180,13 @@ class Player(PlayerBase):
                 self.health = self.max_health
                 self.invincible = True
                 self.invincibility_timer = 300
-
-        # Visual Effects
         if self.damage_flash_timer > 0:
             self.damage_flash_timer -= 1
 
+    def update(self) -> None:
+        """Update player state (timers, etc)"""
+        self.update_timers()
+        self._update_bob_and_sway()
+        self._update_dash_and_melee()
+        self._update_respawn()
         self.update_weapon_state()

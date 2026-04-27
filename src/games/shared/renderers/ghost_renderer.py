@@ -27,45 +27,63 @@ class GhostStyleRenderer(BaseBotStyleRenderer):
         config: RaycasterConfig,
     ) -> None:
         """Render the ghost visual style."""
-        # Ghost: Float, fade at bottom, semi-transparent
         time_ms = pygame.time.get_ticks()
-        offset_y = math.sin(time_ms * 0.005) * 10
-        gy = ry + offset_y
-
-        # Note: Pygame 2.0+ supports RGBA for basic draw functions, but let's be safe
-        # Create a temp surface for transparency if needed, or just use solid for now
-        # as per original code (didn't handle alpha correctly in draw.circle)
+        gy = ry + math.sin(time_ms * 0.005) * 10
         ghost_color = (*color, 150)
+        self._render_ghost_body(screen, cx, gy, rw, rh, ghost_color)
+        self._render_ghost_tattered_hem(screen, cx, gy, rw, rh, ghost_color)
+        self._render_ghost_eyes(screen, cx, gy, rw)
 
-        # Head
-        center = (int(cx), int(gy + rw / 2))
-        pygame.draw.circle(screen, ghost_color, center, int(rw / 2))
-
-        # Body (Rect)
+    def _render_ghost_body(
+        self,
+        screen: pygame.Surface,
+        cx: float,
+        gy: float,
+        rw: float,
+        rh: float,
+        ghost_color: tuple[int, ...],
+    ) -> None:
+        """Draw the ghost head circle and rectangular body."""
+        pygame.draw.circle(
+            screen, ghost_color, (int(cx), int(gy + rw / 2)), int(rw / 2)
+        )
         body_rect = pygame.Rect(
             int(cx - rw / 2), int(gy + rw / 2), int(rw), int(rh * 0.6)
         )
         pygame.draw.rect(screen, ghost_color, body_rect)
 
-        # Tattered bottom
-        points = []
-        points.append((cx - rw / 2, gy + rw / 2 + rh * 0.6))
+    def _render_ghost_tattered_hem(
+        self,
+        screen: pygame.Surface,
+        cx: float,
+        gy: float,
+        rw: float,
+        rh: float,
+        ghost_color: tuple[int, ...],
+    ) -> None:
+        """Draw the jagged tattered bottom hem polygon."""
+        base_y = gy + rw / 2 + rh * 0.6
+        points = [(cx - rw / 2, base_y)]
         for i in range(5):
             x = cx - rw / 2 + (i + 1) * (rw / 5)
-            y_base = gy + rw / 2 + rh * 0.6
-            y = y_base + (rh * 0.2 if i % 2 == 0 else 0)
+            y = base_y + (rh * 0.2 if i % 2 == 0 else 0)
             points.append((x, y))
-        points.append((cx + rw / 2, gy + rw / 2 + rh * 0.6))
-        # Close shape
-        points.append((cx + rw / 2, gy + rw / 2))
-        points.append((cx - rw / 2, gy + rw / 2))
-
+        points.extend(
+            [
+                (cx + rw / 2, base_y),
+                (cx + rw / 2, gy + rw / 2),
+                (cx - rw / 2, gy + rw / 2),
+            ]
+        )
         pygame.draw.polygon(screen, ghost_color, points)
 
-        # Eyes (Hollow)
-        pygame.draw.circle(
-            screen, (0, 0, 0), (int(cx - rw * 0.2), int(gy + rw * 0.4)), int(rw * 0.1)
-        )
-        pygame.draw.circle(
-            screen, (0, 0, 0), (int(cx + rw * 0.2), int(gy + rw * 0.4)), int(rw * 0.1)
-        )
+    def _render_ghost_eyes(
+        self, screen: pygame.Surface, cx: float, gy: float, rw: float
+    ) -> None:
+        """Draw two hollow black eyes."""
+        eye_r = int(rw * 0.1)
+        eye_y = int(gy + rw * 0.4)
+        for x_sign in (-1, 1):
+            pygame.draw.circle(
+                screen, (0, 0, 0), (int(cx + x_sign * rw * 0.2), eye_y), eye_r
+            )

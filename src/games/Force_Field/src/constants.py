@@ -1,72 +1,26 @@
-import math
 import os
 
 from games.shared.asset_catalog import AssetCatalog
+from games.shared.constants import FPS_SHARED_CONSTANTS
 
 from .custom_types import EnemyData, LevelTheme, WeaponData
 
-# Constants
+# Constants (shared values pulled from shared constants)
+globals().update(FPS_SHARED_CONSTANTS)
+
 SCREEN_WIDTH = 1024
-SCREEN_HEIGHT = 600  # Reduced from 768 to fit better on laptop screens
-FPS = 60
+SCREEN_HEIGHT = 600
 
-# Map settings
-MAP_SIZE = 40  # Will be set by user
-TILE_SIZE = 64
-MIN_BUILDING_OFFSET = 3  # Minimum offset from map edges for building generation
-WALL_HIDDEN = 5
-BOMBS_START = 3
-
-# Rendering Quality
-# 1 = Ultra (Full Res), 2 = High (Half Res),
-# 4 = Medium/Retro (Quarter Res), 8 = Low (Blocky)
-DEFAULT_RENDER_SCALE = 2
-
-# Player settings
-# Speeds reduced to improve game pacing - further reduced for better control
-PLAYER_SPEED = 0.19  # Reduced from 0.375 (about half)
-PLAYER_SPRINT_SPEED = 0.29  # Reduced from 0.575 (about half)
-PLAYER_ROT_SPEED = 0.0015
-SENSITIVITY_X = 1.0
+PLAYER_SPEED = 0.19
+PLAYER_SPRINT_SPEED = 0.29
 DASH_SPEED_MULT = 2.5
 DASH_STAMINA_COST = 20
 DASH_DURATION = 10
 DASH_COOLDOWN = 60
-MAX_RAYCAST_STEPS = 1000  # Maximum steps for raycasting
-
-FOV = math.pi / 3  # 60 degrees
-HALF_FOV = FOV / 2
-
-MAX_DEPTH = 100  # Increased render distance (2x)
-
-DEFAULT_PLAYER_SPAWN = (2.5, 2.5, 0.0)
-SPAWN_SAFE_ZONE_RADIUS = 10.0  # Reduced safe zone (was 15.0)
+WALL_HIDDEN = 5
+BOMBS_START = 3
 MIN_BOSS_DISTANCE = 10.0
-MAP_SIZES = [20, 30, 40, 50, 60]
-
-# New Game Defaults
-DEFAULT_LIVES = 3
-DEFAULT_DIFFICULTY = "NORMAL"
-DEFAULT_START_LEVEL = 1
-
-# Difficulty Settings
-DIFFICULTIES = {
-    "EASY": {"damage_mult": 0.5, "health_mult": 0.7, "score_mult": 0.5},
-    "NORMAL": {"damage_mult": 1.0, "health_mult": 1.0, "score_mult": 1.0},
-    "HARD": {"damage_mult": 1.5, "health_mult": 1.5, "score_mult": 2.0},
-    "NIGHTMARE": {"damage_mult": 2.5, "health_mult": 2.0, "score_mult": 4.0},
-}
-
-# Weapon Ranges
-WEAPON_RANGE_PISTOL = 15
-WEAPON_RANGE_RIFLE = 25
-WEAPON_RANGE_SHOTGUN = 12  # Increased range (was 8)
-WEAPON_RANGE_PLASMA = 30
-WEAPON_RANGE_PULSE = 35
-WEAPON_RANGE_STORMTROOPER = 30
-WEAPON_RANGE_MINIGUN = 20
-WEAPON_RANGE_SNIPER = 40
-WEAPON_RANGE_FREEZER = 15
+SPAWN_SAFE_ZONE_RADIUS = 10.0
 
 # Weapon settings
 _catalog_path = os.path.dirname(os.path.dirname(__file__))
@@ -153,6 +107,7 @@ CHEAT_AMMO_AMOUNT = 999  # Full ammo granted by IDFA cheat code
 BASE_BOT_HEALTH = 30
 BASE_BOT_DAMAGE = 2  # Reduced from 3
 BOT_ATTACK_RANGE = 5
+WEAPON_RANGE_SNIPER = 15  # Sniper bot engagement range (in map units)
 BOT_ATTACK_COOLDOWN = 60
 BOT_PROJECTILE_SPEED = 0.08  # Reduced from 0.1
 BOT_PROJECTILE_DAMAGE = 5  # Reduced from 6

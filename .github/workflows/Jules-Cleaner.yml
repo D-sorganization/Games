@@ -5,10 +5,9 @@ on:
     types: [closed]
 
 jobs:
-
   # ── Dispatcher: route to self-hosted if available ──────────────────────────
   pick-runner:
-    runs-on: ubuntu-latest
+    runs-on: d-sorg-fleet
     timeout-minutes: 2
     outputs:
       runner: ${{ steps.check.outputs.runner }}
@@ -25,8 +24,8 @@ jobs:
             echo "runner=d-sorg-fleet" >> $GITHUB_OUTPUT
             echo "Self-hosted runner online — routing locally"
           else
-            echo "runner=ubuntu-latest" >> $GITHUB_OUTPUT
-            echo "No self-hosted runner — using GitHub-hosted"
+            echo "::error::No local self-hosted runner available; failing closed"
+            exit 1
           fi
   cleanup:
     needs: pick-runner
@@ -44,12 +43,12 @@ jobs:
         run: |
           # Extract PR numbers. Expecting "Consolidated PRs: #123 #124" or similar
           # We use regex to find #\d+ patterns in the body
-          
+
           echo "Analyzing Consolidated PR #$CONSOLIDATED_PR_NUM..."
-          
+
           # Extract all numbers prefixed with # from the body
           prs=$(echo "$PR_BODY" | grep -o '#[0-9]\+' | tr -d '#')
-          
+
           for pr_num in $prs; do
             # Skip self-reference if present
             if [ "$pr_num" == "$CONSOLIDATED_PR_NUM" ]; then

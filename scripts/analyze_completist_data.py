@@ -102,39 +102,32 @@ def _scan_completist_file(
     return results
 
 
+def _parse_marker_line(line: str) -> Finding | None:
+    """Parse a single grep line into a marker Finding (todo or fixme), or None."""
+    # Obfuscate strings to avoid finding this script itself in greedy scans
+    todo_str = "TO" + "DO"
+    fixme_markers = ["FIX" + "ME", "XXX", "HACK", "TEMP"]
+
+    filepath, lineno, content = _parse_grep_line(line)
+    if not filepath or not lineno or content is None:
+        return None
+
+    if re.search(r"\b" + todo_str + r"\b", content):
+        return Finding(file=filepath, line=lineno, text=content, type="TO" + "DO")
+
+    for m_marker in fixme_markers:
+        if re.search(r"\b" + m_marker + r"\b", content):
+            return Finding(file=filepath, line=lineno, text=content, type=m_marker)
+
+    return None
+
+
 def analyze_todos() -> tuple[list[Finding], list[Finding]]:
     """Analyze TO-DO and FIX-ME markers."""
     todos: list[Finding] = []
     fixmes: list[Finding] = []
 
-    # Obfuscate strings to avoid finding this script itself in greedy scans
-    todo_str = "TO" + "DO"
-    fixme_markers = ["FIX" + "ME", "XXX", "HACK", "TEMP"]
-
-    def _parser(line: str) -> Finding | None:
-        filepath, lineno, content = _parse_grep_line(line)
-        if not filepath or not lineno or content is None:
-            return None
-
-        if re.search(r"\b" + todo_str + r"\b", content):
-            return Finding(
-                file=filepath,
-                line=lineno,
-                text=content,
-                type="TO" + "DO",
-            )
-
-        for m_marker in fixme_markers:
-            if re.search(r"\b" + m_marker + r"\b", content):
-                return Finding(
-                    file=filepath,
-                    line=lineno,
-                    text=content,
-                    type=m_marker,
-                )
-        return None
-
-    all_markers = _scan_completist_file("MARKERS", _parser)
+    all_markers = _scan_completist_file("MARKERS", _parse_marker_line)
     for marker_item in all_markers:
         if marker_item["type"] == "TO" + "DO":
             todos.append(marker_item)
@@ -225,6 +218,33 @@ def calculate_metrics(item: Mapping[str, Any]) -> tuple[int, int, int]:
     return impact, coverage, complexity
 
 
+def _build_issue_content(
+    item: Mapping[str, Any],
+    itype: str,
+    f_path: str,
+    l_no: str,
+    context: str,
+    title: str,
+) -> str:
+    """Return the markdown content for a new issue file."""
+    impact, coverage, complexity = calculate_metrics(item)
+    labels: list[str] = ["incomplete-implementation", "critical"]
+    if impact >= 5:
+        labels.append("high-impact")
+    return (
+        f'---\ntitle: "{title}"\nlabels: {labels}\nassignee: "unassigned"\n'
+        f'status: "open"\n---\n\n# Issue Description\n'
+        f"Found critical incomplete implementation in `{f_path}` at line {l_no}.\n\n"
+        f"## Context\n**Type**: {itype} | **Location**: `{f_path}:{l_no}`\n\n"
+        f"```python\n{context}\n```\n\n"
+        f"## Audit Metrics\n"
+        f"- **Impact**: {impact}/5 | **Coverage**: {coverage}/5"
+        f" | **Complexity**: {complexity}/5\n\n"
+        f"## Recommendation\n"
+        f"Implement missing logic or document the rationale for the gap.\n"
+    )
+
+
 def create_issue_file(item: Mapping[str, Any], issue_id: int) -> str:
     """Idempotent creation of markdown issue files."""
     if not isinstance(item, Mapping):
@@ -239,79 +259,61 @@ def create_issue_file(item: Mapping[str, Any], issue_id: int) -> str:
     title = f"Incomplete {itype} in {os.path.basename(f_path)}:{l_no}"
     fname_title = re.sub(r"[^\w]", "_", title).strip("_")
 
-    # Idempotency check
     existing = glob.glob(os.path.join(ISSUES_DIR, f"Issue_*_{fname_title}.md"))
     if existing:
         return existing[0]
 
     filepath = os.path.join(ISSUES_DIR, f"Issue_{issue_id:03d}_{fname_title}.md")
-    impact, coverage, complexity = calculate_metrics(item)
-    labels = ["incomplete-implementation", "critical"]
-    if impact >= 5:
-        labels.append("high-impact")
-
-    content = f"""---
-title: "{title}"
-labels: {labels}
-assignee: "unassigned"
-status: "open"
----
-
-# Issue Description
-Found critical incomplete implementation in `{f_path}` at line {l_no}.
-
-## Context
-**Type**: {itype} | **Location**: `{f_path}:{l_no}`
-
-```python
-{context}
-```
-
-## Audit Metrics
-- **Impact**: {impact}/5 | **Coverage**: {coverage}/5 | **Complexity**: {complexity}/5
-
-## Recommendation
-Implement missing logic or document the rationale for the gap.
-"""
+    content = _build_issue_content(item, itype, f_path, l_no, context, title)
     with open(filepath, "w", encoding="utf-8") as f:
         f.write(content)
     return filepath
 
 
-def generate_mermaid_charts(
+def _validate_chart_inputs(
     criticals: list[Finding],
     todos: list[Finding],
     fixmes: list[Finding],
     docs: list[Finding],
-) -> str:
-    """Generate Mermaid charts for the report."""
-    if not isinstance(criticals, list):
-        raise TypeError(f"criticals must be a list, got {type(criticals).__name__}")
-    if not isinstance(todos, list):
-        raise TypeError(f"todos must be a list, got {type(todos).__name__}")
-    if not isinstance(fixmes, list):
-        raise TypeError(f"fixmes must be a list, got {type(fixmes).__name__}")
-    if not isinstance(docs, list):
-        raise TypeError(f"docs must be a list, got {type(docs).__name__}")
-    chart = []
-    chart.append("## Visualization")
+) -> None:
+    """Raise TypeError if any chart input is not a list."""
+    for name, value in (
+        ("criticals", criticals),
+        ("todos", todos),
+        ("fixmes", fixmes),
+        ("docs", docs),
+    ):
+        if not isinstance(value, list):
+            raise TypeError(f"{name} must be a list, got {type(value).__name__}")
 
-    # Pie Chart
-    chart.append("### Status Overview")
-    chart.append("```mermaid")
-    chart.append("pie title Completion Status")
-    chart.append(f'    "Impl Gaps (Critical)" : {len(criticals)}')
 
+def _build_status_overview_chart(
+    criticals: list[Finding],
+    todos: list[Finding],
+    fixmes: list[Finding],
+    docs: list[Finding],
+) -> list[str]:
+    """Return mermaid pie chart lines for the overall status overview."""
     todo_label = "TO" + "DO"
     fixme_label = "FIX" + "ME"
-    chart.append(f'    "Feature Requests ({todo_label})" : {len(todos)}')
-    chart.append(f'    "Technical Debt ({fixme_label})" : {len(fixmes)}')
-    chart.append(f'    "Doc Gaps" : {len(docs)}')
-    chart.append("```")
+    return [
+        "### Status Overview",
+        "```mermaid",
+        "pie title Completion Status",
+        f'    "Impl Gaps (Critical)" : {len(criticals)}',
+        f'    "Feature Requests ({todo_label})" : {len(todos)}',
+        f'    "Technical Debt ({fixme_label})" : {len(fixmes)}',
+        f'    "Doc Gaps" : {len(docs)}',
+        "```",
+    ]
 
-    # Breakdown by Top Modules
-    # (Bar Chart equivalent using pie or just text for now as mermaid bar is verbose)
-    # Let's do a simple count by top-level dir
+
+def _build_module_breakdown_chart(
+    criticals: list[Finding],
+    todos: list[Finding],
+    fixmes: list[Finding],
+) -> list[str]:
+    """Return mermaid pie chart lines for the top impacted modules."""
     counts: dict[str, int] = {}
     for item in criticals + todos + fixmes:
         path_parts = item["file"].split("/")
@@ -321,20 +323,39 @@ def generate_mermaid_charts(
         counts[root] = counts.get(root, 0) + 1
 
     sorted_mods = sorted(counts.items(), key=lambda x: x[1], reverse=True)[:5]
+    if not sorted_mods:
+        return []
+    lines = ["\n### Top Impacted Modules", "```mermaid", "pie title Issues by Module"]
+    lines.extend(f'    "{mod}" : {count}' for mod, count in sorted_mods)
+    lines.append("```")
+    return lines
 
-    if sorted_mods:
-        chart.append("\n### Top Impacted Modules")
-        chart.append("```mermaid")
-        chart.append("pie title Issues by Module")
-        for mod, count in sorted_mods:
-            chart.append(f'    "{mod}" : {count}')
-        chart.append("```")
 
+def generate_mermaid_charts(
+    criticals: list[Finding],
+    todos: list[Finding],
+    fixmes: list[Finding],
+    docs: list[Finding],
+) -> str:
+    """Generate Mermaid charts for the report."""
+    _validate_chart_inputs(criticals, todos, fixmes, docs)
+    chart: list[str] = ["## Visualization"]
+    chart.extend(_build_status_overview_chart(criticals, todos, fixmes, docs))
+    chart.extend(_build_module_breakdown_chart(criticals, todos, fixmes))
     return "\n".join(chart)
 
 
-def generate_report() -> None:
-    """Generate the structured completist status report."""
+class _ReportData(TypedDict):
+    """Bundle of scanned findings used to render a completist report."""
+
+    criticals: list[Finding]
+    todos: list[Finding]
+    fixmes: list[Finding]
+    missing_docs: list[Finding]
+
+
+def _collect_report_data() -> _ReportData:
+    """Scan completist sources and return prioritized finding lists."""
     stubs = analyze_stubs()
     ni_errors = analyze_not_implemented()
     todos, fixmes = analyze_todos()
@@ -345,74 +366,103 @@ def generate_report() -> None:
     criticals = [s for s in (stubs + ni_errors) if "test" not in s["file"].lower()]
     criticals.sort(key=lambda x: calculate_metrics(x)[0], reverse=True)
 
-    # Report Generation
-    date_s = datetime.now().strftime("%Y-%m-%d")
-    report = [
+    return _ReportData(
+        criticals=criticals,
+        todos=todos,
+        fixmes=fixmes,
+        missing_docs=missing_docs,
+    )
+
+
+def _build_critical_table(criticals: list[Finding]) -> list[str]:
+    """Return the markdown table rows for the critical incomplete items."""
+    lines = [
+        "\n## Critical Incomplete (Top 50)",
+        "| File | Line | Type | Impact | Coverage | Complexity |",
+        "|---|---|---|---|---|---|",
+    ]
+    for item in criticals[:50]:
+        imp, cov, comp = calculate_metrics(item)
+        lines.append(
+            f"| `{item['file']}` | {item['line']} | {item['type']} | "
+            f"{imp} | {cov} | {comp} |"
+        )
+    return lines
+
+
+def _build_feature_and_debt_tables(
+    todos: list[Finding], fixmes: list[Finding]
+) -> list[str]:
+    """Return markdown table rows for feature gaps and technical debt."""
+    lines = [
+        "\n## Feature Gap Matrix",
+        "| Module | Feature Gap | Type |",
+        "|---|---|---|",
+    ]
+    for item in todos[:50]:
+        text = item.get("text", "").replace("|", "\\|")
+        lines.append(f"| `{item['file']}` | {text[:100]} | {item['type']} |")
+
+    lines += [
+        "\n## Technical Debt Register",
+        "| File | Line | Issue | Type |",
+        "|---|---|---|---|",
+    ]
+    for item in fixmes:
+        text = item.get("text", "").replace("|", "\\|")
+        lines.append(
+            f"| `{item['file']}` | {item['line']} | {text[:100]} | {item['type']} |"
+        )
+    return lines
+
+
+def _build_implementation_order(
+    criticals: list[Finding], todos: list[Finding]
+) -> list[str]:
+    """Return the markdown table rows for recommended implementation order."""
+    lines = [
+        "\n## Recommended Implementation Order",
+        "Prioritized by Impact (High) and Complexity (Low).",
+        "| Priority | File | Issue | Metrics (I/C/C) |",
+        "|---|---|---|---|",
+    ]
+    all_items = sorted(
+        criticals + todos,
+        key=lambda it: (calculate_metrics(it)[0] * 10) - calculate_metrics(it)[2],
+        reverse=True,
+    )
+    for i, item in enumerate(all_items[:20], 1):
+        imp, cov, comp = calculate_metrics(item)
+        desc = item.get("name", item.get("text", ""))[:80].replace("|", "\\|")
+        lines.append(f"| {i} | `{item['file']}` | {desc} | {imp}/{cov}/{comp} |")
+    return lines
+
+
+def _build_report_body(data: _ReportData, date_s: str) -> list[str]:
+    """Build the full markdown report body from collected data."""
+    criticals = data["criticals"]
+    todos = data["todos"]
+    fixmes = data["fixmes"]
+    missing_docs = data["missing_docs"]
+
+    report: list[str] = [
         f"# Completist Report: {date_s}\n",
         "## Executive Summary",
         f"- **Critical Gaps**: {len(criticals)}",
         f"- **Feature Gaps (TO{'DO'})**: {len(todos)}",
         f"- **Technical Debt**: {len(fixmes)}",
         f"- **Documentation Gaps**: {len(missing_docs)}\n",
+        generate_mermaid_charts(criticals, todos, fixmes, missing_docs),
     ]
+    report.extend(_build_critical_table(criticals))
+    report.extend(_build_feature_and_debt_tables(todos, fixmes))
+    report.extend(_build_implementation_order(criticals, todos))
+    return report
 
-    # Insert Mermaid Visualization
-    report.append(generate_mermaid_charts(criticals, todos, fixmes, missing_docs))
 
-    # Critical Table
-    report.append("\n## Critical Incomplete (Top 50)")
-    report.append("| File | Line | Type | Impact | Coverage | Complexity |")
-    report.append("|---|---|---|---|---|---|")
-
-    for item in criticals[:50]:
-        imp, cov, comp = calculate_metrics(item)
-        # fmt: off
-        report.append(
-            f"| `{item['file']}` | {item['line']} | {item['type']} | "
-            f"{imp} | {cov} | {comp} |"
-        )
-        # fmt: on
-
-    # Feature Gap Matrix
-    report.append("\n## Feature Gap Matrix")
-    report.append("| Module | Feature Gap | Type |")
-    report.append("|---|---|---|")
-    for item in todos[:50]:
-        text = item.get("text", "").replace("|", "\\|")
-        report.append(f"| `{item['file']}` | {text[:100]} | {item['type']} |")
-
-    # Technical Debt Register
-    report.append("\n## Technical Debt Register")
-    report.append("| File | Line | Issue | Type |")
-    report.append("|---|---|---|---|")
-    for item in fixmes:
-        text = item.get("text", "").replace("|", "\\|")
-        report.append(
-            f"| `{item['file']}` | {item['line']} | {text[:100]} | {item['type']} |"
-        )
-
-    # Recommended Implementation Order
-    report.append("\n## Recommended Implementation Order")
-    report.append("Prioritized by Impact (High) and Complexity (Low).")
-    report.append("| Priority | File | Issue | Metrics (I/C/C) |")
-    report.append("|---|---|---|---|")
-
-    # Combined list for prioritization
-    all_items = criticals + todos
-
-    def priority_score(item: Mapping[str, Any]) -> int:
-        imp, _, comp = calculate_metrics(item)
-        return (imp * 10) - comp
-
-    all_items.sort(key=priority_score, reverse=True)
-
-    for i, item in enumerate(all_items[:20], 1):
-        imp, cov, comp = calculate_metrics(item)
-        desc = item.get("name", item.get("text", ""))[:80].replace("|", "\\|")
-        report.append(f"| {i} | `{item['file']}` | {desc} | {imp}/{cov}/{comp} |")
-
-    # Issue creation for High Impact items
-    report.append("\n## Issues Created")
+def _create_issues_section(criticals: list[Finding]) -> list[str]:
+    """Create issue files for high-impact criticals and return a report section."""
+    lines = ["\n## Issues Created"]
     max_id = 0
     issues_glob = glob.glob(os.path.join(ISSUES_DIR, "Issue_*.md")) + glob.glob(
         os.path.join(ISSUES_DIR, "ISSUE_*.md")
@@ -424,18 +474,40 @@ def generate_report() -> None:
 
     next_id = max_id + 1
     for item in [c for c in criticals if calculate_metrics(c)[0] >= 4][:10]:
-        report.append(f"- Created `{create_issue_file(item, next_id)}`")
+        lines.append(f"- Created `{create_issue_file(item, next_id)}`")
         next_id += 1
+    return lines
 
+
+def _write_report_files(report_lines: list[str], date_s: str) -> str:
+    """Write the report to its dated and 'latest' paths; return dated path."""
     os.makedirs(REPORT_DIR, exist_ok=True)
     report_path = os.path.join(REPORT_DIR, f"Completist_Report_{date_s}.md")
+    payload = "\n".join(report_lines)
     with open(report_path, "w", encoding="utf-8") as f_out:
-        f_out.write("\n".join(report))
+        f_out.write(payload)
 
     latest_path = os.path.join(REPORT_DIR, "COMPLETIST_LATEST.md")
     with open(latest_path, "w", encoding="utf-8") as f_out:
-        f_out.write("\n".join(report))
+        f_out.write(payload)
 
+    return report_path
+
+
+def generate_report() -> None:
+    """Generate the structured completist status report.
+
+    Thin orchestrator: collects data, builds the report body, creates
+    issue files for high-impact items, and writes the resulting markdown
+    to disk.
+    """
+    data = _collect_report_data()
+    date_s = datetime.now().strftime("%Y-%m-%d")
+
+    report_lines = _build_report_body(data, date_s)
+    report_lines.extend(_create_issues_section(data["criticals"]))
+
+    report_path = _write_report_files(report_lines, date_s)
     logger.info("Report generated: %s", report_path)
 
 

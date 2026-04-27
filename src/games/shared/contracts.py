@@ -104,6 +104,27 @@ def postcondition(
     return decorator
 
 
+def _wrap_public_method(
+    original: Any,
+    check: Callable[..., bool],
+    message: str,
+) -> Any:
+    """Return a wrapped version of *original* that enforces *check* after each call."""
+
+    @functools.wraps(original)
+    def wrapped(*args: Any, _orig: Any = original, **kwargs: Any) -> Any:
+        """Call the original method then verify the invariant holds."""
+        result = _orig(*args, **kwargs)
+        instance = args[0] if args else None
+        if instance is not None and not check(instance):
+            raise ContractViolation(
+                f"Invariant failed after {_orig.__qualname__}: {message}"
+            )
+        return result
+
+    return wrapped
+
+
 def invariant(
     check: Callable[..., bool],
     message: str = "Invariant violated",
@@ -130,26 +151,7 @@ def invariant(
             attr = getattr(cls, attr_name)
             if not callable(attr):
                 continue
-
-            original = attr
-
-            @functools.wraps(original)
-            def wrapped(
-                *args: Any,
-                _orig: Any = original,
-                **kwargs: Any,
-            ) -> Any:
-                """Call the original method then verify the invariant holds."""
-                result = _orig(*args, **kwargs)
-                instance = args[0] if args else None
-                if instance is not None and not check(instance):
-                    raise ContractViolation(
-                        f"Invariant failed after {_orig.__qualname__}: {message}"
-                    )
-                return result
-
-            setattr(cls, attr_name, wrapped)
-
+            setattr(cls, attr_name, _wrap_public_method(attr, check, message))
         return cls
 
     return class_decorator

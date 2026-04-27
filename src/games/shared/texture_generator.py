@@ -1,4 +1,5 @@
 import random
+from typing import Any
 
 import numpy as np
 import pygame
@@ -35,6 +36,38 @@ class TextureGenerator:
         return surface
 
     @staticmethod
+    def _apply_brick_noise(
+        arr: "np.ndarray[Any, Any]", width: int, height: int
+    ) -> None:
+        """Apply subtle random noise to the brick surface array in-place."""
+        noise = np.random.randint(-15, 15, (width, height, 3))
+        base_arr = np.array(arr, dtype=np.int16)
+        base_arr += noise
+        np.clip(base_arr, 0, 255, out=base_arr)
+        arr[:] = base_arr.astype(np.uint8)
+
+    @staticmethod
+    def _draw_mortar_lines(
+        arr: "np.ndarray[Any, Any]",
+        width: int,
+        height: int,
+        color_mortar: tuple[int, int, int],
+    ) -> None:
+        """Draw horizontal and vertical mortar lines into the surface array."""
+        brick_w = width // 2
+        brick_h = height // 4
+        mortar_size = 2
+        for y in range(height):
+            row = y // brick_h
+            offset = (brick_w // 2) if row % 2 == 1 else 0
+            if y % brick_h < mortar_size:
+                arr[:, y] = color_mortar
+                continue
+            for x in range(width):
+                if (x + offset) % brick_w < mortar_size:
+                    arr[x, y] = color_mortar
+
+    @staticmethod
     def generate_bricks(
         width: int,
         height: int,
@@ -47,35 +80,9 @@ class TextureGenerator:
         surface = pygame.Surface((width, height))
         surface.fill(color_brick)
         arr = pygame.surfarray.pixels3d(surface)
-
-        # Subtle noise for texture (reduced variation)
-        noise = np.random.randint(-15, 15, (width, height, 3))
-        # Ensure we don't overflow uint8 wrapping
-        base_arr = np.array(arr, dtype=np.int16)
-        base_arr += noise
-        np.clip(base_arr, 0, 255, out=base_arr)
-        arr[:] = base_arr.astype(np.uint8)
-
-        # Brick dimensions
-        brick_w = width // 2
-        brick_h = height // 4
-        mortar_size = 2
-
-        for y in range(height):
-            row = y // brick_h
-            offset = (brick_w // 2) if row % 2 == 1 else 0
-
-            # Mortar horizontal
-            if y % brick_h < mortar_size:
-                arr[:, y] = color_mortar
-                continue
-
-            # Mortar vertical
-            for x in range(width):
-                if (x + offset) % brick_w < mortar_size:
-                    arr[x, y] = color_mortar
-
-        del arr  # Unlock surface
+        TextureGenerator._apply_brick_noise(arr, width, height)
+        TextureGenerator._draw_mortar_lines(arr, width, height, color_mortar)
+        del arr
         return surface
 
     @staticmethod

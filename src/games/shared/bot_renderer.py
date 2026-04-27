@@ -17,6 +17,27 @@ class BotRenderer:
     """Handles rendering of bot sprites by delegating to style renderers."""
 
     @staticmethod
+    def _get_render_dims(
+        bot: Bot,
+        screen: pygame.Surface,
+        center_x: float,
+        sprite_y: int,
+        sprite_size: float,
+        visual_style: str,
+        base_color: Color3,
+    ) -> tuple[int, float, float, Color3] | None:
+        """Return (render_y, w, h, color) or None to skip the draw."""
+        render_h = sprite_size
+        render_w = (
+            sprite_size * 0.55 if visual_style == "monster" else sprite_size * 0.7
+        )
+        if not bot.dead:
+            return sprite_y, render_w, render_h, base_color
+        return BotRenderer._render_death_animation(
+            screen, bot, center_x, sprite_y, render_w, render_h, base_color
+        )
+
+    @staticmethod
     def render_sprite(
         screen: pygame.Surface,
         bot: Bot,
@@ -30,34 +51,16 @@ class BotRenderer:
         type_data: EnemyData = bot.type_data
         base_color = type_data["color"]
         visual_style = type_data.get("visual_style", "monster")
-
-        # Delegate item types to specialised renderer
         if BotRenderer._render_item_sprite(
             screen, bot, center_x, sprite_y, sprite_size, base_color, config
         ):
             return
-
-        render_height = sprite_size
-        render_width = (
-            sprite_size * 0.55 if visual_style == "monster" else sprite_size * 0.7
+        result = BotRenderer._get_render_dims(
+            bot, screen, center_x, sprite_y, sprite_size, visual_style, base_color
         )
-        render_y = sprite_y
-
-        if bot.dead:
-            result = BotRenderer._render_death_animation(
-                screen,
-                bot,
-                center_x,
-                sprite_y,
-                render_width,
-                render_height,
-                base_color,
-            )
-            if result is None:
-                return  # Disintegration complete or fully dissolved
-            render_y, render_width, render_height, base_color = result
-
-        # Delegate to specialized renderer
+        if result is None:
+            return
+        render_y, render_width, render_height, base_color = result
         renderer = BotStyleRendererFactory.get_renderer(visual_style)
         if renderer:
             renderer.render(
@@ -72,6 +75,31 @@ class BotRenderer:
             )
 
     @staticmethod
+    def _invoke_item_renderer(
+        style_key: str,
+        screen: pygame.Surface,
+        bot: Bot,
+        center_x: float,
+        sprite_y: int,
+        sprite_size: float,
+        base_color: tuple[int, int, int],
+        config: RaycasterConfig,
+    ) -> None:
+        """Look up and invoke an item-style renderer."""
+        renderer = BotStyleRendererFactory.get_renderer(style_key)
+        if renderer:
+            renderer.render(
+                screen,
+                bot,
+                center_x,
+                sprite_y,
+                sprite_size,
+                sprite_size,
+                base_color,
+                config,
+            )
+
+    @staticmethod
     def _render_item_sprite(
         screen: pygame.Surface,
         bot: Bot,
@@ -81,42 +109,55 @@ class BotRenderer:
         base_color: tuple[int, int, int],
         config: RaycasterConfig,
     ) -> bool:
-        """Render item-type sprites (health packs, ammo, pickups).
-
-        Returns:
-            True if the bot was an item type and was rendered (or skipped).
-        """
+        """Render item-type sprites; return True if handled."""
         if bot.enemy_type in ("health_pack", "ammo_box", "bomb_item"):
-            renderer = BotStyleRendererFactory.get_renderer(bot.enemy_type)
-            if renderer:
-                renderer.render(
-                    screen,
-                    bot,
-                    center_x,
-                    sprite_y,
-                    sprite_size,
-                    sprite_size,
-                    base_color,
-                    config,
-                )
+            BotRenderer._invoke_item_renderer(
+                bot.enemy_type,
+                screen,
+                bot,
+                center_x,
+                sprite_y,
+                sprite_size,
+                base_color,
+                config,
+            )
             return True
-
         if bot.enemy_type.startswith("pickup_"):
-            renderer = BotStyleRendererFactory.get_renderer("weapon_pickup")
-            if renderer:
-                renderer.render(
-                    screen,
-                    bot,
-                    center_x,
-                    sprite_y,
-                    sprite_size,
-                    sprite_size,
-                    base_color,
-                    config,
-                )
+            BotRenderer._invoke_item_renderer(
+                "weapon_pickup",
+                screen,
+                bot,
+                center_x,
+                sprite_y,
+                sprite_size,
+                base_color,
+                config,
+            )
             return True
-
         return False
+
+    @staticmethod
+    def _compute_melt_transforms(
+        sprite_y: int,
+        render_width: float,
+        render_height: float,
+        base_color: Color3,
+        death_timer: int,
+    ) -> tuple[int, int, int, Color3]:
+        """Return (render_y, w, h, color) after applying the melt animation."""
+        melt_pct = min(1.0, death_timer / 60.0)
+        goo_color = (50, 150, 50)
+        blended = cast(
+            Color3,
+            tuple(
+                int(c * (1 - melt_pct) + g * melt_pct)
+                for c, g in zip(base_color, goo_color, strict=False)
+            ),
+        )
+        current_h = render_height * (1.0 - melt_pct * 0.85)
+        current_w = render_width * (1.0 + melt_pct * 0.8)
+        offset_y = (render_height - current_h) + render_height * 0.05
+        return int(sprite_y + offset_y), int(current_w), int(current_h), blended
 
     @staticmethod
     def _render_death_animation(
@@ -128,33 +169,12 @@ class BotRenderer:
         render_height: float,
         base_color: tuple[int, int, int],
     ) -> tuple[int, int, int, tuple[int, int, int]] | None:
-        """Calculate death animation transforms (melting + disintegration).
-
-        Returns:
-            (render_y, render_width, render_height, modified_color) or
-            None if the sprite should not be drawn.
-        """
-        melt_pct = min(1.0, bot.death_timer / 60.0)
-        goo_color = (50, 150, 50)
-        base_color = cast(
-            Color3,
-            tuple(
-                int(c * (1 - melt_pct) + g * melt_pct)
-                for c, g in zip(base_color, goo_color, strict=False)
-            ),
+        """Calculate death animation transforms; return dims or None if not drawn."""
+        render_y, render_width, render_height, base_color = (
+            BotRenderer._compute_melt_transforms(
+                sprite_y, render_width, render_height, base_color, int(bot.death_timer)
+            )
         )
-
-        scale_y = 1.0 - (melt_pct * 0.85)
-        scale_x = 1.0 + (melt_pct * 0.8)
-
-        current_h = render_height * scale_y
-        current_w = render_width * scale_x
-
-        offset_y = (render_height - current_h) + (render_height * 0.05)
-        render_y = int(sprite_y + offset_y)
-        render_height = int(current_h)
-        render_width = int(current_w)
-
         if bot.disintegrate_timer > 0:
             dis_pct = bot.disintegrate_timer / 100.0
             radius_mult = 1.0 - dis_pct
@@ -171,5 +191,4 @@ class BotRenderer:
                 ),
             )
             return None
-
-        return int(render_y), int(render_width), int(render_height), base_color
+        return render_y, render_width, render_height, base_color

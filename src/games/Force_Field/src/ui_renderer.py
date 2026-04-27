@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import logging
 import math
-import random
 import sys
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -13,6 +12,7 @@ from games.shared.ui import Button
 from games.shared.ui_renderer_base import UIRendererBase
 
 from . import constants as C  # noqa: N812
+from . import ui_hud_views, ui_menu_views, ui_overlay_views, ui_progress_views
 
 try:
     import cv2
@@ -23,7 +23,6 @@ except ImportError:
 
 if TYPE_CHECKING:
     from .game import Game
-    from .player import Player
 
 logger = logging.getLogger(__name__)
 
@@ -100,693 +99,107 @@ class UIRenderer(UIRendererBase):
 
     def render_menu(self) -> None:
         """Render main menu"""
-        self.screen.fill(C.BLACK)
-
-        title = self.title_font.render("FORCE FIELD", True, C.RED)
-        title_rect = title.get_rect(center=(C.SCREEN_WIDTH // 2, 100))
-
-        sub = self.subtitle_font.render("THE ARENA AWAITS", True, C.WHITE)
-        sub_rect = sub.get_rect(center=(C.SCREEN_WIDTH // 2, 160))
-
-        self.screen.blit(title, title_rect)
-        self.screen.blit(sub, sub_rect)
-
-        self.update_blood_drips(title_rect)
-        self._draw_blood_drips(self.title_drips)
-
-        if (pygame.time.get_ticks() // 500) % 2 == 0:
-            prompt = self.font.render("CLICK TO BEGIN", True, C.GRAY)
-            center_pos = (C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT - 150)
-            prompt_rect = prompt.get_rect(center=center_pos)
-            self.screen.blit(prompt, prompt_rect)
-
-        credit = self.tiny_font.render("A Jasper Production", True, C.DARK_GRAY)
-        center_pos = (C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT - 50)
-        credit_rect = credit.get_rect(center=center_pos)
-        self.screen.blit(credit, credit_rect)
-        pygame.display.flip()
+        ui_menu_views.render_menu(self)
 
     def update_blood_drips(self, rect: pygame.Rect) -> None:
         """Spawn and update blood drips interacting with text rect"""
-        # Spawn
-        if random.random() < 0.3:
-            x = random.randint(rect.left, rect.right)
-            self.title_drips.append(
-                {
-                    "x": x,
-                    "y": rect.top,
-                    "start_y": rect.top,
-                    "speed": random.uniform(0.5, 2.0),
-                    "size": random.randint(2, 4),
-                    "color": (random.randint(180, 255), 0, 0),
-                }
-            )
-
-        # Update
-        for drip in self.title_drips:
-            drip["y"] += drip["speed"]
-            drip["speed"] *= 1.02
-        self.title_drips = [d for d in self.title_drips if d["y"] <= C.SCREEN_HEIGHT]
+        ui_menu_views.update_blood_drips(self, rect)
 
     def _draw_blood_drips(self, drips: list[dict[str, Any]]) -> None:
         """Draw the blood drips"""
-        for drip in drips:
-            pygame.draw.line(
-                self.screen,
-                drip["color"],
-                (drip["x"], drip["start_y"]),
-                (drip["x"], drip["y"]),
-                drip["size"],
-            )
-            pygame.draw.circle(
-                self.screen,
-                drip["color"],
-                (drip["x"], int(drip["y"])),
-                drip["size"] + 1,
-            )
+        ui_menu_views.draw_blood_drips(self, drips)
 
     def render_map_select(self, game: Game) -> None:
         """Render map select screen"""
-        self.screen.fill(C.BLACK)
-
-        title = self.subtitle_font.render("MISSION SETUP", True, C.RED)
-        # Shadow
-        for off in [(-2, 0), (2, 0), (0, -2), (0, 2)]:
-            shadow = self.subtitle_font.render("MISSION SETUP", True, (50, 0, 0))
-            cx = C.SCREEN_WIDTH // 2 + off[0]
-            cy = 100 + off[1]
-            s_rect = shadow.get_rect(center=(cx, cy))
-            self.screen.blit(shadow, s_rect)
-
-        title_rect = title.get_rect(center=(C.SCREEN_WIDTH // 2, 100))
-        self.screen.blit(title, title_rect)
-
-        mouse_pos = pygame.mouse.get_pos()
-        start_y = 150
-        line_height = 50
-
-        settings = [
-            ("Map Size", str(game.selected_map_size)),
-            ("Difficulty", game.selected_difficulty),
-            ("Start Level", str(game.selected_start_level)),
-            ("Lives", str(game.selected_lives)),
-        ]
-
-        for i, (label, value) in enumerate(settings):
-            y = start_y + i * line_height
-            color = C.WHITE
-            if abs(mouse_pos[1] - y) < 20:
-                color = C.YELLOW
-
-            # Use retro font for menu settings
-            label_surf = self.retro_subtitle_font.render(f"{label}:", True, C.GRAY)
-            label_rect = label_surf.get_rect(right=C.SCREEN_WIDTH // 2 - 20, centery=y)
-
-            val_surf = self.retro_subtitle_font.render(value, True, color)
-            val_rect = val_surf.get_rect(left=C.SCREEN_WIDTH // 2 + 20, centery=y)
-
-            self.screen.blit(label_surf, label_rect)
-            self.screen.blit(val_surf, val_rect)
-
-        # Draw Start Button (Position logic maintained inside Button.draw)
-        # But let's check position
-        # Button: y = H - 120 (480). Settings end at 150 + 200 = 350. Safe.
-        self.start_button.draw(self.screen, self.retro_font)
-
-        instructions = [
-            "WASD: Move | Shift: Sprint | Mouse: Look | 1-7: Weapons",
-            "Ctrl: Shoot | Z: Zoom | F: Bomb | Space: Shield",
-        ]
-        # Position instructions between settings and button
-        y = 380
-        for line in instructions:
-            text = self.tiny_font.render(line, True, C.RED)
-            text_rect = text.get_rect(center=(C.SCREEN_WIDTH // 2, y))
-            self.screen.blit(text, text_rect)
-            y += 25
-
-        pygame.display.flip()
+        ui_menu_views.render_map_select(self, game)
 
     def render_hud(self, game: Game) -> None:
         """Render the heads-up display including health, ammo, and game stats."""
-        if not (game.player is not None):
-            raise ValueError("DbC Blocked: Precondition failed.")
-        if not (game.raycaster is not None):
-            raise ValueError("DbC Blocked: Precondition failed.")
-
-        # Render overlays first
-        self.overlay_surface.fill((0, 0, 0, 0))
-        self._render_low_health_tint(game.player)
-        self._render_damage_flash(game.damage_flash_timer)
-        self._render_shield_effect(game.player)
-        self.screen.blit(self.overlay_surface, (0, 0))
-
-        # Crosshair
-        self._render_crosshair()
-        self._render_secondary_charge(game.player)
-
-        # Floating damage/message texts
-        self._render_messages(game)
-
-        # Stacked status bars (health, shield, charge, stamina)
-        self._render_health_bar(game)
-        self._render_status_bars(game)
-
-        # Controls hint
-        self._render_controls_hint()
-
-        # Pause Menu
-        if game.paused:
-            self._render_pause_overlay(game)
-
-    # ------------------------------------------------------------------
-    # HUD helper methods (extracted from render_hud)
-    # ------------------------------------------------------------------
-
-    def _render_health_bar(self, game: Game) -> None:
-        """Render the player health bar at the bottom of the HUD."""
-        player = _require_player(game)
-        bar_height = 12
-        bar_width = 150
-        start_x = 20
-        start_y = C.SCREEN_HEIGHT - 40  # Start from bottom
-
-        health_y = start_y
-        self._render_bar(
-            start_x,
-            health_y,
-            bar_width,
-            bar_height,
-            player.health / player.max_health,
-            C.RED if player.health <= 50 else C.GREEN,
-            "HP",
-        )
-
-    def _render_status_bars(self, game: Game) -> None:
-        """Render shield bar, secondary charge bar, and stamina bar."""
-        player = _require_player(game)
-        bar_height = 12
-        bar_spacing = 8
-        bar_width = 150
-        start_x = 20
-        start_y = C.SCREEN_HEIGHT - 40  # Start from bottom
-
-        health_y = start_y
-
-        # Shield Bar
-        shield_y = health_y - (bar_height + bar_spacing)
-        self._render_bar(
-            start_x,
-            shield_y,
-            bar_width,
-            bar_height,
-            player.shield_timer / C.SHIELD_MAX_DURATION,
-            C.CYAN,
-            "SHLD",
-        )
-        # Shield Recharging/Cooldown Text
-        if player.shield_recharge_delay > 0:
-            status = "RECHRG" if player.shield_active else "COOL"
-            txt = self.tiny_font.render(status, True, C.GRAY)
-            self.screen.blit(txt, (start_x + bar_width + 5, shield_y - 2))
-
-        # Secondary Charge
-        charge_y = shield_y - (bar_height + bar_spacing)
-        charge_pct = 1.0 - (player.secondary_cooldown / C.SECONDARY_COOLDOWN)
-        self._render_bar(
-            start_x,
-            charge_y,
-            bar_width,
-            bar_height,
-            max(0, min(1, charge_pct)),
-            (255, 100, 100),
-            "CHRG",
-        )
-
-        # Stamina
-        stamina_y = charge_y - (bar_height + bar_spacing)
-        self._render_bar(
-            start_x,
-            stamina_y,
-            bar_width,
-            bar_height,
-            player.stamina / player.max_stamina,
-            C.YELLOW,
-            "STM",
-        )
-
-    def _render_messages(self, game: Game) -> None:
-        """Render floating damage texts and messages."""
-        self._render_damage_texts(game.damage_texts)
-
-    def _render_pause_overlay(self, game: Game) -> None:
-        """Render the pause menu overlay (delegates to _render_pause_menu)."""
-        self._render_pause_menu(game)
-
-    def _render_controls_hint(self) -> None:
-        """Render the controls hint bar at the top of the screen."""
-        msg = "WASD:Move|1-7:Wpn|R:Rel|Ctrl+C:Cheat|SPACE:Shield|M:Map|ESC:Menu"
-        controls_hint = self.tiny_font.render(
-            msg,
-            True,
-            C.WHITE,
-        )
-        controls_hint_rect = controls_hint.get_rect(topleft=(10, 10))
-        bg_surface = pygame.Surface(
-            (
-                controls_hint_rect.width + C.HINT_BG_PADDING_H,
-                controls_hint_rect.height + C.HINT_BG_PADDING_V,
-            ),
-            pygame.SRCALPHA,
-        )
-        bg_surface.fill(C.HINT_BG_COLOR)
-        self.screen.blit(
-            bg_surface,
-            (
-                controls_hint_rect.x - C.HINT_BG_PADDING_H // 2,
-                controls_hint_rect.y - C.HINT_BG_PADDING_V // 2,
-            ),
-        )
-        self.screen.blit(controls_hint, controls_hint_rect)
-
-    def _render_damage_texts(self, texts: list[dict[str, Any]]) -> None:
-        """Render floating damage text indicators with enhanced effects."""
-        for t in texts:
-            # Check for special effects
-            is_large = t.get("size") == "large"
-            has_glow = t.get("effect") == "glow"
-
-            # Choose font based on size
-            font = self.subtitle_font if is_large else self.small_font
-
-            # Create text surface
-            text_surf = font.render(t["text"], True, t["color"])
-
-            # Add glow effect for special messages
-            if has_glow:
-                # Create glow surface
-                glow_surf = font.render(t["text"], True, (255, 255, 255))
-
-                # Draw glow in multiple positions for blur effect
-                glow_positions = [
-                    (-2, -2),
-                    (-2, 2),
-                    (2, -2),
-                    (2, 2),
-                    (-1, 0),
-                    (1, 0),
-                    (0, -1),
-                    (0, 1),
-                ]
-                for gx, gy in glow_positions:
-                    glow_rect = glow_surf.get_rect(
-                        center=(int(t["x"]) + gx, int(t["y"]) + gy)
-                    )
-                    glow_surf.set_alpha(50)  # Semi-transparent glow
-                    self.screen.blit(glow_surf, glow_rect)
-
-            # Draw main text
-            rect = text_surf.get_rect(center=(int(t["x"]), int(t["y"])))
-            self.screen.blit(text_surf, rect)
-
-    def _render_damage_flash(self, timer: int) -> None:
-        """Render red screen flash effect when player takes damage."""
-        if timer > 0:
-            alpha = int(100 * (timer / 10.0))
-            self.overlay_surface.fill(
-                (255, 0, 0, alpha), special_flags=pygame.BLEND_RGBA_ADD
-            )
-
-    def _render_shield_effect(self, player: Player) -> None:
-        """Render shield activation visual effects and status."""
-        if player.shield_active:
-            # Simple fill
-            pygame.draw.rect(
-                self.overlay_surface,
-                (*C.SHIELD_COLOR, C.SHIELD_ALPHA),
-                (0, 0, C.SCREEN_WIDTH, C.SCREEN_HEIGHT),
-            )
-            # Border
-            pygame.draw.rect(
-                self.overlay_surface,
-                C.SHIELD_COLOR,
-                (0, 0, C.SCREEN_WIDTH, C.SCREEN_HEIGHT),
-                10,
-            )
-
-            shield_text = self.title_font.render("SHIELD ACTIVE", True, C.SHIELD_COLOR)
-            self.screen.blit(
-                shield_text,
-                (C.SCREEN_WIDTH // 2 - shield_text.get_width() // 2, 100),
-            )
-
-            time_left = player.shield_timer / 60.0
-            timer_text = self.small_font.render(f"{time_left:.1f}s", True, C.WHITE)
-            self.screen.blit(
-                timer_text,
-                (C.SCREEN_WIDTH // 2 - timer_text.get_width() // 2, 160),
-            )
-
-            if player.shield_timer < 120 and (player.shield_timer // 10) % 2 == 0:
-                pygame.draw.rect(
-                    self.overlay_surface,
-                    (255, 0, 0, 50),
-                    (0, 0, C.SCREEN_WIDTH, C.SCREEN_HEIGHT),
-                )
-
-        elif (
-            player.shield_timer == C.SHIELD_MAX_DURATION
-            and player.shield_recharge_delay <= 0
-        ):
-            ready_text = self.tiny_font.render("SHIELD READY", True, C.CYAN)
-            # Position above stamina bar (which ends at ~H-130)
-            self.screen.blit(ready_text, (20, C.SCREEN_HEIGHT - 160))
-
-    def _render_bar(
-        self,
-        x: int,
-        y: int,
-        w: int,
-        h: int,
-        pct: float,
-        color: tuple[int, int, int],
-        label: str,
-    ) -> None:
-        """Helper to render a labeled HUD bar."""
-        # Background
-        pygame.draw.rect(self.screen, C.DARK_GRAY, (x, y, w, h))
-        # Fill
-        fill_w = int(w * max(0.0, min(1.0, pct)))
-        if fill_w > 0:
-            pygame.draw.rect(self.screen, color, (x, y, fill_w, h))
-        # Border
-        pygame.draw.rect(self.screen, C.WHITE, (x, y, w, h), 1)
-        # Label
-        lbl = self.tiny_font.render(label, True, C.WHITE)
-        # Place label to right of bar
-        self.screen.blit(lbl, (x + w + 5, y - 2))
-
-    def _render_low_health_tint(self, player: Player) -> None:
-        """Render red screen tint when health is low."""
-        if player.health < 50:
-            alpha = int(100 * (1.0 - (player.health / 50.0)))
-            self.overlay_surface.fill(
-                (255, 0, 0, alpha), special_flags=pygame.BLEND_RGBA_ADD
-            )
-
-    def _render_crosshair(self) -> None:
-        """Render the aiming crosshair at the center of the screen."""
-        cx = C.SCREEN_WIDTH // 2
-        cy = C.SCREEN_HEIGHT // 2
-        size = 12
-        pygame.draw.line(self.screen, C.RED, (cx - size, cy), (cx + size, cy), 2)
-        pygame.draw.line(self.screen, C.RED, (cx, cy - size), (cx, cy + size), 2)
-        pygame.draw.circle(self.screen, C.RED, (cx, cy), 2)
-
-    def _render_secondary_charge(self, player: Player) -> None:
-        """Render secondary weapon charge bar."""
-        charge_pct = 1.0 - (player.secondary_cooldown / C.SECONDARY_COOLDOWN)
-        if charge_pct < 1.0:
-            bar_w = 40
-            bar_h = 4
-            cx, cy = C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 30
-            pygame.draw.rect(
-                self.screen, C.DARK_GRAY, (cx - bar_w // 2, cy, bar_w, bar_h)
-            )
-            pygame.draw.rect(
-                self.screen,
-                C.CYAN,
-                (cx - bar_w // 2, cy, int(bar_w * charge_pct), bar_h),
-            )
+        ui_hud_views.render_hud(self, game)
 
     def _render_pause_menu(self, game: Game) -> None:
         """Render the pause menu overlay."""
-        overlay = pygame.Surface((C.SCREEN_WIDTH, C.SCREEN_HEIGHT), pygame.SRCALPHA)
-        overlay.fill((0, 0, 0, 200))
-        self.screen.blit(overlay, (0, 0))
-
-        title = self.title_font.render("PAUSED", True, C.RED)
-        title_rect = title.get_rect(center=(C.SCREEN_WIDTH // 2, 150))
-        self.screen.blit(title, title_rect)
-
-        if game.cheat_mode_active:
-            # Render Cheat Input Box
-            cheats_surf = self.subtitle_font.render("ENTER CHEAT CODE:", True, C.CYAN)
-            cheats_rect = cheats_surf.get_rect(center=(C.SCREEN_WIDTH // 2, 350))
-            self.screen.blit(cheats_surf, cheats_rect)
-
-            # Input field
-            input_text = game.current_cheat_input + "_"
-            input_surf = self.font.render(input_text, True, C.WHITE)
-            input_rect = input_surf.get_rect(center=(C.SCREEN_WIDTH // 2, 400))
-
-            # Background for input - make it wider to accommodate longer cheat codes
-            bg_rect = input_rect.copy()
-            # Ensure minimum width for the input box and add generous padding
-            min_width = 300  # Minimum width for cheat input
-            bg_rect.width = max(min_width, input_rect.width + 80)
-            bg_rect.height = input_rect.height + 30
-            bg_rect.center = input_rect.center
-
-            pygame.draw.rect(self.screen, C.DARK_GRAY, bg_rect)
-            pygame.draw.rect(self.screen, C.CYAN, bg_rect, 2)
-
-            self.screen.blit(input_surf, input_rect)
-
-            # Hint
-            hint = self.tiny_font.render(
-                "PRESS ENTER TO SUBMIT, ESC TO CANCEL", True, C.GRAY
-            )
-            hint_rect = hint.get_rect(center=(C.SCREEN_WIDTH // 2, 450))
-            self.screen.blit(hint, hint_rect)
-            return
-
-        menu_items = ["RESUME", "SAVE GAME", "ENTER CHEAT", "CONTROLS", "QUIT TO MENU"]
-        mouse_pos = pygame.mouse.get_pos()
-
-        # Calculate the maximum text width to ensure all boxes are the same size
-        max_text_width = 0
-        for item in menu_items:
-            text_surf = self.subtitle_font.render(item, True, C.WHITE)
-            max_text_width = max(max_text_width, text_surf.get_width())
-
-        # Add padding to ensure text fits comfortably
-        box_width = max_text_width + 60
-        box_height = 50
-
-        for i, item in enumerate(menu_items):
-            color = C.WHITE
-            rect = pygame.Rect(
-                C.SCREEN_WIDTH // 2 - box_width // 2,
-                350 + i * 60,
-                box_width,
-                box_height,
-            )
-            if rect.collidepoint(mouse_pos):
-                color = C.YELLOW
-                pygame.draw.rect(self.screen, (50, 0, 0), rect)
-                pygame.draw.rect(self.screen, C.RED, rect, 2)
-
-            text = self.subtitle_font.render(item, True, color)
-            text_rect = text.get_rect(center=rect.center)
-            self.screen.blit(text, text_rect)
-
-        # Movement Speed Slider
-        slider_y = 350 + len(menu_items) * 60 + 30
-        slider_label = self.font.render("Movement Speed:", True, C.WHITE)
-        label_rect = slider_label.get_rect(center=(C.SCREEN_WIDTH // 2, slider_y))
-        self.screen.blit(slider_label, label_rect)
-
-        # Slider bar
-        slider_bar_y = slider_y + 30
-        slider_width = 200
-        slider_height = 10
-        slider_x = C.SCREEN_WIDTH // 2 - slider_width // 2
-
-        # Background bar
-        slider_bg_rect = pygame.Rect(
-            slider_x, slider_bar_y, slider_width, slider_height
-        )
-        pygame.draw.rect(self.screen, C.DARK_GRAY, slider_bg_rect)
-        pygame.draw.rect(self.screen, C.WHITE, slider_bg_rect, 2)
-
-        # Slider handle position (0.5 to 2.0 range mapped to slider width)
-        # Map 0.5-2.0 to 0.0-1.0
-        speed_ratio = (game.movement_speed_multiplier - 0.5) / 1.5
-        handle_x = slider_x + int(speed_ratio * slider_width)
-        handle_rect = pygame.Rect(
-            handle_x - 5, slider_bar_y - 5, 10, slider_height + 10
-        )
-        pygame.draw.rect(self.screen, C.CYAN, handle_rect)
-
-        # Speed value display
-        speed_text = f"{game.movement_speed_multiplier:.1f}x"
-        speed_surf = self.font.render(speed_text, True, C.CYAN)
-        speed_rect = speed_surf.get_rect(
-            center=(C.SCREEN_WIDTH // 2, slider_bar_y + 25)
-        )
-        self.screen.blit(speed_surf, speed_rect)
+        ui_overlay_views.render_pause_menu(self, game)
 
     def render_level_complete(self, game: Game) -> None:
         """Render the level complete screen."""
-        self.screen.fill(C.BLACK)
-
-        # Victory Firework Overlay!
-        if game.particle_system:
-            # Add fireworks occasionally
-            if random.random() < 0.1:
-                game.particle_system.add_victory_fireworks()
-
-            # Render particles on top of black background but behind text
-            # Use shared particle surface to avoid new surface creation
-            self.particle_surface.fill((0, 0, 0, 0))
-
-            for p in game.particle_system.particles:
-                life_ratio = p.timer / p.max_timer
-                alpha = int(255 * life_ratio)
-                if len(p.color) == 3:
-                    color = (*p.color, alpha)
-                else:
-                    color = p.color  # already has alpha channel
-
-                pygame.draw.circle(
-                    self.particle_surface, color, (int(p.x), int(p.y)), int(p.size)
-                )
-
-            self.screen.blit(self.particle_surface, (0, 0))
-            game.particle_system.update()
-
-        title = self.title_font.render("SECTOR CLEARED", True, C.GREEN)
-        title_rect = title.get_rect(center=(C.SCREEN_WIDTH // 2, 150))
-        self.screen.blit(title, title_rect)
-
-        level_time = game.level_times[-1] if game.level_times else 0
-        total_time = sum(game.level_times)
-        stats = [
-            (f"Level {game.level} cleared!", C.WHITE),
-            (f"Time: {level_time:.1f}s", C.GREEN),
-            (f"Total Time: {total_time:.1f}s", C.GREEN),
-            (f"Total Kills: {game.kills}", C.WHITE),
-            ("", C.WHITE),
-            ("Next level: Enemies get stronger!", C.YELLOW),
-            ("", C.WHITE),
-            ("Press SPACE for next level", C.WHITE),
-            ("Press ESC for menu", C.WHITE),
-        ]
-        self._render_stats_lines(stats, 250)
-        pygame.display.flip()
+        ui_progress_views.render_level_complete(self, game)
 
     def render_game_over(self, game: Game) -> None:
         """Render the game over screen."""
-        self.screen.fill(C.BLACK)
-        title = self.title_font.render("SYSTEM FAILURE", True, C.RED)
-        title_rect = title.get_rect(center=(C.SCREEN_WIDTH // 2, 200))
-        self.screen.blit(title, title_rect)
-
-        completed_levels = max(0, game.level - 1)
-        total_time = sum(game.level_times)
-        avg_time = total_time / len(game.level_times) if game.level_times else 0
-
-        stats = [
-            (
-                f"You survived {completed_levels} "
-                f"level{'s' if completed_levels != 1 else ''}",
-                C.WHITE,
-            ),
-            (f"Total Kills: {game.kills}", C.WHITE),
-            (f"Total Time: {total_time:.1f}s", C.GREEN),
-            (
-                (f"Average Time/Level: {avg_time:.1f}s", C.GREEN)
-                if game.level_times
-                else ("", C.WHITE)
-            ),
-            ("", C.WHITE),
-            ("Press SPACE to restart", C.WHITE),
-            ("Press ESC for menu", C.WHITE),
-        ]
-        self._render_stats_lines(stats, 250)
-        pygame.display.flip()
+        ui_progress_views.render_game_over(self, game)
 
     def _render_stats_lines(
         self, stats: list[tuple[str, tuple[int, int, int]]], start_y: int
     ) -> None:
         """Render a list of stat lines."""
-        y = start_y
-        for line, color in stats:
-            if line:
-                text = self.small_font.render(line, True, color)
-                text_rect = text.get_rect(center=(C.SCREEN_WIDTH // 2, y))
-                self.screen.blit(text, text_rect)
-            y += 40
+        ui_progress_views.render_stats_lines(self, stats, start_y)
 
     def render_intro(self, intro_phase: int, intro_step: int, elapsed: int) -> None:
         """Render intro"""
         self.screen.fill(C.BLACK)
-
         if intro_phase == 0:
-            if "willy" in self.intro_images:
-                img = self.intro_images["willy"]
-                r = img.get_rect(
-                    center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 30)
-                )
-                self.screen.blit(img, r)
-                pygame.draw.rect(self.screen, (255, 192, 203), r, 4, border_radius=10)
-
-            text = self.subtitle_font.render(
-                "A Willy Wonk Production", True, (255, 182, 193)
-            )
-            self.screen.blit(text, text.get_rect(center=(C.SCREEN_WIDTH // 2, 100)))
-
+            self._render_intro_phase0()
         elif intro_phase == 1:
-            stylish = pygame.font.SysFont("impact", 70)
-            pulse = abs(math.sin(elapsed * 0.003))
-            color = (0, int(150 + 100 * pulse), int(200 + 55 * pulse))
+            self._render_intro_phase1(elapsed)
+        elif intro_phase == 2:
+            self._render_intro_slide(intro_step, elapsed)
+        pygame.display.flip()
 
-            t2 = stylish.render("UPSTREAM DRIFT", True, color)
-            self.screen.blit(
-                t2,
-                t2.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 - 180)),
-            )
+    def _render_intro_phase0(self) -> None:
+        """Render the Willy Wonk production card."""
+        if "willy" in self.intro_images:
+            img = self.intro_images["willy"]
+            r = img.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 30))
+            self.screen.blit(img, r)
+            pygame.draw.rect(self.screen, (255, 192, 203), r, 4, border_radius=10)
+        text = self.subtitle_font.render(
+            "A Willy Wonk Production", True, (255, 182, 193)
+        )
+        self.screen.blit(text, text.get_rect(center=(C.SCREEN_WIDTH // 2, 100)))
 
-            t1 = self.tiny_font.render("in association with", True, C.CYAN)
-            self.screen.blit(
-                t1,
-                t1.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 - 230)),
-            )
-
-            if self.intro_video and self.intro_video.isOpened():
-                ret, frame = self.intro_video.read()
-                if ret:
-                    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                    frame = frame.swapaxes(0, 1)
-                    surf = pygame.surfarray.make_surface(frame)
-                    target_h = 400
-                    scale = target_h / surf.get_height()
-                    surf = pygame.transform.scale(
-                        surf,
-                        (int(surf.get_width() * scale), int(surf.get_height() * scale)),
-                    )
-                    self.screen.blit(
-                        surf,
-                        surf.get_rect(
-                            center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 50)
-                        ),
-                    )
-                else:
-                    self.intro_video.set(cv2.CAP_PROP_POS_FRAMES, 0)
-            elif "deadfish" in self.intro_images:
-                img = self.intro_images["deadfish"]
+    def _render_intro_phase1_media(self) -> None:
+        """Render the video or fallback image for intro phase 1."""
+        if self.intro_video and self.intro_video.isOpened():
+            ret, frame = self.intro_video.read()
+            if ret:
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                frame = frame.swapaxes(0, 1)
+                surf = pygame.surfarray.make_surface(frame)
+                scale = 400 / surf.get_height()
+                surf = pygame.transform.scale(
+                    surf,
+                    (int(surf.get_width() * scale), int(surf.get_height() * scale)),
+                )
                 self.screen.blit(
-                    img,
-                    img.get_rect(
+                    surf,
+                    surf.get_rect(
                         center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 50)
                     ),
                 )
+            else:
+                self.intro_video.set(cv2.CAP_PROP_POS_FRAMES, 0)
+        elif "deadfish" in self.intro_images:
+            img = self.intro_images["deadfish"]
+            self.screen.blit(
+                img,
+                img.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 50)),
+            )
 
-        elif intro_phase == 2:
-            self._render_intro_slide(intro_step, elapsed)
-
-        pygame.display.flip()
+    def _render_intro_phase1(self, elapsed: int) -> None:
+        """Render pulsing game title and media for intro phase 1."""
+        stylish = pygame.font.SysFont("impact", 70)
+        pulse = abs(math.sin(elapsed * 0.003))
+        color = (0, int(150 + 100 * pulse), int(200 + 55 * pulse))
+        t2 = stylish.render("UPSTREAM DRIFT", True, color)
+        self.screen.blit(
+            t2, t2.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 - 180))
+        )
+        t1 = self.tiny_font.render("in association with", True, C.CYAN)
+        self.screen.blit(
+            t1, t1.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 - 230))
+        )
+        self._render_intro_phase1_media()
 
     def _get_intro_slides(self) -> list[dict[str, Any]]:
         """Return Force Field-specific intro slide data."""
@@ -841,53 +254,4 @@ class UIRenderer(UIRendererBase):
 
     def render_key_config(self, game: Any) -> None:
         """Render the key configuration menu."""
-        self.screen.fill(C.BLACK)
-
-        title = self.title_font.render("CONTROLS", True, C.RED)
-        self.screen.blit(title, title.get_rect(center=(C.SCREEN_WIDTH // 2, 50)))
-
-        bindings = game.input_manager.bindings
-        start_y = 120
-        col_1_x = C.SCREEN_WIDTH // 4
-        col_2_x = C.SCREEN_WIDTH * 3 // 4
-
-        actions = sorted(bindings.keys())
-
-        limit = 12
-
-        for i, action in enumerate(actions):
-            col = 0 if i < limit else 1
-            idx = i if i < limit else i - limit
-            x = col_1_x if col == 0 else col_2_x
-            y = start_y + idx * 40
-
-            name_str = action.replace("_", " ").upper()
-            color = C.WHITE
-            if game.binding_action == action:
-                color = C.YELLOW
-                key_text = "PRESS ANY KEY..."
-            else:
-                key_text = game.input_manager.get_key_name(action)
-
-            name_txt = self.tiny_font.render(f"{name_str}:", True, C.GRAY)
-            key_txt = self.tiny_font.render(key_text, True, color)
-
-            self.screen.blit(name_txt, (x - 150, y))
-            self.screen.blit(key_txt, (x + 20, y))
-
-        back_txt = self.subtitle_font.render("BACK", True, C.WHITE)
-        back_rect = back_txt.get_rect(
-            center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT - 60)
-        )
-        self.screen.blit(back_txt, back_rect)
-        if back_rect.collidepoint(pygame.mouse.get_pos()):
-            pygame.draw.rect(self.screen, C.RED, back_rect, 2)
-
-        pygame.display.flip()
-
-
-def _require_player(game: Game) -> Player:
-    """Return the current player or raise when HUD rendering is unavailable."""
-    if game.player is None:
-        raise ValueError("DbC Blocked: Precondition failed.")
-    return game.player
+        ui_overlay_views.render_key_config(self, game)

@@ -65,7 +65,17 @@ class WizardOfWorGame(RenderMixin, AudioMixin):
         self.score = 0
         self.lives = PLAYER_LIVES
 
-        # Game objects
+        self._init_game_objects()
+        self._init_collision_manager()
+
+        # Auto-start the first level
+        self.start_level()
+
+        # Play intro music
+        self._audio_play_intro()
+
+    def _init_game_objects(self) -> None:
+        """Initialize all game objects and visual assets."""
         self.dungeon = Dungeon()
         self.player: Player | None = None
         self.enemies: list[Enemy] = []
@@ -80,13 +90,12 @@ class WizardOfWorGame(RenderMixin, AudioMixin):
             (GAME_AREA_WIDTH, GAME_AREA_HEIGHT),
             (GAME_AREA_X, GAME_AREA_Y),
         )
-
-        # Fonts
         self.font_large = pygame.font.Font(None, 48)
         self.font_medium = pygame.font.Font(None, 32)
         self.font_small = pygame.font.Font(None, 24)
 
-        # Collision manager wired to game callbacks
+    def _init_collision_manager(self) -> None:
+        """Wire up the collision manager with game callbacks."""
         self._collision_manager = CollisionManager(
             enemy_grid=self._enemy_grid,
             on_enemy_hit=self._add_score,
@@ -94,12 +103,6 @@ class WizardOfWorGame(RenderMixin, AudioMixin):
             on_audio_enemy_hit=self._audio_play_enemy_hit,
             on_audio_player_hit=self._audio_play_player_hit,
         )
-
-        # Auto-start the first level
-        self.start_level()
-
-        # Play intro music
-        self._audio_play_intro()
 
     # ------------------------------------------------------------------
     # Level management
@@ -232,45 +235,53 @@ class WizardOfWorGame(RenderMixin, AudioMixin):
                 self.running = False
 
             if event.type == pygame.KEYDOWN:
-                if self.state == "menu":
-                    if event.key == pygame.K_RETURN:
-                        self.start_level()
-                    elif event.key == pygame.K_ESCAPE:
-                        self.running = False
+                self._handle_keydown_event(event)
 
-                elif self.state == "playing":
-                    if event.key == pygame.K_SPACE:
-                        if self.player is not None:
-                            bullet, muzzle = self.player.shoot()
-                            if bullet:
-                                self.bullets.append(bullet)
-                                if muzzle:
-                                    self.effects.append(muzzle)
-                                self._audio_play_shot()
-                    elif event.key == pygame.K_ESCAPE:
-                        self.state = "paused"
-                    elif event.key == pygame.K_p:
-                        self.state = "paused"
+    def _handle_keydown_event(self, event: pygame.event.Event) -> None:
+        """Dispatch a KEYDOWN event to the appropriate state handler."""
+        if self.state == "menu":
+            if event.key == pygame.K_RETURN:
+                self.start_level()
+            elif event.key == pygame.K_ESCAPE:
+                self.running = False
 
-                elif self.state == "paused":
-                    if event.key == pygame.K_ESCAPE or event.key == pygame.K_p:
-                        self.state = "playing"
-                    elif event.key == pygame.K_q:
-                        self.state = "menu"
+        elif self.state == "playing":
+            if event.key == pygame.K_SPACE:
+                self._handle_player_shoot_key()
+            elif event.key == pygame.K_ESCAPE:
+                self.state = "paused"
+            elif event.key == pygame.K_p:
+                self.state = "paused"
 
-                elif self.state == "game_over":
-                    if event.key == pygame.K_RETURN:
-                        self.level = 1
-                        self.score = 0
-                        self.lives = PLAYER_LIVES
-                        self.start_level()
-                    elif event.key == pygame.K_ESCAPE:
-                        self.state = "menu"
+        elif self.state == "paused":
+            if event.key == pygame.K_ESCAPE or event.key == pygame.K_p:
+                self.state = "playing"
+            elif event.key == pygame.K_q:
+                self.state = "menu"
 
-                elif self.state == "level_complete":
-                    if event.key == pygame.K_RETURN:
-                        self.level += 1
-                        self.start_level()
+        elif self.state == "game_over":
+            if event.key == pygame.K_RETURN:
+                self.level = 1
+                self.score = 0
+                self.lives = PLAYER_LIVES
+                self.start_level()
+            elif event.key == pygame.K_ESCAPE:
+                self.state = "menu"
+
+        elif self.state == "level_complete":
+            if event.key == pygame.K_RETURN:
+                self.level += 1
+                self.start_level()
+
+    def _handle_player_shoot_key(self) -> None:
+        """Fire a player bullet and queue any muzzle-flash effect."""
+        if self.player is not None:
+            bullet, muzzle = self.player.shoot()
+            if bullet:
+                self.bullets.append(bullet)
+                if muzzle:
+                    self.effects.append(muzzle)
+                self._audio_play_shot()
 
     def update(self) -> None:
         """Update game state."""
@@ -281,6 +292,14 @@ class WizardOfWorGame(RenderMixin, AudioMixin):
         if self.state == "paused":
             return
 
+        self._update_radar_ping()
+        self._update_entities()
+        self.check_collisions()
+        self._check_win_lose_conditions()
+        self._update_effects()
+
+    def _update_radar_ping(self) -> None:
+        """Advance the radar and spawn a ping effect when it fires."""
         previous_ping = self.radar.ping_timer
         self.radar.update()
         if self.radar.ping_timer > previous_ping:
@@ -290,52 +309,40 @@ class WizardOfWorGame(RenderMixin, AudioMixin):
             )
             self.effects.append(RadarPing(center))
 
-        # Get keys for continuous input
+    def _update_entities(self) -> None:
+        """Update player, enemies, and bullets for the current frame."""
         keys = pygame.key.get_pressed()
-
-        # Update player
         if self.player is not None:
             self.player.update(keys, self.dungeon, self.effects)
 
-        # Update enemies
-        if self.player is not None:
-            player_pos = (self.player.x, self.player.y)
-        else:
-            player_pos = (0, 0)
+        player_pos = (
+            (self.player.x, self.player.y) if self.player is not None else (0, 0)
+        )
         for enemy in self.enemies:
             enemy.update(self.dungeon, player_pos)
-
-            # Enemy shooting
             bullet = enemy.try_shoot()
             if bullet:
                 self.bullets.append(bullet)
 
-        # Update bullets – use list-comprehension for O(n) deferred removal
-        # instead of remove() inside the loop which is O(n^2).
+        # Deferred removal avoids O(n^2) remove() inside loop
         for bullet in self.bullets:
             bullet.update(self.dungeon)
         self.bullets = [b for b in self.bullets if b.active]
 
-        # Check collisions
-        self.check_collisions()
-
-        # Check win condition
+    def _check_win_lose_conditions(self) -> None:
+        """Transition state when all enemies are dead or the player dies."""
         alive_enemies = [e for e in self.enemies if e.alive]
         if len(alive_enemies) == 0:
             self.state = "level_complete"
         elif len(alive_enemies) <= 1 and not self.wizard_spawned:
-            # Spawn wizard when only 1 enemy remains (more like original)
             self.spawn_wizard()
 
-        # Check lose condition
         if self.player is not None and not self.player.alive:
             self.lives -= 1
             if self.lives > 0:
                 self.respawn_player()
             else:
                 self.state = "game_over"
-
-        self._update_effects()
 
     def check_collisions(self) -> None:
         """Delegate collision detection to the CollisionManager.

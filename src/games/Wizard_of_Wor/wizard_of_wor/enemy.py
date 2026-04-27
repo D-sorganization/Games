@@ -54,6 +54,20 @@ class Enemy:
         enemy_type: str,
     ) -> None:
         """Initialize enemy."""
+        self._init_position(x, y, speed, color, points, enemy_type)
+        self._init_ai_timers()
+        self._init_animation_state()
+
+    def _init_position(
+        self,
+        x: float,
+        y: float,
+        speed: float,
+        color: tuple[int, int, int],
+        points: int,
+        enemy_type: str,
+    ) -> None:
+        """Set positional and identity attributes."""
         self.x = x
         self.y = y
         self.speed = speed
@@ -68,11 +82,17 @@ class Enemy:
             ENEMY_SIZE,
             ENEMY_SIZE,
         )
+
+    def _init_ai_timers(self) -> None:
+        """Set AI movement and shooting timer attributes."""
         self.direction = random.choice([UP, DOWN, LEFT, RIGHT])
         self.move_timer = 0
         self.direction_change_interval = random.randint(30, 90)
         self.shoot_timer = random.randint(60, 180)
         self.can_shoot = True
+
+    def _init_animation_state(self) -> None:
+        """Set animation and visibility state attributes."""
         self.animation_timer = 0
         self.step_frame = 0
         self.invisibility_cooldown = 0
@@ -80,76 +100,98 @@ class Enemy:
         self.spawn_flash = 36
 
     def update(self, dungeon: Any, player_pos: tuple[float, float]) -> None:
-        """Update enemy position and behavior."""
+        """Update enemy position and behavior.
+
+        Preconditions:
+            - ``dungeon`` must expose a ``can_move_to(rect)`` method.
+            - ``player_pos`` is a 2-tuple of floats ``(x, y)``.
+
+        The method is a thin orchestrator: it updates AI direction, moves
+        the enemy (with wall-collision handling), advances animation, and
+        progresses timers. Order of operations is preserved to keep
+        gameplay frame-identical.
+        """
         if not self.alive:
             return
 
-        # Store old position
         old_x, old_y = self.x, self.y
 
-        # Randomly change direction
+        self._maybe_change_direction(player_pos)
+        self._apply_movement_and_collision(dungeon, old_x, old_y)
+        self._advance_walk_animation(old_x, old_y)
+        self._tick_timers()
+
+    def _maybe_change_direction(self, player_pos: tuple[float, float]) -> None:
+        """Advance the direction timer and occasionally pick a new direction."""
         self.move_timer += 1
-        if self.move_timer >= self.direction_change_interval:
-            self.move_timer = 0
-            self.direction_change_interval = random.randint(30, 90)
+        if self.move_timer < self.direction_change_interval:
+            return
 
-            # Sometimes move toward player
-            if random.random() < 0.3:  # 30% chance to chase player
-                dx = player_pos[0] - self.x
-                dy = player_pos[1] - self.y
+        self.move_timer = 0
+        self.direction_change_interval = random.randint(30, 90)
 
-                if abs(dx) > abs(dy):
-                    self.direction = RIGHT if dx > 0 else LEFT
-                else:
-                    self.direction = DOWN if dy > 0 else UP
+        # Sometimes move toward player
+        if random.random() < 0.3:  # 30% chance to chase player
+            dx = player_pos[0] - self.x
+            dy = player_pos[1] - self.y
+
+            if abs(dx) > abs(dy):
+                self.direction = RIGHT if dx > 0 else LEFT
             else:
-                self.direction = random.choice([UP, DOWN, LEFT, RIGHT])
+                self.direction = DOWN if dy > 0 else UP
+        else:
+            self.direction = random.choice([UP, DOWN, LEFT, RIGHT])
 
-        # Move in current direction
+    def _apply_movement_and_collision(
+        self, dungeon: Any, old_x: float, old_y: float
+    ) -> None:
+        """Move in current direction; on wall hit, revert and pick a new way."""
         self.x += self.direction[0] * self.speed
         self.y += self.direction[1] * self.speed
-
-        # Update rect
         self.rect.x = self.x - ENEMY_SIZE // 2
         self.rect.y = self.y - ENEMY_SIZE // 2
 
-        # Check collision with walls
-        if not dungeon.can_move_to(self.rect):
-            self.x, self.y = old_x, old_y
-            self.rect.x = self.x - ENEMY_SIZE // 2
-            self.rect.y = self.y - ENEMY_SIZE // 2
-            # Smart direction change when hitting wall
-            # Try perpendicular directions first to avoid getting stuck
-            possible_directions = []
-            if self.direction in (UP, DOWN):
-                possible_directions = [LEFT, RIGHT, UP, DOWN]
-            else:  # LEFT or RIGHT
-                possible_directions = [UP, DOWN, LEFT, RIGHT]
+        if dungeon.can_move_to(self.rect):
+            return
 
-            # Test each direction to find a valid one
-            for new_direction in possible_directions:
-                test_x = self.x + new_direction[0] * self.speed * 2
-                test_y = self.y + new_direction[1] * self.speed * 2
-                test_rect = pygame.Rect(
-                    test_x - ENEMY_SIZE // 2,
-                    test_y - ENEMY_SIZE // 2,
-                    ENEMY_SIZE,
-                    ENEMY_SIZE,
-                )
-                if dungeon.can_move_to(test_rect):
-                    self.direction = new_direction
-                    break
-            else:
-                # If no direction works, pick random
-                self.direction = random.choice([UP, DOWN, LEFT, RIGHT])
+        # Revert on collision then find a passable direction
+        self.x, self.y = old_x, old_y
+        self.rect.x = self.x - ENEMY_SIZE // 2
+        self.rect.y = self.y - ENEMY_SIZE // 2
+        self._pick_unblocked_direction(dungeon)
 
-        # Advance walk animation
-        if (self.x, self.y) != (old_x, old_y):
-            self.animation_timer += 1
-            if self.animation_timer >= ENEMY_ANIMATION_SPEED:
-                self.animation_timer = 0
-                self.step_frame = 1 - self.step_frame
+    def _pick_unblocked_direction(self, dungeon: Any) -> None:
+        """Try perpendicular directions on wall hit; fall back to random."""
+        if self.direction in (UP, DOWN):
+            possible_directions = [LEFT, RIGHT, UP, DOWN]
+        else:
+            possible_directions = [UP, DOWN, LEFT, RIGHT]
 
+        for new_direction in possible_directions:
+            test_x = self.x + new_direction[0] * self.speed * 2
+            test_y = self.y + new_direction[1] * self.speed * 2
+            test_rect = pygame.Rect(
+                test_x - ENEMY_SIZE // 2,
+                test_y - ENEMY_SIZE // 2,
+                ENEMY_SIZE,
+                ENEMY_SIZE,
+            )
+            if dungeon.can_move_to(test_rect):
+                self.direction = new_direction
+                return
+        self.direction = random.choice([UP, DOWN, LEFT, RIGHT])
+
+    def _advance_walk_animation(self, old_x: float, old_y: float) -> None:
+        """Step the walk animation when the enemy actually moved."""
+        if (self.x, self.y) == (old_x, old_y):
+            return
+        self.animation_timer += 1
+        if self.animation_timer >= ENEMY_ANIMATION_SPEED:
+            self.animation_timer = 0
+            self.step_frame = 1 - self.step_frame
+
+    def _tick_timers(self) -> None:
+        """Decrement per-frame timers (shoot, invisibility, spawn flash)."""
         # Update shoot timer
         self.shoot_timer -= 1
 
@@ -189,51 +231,47 @@ class Enemy:
         self.alive = False
         return int(self.points)
 
+    def _draw_aura(self, screen: pygame.Surface, body_rect: pygame.Rect) -> None:
+        """Blit a pulsing elliptical glow behind the enemy body."""
+        aura_radius = ENEMY_GLOW
+        aura_surface = pygame.Surface(
+            (body_rect.width + aura_radius * 2, body_rect.height + aura_radius * 2),
+            pygame.SRCALPHA,
+        )
+        flash = 180 if self.spawn_flash > 0 else 120
+        aura_alpha = flash + 40 * math.sin(pygame.time.get_ticks() / 180)
+        pygame.draw.ellipse(
+            aura_surface,
+            (self.color[0], self.color[1], self.color[2], int(aura_alpha)),
+            aura_surface.get_rect(),
+        )
+        screen.blit(
+            aura_surface,
+            (
+                body_rect.centerx - aura_surface.get_width() // 2,
+                body_rect.centery - aura_surface.get_height() // 2,
+            ),
+        )
+
     def draw(self, screen: pygame.Surface) -> None:
         """Draw the enemy."""
-        if self.alive and self.visible:
-            body_rect = pygame.Rect(self.rect)
-            body_rect.inflate_ip(-ENEMY_OUTLINE, -ENEMY_OUTLINE)
+        if not (self.alive and self.visible):
+            return
+        body_rect = pygame.Rect(self.rect)
+        body_rect.inflate_ip(-ENEMY_OUTLINE, -ENEMY_OUTLINE)
+        self._draw_aura(screen, body_rect)
+        pygame.draw.ellipse(screen, self.color, body_rect)
 
-            # Glowing aura
-            aura_radius = ENEMY_GLOW
-            aura_surface = pygame.Surface(
-                (body_rect.width + aura_radius * 2, body_rect.height + aura_radius * 2),
-                pygame.SRCALPHA,
-            )
-            flash = 180 if self.spawn_flash > 0 else 120
-            aura_alpha = flash + 40 * math.sin(pygame.time.get_ticks() / 180)
-            pygame.draw.ellipse(
-                aura_surface,
-                (self.color[0], self.color[1], self.color[2], int(aura_alpha)),
-                aura_surface.get_rect(),
-            )
-            screen.blit(
-                aura_surface,
-                (
-                    body_rect.centerx - aura_surface.get_width() // 2,
-                    body_rect.centery - aura_surface.get_height() // 2,
-                ),
-            )
+        foot_offset = 3 if self.step_frame else -3
+        pygame.draw.circle(screen, self.color, (self.x - 5, self.y + foot_offset), 4)
+        pygame.draw.circle(screen, self.color, (self.x + 5, self.y - foot_offset), 4)
 
-            pygame.draw.ellipse(screen, self.color, body_rect)
-
-            # Feet positions to mimic stomping
-            foot_offset = 3 if self.step_frame else -3
-            left_foot = (self.x - 5, self.y + foot_offset)
-            right_foot = (self.x + 5, self.y - foot_offset)
-            pygame.draw.circle(screen, self.color, left_foot, 4)
-            pygame.draw.circle(screen, self.color, right_foot, 4)
-
-            # Eye slit to hint direction
-            eye_width = 8
-            eye_height = 4
-            eye_rect = pygame.Rect(0, 0, eye_width, eye_height)
-            eye_rect.center = (
-                self.x + self.direction[0] * 5,
-                self.y + self.direction[1] * 5,
-            )
-            pygame.draw.rect(screen, BLACK, eye_rect, border_radius=2)
+        eye_rect = pygame.Rect(0, 0, 8, 4)
+        eye_rect.center = (
+            self.x + self.direction[0] * 5,
+            self.y + self.direction[1] * 5,
+        )
+        pygame.draw.rect(screen, BLACK, eye_rect, border_radius=2)
 
 
 class Burwor(Enemy):
@@ -304,36 +342,34 @@ class Wizard(Enemy):
             else:
                 self.direction = DOWN if dy > 0 else UP
 
+    def _draw_materializing_aura(self, screen: pygame.Surface) -> None:
+        """Draw the semi-transparent flickering aura while materializing."""
+        body_rect = pygame.Rect(self.rect)
+        body_rect.inflate_ip(-ENEMY_OUTLINE, -ENEMY_OUTLINE)
+        aura_radius = ENEMY_GLOW * 2
+        aura_surface = pygame.Surface(
+            (body_rect.width + aura_radius * 2, body_rect.height + aura_radius * 2),
+            pygame.SRCALPHA,
+        )
+        alpha = int(100 + 50 * math.sin(self.appearance_timer / 10))
+        pygame.draw.ellipse(
+            aura_surface,
+            (self.color[0], self.color[1], self.color[2], alpha),
+            aura_surface.get_rect(),
+        )
+        screen.blit(
+            aura_surface,
+            (
+                body_rect.centerx - aura_surface.get_width() // 2,
+                body_rect.centery - aura_surface.get_height() // 2,
+            ),
+        )
+
     def draw(self, screen: pygame.Surface) -> None:
         """Draw the wizard (with special appearance effect)."""
         if self.appearance_timer > 0:
-            # Show materializing effect during countdown
-            if self.appearance_timer % 20 < 10:  # Flicker effect
-                # Draw semi-transparent version
-                body_rect = pygame.Rect(self.rect)
-                body_rect.inflate_ip(-ENEMY_OUTLINE, -ENEMY_OUTLINE)
-
-                # Fading aura
-                aura_radius = ENEMY_GLOW * 2
-                aura_surface = pygame.Surface(
-                    (
-                        body_rect.width + aura_radius * 2,
-                        body_rect.height + aura_radius * 2,
-                    ),
-                    pygame.SRCALPHA,
-                )
-                alpha = int(100 + 50 * math.sin(self.appearance_timer / 10))
-                pygame.draw.ellipse(
-                    aura_surface,
-                    (self.color[0], self.color[1], self.color[2], alpha),
-                    aura_surface.get_rect(),
-                )
-                screen.blit(
-                    aura_surface,
-                    (
-                        body_rect.centerx - aura_surface.get_width() // 2,
-                        body_rect.centery - aura_surface.get_height() // 2,
-                    ),
-                )
+            # Flicker effect during materializing countdown
+            if self.appearance_timer % 20 < 10:
+                self._draw_materializing_aura(screen)
         else:
             super().draw(screen)

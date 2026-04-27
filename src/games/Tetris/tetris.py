@@ -24,23 +24,30 @@ class TetrisGame:
 
     def __init__(self) -> None:
         """Initialize the Tetris game with display and initial state"""
+        self._init_display()
+        self._init_subsystems()
+        self._init_ui_state()
+
+    def _init_display(self) -> None:
+        """Set up display surface and game clock."""
         self.screen = pygame.display.set_mode((C.SCREEN_WIDTH, C.SCREEN_HEIGHT))
         pygame.display.set_caption("Enhanced Tetris")
         self.clock = pygame.time.Clock()
 
+    def _init_subsystems(self) -> None:
+        """Create logic, renderer, and input-handler subsystems."""
         self.logic = TetrisLogic()
         self.renderer = TetrisRenderer(self.screen)
         self.input_handler = InputHandler()
-
         self.state = C.GameState.MENU
 
-        # UI State
+    def _init_ui_state(self) -> None:
+        """Initialize UI toggle flags and button rectangles."""
         self.show_next_piece = True
         self.show_hold_piece = True
         self.show_ghost_piece = True
         self.show_controls_panel = True
         self.settings_selection = 0
-
         self.restart_button = pygame.Rect(
             C.SCREEN_WIDTH - C.BUTTON_WIDTH - 20,
             C.SCREEN_HEIGHT - C.BUTTON_HEIGHT - 10,
@@ -119,13 +126,34 @@ class TetrisGame:
 
         return entries
 
+    def _toggle_bool_setting(self, key: str) -> None:
+        """Toggle a boolean setting located on self, input_handler, or logic."""
+        if hasattr(self, key):
+            setattr(self, key, not getattr(self, key))
+        elif hasattr(self.input_handler, key):
+            setattr(self.input_handler, key, not getattr(self.input_handler, key))
+        elif hasattr(self.logic, key):
+            setattr(self.logic, key, not getattr(self.logic, key))
+            if key == "allow_rewind":
+                self.logic.clear_rewind_history()
+
+    def _activate_selected_entry(self, entries: list[dict[str, Any]]) -> None:
+        """Apply the action for the currently-selected settings entry."""
+        entry = entries[self.settings_selection]
+        if entry["type"] == "bool":
+            self._toggle_bool_setting(entry["key"])
+        elif (
+            entry["type"] == "mapping"
+            and self.input_handler.controller_enabled
+            and self.input_handler.joystick
+        ):
+            self.input_handler.awaiting_controller_action = entry["key"]
+
     def handle_settings_input(self, event: pygame.event.Event) -> None:
         """Handle input events in the settings menu"""
         if event.type != pygame.KEYDOWN:
             return
-
         entries = self.get_settings_entries()
-
         if event.key == pygame.K_ESCAPE:
             self.input_handler.awaiting_controller_action = None
             self.state = C.GameState.MENU
@@ -134,58 +162,30 @@ class TetrisGame:
         elif event.key == pygame.K_DOWN:
             self.settings_selection = min(len(entries) - 1, self.settings_selection + 1)
         elif event.key in [pygame.K_LEFT, pygame.K_RIGHT, pygame.K_RETURN]:
-            entry = entries[self.settings_selection]
-            if entry["type"] == "bool":
-                key = entry["key"]
-                # key might be on self or input_handler or logic
-                if hasattr(self, key):
-                    current = getattr(self, key)
-                    setattr(self, key, not current)
-                elif hasattr(self.input_handler, key):
-                    current = getattr(self.input_handler, key)
-                    setattr(self.input_handler, key, not current)
-                elif hasattr(self.logic, key):
-                    current = getattr(self.logic, key)
-                    setattr(self.logic, key, not current)
-                    if key == "allow_rewind":
-                        self.logic.clear_rewind_history()
+            self._activate_selected_entry(entries)
 
-            elif (
-                entry["type"] == "mapping"
-                and self.input_handler.controller_enabled
-                and self.input_handler.joystick
-            ):
-                self.input_handler.awaiting_controller_action = entry["key"]
+    def _get_entry_value_text(self, entry: dict) -> str:
+        """Return the display string for a settings entry."""
+        if entry["type"] == "bool":
+            key = entry["key"]
+            value = False
+            if hasattr(self, key):
+                value = getattr(self, key)
+            elif hasattr(self.input_handler, key):
+                value = getattr(self.input_handler, key)
+            elif hasattr(self.logic, key):
+                value = getattr(self.logic, key)
+            return "On" if value else "Off"
+        if entry["type"] == "mapping":
+            return self.input_handler.get_binding_label(entry["key"])
+        return ""
 
-    def draw_settings(self) -> None:
-        """Render the settings menu"""
-        # Implementing draw_settings here as it was missing from
-        # renderer and needs state access
-        self.screen.fill(C.BLACK)
-        title = self.renderer.render_large_text("Settings", True, C.CYAN)
-        title_rect = title.get_rect(center=(C.SCREEN_WIDTH // 2, 80))
-        self.screen.blit(title, title_rect)
-
-        entries = self.get_settings_entries()
-        y_offset = 160
-
+    def _draw_settings_entries(self, entries: list[dict], y_offset: int) -> None:
+        """Render each settings entry row."""
         for idx, entry in enumerate(entries):
             color = C.GOLD if idx == self.settings_selection else C.WHITE
             label = entry["label"]
-            value_text = ""
-
-            if entry["type"] == "bool":
-                key = entry["key"]
-                value = False
-                if hasattr(self, key):
-                    value = getattr(self, key)
-                elif hasattr(self.input_handler, key):
-                    value = getattr(self.input_handler, key)
-                elif hasattr(self.logic, key):
-                    value = getattr(self.logic, key)
-                value_text = "On" if value else "Off"
-            elif entry["type"] == "mapping":
-                value_text = self.input_handler.get_binding_label(entry["key"])
+            value_text = self._get_entry_value_text(entry)
 
             label_text = self.renderer.render_normal_text(label, True, color)
             value_render = self.renderer.render_small_text(
@@ -197,6 +197,30 @@ class TetrisGame:
                 self.screen.blit(value_render, (520, y_offset + 6))
             y_offset += 40
 
+    def _draw_settings_awaiting_banner(self) -> None:
+        """Draw the 'waiting for controller input' banner if remapping."""
+        if not self.input_handler.awaiting_controller_action:
+            return
+        action_label = self.input_handler.get_action_label(
+            self.input_handler.awaiting_controller_action
+        )
+        waiting = self.renderer.render_small_text(
+            f"Waiting for input to bind {action_label}",
+            True,
+            C.YELLOW,
+        )
+        center = (C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT - 100)
+        self.screen.blit(waiting, waiting.get_rect(center=center))
+
+    def draw_settings(self) -> None:
+        """Render the settings menu"""
+        self.screen.fill(C.BLACK)
+        title = self.renderer.render_large_text("Settings", True, C.CYAN)
+        self.screen.blit(title, title.get_rect(center=(C.SCREEN_WIDTH // 2, 80)))
+
+        entries = self.get_settings_entries()
+        self._draw_settings_entries(entries, y_offset=160)
+
         hint = self.renderer.render_tiny_text(
             "Arrow keys to navigate, ENTER to toggle or remap, ESC to return",
             True,
@@ -204,19 +228,7 @@ class TetrisGame:
         )
         hint_rect = hint.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT - 60))
         self.screen.blit(hint, hint_rect)
-
-        if self.input_handler.awaiting_controller_action:
-            action_label = self.input_handler.get_action_label(
-                self.input_handler.awaiting_controller_action
-            )
-            waiting = self.renderer.render_small_text(
-                f"Waiting for input to bind {action_label}",
-                True,
-                C.YELLOW,
-            )
-            center = (C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT - 100)
-            waiting_rect = waiting.get_rect(center=center)
-            self.screen.blit(waiting, waiting_rect)
+        self._draw_settings_awaiting_banner()
 
     def handle_mouse_input(self, pos: tuple[int, int]) -> None:
         """Handle mouse clicks on UI buttons"""
@@ -232,105 +244,132 @@ class TetrisGame:
                 self.restart_game()
 
     def run(self) -> None:
-        """Main game loop"""
+        """Main game loop.
+
+        Thin orchestrator that, each tick:
+          1. advances the clock and gathers events,
+          2. dispatches events to the active state handler,
+          3. polls continuous input and advances game logic,
+          4. draws the frame and flips the display.
+
+        The call order of event dispatch, logic update, and draw is
+        preserved from the original implementation to keep gameplay
+        frame-identical.
+        """
         while True:
             dt = self.clock.get_time()
             self.clock.tick(60)
 
             events = pygame.event.get()
-            for event in events:
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    sys.exit()
-
-                if event.type == pygame.MOUSEBUTTONDOWN:
-                    self.handle_mouse_input(event.pos)
-
-                if self.state == C.GameState.MENU:
-                    self.handle_menu_input(event)
-                elif self.state == C.GameState.SETTINGS:
-                    self.handle_settings_input(event)
-                    # Input handler binding logic
-                    if self.input_handler.awaiting_controller_action:
-                        if event.type in [pygame.JOYBUTTONDOWN, pygame.JOYHATMOTION]:
-                            if self.input_handler.apply_controller_binding(event):
-                                # Binding applied
-                                continue
+            self._dispatch_events(events)
 
             # Process events for input handler
             self.input_handler.process_events(events, self.logic, self)
 
-            # Polling for continuous movement
-            keys = pygame.key.get_pressed()
-            if self.state == C.GameState.PLAYING:
-                if keys[pygame.K_LEFT] and self.logic.valid_move(
-                    self.logic.current_piece, x_offset=-1
-                ):
-                    self.logic.move_piece_left()
-                    pygame.time.wait(100)
-                if keys[pygame.K_RIGHT] and self.logic.valid_move(
-                    self.logic.current_piece, x_offset=1
-                ):
-                    self.logic.move_piece_right()
-                    pygame.time.wait(100)
-                if keys[pygame.K_DOWN]:
-                    if self.logic.valid_move(self.logic.current_piece, y_offset=1):
-                        self.logic.move_piece_down()
-                    pygame.time.wait(50)
-
-                self.input_handler.handle_controller_state(self.logic)
-                self.logic.update(dt)
-
-                if self.logic.game_over:
-                    self.state = C.GameState.GAME_OVER
-
-            # Drawing
-            if self.state == C.GameState.MENU:
-                self.renderer.draw_menu(self.logic.starting_level)
-            elif self.state == C.GameState.SETTINGS:
-                self.draw_settings()
-            elif self.state in [C.GameState.PLAYING, C.GameState.PAUSED]:
-                self.renderer.draw_background()
-                self.renderer.draw_grid(self.logic)
-                if self.show_ghost_piece:
-                    self.renderer.draw_ghost_piece(self.logic)
-                self.renderer.draw_piece(self.logic.current_piece)
-                if self.show_next_piece:
-                    self.renderer.draw_next_piece(self.logic)
-                if self.show_hold_piece:
-                    self.renderer.draw_held_piece(self.logic)
-                self.renderer.draw_stats(self.logic)
-                self.renderer.draw_controls(self.show_controls_panel)
-                self.renderer.draw_button(
-                    self.controls_toggle_rect,
-                    "Hide Controls" if self.show_controls_panel else "Show Controls",
-                )
-                self.renderer.draw_button(self.restart_button, "Restart Run")
-
-                if self.state == C.GameState.PLAYING:
-                    self.renderer.draw_particles(self.logic)
-                    self.renderer.draw_score_popups(self.logic)
-                else:
-                    # Draw static particles when paused
-                    self.renderer.draw_particles(self.logic)
-                    self.renderer.draw_score_popups(self.logic)
-
-                if self.state == C.GameState.PAUSED:
-                    overlay = pygame.Surface((C.SCREEN_WIDTH, C.SCREEN_HEIGHT))
-                    overlay.fill(C.BLACK)
-                    overlay.set_alpha(128)
-                    self.screen.blit(overlay, (0, 0))
-                    pause_text = self.renderer.render_large_text(
-                        "PAUSED", True, C.YELLOW
-                    )
-                    center = (C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2)
-                    pause_rect = pause_text.get_rect(center=center)
-                    self.screen.blit(pause_text, pause_rect)
-
-            elif self.state == C.GameState.GAME_OVER:
-                self.renderer.draw_game_over(self.logic)
+            self._update_gameplay(dt)
+            self._draw_frame()
 
             pygame.display.flip()
+
+    def _dispatch_events(self, events: list[pygame.event.Event]) -> None:
+        """Route pygame events to quit, mouse, and state-specific handlers."""
+        for event in events:
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                self.handle_mouse_input(event.pos)
+
+            if self.state == C.GameState.MENU:
+                self.handle_menu_input(event)
+            elif self.state == C.GameState.SETTINGS:
+                self.handle_settings_input(event)
+                # Input handler binding logic
+                if self.input_handler.awaiting_controller_action:
+                    if event.type in [pygame.JOYBUTTONDOWN, pygame.JOYHATMOTION]:
+                        if self.input_handler.apply_controller_binding(event):
+                            # Binding applied
+                            continue
+
+    def _update_gameplay(self, dt: int) -> None:
+        """Poll continuous input and tick the game logic when playing."""
+        keys = pygame.key.get_pressed()
+        if self.state != C.GameState.PLAYING:
+            return
+
+        if keys[pygame.K_LEFT] and self.logic.valid_move(
+            self.logic.current_piece, x_offset=-1
+        ):
+            self.logic.move_piece_left()
+            pygame.time.wait(100)
+        if keys[pygame.K_RIGHT] and self.logic.valid_move(
+            self.logic.current_piece, x_offset=1
+        ):
+            self.logic.move_piece_right()
+            pygame.time.wait(100)
+        if keys[pygame.K_DOWN]:
+            if self.logic.valid_move(self.logic.current_piece, y_offset=1):
+                self.logic.move_piece_down()
+            pygame.time.wait(50)
+
+        self.input_handler.handle_controller_state(self.logic)
+        self.logic.update(dt)
+
+        if self.logic.game_over:
+            self.state = C.GameState.GAME_OVER
+
+    def _draw_frame(self) -> None:
+        """Render the current screen based on game state."""
+        if self.state == C.GameState.MENU:
+            self.renderer.draw_menu(self.logic.starting_level)
+        elif self.state == C.GameState.SETTINGS:
+            self.draw_settings()
+        elif self.state in [C.GameState.PLAYING, C.GameState.PAUSED]:
+            self._draw_playfield()
+        elif self.state == C.GameState.GAME_OVER:
+            self.renderer.draw_game_over(self.logic)
+
+    def _draw_playfield(self) -> None:
+        """Draw the full playfield (grid, pieces, HUD, particles, overlays)."""
+        self.renderer.draw_background()
+        self.renderer.draw_grid(self.logic)
+        if self.show_ghost_piece:
+            self.renderer.draw_ghost_piece(self.logic)
+        self.renderer.draw_piece(self.logic.current_piece)
+        if self.show_next_piece:
+            self.renderer.draw_next_piece(self.logic)
+        if self.show_hold_piece:
+            self.renderer.draw_held_piece(self.logic)
+        self.renderer.draw_stats(self.logic)
+        self.renderer.draw_controls(self.show_controls_panel)
+        self.renderer.draw_button(
+            self.controls_toggle_rect,
+            "Hide Controls" if self.show_controls_panel else "Show Controls",
+        )
+        self.renderer.draw_button(self.restart_button, "Restart Run")
+
+        if self.state == C.GameState.PLAYING:
+            self.renderer.draw_particles(self.logic)
+            self.renderer.draw_score_popups(self.logic)
+        else:
+            # Draw static particles when paused
+            self.renderer.draw_particles(self.logic)
+            self.renderer.draw_score_popups(self.logic)
+
+        if self.state == C.GameState.PAUSED:
+            self._draw_pause_overlay()
+
+    def _draw_pause_overlay(self) -> None:
+        """Draw the translucent PAUSED overlay on top of the playfield."""
+        overlay = pygame.Surface((C.SCREEN_WIDTH, C.SCREEN_HEIGHT))
+        overlay.fill(C.BLACK)
+        overlay.set_alpha(128)
+        self.screen.blit(overlay, (0, 0))
+        pause_text = self.renderer.render_large_text("PAUSED", True, C.YELLOW)
+        center = (C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2)
+        pause_rect = pause_text.get_rect(center=center)
+        self.screen.blit(pause_text, pause_rect)
 
 
 if __name__ == "__main__":

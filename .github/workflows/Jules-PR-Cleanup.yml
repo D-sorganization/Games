@@ -4,6 +4,31 @@ name: Jules PR Cleanup
 # Preserves PRs that are actively being iterated on (recent commits)
 
 on:
+  workflow_call:
+    inputs:
+      max_age_days:
+        required: false
+        type: string
+        default: "7"
+      dry_run:
+        required: false
+        type: string
+        default: "true"
+  workflow_dispatch:
+    inputs:
+      max_age_days:
+        description: "Maximum age in days before a PR is considered stale"
+        required: false
+        default: "7"
+        type: string
+      dry_run:
+        description: "Dry run - report only without closing PRs"
+        required: false
+        default: "true"
+        type: choice
+        options:
+          - "true"
+          - "false"
 
 permissions:
   contents: read
@@ -14,10 +39,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-
   # ── Dispatcher: route to self-hosted if available ──────────────────────────
   pick-runner:
-    runs-on: ubuntu-latest
+    runs-on: d-sorg-fleet
     timeout-minutes: 2
     outputs:
       runner: ${{ steps.check.outputs.runner }}
@@ -34,8 +58,8 @@ jobs:
             echo "runner=d-sorg-fleet" >> $GITHUB_OUTPUT
             echo "Self-hosted runner online — routing locally"
           else
-            echo "runner=ubuntu-latest" >> $GITHUB_OUTPUT
-            echo "No self-hosted runner — using GitHub-hosted"
+            echo "::error::No local self-hosted runner available; failing closed"
+            exit 1
           fi
   cleanup:
     needs: pick-runner

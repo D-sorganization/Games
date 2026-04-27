@@ -1,26 +1,35 @@
 """Pure rendering helpers for the raycasting engine.
 
 Extracted from raycaster.py (issue #568) to reduce that module's size.
-Contains column/wall rendering, sprite rendering/scaling, floor/ceiling
-rendering, and minimap rendering.  All functions operate on pygame surfaces
-and numpy arrays; they receive all required state via parameters so they can
-be tested independently of the full Raycaster class.
+Contains column/wall rendering and sprite rendering/scaling.
+
+Floor/ceiling/sky and minimap rendering live in raycaster_environment.py
+(extracted in issue #775).  The names below are re-exported for backward
+compatibility with any code that imports them from this module.
 """
 
 from __future__ import annotations
 
-import math
 import random
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import pygame
 
+from .raycaster_environment import (  # noqa: F401  re-exported for compat
+    generate_background_surface,
+    generate_minimap_cache,
+    render_floor_ceiling,
+    render_minimap,
+)
+from .raycaster_render_contexts import (
+    TexturedWallColumnContext,
+)
+
 if TYPE_CHECKING:
     from collections import OrderedDict
-    from collections.abc import Sequence
 
-    from .interfaces import Bot, Player, Portal, Projectile
+    from .interfaces import Projectile
 
 
 # ---------------------------------------------------------------------------
@@ -69,57 +78,66 @@ def prepare_wall_render_data(
     )
 
 
-def render_textured_wall_column(  # noqa: PLR0913
-    i: int,
-    wt: int,
-    h: int,
-    top: int,
-    wall_x_hit: float,
-    shade: float,
-    fog: float,
-    wall_strips: dict[int, list[pygame.Surface]],
-    wall_colors: dict[int, tuple[int, int, int]],
-    view_surface: pygame.Surface,
-    blits_sequence: list[Any],
-    gray: tuple[int, int, int],
-    texture_map: dict[int, str],
-    shading_surfaces: list[pygame.Surface],
-    fog_surfaces: list[pygame.Surface],
-    get_cached_strip_fn: Any,
+def render_textured_wall_column(
+    context: TexturedWallColumnContext,
 ) -> None:
     """Render a single textured wall column with shading and fog."""
-    strips = wall_strips[wt]
+    strips = context.wall_strips[context.wt]
     tex_w = len(strips)
-    tex_x = int(np.clip(int(wall_x_hit * tex_w), 0, tex_w - 1))
+    tex_x = int(np.clip(int(context.wall_x_hit * tex_w), 0, tex_w - 1))
 
-    if h >= 8000:
+    if context.h >= 8000:
         # Solid colour fallback for extreme close-up
-        col = wall_colors.get(wt, gray)
-        col = (int(col[0] * shade), int(col[1] * shade), int(col[2] * shade))
-        pygame.draw.rect(view_surface, col, (i, top, 1, h))
+        col = context.wall_colors.get(context.wt, context.gray)
+        col = (
+            int(col[0] * context.shade),
+            int(col[1] * context.shade),
+            int(col[2] * context.shade),
+        )
+        pygame.draw.rect(
+            context.view_surface,
+            col,
+            (context.i, context.top, 1, context.h),
+        )
         return
 
-    tname = texture_map.get(wt, "brick")
-    scaled_strip = get_cached_strip_fn(tname, tex_x, int(h))
+    tname = context.texture_map.get(context.wt, "brick")
+    scaled_strip = context.get_cached_strip_fn(tname, tex_x, int(context.h))
 
     if not scaled_strip:
-        col = wall_colors.get(wt, gray)
-        pygame.draw.rect(view_surface, col, (i, top, 1, h))
+        col = context.wall_colors.get(context.wt, context.gray)
+        pygame.draw.rect(
+            context.view_surface,
+            col,
+            (context.i, context.top, 1, context.h),
+        )
         return
 
-    blits_sequence.append((scaled_strip, (i, top)))
+    context.blits_sequence.append((scaled_strip, (context.i, context.top)))
 
     # Shading overlay
-    if shade < 1.0:
-        alpha = max(0, min(255, int(255 * (1.0 - shade))))
+    if context.shade < 1.0:
+        alpha = max(0, min(255, int(255 * (1.0 - context.shade))))
         if alpha > 0:
-            blits_sequence.append((shading_surfaces[alpha], (i, top), (0, 0, 1, h)))
+            context.blits_sequence.append(
+                (
+                    context.shading_surfaces[alpha],
+                    (context.i, context.top),
+                    (0, 0, 1, context.h),
+                )
+            )
 
     # Fog overlay
-    if fog > 0:
-        fog_alpha = max(0, min(255, int(255 * fog)))
+    if context.fog > 0:
+        fog_alpha = max(0, min(255, int(255 * context.fog)))
         if fog_alpha > 0:
-            blits_sequence.append((fog_surfaces[fog_alpha], (i, top), (0, 0, 1, h)))
+            context.blits_sequence.append(
+                (
+                    context.fog_surfaces[fog_alpha],
+                    (context.i, context.top),
+                    (0, 0, 1, context.h),
+                )
+            )
 
 
 def render_solid_wall_column(
@@ -308,280 +326,5 @@ def draw_projectile_effect(
         pygame.draw.circle(surface, (200, 255, 255), rect.center, rect.width // 2)
         pygame.draw.circle(surface, (150, 200, 255), rect.center, rect.width // 3)
 
-
-# ---------------------------------------------------------------------------
-# Floor / ceiling / sky rendering
-# ---------------------------------------------------------------------------
-
-
-def generate_background_surface(
-    level: int,
-    level_themes: list[dict[str, Any]],
-    screen_width: int,
-    screen_height: int,
-    gray: tuple[int, int, int],
-    dark_gray: tuple[int, int, int],
-) -> tuple[pygame.Surface, pygame.Surface, int]:
-    """Pre-generate a high-quality background surface for the level theme.
-
-    Returns:
-        (background_surface, scaled_background_surface, theme_idx)
-    """
-    theme_idx = (level - 1) % len(level_themes) if level_themes else 0
-    theme = level_themes[theme_idx] if level_themes else None
-
-    h = screen_height
-    background_surface = pygame.Surface((1, h * 2))
-
-    ceiling_color = theme["ceiling"] if theme else gray
-    floor_color = theme["floor"] if theme else dark_gray
-
-    # Sky gradient (top half)
-    top_sky = (
-        max(0, ceiling_color[0] - 30),
-        max(0, ceiling_color[1] - 30),
-        max(0, ceiling_color[2] - 30),
-    )
-    bottom_sky = ceiling_color
-
-    # Floor gradient (bottom half)
-    near_floor = floor_color
-    far_floor = (
-        max(0, floor_color[0] - 40),
-        max(0, floor_color[1] - 40),
-        max(0, floor_color[2] - 40),
-    )
-
-    for y in range(h):
-        ratio = y / h
-        r = top_sky[0] + (bottom_sky[0] - top_sky[0]) * ratio
-        g = top_sky[1] + (bottom_sky[1] - top_sky[1]) * ratio
-        b = top_sky[2] + (bottom_sky[2] - top_sky[2]) * ratio
-        background_surface.set_at((0, y), (int(r), int(g), int(b)))
-
-    for y in range(h):
-        ratio = y / h
-        r = far_floor[0] + (near_floor[0] - far_floor[0]) * ratio
-        g = far_floor[1] + (near_floor[1] - far_floor[1]) * ratio
-        b = far_floor[2] + (near_floor[2] - far_floor[2]) * ratio
-        background_surface.set_at((0, h + y), (int(r), int(g), int(b)))
-
-    scaled_background_surface = pygame.transform.scale(
-        background_surface, (screen_width, h * 2)
-    )
-    return background_surface, scaled_background_surface, theme_idx
-
-
-def render_floor_ceiling(  # noqa: PLR0913
-    screen: pygame.Surface,
-    player: Player,
-    level: int,
-    level_themes: list[dict[str, Any]],
-    screen_width: int,
-    screen_height: int,
-    stars: list[tuple[int, int, float, tuple[int, int, int]]],
-    cached_background_theme_idx: int,
-    background_surface: pygame.Surface | None,
-    scaled_background_surface: pygame.Surface | None,
-    gray: tuple[int, int, int],
-    dark_gray: tuple[int, int, int],
-    view_offset_y: float = 0.0,
-) -> tuple[pygame.Surface | None, pygame.Surface | None, int]:
-    """Render floor and sky with stars and moon.
-
-    Returns:
-        (background_surface, scaled_background_surface, cached_background_theme_idx)
-        so the caller can update its cached state.
-    """
-    level_themes_list = level_themes or []
-    theme_idx = (level - 1) % len(level_themes_list) if level_themes_list else 0
-    theme = level_themes_list[theme_idx] if level_themes_list else None
-    player_angle = player.angle
-
-    if cached_background_theme_idx != theme_idx or background_surface is None:
-        background_surface, scaled_background_surface, theme_idx = (
-            generate_background_surface(
-                level,
-                level_themes_list,
-                screen_width,
-                screen_height,
-                gray,
-                dark_gray,
-            )
-        )
-        cached_background_theme_idx = theme_idx
-
-    horizon = screen_height // 2 + int(player.pitch + view_offset_y)
-
-    bg = scaled_background_surface
-    if bg is None and background_surface is not None:
-        scaled_background_surface = pygame.transform.scale(
-            background_surface, (screen_width, screen_height * 2)
-        )
-        bg = scaled_background_surface
-
-    if not (bg is not None):
-        raise ValueError("DbC Blocked: Precondition failed.")
-
-    if horizon > 0:
-        screen.blit(
-            bg,
-            (0, horizon - screen_height),
-            (0, 0, screen_width, screen_height),
-        )
-
-    if horizon < screen_height:
-        screen.blit(
-            bg,
-            (0, horizon),
-            (0, screen_height, screen_width, screen_height),
-        )
-
-    star_offset = int(player_angle * 200) % screen_width
-    for sx, sy, size, color in stars:
-        x = (sx + star_offset) % screen_width
-        y = int(sy + player.pitch + view_offset_y)
-        if 0 <= y < horizon:
-            pygame.draw.circle(screen, color, (x, int(y)), int(size))
-
-    moon_x = (screen_width - 200 - int(player_angle * 100)) % (
-        screen_width * 2
-    ) - screen_width // 2
-    moon_y = 100 + int(player.pitch + view_offset_y)
-
-    if -100 < moon_x < screen_width + 100:
-        if 0 <= moon_y < horizon + 40:
-            pygame.draw.circle(screen, (220, 220, 200), (int(moon_x), moon_y), 40)
-            shadow_pos = (int(moon_x) - 10, moon_y)
-            moon_color = theme["ceiling"] if theme else gray
-            pygame.draw.circle(screen, moon_color, shadow_pos, 40)
-
-    return background_surface, scaled_background_surface, cached_background_theme_idx
-
-
-# ---------------------------------------------------------------------------
-# Minimap rendering
-# ---------------------------------------------------------------------------
-
-
-def generate_minimap_cache(
-    minimap_size: int,
-    minimap_scale: float,
-    grid: list[list[int]],
-    map_width: int,
-    map_height: int,
-    wall_colors: dict[int, tuple[int, int, int]],
-    dark_gray: tuple[int, int, int],
-    gray: tuple[int, int, int],
-) -> pygame.Surface:
-    """Generate static minimap surface."""
-    surface = pygame.Surface((minimap_size, minimap_size))
-    surface.fill(dark_gray)
-
-    for y in range(map_height):
-        for x in range(map_width):
-            w_type = grid[y][x]
-            if w_type > 0:
-                color = wall_colors.get(w_type, gray)
-                pygame.draw.rect(
-                    surface,
-                    color,
-                    (
-                        x * minimap_scale,
-                        y * minimap_scale,
-                        minimap_scale,
-                        minimap_scale,
-                    ),
-                )
-    return surface
-
-
-def render_minimap(  # noqa: PLR0913
-    screen: pygame.Surface,
-    player: Player,
-    bots: Sequence[Bot],
-    minimap_surface: pygame.Surface | None,
-    minimap_size: int,
-    minimap_scale: float,
-    minimap_x: int,
-    minimap_y: int,
-    fog_surface: pygame.Surface | None,
-    fog_visited_count: int,
-    visited_cells: set[tuple[int, int]] | None,
-    portal: Portal | None,
-    enemy_types: dict[str, Any] | None,
-    black: tuple[int, int, int],
-    red: tuple[int, int, int],
-    green: tuple[int, int, int],
-    cyan: tuple[int, int, int],
-) -> tuple[pygame.Surface | None, int]:
-    """Render 2D minimap with fog of war support.
-
-    Returns:
-        (fog_surface, fog_visited_count) -- caller should update its cached state.
-    """
-    pygame.draw.rect(
-        screen,
-        black,
-        (minimap_x - 2, minimap_y - 2, minimap_size + 4, minimap_size + 4),
-    )
-
-    if minimap_surface:
-        if visited_cells is not None:
-            visited_count = len(visited_cells)
-            if fog_surface is None or fog_visited_count != visited_count:
-                fog_surface = pygame.Surface(
-                    (minimap_size, minimap_size), pygame.SRCALPHA
-                )
-                fog_surface.fill((0, 0, 0, 255))
-                for vx, vy in visited_cells:
-                    fog_surface.fill(
-                        (0, 0, 0, 0),
-                        rect=(
-                            vx * minimap_scale,
-                            vy * minimap_scale,
-                            minimap_scale,
-                            minimap_scale,
-                        ),
-                    )
-                fog_visited_count = visited_count
-            screen.blit(minimap_surface, (minimap_x, minimap_y))
-            screen.blit(fog_surface, (minimap_x, minimap_y))
-        else:
-            screen.blit(minimap_surface, (minimap_x, minimap_y))
-
-    if portal is not None:
-        px, py = int(portal["x"]), int(portal["y"])
-        if visited_cells is None or (px, py) in visited_cells:
-            portal_map_x = minimap_x + px * minimap_scale
-            portal_map_y = minimap_y + py * minimap_scale
-            pygame.draw.circle(
-                screen,
-                cyan,
-                (int(portal_map_x), int(portal_map_y)),
-                int(minimap_scale * 2),
-            )
-
-    for bot in bots:
-        if (
-            bot.alive
-            and bot.enemy_type != "health_pack"
-            and enemy_types is not None
-            and enemy_types[bot.enemy_type].get("visual_style") != "item"
-        ):
-            bot_cell_x = int(bot.x)
-            bot_cell_y = int(bot.y)
-            if visited_cells is None or (bot_cell_x, bot_cell_y) in visited_cells:
-                bot_x = minimap_x + bot.x * minimap_scale
-                bot_y = minimap_y + bot.y * minimap_scale
-                pygame.draw.circle(screen, red, (int(bot_x), int(bot_y)), 3)
-
-    player_x = minimap_x + player.x * minimap_scale
-    player_y = minimap_y + player.y * minimap_scale
-    pygame.draw.circle(screen, green, (int(player_x), int(player_y)), 3)
-
-    dir_x = player_x + math.cos(player.angle) * 10
-    dir_y = player_y + math.sin(player.angle) * 10
-    pygame.draw.line(screen, green, (player_x, player_y), (dir_x, dir_y), 2)
-
-    return fog_surface, fog_visited_count
+    # Floor/ceiling, sky, and minimap rendering functions are re-exported above
+    # from raycaster_environment.py (see the imports at the top of this module).

@@ -91,15 +91,32 @@ class TestRenderers:
             mock_surface, mock_bot, 100, 100, 50, 50, (255, 0, 0), base_config
         )
 
-    def test_cyber_demon_renderer(self, mock_surface, mock_bot, base_config):
+    def test_cyber_demon_renderer_draws_core_parts(
+        self, mock_surface, mock_bot, base_config, mock_pygame_draw
+    ):
         renderer = CyberDemonStyleRenderer()
-        mock_bot.attack_frame = 2
         renderer.render(
             mock_surface, mock_bot, 100, 100, 50, 50, (255, 0, 0), base_config
         )
+
+        assert mock_pygame_draw.rect.call_count == 8
+        assert mock_pygame_draw.line.call_count == 5
+        mock_pygame_draw.circle.assert_not_called()
+
+    def test_cyber_demon_renderer_draws_muzzle_glow_when_shooting(
+        self, mock_surface, mock_bot, base_config, mock_pygame_draw
+    ):
+        renderer = CyberDemonStyleRenderer()
         mock_bot.shoot_animation = 1
         renderer.render(
             mock_surface, mock_bot, 100, 100, 50, 50, (255, 0, 0), base_config
+        )
+
+        mock_pygame_draw.circle.assert_called_once_with(
+            mock_surface,
+            (255, 100, 0),
+            (122, 140),
+            10,
         )
 
     def test_ghost_renderer(self, mock_surface, mock_bot, base_config):
