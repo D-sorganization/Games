@@ -65,8 +65,8 @@ jobs:
       # Shared wheel/download cache for self-hosted runners. See issue #673.
       PIP_CACHE_DIR: /home/dieterolson/actions-runners/.shared-tool-cache/pip
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with: { python-version: "3.11" }
       - run: pip install ruff==0.14.10 black==26.1.0 mypy==1.13.0 bandit==1.7.7 pydocstyle==6.3.0
 
@@ -135,7 +135,7 @@ jobs:
           cat matlab_quality_report.txt
 
       - name: Upload MATLAB Report
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: matlab-quality-report
@@ -146,8 +146,8 @@ jobs:
     needs: pick-runner
     runs-on: ${{ needs.pick-runner.outputs.runner }}
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with: { python-version: "3.11" }
       - name: Install pip-audit
         run: pip install pip-audit
@@ -166,8 +166,8 @@ jobs:
       matrix:
         python: ["3.11"]
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
       - run: pip install --ignore-installed -r requirements.lock
@@ -198,7 +198,7 @@ jobs:
     runs-on: ${{ needs.pick-runner.outputs.runner }}
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
