@@ -240,7 +240,6 @@ class Bot(BotBehaviorMixin):
         self.shoot_animation = 1.0
         return projectile
 
-
     def _check_bot_collisions(
         self,
         other_bots: list[Bot],
