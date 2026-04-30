@@ -2,6 +2,10 @@
 
 Quick-reference for developers and AI agents working in this repository.
 
+## Branch Policy
+
+All work on `main` branch. PRs target `main`.
+
 ## Project Overview
 
 **Games** is a collection of Python (Pygame) and web-based games accessible through a unified GUI launcher (`game_launcher.py`). The shared engine lives in `src/games/shared/` and individual games live under `src/games/<GameName>/`.
