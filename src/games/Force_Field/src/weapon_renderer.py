@@ -109,9 +109,7 @@ class WeaponRenderer(WeaponRendererDrawMixin):
         if weapon == "pistol":
             self._render_pistol(cx, cy, player, gun_metal, gun_highlight, gun_dark)
         elif weapon == "shotgun":
-            self._render_shotgun(
-                cx, cy, gun_metal, gun_highlight, gun_dark
-            )
+            self._render_shotgun(cx, cy, gun_metal, gun_highlight, gun_dark)
         elif weapon == "rifle":
             self._render_rifle(cx, cy, player, gun_metal, gun_highlight)
         elif weapon == "minigun":

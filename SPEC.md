@@ -10,8 +10,8 @@
 | **Primary Language(s)** | Python 3.10+ (Pygame), JavaScript (Three.js for web) |
 | **License**             | MIT                                                  |
 | **Current Version**     | N/A                                                  |
-| **Spec Version**        | 1.1.33                                               |
-| **Last Spec Update**    | 2026-04-16                                           |
+| **Spec Version**        | 1.1.34                                               |
+| **Last Spec Update**    | 2026-04-30                                           |
 
 ## 2. Purpose & Mission
 
@@ -359,11 +359,31 @@ Xvfb :99 -screen 0 1024x768x24 &
 pytest tests/ -v
 ```
 
+### Docker Deployment
+
+**Dockerfile**: Standard Python 3.11-slim image with SDL2 support for Pygame rendering.
+
+```bash
+# Build image
+docker build -t games:latest .
+
+# Run container
+docker run -it --rm games:latest
+```
+
+**docker-compose.yml**: Multi-service orchestration (single service for now).
+
+```bash
+# Run with docker-compose
+docker-compose up --build
+```
+
 ### Build Artifacts
 
 | Artifact         | Format        | Destination                            |
 | ---------------- | ------------- | -------------------------------------- |
 | Game Executable  | Python module | Runnable via `python -m src.games`     |
+| Docker Image     | Container     | Built from Dockerfile                  |
 | Test Coverage    | HTML          | `htmlcov/index.html`                   |
 | Performance Logs | CSV           | `logs/perf_[timestamp].csv` (optional) |
 
