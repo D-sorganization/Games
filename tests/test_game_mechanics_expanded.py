@@ -21,30 +21,24 @@ Design by Contract approach:
 from __future__ import annotations
 
 import pytest
-import numpy as np
 
-from games.Tetris.src.game_logic import TetrisLogic
-from games.Tetris.src.tetromino import Tetromino
+from games.Peanut_Butter_Panic.peanut_butter_panic.core import (
+    GameConfig,
+    GameWorld,
+    InputState,
+    Player,
+    Sandwich,
+)
+from games.shared.spatial_grid import SpatialGrid
 from games.Tetris.src.constants import (
     BLACK,
     CYAN,
     GRID_HEIGHT,
     GRID_WIDTH,
     RED,
-    YELLOW,
-    GREEN,
 )
-from games.Peanut_Butter_Panic.peanut_butter_panic.core import (
-    GameWorld,
-    InputState,
-    Player,
-    Sandwich,
-    Enemy,
-    GameConfig,
-    PowerUp,
-)
-from games.shared.spatial_grid import SpatialGrid
-
+from games.Tetris.src.game_logic import TetrisLogic
+from games.Tetris.src.tetromino import Tetromino
 
 # ============================================================================
 # TETRIS GAME MECHANICS TESTS
@@ -639,13 +633,17 @@ class TestPBPCollisionDetection:
 
     def test_entities_at_same_position_collide(self) -> None:
         """Entities at same position should collide."""
-        world = GameWorld()
         pos = (100.0, 100.0)
         player = Player(position=pos, speed=0.0)
         sandwich = Sandwich(position=pos, health=1)
         # Calculate distance
-        dist = abs((player.position[0] - sandwich.position[0]) ** 2 +
-                  (player.position[1] - sandwich.position[1]) ** 2) ** 0.5
+        dist = (
+            abs(
+                (player.position[0] - sandwich.position[0]) ** 2
+                + (player.position[1] - sandwich.position[1]) ** 2
+            )
+            ** 0.5
+        )
         assert dist < player.radius + sandwich.radius
 
     def test_entities_far_apart_no_collision(self) -> None:
@@ -654,8 +652,13 @@ class TestPBPCollisionDetection:
         pos2 = (1000.0, 1000.0)
         player = Player(position=pos1, speed=0.0)
         sandwich = Sandwich(position=pos2, health=1)
-        dist = abs((player.position[0] - sandwich.position[0]) ** 2 +
-                  (player.position[1] - sandwich.position[1]) ** 2) ** 0.5
+        dist = (
+            abs(
+                (player.position[0] - sandwich.position[0]) ** 2
+                + (player.position[1] - sandwich.position[1]) ** 2
+            )
+            ** 0.5
+        )
         assert dist > player.radius + sandwich.radius
 
     def test_distance_calculation_correct(self) -> None:
