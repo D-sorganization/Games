@@ -1,0 +1,1 @@
+This repository is exempt from the Fleet Testing Standards because it is a collection of interactive UI-based games (Pygame/Web) which are heavily reliant on visual rendering and user input, making them unsuitable for standard automated headless unit testing. Tracking issue: #833
