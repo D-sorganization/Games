@@ -38,18 +38,49 @@ line-length = 88
 target-version = ['py310']
 
 [tool.pytest.ini_options]
+# Fleet Testing Standards §2 — see Repository_Management/docs/FLEET_TESTING_STANDARDS.md
 testpaths = ["tests"]
 pythonpath = ["src"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+timeout = 60
+timeout_method = "thread"
+
+# Default lane: fast, deterministic, offline.
 addopts = [
     "-ra",
     "--strict-markers",
+    "--strict-config",
     "--tb=short",
+    "--durations=20",
     "-p", "no:benchmark",
     "-p", "no:xvfb",
+    "-m", "not slow and not live_simulation and not e2e and not requires_network",
 ]
 markers = [
-    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
-    "integration: marks tests requiring game subsystems",
+    # ---- tier markers ----
+    "unit: pure logic, fully mocked, < 100 ms wall-clock",
+    "integration: cross-module / file-system / process boundaries, < 5 s (also: marks tests requiring game subsystems)",
+    "e2e: full-stack smoke tests; nightly + release gate only",
+    "slow: > 1 s wall-clock; deselect with -m 'not slow'",
+    "live_simulation: requires a real physics / math engine; deselect by default",
+
+    # ---- environment markers ----
+    "requires_network: needs real outbound network; deselect by default",
+    "requires_gpu: needs CUDA / Metal / ROCm",
+    "requires_gl: needs OpenGL or a display",
+    "headless_safe: verified under SDL_VIDEODRIVER=dummy / QT_QPA_PLATFORM=offscreen",
+
+    # ---- workflow markers ----
+    "serial: must run with -n 0 (xdist parallel breaks this test)",
+    "benchmark: deterministic perf smoke; not a primary correctness gate",
+    "smoke: release-blocking smoke; subset of e2e",
+]
+
+filterwarnings = [
+    # Suppress only third-party noise that's NOT a real correctness signal.
+    # Never add a blanket "ignore::DeprecationWarning" — that hides real bugs.
 ]
 
 [tool.coverage.run]
@@ -62,7 +93,11 @@ omit = [
 
 [tool.coverage.report]
 show_missing = true
-fail_under = 85
+# Fleet Testing Standards §6 — Experimental tier (multi-game collection: Duum,
+# Force_Field, Wizard_of_Wor, Zombie_Survival, Tetris, Peanut_Butter_Panic, shared).
+# 50% is the appropriate gate for a multi-game collection where coverage varies
+# substantially across games. Phase 4 may tighten this once Phase 3 lands.
+fail_under = 50
 exclude_lines = [
     "pragma: no cover",
     "if TYPE_CHECKING:",

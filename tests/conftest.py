@@ -6,6 +6,31 @@ module under tests/ without explicit import.
 
 from __future__ import annotations
 
+import os
+
+# ---------------------------------------------------------------------------
+# Fleet Testing Standards §5 — thread-safety + headless env vars.
+# Set before any heavy import. See Repository_Management/docs/
+# FLEET_TESTING_STANDARDS.md for the canonical block.
+# ---------------------------------------------------------------------------
+# C-extension thread safety: avoid MKL / OpenBLAS xdist crashes.
+os.environ.setdefault("OMP_NUM_THREADS", "1")
+os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
+os.environ.setdefault("MKL_NUM_THREADS", "1")
+os.environ.setdefault("NUMEXPR_NUM_THREADS", "1")
+
+# matplotlib headless backend, set before any matplotlib import.
+os.environ.setdefault("MPLBACKEND", "Agg")
+
+# Qt headless backend (for any indirect PyQt/PySide imports).
+os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+
+# SDL / pygame headless backends. The root conftest.py replaces pygame with
+# a fake module, but these env vars also guard any real-pygame entry points
+# (game launcher, smoke tests) that may run under CI.
+os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
+os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
+
 from types import SimpleNamespace
 from typing import Any
 
