@@ -59,6 +59,7 @@ jobs:
             exit 1
           fi
   check-and-trigger:
+    timeout-minutes: 30
     needs: pick-runner
     runs-on: ${{ needs.pick-runner.outputs.runner }}
     # Only run for bot-authored PRs or scheduled/manual runs

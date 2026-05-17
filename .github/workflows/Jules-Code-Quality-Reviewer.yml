@@ -43,6 +43,7 @@ jobs:
             exit 1
           fi
   review:
+    timeout-minutes: 30
     needs: pick-runner
     runs-on: ${{ needs.pick-runner.outputs.runner }}
     steps:

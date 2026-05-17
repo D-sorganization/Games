@@ -62,6 +62,7 @@ jobs:
             exit 1
           fi
   cleanup:
+    timeout-minutes: 30
     needs: pick-runner
     name: Cleanup Stale Jules PRs
     runs-on: ${{ needs.pick-runner.outputs.runner }}
