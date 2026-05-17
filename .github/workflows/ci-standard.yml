@@ -163,12 +163,13 @@ jobs:
 
   tests:
     timeout-minutes: 30
-    needs: [pick-runner, quality-gate]
+    needs: pick-runner
     runs-on: ${{ needs.pick-runner.outputs.runner }}
     env:
       # Shared wheel/download cache for self-hosted runners. See issue #673.
       PIP_CACHE_DIR: ~/.shared-tool-cache/pip
     strategy:
+      fail-fast: false
       matrix:
         python: ["3.11"]
     steps:
