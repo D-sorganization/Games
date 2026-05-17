@@ -40,6 +40,7 @@ jobs:
             exit 1
           fi
   check-mention:
+    timeout-minutes: 30
     needs: pick-runner
     runs-on: ${{ needs.pick-runner.outputs.runner }}
     outputs:
@@ -60,6 +61,7 @@ jobs:
           fi
 
   fix-issue:
+    timeout-minutes: 60
     needs: [pick-runner, check-mention]
     if: needs.check-mention.outputs.should_run == 'true' && !github.event.issue.pull_request
     runs-on: ${{ needs.pick-runner.outputs.runner }}

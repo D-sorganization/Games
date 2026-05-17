@@ -27,6 +27,7 @@ jobs:
             exit 1
           fi
   jules-address-feedback:
+    timeout-minutes: 60
     needs: pick-runner
     runs-on: ${{ needs.pick-runner.outputs.runner }}
     permissions:
