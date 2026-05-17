@@ -56,7 +56,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           cache: 'npm'
-        with: { node-version: "24" }
+          node-version: "24"
       - run: npm install -g @google/jules
       - run: jules auth --token ${{ secrets.JULES_API_KEY }}
 
