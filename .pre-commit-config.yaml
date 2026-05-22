@@ -256,22 +256,16 @@ repos:
         pass_filenames: false
         types: [python]
 
-  # Semgrep - Free local security + code quality scanning (pre-push)
-  - repo: https://github.com/semgrep/semgrep
-    rev: v1.102.0
+  - repo: local
     hooks:
       - id: semgrep
         name: "semgrep (security + quality)"
         stages: [push]
-        args: ["--config", "auto", "--quiet", "--no-autofix"]
+        entry: python scripts/run_semgrep_precommit.py
+        language: python
+        pass_filenames: true
         types: [python]
         exclude: ^(tests/|archive/|legacy/|experimental/|\.github/)
-
-  # Radon - Cyclomatic complexity check (pre-push)
-  # Note: Using local hook since rubik/radon doesn't provide pre-commit hooks
-  # NOTE: Using language: python (not system) for cross-platform compatibility (Windows/Linux)
-  - repo: local
-    hooks:
       - id: radon
         name: "radon (complexity check)"
         stages: [push]
