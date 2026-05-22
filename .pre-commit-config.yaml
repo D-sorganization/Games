@@ -45,7 +45,7 @@ repos:
     hooks:
       - id: black
         name: "black (Python format)"
-        language_version: python3.11
+        language_version: python
         types: [python]
         exclude: ^(\.github/|docs/|.*\.md$)
 
@@ -242,7 +242,7 @@ repos:
       - id: pytest-unit
         name: "pytest (Python tests)"
         stages: [push]
-        entry: python3 -m pytest
+        entry: python -m pytest
         args:
           [
             "tests/",
@@ -289,7 +289,7 @@ repos:
 # =============================================================================
 
 default_language_version:
-  python: python3.11
+  python: python
   node: "20.11.0"
 
 # Files to always exclude from all hooks
