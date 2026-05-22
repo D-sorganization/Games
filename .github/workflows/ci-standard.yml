@@ -68,9 +68,9 @@ jobs:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
         with:
-          cache: 'pip'
+          cache: "pip"
           python-version: "3.11"
-      - run: pip install ruff==0.14.10 black==26.1.0 mypy==1.13.0 bandit==1.7.7 pydocstyle==6.3.0
+      - run: python -m pip install --ignore-installed --no-deps ruff==0.14.10 black==26.1.0 mypy==1.13.0 bandit==1.7.7 pydocstyle==6.3.0
 
       # Validate that CI tool versions match pre-commit config
       - name: Check Tool Version Consistency
@@ -105,7 +105,7 @@ jobs:
       - name: Check Formatting
         run: black --check .
 
-      - run: pip install mypy types-PyYAML types-requests
+      - run: python -m pip install --ignore-installed --no-deps mypy types-PyYAML types-requests
       - run: pip install --ignore-installed -r requirements.lock
       # Type checking is advisory while the codebase is being annotated.
       # Tracked for enforcement in a future sprint.
@@ -152,7 +152,7 @@ jobs:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
         with:
-          cache: 'pip'
+          cache: "pip"
           python-version: "3.11"
       - name: Install pip-audit
         run: pip install pip-audit
@@ -177,16 +177,17 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python }}
-          cache: 'pip'
+          cache: "pip"
       - run: pip install --ignore-installed -r requirements.lock
       - run: pip install -e .
       - name: Install SDL dependencies
         run: sudo apt-get -o DPkg::Lock::Timeout=300 update && sudo apt-get -o DPkg::Lock::Timeout=300 install -y libsdl2-dev libsdl2-mixer-dev libsdl2-image-dev libsdl2-ttf-dev xvfb
       - name: Run tests with coverage
         env:
+          PYTEST_DISABLE_PLUGIN_AUTOLOAD: "1"
           SDL_VIDEODRIVER: dummy
           SDL_AUDIODRIVER: disk
-        run: xvfb-run -a pytest tests/ --cov=src/games/shared --cov-branch --cov-report=xml --cov-report=term-missing --timeout=60
+        run: xvfb-run -a pytest -p pytest_cov -p pytest_timeout tests/ --cov=src/games/shared --cov-branch --cov-report=xml --cov-report=term-missing --timeout=60
       - uses: codecov/codecov-action@v5
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
