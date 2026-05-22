@@ -68,9 +68,9 @@ jobs:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
         with:
-          cache: 'pip'
+          cache: "pip"
           python-version: "3.11"
-      - run: pip install ruff==0.14.10 black==26.1.0 mypy==1.13.0 bandit==1.7.7 pydocstyle==6.3.0
+      - run: pip install --ignore-installed ruff==0.14.10 black==26.1.0 mypy==1.13.0 bandit==1.7.7 pydocstyle==6.3.0
 
       # Validate that CI tool versions match pre-commit config
       - name: Check Tool Version Consistency
@@ -152,7 +152,7 @@ jobs:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
         with:
-          cache: 'pip'
+          cache: "pip"
           python-version: "3.11"
       - name: Install pip-audit
         run: pip install pip-audit
@@ -177,7 +177,7 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python }}
-          cache: 'pip'
+          cache: "pip"
       - run: pip install --ignore-installed -r requirements.lock
       - run: pip install -e .
       - name: Install SDL dependencies
