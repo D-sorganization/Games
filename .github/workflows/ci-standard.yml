@@ -70,7 +70,7 @@ jobs:
         with:
           cache: "pip"
           python-version: "3.11"
-      - run: python -m pip install --upgrade --upgrade-strategy only-if-needed ruff==0.14.10 black==26.1.0 mypy==1.13.0 bandit==1.7.7 pydocstyle==6.3.0
+      - run: python -m pip install --ignore-installed --no-deps ruff==0.14.10 black==26.1.0 mypy==1.13.0 bandit==1.7.7 pydocstyle==6.3.0
 
       # Validate that CI tool versions match pre-commit config
       - name: Check Tool Version Consistency
@@ -105,7 +105,7 @@ jobs:
       - name: Check Formatting
         run: black --check .
 
-      - run: pip install mypy types-PyYAML types-requests
+      - run: python -m pip install --ignore-installed --no-deps mypy types-PyYAML types-requests
       - run: pip install --ignore-installed -r requirements.lock
       # Type checking is advisory while the codebase is being annotated.
       # Tracked for enforcement in a future sprint.
