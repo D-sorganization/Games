@@ -42,6 +42,7 @@ jobs:
             exit 1
           fi
   create-hotfix:
+    timeout-minutes: 30
     needs: pick-runner
     runs-on: ${{ needs.pick-runner.outputs.runner }}
     # Only run for trusted branches (main/master)
@@ -53,7 +54,9 @@ jobs:
           fetch-depth: 0
 
       - uses: actions/setup-node@v4
-        with: { node-version: "24" }
+        with:
+          cache: 'npm'
+          node-version: "24"
       - run: npm install -g @google/jules
       - run: jules auth --token ${{ secrets.JULES_API_KEY }}
 

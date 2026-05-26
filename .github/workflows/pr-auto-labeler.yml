@@ -32,6 +32,7 @@ jobs:
             exit 1
           fi
   label:
+    timeout-minutes: 30
     needs: pick-runner
     runs-on: ${{ needs.pick-runner.outputs.runner }}
     steps:

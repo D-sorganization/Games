@@ -184,6 +184,7 @@ jobs:
   # Job 3: Summary
   # ─────────────────────────────────────────────────────────────────────────────
   cpp-ci-summary:
+    timeout-minutes: 60
     name: C++ CI Summary
     needs: [pick-runner, format-check, build-and-test]
     if: always()

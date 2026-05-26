@@ -27,6 +27,7 @@ jobs:
             exit 1
           fi
   jules-address-feedback:
+    timeout-minutes: 60
     needs: pick-runner
     runs-on: ${{ needs.pick-runner.outputs.runner }}
     permissions:
@@ -57,7 +58,9 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.ref }}
       - uses: actions/setup-node@v4
-        with: { node-version: "24" }
+        with:
+          cache: 'npm'
+          node-version: "24"
       - run: npm install -g @google/jules
 
       - name: Compile Feedback

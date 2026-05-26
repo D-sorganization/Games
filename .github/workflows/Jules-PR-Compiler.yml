@@ -54,6 +54,7 @@ jobs:
             exit 1
           fi
   compile-prs:
+    timeout-minutes: 60
     needs: pick-runner
     name: Compile Related PRs
     runs-on: ${{ needs.pick-runner.outputs.runner }}
