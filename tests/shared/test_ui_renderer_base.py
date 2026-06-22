@@ -136,3 +136,82 @@ class TestUIRendererBase:
             renderer._draw_blood_drips(drips)
             # Pygame draw should NOT be called
             mock_pg.draw.line.assert_not_called()
+
+    def test_deadfish_falls_back_to_gif_when_jpg_missing(self, mock_pygame_surface):
+        """The dead-fish still loads ``Deadfish.gif`` when the .JPG is absent."""
+
+        def only_gif_exists(path: str) -> bool:
+            return path.endswith("Deadfish.gif")
+
+        with patch("games.shared.ui_renderer_base.pygame") as mock_pg:
+            mock_pg.error = type("error", (RuntimeError,), {})
+            with patch(
+                "games.shared.ui_renderer_base.os.path.exists",
+                side_effect=only_gif_exists,
+            ):
+                with patch("games.shared.ui_renderer_base.cv2", create=True):
+                    surf_mock = MagicMock()
+                    surf_mock.get_width.return_value = 100
+                    surf_mock.get_height.return_value = 100
+                    mock_pg.image.load.return_value = surf_mock
+
+                    renderer = DummyRenderer(mock_pygame_surface, 800, 600)
+
+                    assert "deadfish" in renderer.intro_images
+                    # The .mp4 path does not exist, so no video is opened.
+                    assert renderer.intro_video is None
+
+    def test_phase1_media_prefers_video(self, mock_pygame_surface):
+        """Phase-1 media reads from the video when one is open."""
+        with patch("games.shared.ui_renderer_base.pygame") as mock_pg:
+            with patch("games.shared.ui_renderer_base.cv2", create=True) as mock_cv2:
+                renderer = DummyRenderer(mock_pygame_surface, 800, 600)
+
+                frame = MagicMock()
+                frame.swapaxes.return_value = frame
+                mock_cv2.cvtColor.return_value = frame
+                scaled = MagicMock()
+                scaled.get_height.return_value = 400
+                scaled.get_width.return_value = 600
+                mock_pg.surfarray.make_surface.return_value = scaled
+                mock_pg.transform.scale.return_value = scaled
+
+                video = MagicMock()
+                video.isOpened.return_value = True
+                video.read.return_value = (True, frame)
+                renderer.intro_video = video
+
+                renderer._render_intro_phase1_media()
+
+                video.read.assert_called_once()
+                assert renderer.screen.blit.called
+
+    def test_phase1_media_falls_back_to_still(self, mock_pygame_surface):
+        """Phase-1 media blits the still image when no video is available."""
+        with patch("games.shared.ui_renderer_base.pygame"):
+            renderer = DummyRenderer(mock_pygame_surface, 800, 600)
+            renderer.intro_video = None
+            renderer.intro_images["deadfish"] = MagicMock()
+
+            renderer._render_intro_phase1_media()
+
+            assert renderer.screen.blit.called
+
+    def test_render_intro_rejects_negative_phase(self, mock_pygame_surface):
+        """render_intro enforces its non-negative precondition (DbC)."""
+        from games.shared.contracts import ContractViolation
+
+        with patch("games.shared.ui_renderer_base.pygame"):
+            renderer = DummyRenderer(mock_pygame_surface, 800, 600)
+            with pytest.raises(ContractViolation):
+                renderer.render_intro(-1, 0, 0)
+
+    def test_release_intro_video(self, mock_pygame_surface):
+        """release_intro_video releases the capture and clears the reference."""
+        with patch("games.shared.ui_renderer_base.pygame"):
+            renderer = DummyRenderer(mock_pygame_surface, 800, 600)
+            video = MagicMock()
+            renderer.intro_video = video
+            renderer.release_intro_video()
+            video.release.assert_called_once_with()
+            assert renderer.intro_video is None

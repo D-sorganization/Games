@@ -11,7 +11,11 @@ from typing import TYPE_CHECKING, Any, cast
 
 import pygame
 
-from games.shared.contracts import validate_not_none, validate_positive
+from games.shared.contracts import (
+    validate_non_negative,
+    validate_not_none,
+    validate_positive,
+)
 
 try:
     import cv2
@@ -28,6 +32,18 @@ logger = logging.getLogger(__name__)
 
 class UIRendererBase:
     """Base class for UI renderers with common font and asset loading."""
+
+    # Intro branding. Defaults cover the "Upstream Drift" titled games;
+    # subclasses override these class attributes for their own title card.
+    INTRO_TITLE = "UPSTREAM DRIFT"
+    INTRO_SUBTITLE = "in association with"
+    INTRO_SUBTITLE_COLOR = (0, 255, 255)
+    INTRO_BG_COLOR = (0, 0, 0)
+    INTRO_PRODUCTION_TEXT = "A Willy Wonk Production"
+    INTRO_PRODUCTION_COLOR = (255, 182, 193)
+    INTRO_PRODUCTION_BORDER_COLOR = (255, 192, 203)
+    # Phase-1 still images tried in priority order (video frame is preferred).
+    DEADFISH_IMAGE_FILES = ("DeadFishSwimming_0.JPG", "Deadfish.gif")
 
     def __init__(self, screen: pygame.Surface, screen_width: int, screen_height: int):
         """Initialize the UI renderer base.
@@ -107,19 +123,44 @@ class UIRendererBase:
         except (pygame.error, FileNotFoundError, OSError, TypeError):
             logger.exception("Failed to load assets")
 
-    def _load_willy_image(self, pics_dir: str) -> None:
-        """Load and rotate the WillyWonk intro image."""
-        willy_path = os.path.join(pics_dir, "WillyWonk.JPG")
-        if not os.path.exists(willy_path):
-            return
-        img = pygame.image.load(willy_path)
-        img = pygame.transform.rotate(img, -90)
-        scale = min(500 / img.get_height(), 800 / img.get_width())
+    def _load_and_scale_image(
+        self,
+        path: str,
+        *,
+        rotate: int = 0,
+        max_height: int = 500,
+        max_width: int = 800,
+    ) -> pygame.Surface:
+        """Load an image, optionally rotate it, and downscale it to fit a box.
+
+        Args:
+            path: Filesystem path to the image to load.
+            rotate: Degrees to rotate the image after loading (0 skips rotation).
+            max_height: Maximum height in pixels; must be positive.
+            max_width: Maximum width in pixels; must be positive.
+
+        Returns:
+            The loaded surface, rotated and/or scaled down as needed.
+        """
+        validate_not_none(path, "path")
+        validate_positive(max_height, "max_height")
+        validate_positive(max_width, "max_width")
+        img = pygame.image.load(path)
+        if rotate:
+            img = pygame.transform.rotate(img, rotate)
+        scale = min(max_height / img.get_height(), max_width / img.get_width())
         if scale < 1:
             img = pygame.transform.scale(
                 img, (int(img.get_width() * scale), int(img.get_height() * scale))
             )
-        self.intro_images["willy"] = img
+        return img
+
+    def _load_willy_image(self, pics_dir: str) -> None:
+        """Load and rotate the WillyWonk intro image when it is present."""
+        willy_path = os.path.join(pics_dir, "WillyWonk.JPG")
+        if not os.path.exists(willy_path):
+            return
+        self.intro_images["willy"] = self._load_and_scale_image(willy_path, rotate=-90)
 
     def _load_intro_video(self, pics_dir: str) -> None:
         """Load the DeadFishSwimming video if cv2 is available."""
@@ -128,17 +169,17 @@ class UIRendererBase:
             self.intro_video = cv2.VideoCapture(video_path)
 
     def _load_deadfish_image(self, pics_dir: str) -> None:
-        """Load the DeadFishSwimming fallback still image."""
-        deadfish_path = os.path.join(pics_dir, "DeadFishSwimming_0.JPG")
-        if not os.path.exists(deadfish_path):
-            return
-        img = pygame.image.load(deadfish_path)
-        scale = min(500 / img.get_height(), 800 / img.get_width())
-        if scale < 1:
-            img = pygame.transform.scale(
-                img, (int(img.get_width() * scale), int(img.get_height() * scale))
-            )
-        self.intro_images["deadfish"] = img
+        """Load the first available dead-fish still as the video fallback.
+
+        The original asset name (``DeadFishSwimming_0.JPG``) is tried first for
+        backwards compatibility, then the ``Deadfish.gif`` that ships in each
+        game's ``pics`` directory.
+        """
+        for filename in self.DEADFISH_IMAGE_FILES:
+            path = os.path.join(pics_dir, filename)
+            if os.path.exists(path):
+                self.intro_images["deadfish"] = self._load_and_scale_image(path)
+                return
 
     def update_blood_drips(self, rect: pygame.Rect) -> None:
         """Update blood drip animations from title text.
@@ -193,6 +234,106 @@ class UIRendererBase:
     # ------------------------------------------------------------------
     # Intro slide rendering (DRY: extracted from per-game ui_renderers)
     # ------------------------------------------------------------------
+
+    def release_intro_video(self) -> None:
+        """Release the intro video capture and clear the reference."""
+        if self.intro_video is not None:
+            self.intro_video.release()
+            self.intro_video = None
+
+    def render_intro(self, intro_phase: int, intro_step: int, elapsed: int) -> None:
+        """Render the active intro phase to the screen.
+
+        Args:
+            intro_phase: Active phase (0 = production card, 1 = title + media,
+                2 = story slides).
+            intro_step: Index of the active phase-2 story slide.
+            elapsed: Milliseconds elapsed within the current phase.
+        """
+        validate_non_negative(intro_phase, "intro_phase")
+        validate_non_negative(intro_step, "intro_step")
+        validate_non_negative(elapsed, "elapsed")
+        self.screen.fill(self.INTRO_BG_COLOR)
+        if intro_phase == 0:
+            self._render_intro_phase0()
+        elif intro_phase == 1:
+            self._render_intro_phase1(elapsed)
+        elif intro_phase == 2:
+            self._render_intro_slide(intro_step, elapsed)
+        pygame.display.flip()
+
+    def _render_intro_phase0(self) -> None:
+        """Render the production-card intro phase."""
+        text = self.subtitle_font.render(
+            self.INTRO_PRODUCTION_TEXT, True, self.INTRO_PRODUCTION_COLOR
+        )
+        self.screen.blit(text, text.get_rect(center=(self.screen_width // 2, 100)))
+        if "willy" in self.intro_images:
+            img = self.intro_images["willy"]
+            rect = img.get_rect(
+                center=(self.screen_width // 2, self.screen_height // 2 + 30)
+            )
+            self.screen.blit(img, rect)
+            pygame.draw.rect(
+                self.screen,
+                self.INTRO_PRODUCTION_BORDER_COLOR,
+                rect,
+                4,
+                border_radius=10,
+            )
+
+    def _render_intro_phase1(self, elapsed: int) -> None:
+        """Render the pulsing title and dead-fish media for intro phase 1."""
+        title_font = pygame.font.SysFont("impact", 70)
+        pulse = abs(math.sin(elapsed * 0.003))
+        title_color = (0, int(150 + 100 * pulse), int(200 + 55 * pulse))
+        title = title_font.render(self.INTRO_TITLE, True, title_color)
+        self.screen.blit(
+            title,
+            title.get_rect(
+                center=(self.screen_width // 2, self.screen_height // 2 - 180)
+            ),
+        )
+        subtitle = self.tiny_font.render(
+            self.INTRO_SUBTITLE, True, self.INTRO_SUBTITLE_COLOR
+        )
+        self.screen.blit(
+            subtitle,
+            subtitle.get_rect(
+                center=(self.screen_width // 2, self.screen_height // 2 - 230)
+            ),
+        )
+        self._render_intro_phase1_media()
+
+    def _render_intro_phase1_media(self) -> None:
+        """Render the dead-fish video frame, falling back to the still image."""
+        if self.intro_video and self.intro_video.isOpened():
+            ret, frame = self.intro_video.read()
+            if ret:
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                frame = frame.swapaxes(0, 1)
+                surf = pygame.surfarray.make_surface(frame)
+                scale = 400 / surf.get_height()
+                surf = pygame.transform.scale(
+                    surf,
+                    (int(surf.get_width() * scale), int(surf.get_height() * scale)),
+                )
+                self.screen.blit(
+                    surf,
+                    surf.get_rect(
+                        center=(self.screen_width // 2, self.screen_height // 2 + 50)
+                    ),
+                )
+            else:
+                self.intro_video.set(cv2.CAP_PROP_POS_FRAMES, 0)
+        elif "deadfish" in self.intro_images:
+            img = self.intro_images["deadfish"]
+            self.screen.blit(
+                img,
+                img.get_rect(
+                    center=(self.screen_width // 2, self.screen_height // 2 + 50)
+                ),
+            )
 
     def _get_intro_slides(self) -> list[dict[str, Any]]:
         """Return the intro slide data for this game.

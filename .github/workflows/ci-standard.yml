@@ -45,14 +45,19 @@ jobs:
       - name: Check for self-hosted runner
         id: check
         env:
-          GH_TOKEN: ${{ secrets.RUNNER_CHECK_TOKEN }}
+          RUNNER_CHECK_TOKEN: ${{ secrets.RUNNER_CHECK_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
+          export GH_TOKEN="${RUNNER_CHECK_TOKEN:-$GITHUB_TOKEN}"
           ONLINE=$(gh api /orgs/${{ github.repository_owner }}/actions/runners \
             --jq '[.runners[] | select(.status == "online") | select(.labels[].name == "d-sorg-fleet")] | length' \
-            2>/dev/null || echo "0")
-          if [[ "$ONLINE" -gt 0 ]]; then
+            2>/dev/null || true)
+          if [[ "$ONLINE" =~ ^[0-9]+$ && "$ONLINE" -gt 0 ]]; then
             echo "runner=d-sorg-fleet" >> $GITHUB_OUTPUT
             echo "Self-hosted runner online — routing locally"
+          elif [[ "${RUNNER_NAME:-}" == d-sorg-local-* ]]; then
+            echo "runner=d-sorg-fleet" >> $GITHUB_OUTPUT
+            echo "Runner API probe unavailable; already executing on local fleet runner ${RUNNER_NAME}"
           else
             echo "::error::No local self-hosted runner available; failing closed"
             exit 1

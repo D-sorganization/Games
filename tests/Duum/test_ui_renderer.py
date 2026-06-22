@@ -4,6 +4,7 @@ import pygame
 import pytest
 
 from games.Duum.src.ui_renderer import UIRenderer
+from games.shared.ui_renderer_base import UIRendererBase
 
 
 @pytest.fixture(autouse=True)
@@ -234,3 +235,20 @@ class TestUIRenderer:
         rect = pygame.Rect(0, 0, 100, 50)
         renderer.update_blood_drips(rect)
         renderer._draw_blood_drips(renderer.title_drips)
+
+    def test_intro_video_not_clobbered(self, mock_screen):
+        """Regression: subclass __init__ must not discard the loaded intro video.
+
+        The shared base assigns ``intro_video`` while loading assets; a subclass
+        ``__init__`` must never reset it to ``None`` afterwards, or the dead-fish
+        intro silently disappears.
+        """
+        sentinel = MagicMock()
+
+        def fake_load_assets(self) -> None:
+            self.intro_images = {}
+            self.intro_video = sentinel
+
+        with patch.object(UIRendererBase, "_load_assets", fake_load_assets):
+            renderer = UIRenderer(mock_screen)
+        assert renderer.intro_video is sentinel
