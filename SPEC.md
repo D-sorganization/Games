@@ -10,8 +10,8 @@
 | **Primary Language(s)** | Python 3.10+ (Pygame), JavaScript (Three.js for web) |
 | **License**             | MIT                                                  |
 | **Current Version**     | N/A                                                  |
-| **Spec Version**        | 1.1.35                                               |
-| **Last Spec Update**    | 2026-05-22                                           |
+| **Spec Version**        | 1.1.36                                               |
+| **Last Spec Update**    | 2026-07-27                                           |
 
 ## 2. Purpose & Mission
 
@@ -155,6 +155,11 @@ launcher = GameLauncher()
 launcher.run()  # Opens launcher window, game selection UI
 ```
 
+Shared `run_game()` launchers always call `pygame.quit()` during cleanup. Normal
+game exits then raise `SystemExit`; unexpected construction or runtime errors
+are logged with their traceback and re-raised unchanged so callers receive a
+non-zero failure instead of a masked successful exit.
+
 **Individual Game API (for testing/programmatic use):**
 
 ```python
@@ -262,6 +267,7 @@ Games employs a test pyramid with unit tests for individual game logic component
 - [ ] Unit test: Input handler correctly converts key events to game-specific actions
 - [ ] Integration test: Launcher successfully discovers and lists all game modules
 - [ ] Integration test: Game launch from launcher succeeds with no window errors
+- [x] Integration test: Shared game launcher preserves construction and runtime exceptions after Pygame cleanup
 - [ ] Integration test: Game exit returns control to launcher without memory leaks
 - [ ] E2E test: Tetris game runs for 60 seconds, displays score, accepts input
 - [ ] E2E test: Force Field loads map, renders, and responds to movement input
@@ -431,6 +437,7 @@ Active development. Core games (F1-F6, F8-F9) fully implemented and tested. F7 (
 
 | Date       | Version | Changes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | ---------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 2026-07-27 | 1.1.36  | Documented the shared `run_game()` failure contract: Pygame cleanup always runs, normal exits retain `SystemExit`, and unexpected construction or runtime exceptions are logged and re-raised rather than being masked as successful exits.                                                                                                                                                                                                                                                                                                                   |
 | 2026-04-16 | 1.1.33  | Refactor(#775): Split oversized modules by responsibility — `combat_system.py` (650→440 LOC) extracts AoE/explosion handlers into `combat_system_explosions.py` via `_CombatSystemExplosionsMixin`; `raycaster.py` (893→580 LOC) extracts wall-column dispatch into `raycaster_wall_dispatch.py` via `_RaycasterWallDispatch` mixin; `raycaster_rendering.py` (671→331 LOC) extracts floor/ceiling/sky and minimap rendering into `raycaster_environment.py`. All public APIs preserved; `_PerRayLists` re-exported from `raycaster.py` for backward compat. |
 | 2026-04-14 | 1.1.32  | Refactor(#746): P1 remediation — decomposed oversized functions (>40 LOC) across 6 files (`raycaster.py`, `enemy.py`, `tetris.py`, `analyze_completist_data.py`, `mypy_fixers.py`, `mypy_autofix_agent.py`) into focused helpers ≤30 LOC; added `_PerRayLists` dataclass for zero-overhead per-ray data bundling; added 42 TDD tests for all newly extracted helpers.                                                                                                                                                                                        |
 | 2026-04-14 | 1.1.31  | Refactor(#744): split 3 monolithic scripts into focused modules — `mypy_autofix_agent.py` (731→262 LOC) extracts fix strategies and data types into `mypy_fixers.py`; `run_assessment.py` (628→163 LOC) extracts 15 per-category analysis functions into `assessment_modules.py`; `combat_manager.py` (624→231 LOC) extracts explosion helpers into `combat_explosions.py` and shot visual helpers into `combat_visuals.py`. All public APIs preserved.                                                                                                      |
