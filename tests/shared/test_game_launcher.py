@@ -154,3 +154,74 @@ class TestRunGame:
 
         mock_pygame.quit.assert_called()
         mock_sys_exit.assert_called()
+
+    @patch("games.shared.game_launcher.pygame")
+    @patch("games.shared.game_launcher.setup_game_path")
+    @patch("games.shared.game_launcher.setup_logging")
+    def test_run_game_propagates_game_run_exception(
+        self,
+        mock_setup_log: MagicMock,
+        mock_setup_path: MagicMock,
+        mock_pygame: MagicMock,
+    ) -> None:
+        """A crash inside game.run() must propagate, not be masked by sys.exit().
+
+        Regression: ``sys.exit()`` in the ``finally`` block raised ``SystemExit``,
+        which replaced the in-flight exception, so real failures (display init,
+        asset loading) exited 0 with no traceback.
+
+        ``sys.exit`` is deliberately *not* patched here -- patching it is what hid
+        the bug from the existing tests.
+        """
+        mock_game_class = MagicMock()
+        mock_game_instance = MagicMock()
+        mock_game_instance.run.side_effect = RuntimeError("display init failed")
+        mock_game_class.return_value = mock_game_instance
+
+        with pytest.raises(RuntimeError, match="display init failed"):
+            run_game(mock_game_class, "test_file.py")
+
+        mock_pygame.quit.assert_called()
+
+    @patch("games.shared.game_launcher.pygame")
+    @patch("games.shared.game_launcher.setup_game_path")
+    @patch("games.shared.game_launcher.setup_logging")
+    def test_run_game_propagates_construction_exception(
+        self,
+        mock_setup_log: MagicMock,
+        mock_setup_path: MagicMock,
+        mock_pygame: MagicMock,
+    ) -> None:
+        """A crash while constructing the game must propagate too."""
+        mock_game_class = MagicMock()
+        mock_game_class.side_effect = RuntimeError("driver not available")
+
+        with pytest.raises(RuntimeError, match="driver not available"):
+            run_game(mock_game_class, "test_file.py")
+
+        mock_pygame.quit.assert_called()
+
+    @patch("games.shared.game_launcher.pygame")
+    @patch("games.shared.game_launcher.setup_game_path")
+    @patch("games.shared.game_launcher.setup_logging")
+    def test_run_game_logs_crash_before_reraise(
+        self,
+        mock_setup_log: MagicMock,
+        mock_setup_path: MagicMock,
+        mock_pygame: MagicMock,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        """The crash should be logged with a traceback before being re-raised."""
+        mock_game_class = MagicMock()
+        mock_game_instance = MagicMock()
+        mock_game_instance.run.side_effect = RuntimeError("boom")
+        mock_game_class.return_value = mock_game_instance
+
+        with caplog.at_level(logging.ERROR, logger="games.shared.game_launcher"):
+            with pytest.raises(RuntimeError):
+                run_game(mock_game_class, "test_file.py")
+
+        assert any(
+            record.levelno == logging.ERROR and record.exc_info
+            for record in caplog.records
+        )
