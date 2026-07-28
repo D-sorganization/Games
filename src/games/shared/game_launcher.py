@@ -64,6 +64,13 @@ def run_game(
         game_file: The __file__ attribute from the calling module
         center_window: Whether to center the game window on screen
         use_frozen_path: Whether to support PyInstaller frozen executables
+
+    Raises:
+        SystemExit: On the success path (including KeyboardInterrupt), after
+            pygame has been shut down.
+        Exception: Any error raised while constructing or running the game is
+            logged and re-raised, so crashes surface with a traceback and a
+            non-zero exit status instead of being reported as a clean exit.
     """
     setup_game_path(game_file, use_frozen_path)
     setup_logging()
@@ -79,6 +86,14 @@ def run_game(
         game.run()
     except KeyboardInterrupt:
         logger.info("Game interrupted by user")
+    except Exception:
+        # Log with traceback, then let it propagate so the process exits
+        # non-zero. Calling sys.exit() in `finally` would raise SystemExit and
+        # replace this exception, silently reporting success on a real crash.
+        logger.exception("Game crashed")
+        raise
     finally:
         pygame.quit()
-        sys.exit()
+
+    # Only reached when the game exited normally (or was interrupted).
+    sys.exit()
