@@ -21,7 +21,11 @@ permissions:
 jobs:
   # ── Dispatcher: route to self-hosted if available ──────────────────────────
   pick-runner:
-    runs-on: d-sorg-fleet
+    # Hosted for public repos so the dispatcher can still start during a
+    # fleet outage -- otherwise the fallback below is unreachable.
+    runs-on:
+      ${{ !github.event.repository.private && vars.CI_RUNNER_MODE != 'local' &&
+      'ubuntu-latest' || 'd-sorg-fleet' }}
     timeout-minutes: 2
     outputs:
       runner: ${{ steps.check.outputs.runner }}
@@ -30,6 +34,7 @@ jobs:
         id: check
         env:
           GH_TOKEN: ${{ secrets.RUNNER_CHECK_TOKEN }}
+          REPOSITORY_PRIVATE: ${{ github.event.repository.private }}
         run: |
           ONLINE=$(gh api /orgs/${{ github.repository_owner }}/actions/runners \
             --jq '[.runners[] | select(.status == "online") | select(.labels[].name == "d-sorg-fleet")] | length' \
@@ -37,6 +42,11 @@ jobs:
           if [[ "$ONLINE" -gt 0 ]]; then
             echo "runner=d-sorg-fleet" >> $GITHUB_OUTPUT
             echo "Self-hosted runner online — routing locally"
+          elif [ "$REPOSITORY_PRIVATE" != "true" ]; then
+            # Public repo: standard hosted runners are free and unmetered, so a
+            # fleet outage should not take CI down with it.
+            echo "runner=ubuntu-latest" >> $GITHUB_OUTPUT
+            echo "No fleet runner online - falling back to free hosted runner"
           else
             echo "::error::No local self-hosted runner available; failing closed"
             exit 1
@@ -55,7 +65,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          cache: 'npm'
+          cache: "npm"
           node-version: "24"
       - run: npm install -g @google/jules
       - run: jules auth --token ${{ secrets.JULES_API_KEY }}
@@ -64,6 +74,7 @@ jobs:
         id: hotfix
         env:
           GH_TOKEN: ${{ secrets.RUNNER_CHECK_TOKEN }}
+          REPOSITORY_PRIVATE: ${{ github.event.repository.private }}
         run: |
           TIMESTAMP=$(date +%Y%m%d-%H%M%S)
           HOTFIX_BRANCH="hotfix/ci-fail-${TIMESTAMP}"
@@ -77,6 +88,7 @@ jobs:
       - name: Fetch CI Logs & Auto-Fix
         env:
           GH_TOKEN: ${{ secrets.RUNNER_CHECK_TOKEN }}
+          REPOSITORY_PRIVATE: ${{ github.event.repository.private }}
           TARGET_RUN_ID: ${{ inputs.run_id }}
           FAILED_BRANCH: ${{ inputs.failed_branch }}
           HOTFIX_BRANCH: ${{ steps.hotfix.outputs.branch }}
@@ -100,6 +112,7 @@ jobs:
       - name: Create Urgent PR
         env:
           GH_TOKEN: ${{ secrets.RUNNER_CHECK_TOKEN }}
+          REPOSITORY_PRIVATE: ${{ github.event.repository.private }}
           FAILED_BRANCH: ${{ inputs.failed_branch }}
           HOTFIX_BRANCH: ${{ steps.hotfix.outputs.branch }}
           RUN_ID: ${{ inputs.run_id }}
