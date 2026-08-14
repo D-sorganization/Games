@@ -41,7 +41,11 @@ concurrency:
 jobs:
   # ── Dispatcher: route to self-hosted if available ──────────────────────────
   pick-runner:
-    runs-on: d-sorg-fleet
+    # Hosted for public repos so the dispatcher can still start during a
+    # fleet outage -- otherwise the fallback below is unreachable.
+    runs-on:
+      ${{ !github.event.repository.private && vars.CI_RUNNER_MODE != 'local' &&
+      'ubuntu-latest' || 'd-sorg-fleet' }}
     timeout-minutes: 2
     outputs:
       runner: ${{ steps.check.outputs.runner }}
@@ -50,6 +54,7 @@ jobs:
         id: check
         env:
           GH_TOKEN: ${{ secrets.RUNNER_CHECK_TOKEN }}
+          REPOSITORY_PRIVATE: ${{ github.event.repository.private }}
         run: |
           ONLINE=$(gh api /orgs/${{ github.repository_owner }}/actions/runners \
             --jq '[.runners[] | select(.status == "online") | select(.labels[].name == "d-sorg-fleet")] | length' \
@@ -57,6 +62,11 @@ jobs:
           if [[ "$ONLINE" -gt 0 ]]; then
             echo "runner=d-sorg-fleet" >> $GITHUB_OUTPUT
             echo "Self-hosted runner online — routing locally"
+          elif [ "$REPOSITORY_PRIVATE" != "true" ]; then
+            # Public repo: standard hosted runners are free and unmetered, so a
+            # fleet outage should not take CI down with it.
+            echo "runner=ubuntu-latest" >> $GITHUB_OUTPUT
+            echo "No fleet runner online - falling back to free hosted runner"
           else
             echo "::error::No local self-hosted runner available; failing closed"
             exit 1
@@ -72,6 +82,7 @@ jobs:
         id: find
         env:
           GH_TOKEN: ${{ secrets.RUNNER_CHECK_TOKEN }}
+          REPOSITORY_PRIVATE: ${{ github.event.repository.private }}
           MAX_AGE_DAYS: ${{ inputs.max_age_days || '7' }}
         run: |
           echo "Looking for stale Jules PRs..."
@@ -102,6 +113,7 @@ jobs:
         if: steps.find.outputs.count != '0'
         env:
           GH_TOKEN: ${{ secrets.RUNNER_CHECK_TOKEN }}
+          REPOSITORY_PRIVATE: ${{ github.event.repository.private }}
         run: |
           echo "Checking CI status for stale PRs..."
 
@@ -132,6 +144,7 @@ jobs:
         if: steps.check_ci.outputs.close_count != '0'
         env:
           GH_TOKEN: ${{ secrets.RUNNER_CHECK_TOKEN }}
+          REPOSITORY_PRIVATE: ${{ github.event.repository.private }}
           DRY_RUN: ${{ inputs.dry_run || 'true' }}
         run: |
           CLOSED=0

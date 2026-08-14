@@ -50,7 +50,11 @@ env:
 jobs:
   # ── Dispatcher: route to self-hosted if available ──────────────────────────
   pick-runner:
-    runs-on: d-sorg-fleet
+    # Hosted for public repos so the dispatcher can still start during a
+    # fleet outage -- otherwise the fallback below is unreachable.
+    runs-on:
+      ${{ !github.event.repository.private && vars.CI_RUNNER_MODE != 'local' &&
+      'ubuntu-latest' || 'd-sorg-fleet' }}
     timeout-minutes: 2
     outputs:
       runner: ${{ steps.check.outputs.runner }}
@@ -59,6 +63,7 @@ jobs:
         id: check
         env:
           GH_TOKEN: ${{ secrets.RUNNER_CHECK_TOKEN }}
+          REPOSITORY_PRIVATE: ${{ github.event.repository.private }}
         run: |
           ONLINE=$(gh api /orgs/${{ github.repository_owner }}/actions/runners \
             --jq '[.runners[] | select(.status == "online") | select(.labels[].name == "d-sorg-fleet")] | length' \
@@ -66,6 +71,11 @@ jobs:
           if [[ "$ONLINE" -gt 0 ]]; then
             echo "runner=d-sorg-fleet" >> $GITHUB_OUTPUT
             echo "Self-hosted runner online — routing locally"
+          elif [ "$REPOSITORY_PRIVATE" != "true" ]; then
+            # Public repo: standard hosted runners are free and unmetered, so a
+            # fleet outage should not take CI down with it.
+            echo "runner=ubuntu-latest" >> $GITHUB_OUTPUT
+            echo "No fleet runner online - falling back to free hosted runner"
           else
             echo "::error::No local self-hosted runner available; failing closed"
             exit 1
@@ -84,6 +94,7 @@ jobs:
         id: branch
         env:
           GH_TOKEN: ${{ secrets.RUNNER_CHECK_TOKEN }}
+          REPOSITORY_PRIVATE: ${{ github.event.repository.private }}
           TARGET_RUN_ID: ${{ inputs.run_id }}
           INPUT_BRANCH: ${{ inputs.branch }}
         run: |
@@ -127,6 +138,7 @@ jobs:
         if: steps.branch.outputs.skip != 'true'
         env:
           GH_TOKEN: ${{ secrets.RUNNER_CHECK_TOKEN }}
+          REPOSITORY_PRIVATE: ${{ github.event.repository.private }}
           BRANCH: ${{ steps.branch.outputs.branch }}
         run: |
           HOURS_AGO=$(date -u -d "${{ env.REPAIR_WINDOW_HOURS }} hours ago" +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -v-${{ env.REPAIR_WINDOW_HOURS }}H +%Y-%m-%dT%H:%M:%SZ)
@@ -158,7 +170,7 @@ jobs:
         if: steps.branch.outputs.skip != 'true' && steps.limits.outputs.exceeded != 'true'
         with:
           python-version: "3.11"
-          cache: 'pip'
+          cache: "pip"
 
       - name: Install Tools
         if: steps.branch.outputs.skip != 'true' && steps.limits.outputs.exceeded != 'true'
@@ -170,6 +182,7 @@ jobs:
         if: steps.branch.outputs.skip != 'true' && steps.limits.outputs.exceeded != 'true'
         env:
           GH_TOKEN: ${{ secrets.RUNNER_CHECK_TOKEN }}
+          REPOSITORY_PRIVATE: ${{ github.event.repository.private }}
           TARGET_RUN_ID: ${{ inputs.run_id }}
         run: |
           if [ -n "$TARGET_RUN_ID" ]; then
@@ -196,6 +209,7 @@ jobs:
         if: steps.branch.outputs.skip != 'true' && steps.limits.outputs.exceeded != 'true'
         env:
           GH_TOKEN: ${{ secrets.RUNNER_CHECK_TOKEN }}
+          REPOSITORY_PRIVATE: ${{ github.event.repository.private }}
           JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
           BRANCH: ${{ steps.branch.outputs.branch }}
           PR_NUMBER: ${{ steps.branch.outputs.pr_number }}
@@ -432,6 +446,7 @@ jobs:
         if: steps.branch.outputs.pr_number != '' && steps.repair.outputs.status != ''
         env:
           GH_TOKEN: ${{ secrets.RUNNER_CHECK_TOKEN }}
+          REPOSITORY_PRIVATE: ${{ github.event.repository.private }}
           PR_NUMBER: ${{ steps.branch.outputs.pr_number }}
           STATUS: ${{ steps.repair.outputs.status }}
           ITERATIONS: ${{ steps.repair.outputs.iterations }}
