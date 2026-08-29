@@ -194,11 +194,16 @@ jobs:
 
           queue_file = "$QUEUE_FILE"
 
-          # Load existing queue
+          # Load existing queue. A missing file is the expected first run; a
+          # corrupt one is data loss and must be reported, not swallowed.
           try:
               with open(queue_file, 'r') as f:
                   queue = json.load(f)
-          except:
+          except FileNotFoundError:
+              queue = {"comments": []}
+          except json.JSONDecodeError as exc:
+              print(f"::warning::Queue file {queue_file} is corrupt ({exc}); "
+                    "starting an empty queue. Previously queued comments are lost.")
               queue = {"comments": []}
 
           # Check for duplicate (same comment ID)
