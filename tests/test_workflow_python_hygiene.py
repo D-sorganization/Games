@@ -119,3 +119,27 @@ def test_comment_queue_load_distinguishes_missing_from_corrupt() -> None:
         "resetting a corrupt queue must emit a visible log line so the lost "
         "backlog is diagnosable from the run output"
     )
+
+
+def test_comment_responder_runs_are_never_cancelled_mid_write() -> None:
+    """The queue writer must stay serialised, not cancel-in-progress.
+
+    Every other workflow sets ``cancel-in-progress: true`` to keep the runner
+    queue clear, and ``lint-workflow-files.yml`` enforces that. This one is on
+    that lint's exception allowlist: it read-modify-writes a shared queue file,
+    so cancelling a run mid-write truncates the very backlog the rest of this
+    module protects. The exemption and the setting have to stay in step.
+    """
+    workflow = WORKFLOWS_DIR / "PR-Comment-Responder.yml"
+    body = workflow.read_text(encoding="utf-8")
+    assert re.search(r"^\s*cancel-in-progress:\s*false\s*$", body, re.MULTILINE), (
+        "PR-Comment-Responder must not cancel runs in progress -- a cancelled "
+        "run can leave the queue file truncated"
+    )
+
+    lint = (WORKFLOWS_DIR / "lint-workflow-files.yml").read_text(encoding="utf-8")
+    assert workflow.name in lint, (
+        f"{workflow.name} sets cancel-in-progress: false but is missing from the "
+        "exception allowlist in lint-workflow-files.yml, so the lint gate will "
+        "fail on any change to it"
+    )

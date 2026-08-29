@@ -3,7 +3,7 @@ name: Lint Workflow Files
 on:
   pull_request:
     paths:
-      - '.github/workflows/**'
+      - ".github/workflows/**"
 
 permissions:
   contents: read
@@ -92,10 +92,12 @@ jobs:
               FAIL="${FAIL}\n  - $f: missing concurrency block"
             fi
             # Check cancel-in-progress: true (only if concurrency exists)
-            # Exception allowlist — workflows where cancel-in-progress: false is legitimate
-            # (publishes/releases should not be interrupted mid-stream)
+            # Exception allowlist — workflows where cancel-in-progress: false is
+            # legitimate: publishes/releases must not be interrupted mid-stream,
+            # and PR-Comment-Responder serialises writes to a shared queue file
+            # that a cancelled run would leave truncated (see issue #854).
             case "$(basename "$f")" in
-              publish-artifacts.yml|release.yml|publish.yml|deploy.yml|nightly-publish.yml)
+              publish-artifacts.yml|release.yml|publish.yml|deploy.yml|nightly-publish.yml|PR-Comment-Responder.yml)
                 echo "::notice::Skipping cancel-in-progress check for $f (intentional exception)"
                 ;;
               *)
