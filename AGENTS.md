@@ -194,6 +194,11 @@ All code produced must adhere to the following design principles. These are eval
 
 - All repositories must follow the organizational standard layout with `src/`, `tests/`, `docs/assessments/`, and `docs/development/` directories.
 
+#### 5o. Architecture Map Contract
+
+- The canonical architecture map, system context, and container diagrams are maintained in `docs/architecture/C4.md`.
+- Validate structure and tables with `python scripts/architecture_map_contract.py` (enforced by CI).
+
 ---
 
 ### 6. Calculation & Performance Standards
