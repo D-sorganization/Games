@@ -50,6 +50,10 @@ A collection of web-based 3D survival shooters.
 - **Location**: `games/Zombie_Games/`
 - **Type**: Web (HTML/JS)
 
+## 🏛️ Architecture
+
+The canonical architecture map, system context, container boundaries, and feature traceability are maintained in [`docs/architecture/C4.md`](docs/architecture/C4.md) per Epic #1594.
+
 ## 🚀 How to Play
 
 ### Using the Game Launcher
