@@ -25,6 +25,7 @@ jobs:
   pick-runner:
     # Hosted for public repos so the dispatcher can still start during a
     # fleet outage -- otherwise the fallback below is unreachable.
+    if: (!github.event.pull_request || github.event.pull_request.head.repo.full_name == github.repository)
     runs-on:
       ${{ !github.event.repository.private && vars.CI_RUNNER_MODE != 'local' &&
       'ubuntu-latest' || 'd-sorg-fleet' }}
@@ -57,9 +58,9 @@ jobs:
     timeout-minutes: 30
     needs: pick-runner
     # Only run on PR comments (not issue comments)
-    if: |
-      (github.event_name == 'pull_request_review_comment') ||
-      (github.event_name == 'issue_comment' && github.event.issue.pull_request != null)
+    if: >-
+      (!github.event.pull_request || github.event.pull_request.head.repo.full_name == github.repository) &&
+      ((github.event_name == 'pull_request_review_comment') || (github.event_name == 'issue_comment' && github.event.issue.pull_request != null))
     runs-on: ${{ needs.pick-runner.outputs.runner }}
     steps:
       - name: Filter Bot Comments

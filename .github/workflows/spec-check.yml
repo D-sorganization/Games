@@ -30,6 +30,7 @@ jobs:
   pick-runner:
     # Hosted for public repos so the dispatcher can still start during a
     # fleet outage -- otherwise the fallback below is unreachable.
+    if: (!github.event.pull_request || github.event.pull_request.head.repo.full_name == github.repository)
     runs-on:
       ${{ !github.event.repository.private && vars.CI_RUNNER_MODE != 'local' &&
       'ubuntu-latest' || 'd-sorg-fleet' }}
@@ -68,7 +69,7 @@ jobs:
     name: Verify SPEC.md freshness
     runs-on: ${{ needs.pick-runner.outputs.runner }}
     # Skip if spec-exempt label is applied
-    if: ${{ !contains(github.event.pull_request.labels.*.name, 'spec-exempt') }}
+    if: (!github.event.pull_request || github.event.pull_request.head.repo.full_name == github.repository) && (!contains(github.event.pull_request.labels.*.name, 'spec-exempt'))
     timeout-minutes: 5
 
     steps:

@@ -40,6 +40,7 @@ jobs:
   pick-runner:
     # Hosted for public repos so the dispatcher can still start during a
     # fleet outage -- otherwise the fallback below is unreachable.
+    if: (!github.event.pull_request || github.event.pull_request.head.repo.full_name == github.repository)
     runs-on:
       ${{ !github.event.repository.private && vars.CI_RUNNER_MODE != 'local' &&
       'ubuntu-latest' || 'd-sorg-fleet' }}
@@ -73,15 +74,9 @@ jobs:
     needs: pick-runner
     runs-on: ${{ needs.pick-runner.outputs.runner }}
     # Only run for bot-authored PRs or scheduled/manual runs
-    if: |
-      github.event_name == 'schedule' ||
-      github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'pull_request' &&
-       (contains(github.event.pull_request.user.login, 'bot') ||
-        contains(github.event.pull_request.user.login, 'github-actions') ||
-        contains(github.event.pull_request.user.login, 'google-labs-jules') ||
-        github.event.pull_request.user.type == 'Bot'))
-
+    if: >-
+      (!github.event.pull_request || github.event.pull_request.head.repo.full_name == github.repository) &&
+      (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && (contains(github.event.pull_request.user.login, 'bot') || contains(github.event.pull_request.user.login, 'github-actions') || contains(github.event.pull_request.user.login, 'google-labs-jules') || github.event.pull_request.user.type == 'Bot')))
     steps:
       - uses: actions/checkout@v4
         with:

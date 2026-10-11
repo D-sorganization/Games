@@ -9,6 +9,7 @@ jobs:
   pick-runner:
     # Hosted for public repos so the dispatcher can still start during a
     # fleet outage -- otherwise the fallback below is unreachable.
+    if: (!github.event.pull_request || github.event.pull_request.head.repo.full_name == github.repository)
     runs-on:
       ${{ !github.event.repository.private && vars.CI_RUNNER_MODE != 'local' &&
       'ubuntu-latest' || 'd-sorg-fleet' }}
@@ -40,7 +41,7 @@ jobs:
   cleanup:
     timeout-minutes: 30
     needs: pick-runner
-    if: github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'jules:consolidation')
+    if: (!github.event.pull_request || github.event.pull_request.head.repo.full_name == github.repository) && (github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'jules:consolidation'))
     runs-on: ${{ needs.pick-runner.outputs.runner }}
     permissions:
       pull-requests: write
