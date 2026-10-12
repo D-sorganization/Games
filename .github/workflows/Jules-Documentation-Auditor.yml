@@ -13,6 +13,10 @@ permissions:
   pull-requests: write
   issues: write
 
+concurrency:
+  group: jules-documentation-auditor-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   # ── Dispatcher: route to self-hosted if available ──────────────────────────
   pick-runner:

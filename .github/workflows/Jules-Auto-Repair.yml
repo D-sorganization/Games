@@ -47,6 +47,10 @@ env:
   CI_WAIT_TIMEOUT: 900
   CI_POLL_INTERVAL: 30
 
+concurrency:
+  group: jules-auto-repair-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   # ── Dispatcher: route to self-hosted if available ──────────────────────────
   pick-runner:

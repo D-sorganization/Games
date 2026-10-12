@@ -3,6 +3,10 @@ on:
   pull_request_review:
     types: [submitted]
 
+concurrency:
+  group: jules-review-fix-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   # ── Dispatcher: route to self-hosted if available ──────────────────────────
   pick-runner:

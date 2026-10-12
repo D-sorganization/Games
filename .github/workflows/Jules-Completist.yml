@@ -13,7 +13,7 @@ permissions:
 
 concurrency:
   group: jules-completist-${{ github.repository }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   # ── Dispatcher: route to self-hosted if available ──────────────────────────
