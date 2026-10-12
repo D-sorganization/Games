@@ -36,6 +36,8 @@ pytest-cov==7.0.0
     # via -r requirements.txt
 pytest-timeout==2.4.0
     # via -r requirements.txt
+pyyaml==6.0.3
+    # via -r requirements.txt
 types-pyyaml==6.0.12.20250915
     # via -r requirements.txt
 types-requests==2.32.4.20260107

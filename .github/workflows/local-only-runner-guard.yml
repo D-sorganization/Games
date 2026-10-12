@@ -19,6 +19,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: local-only-runner-guard-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   reject-hosted-runner-routing:
     name: Reject hosted runner routing
@@ -34,6 +38,12 @@ jobs:
 
       - name: Install PyYAML
         run: pip install --disable-pip-version-check pyyaml==6.0.2
+
+      # Logic lives in scripts/fork_pr_runner_guard.py (tested by
+      # tests/test_fork_pr_runner_guard.py); it runs here, on the hosted
+      # canary, so fork PRs get the verdict too (RM#1989).
+      - name: Verify no job runs fork PR code on the self-hosted fleet
+        run: python scripts/fork_pr_runner_guard.py --workflows-dir .github/workflows
 
       - name: Verify all workflows route to d-sorg-fleet
         shell: python

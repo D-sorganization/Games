@@ -18,11 +18,16 @@ permissions:
   pull-requests: write
   actions: write
 
+concurrency:
+  group: jules-hotfix-creator-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   # ── Dispatcher: route to self-hosted if available ──────────────────────────
   pick-runner:
     # Hosted for public repos so the dispatcher can still start during a
     # fleet outage -- otherwise the fallback below is unreachable.
+    if: (!github.event.pull_request || github.event.pull_request.head.repo.full_name == github.repository)
     runs-on:
       ${{ !github.event.repository.private && vars.CI_RUNNER_MODE != 'local' &&
       'ubuntu-latest' || 'd-sorg-fleet' }}
@@ -56,7 +61,7 @@ jobs:
     needs: pick-runner
     runs-on: ${{ needs.pick-runner.outputs.runner }}
     # Only run for trusted branches (main/master)
-    if: inputs.failed_branch == 'main' || inputs.failed_branch == 'master'
+    if: (!github.event.pull_request || github.event.pull_request.head.repo.full_name == github.repository) && (inputs.failed_branch == 'main' || inputs.failed_branch == 'master')
     steps:
       - uses: actions/checkout@v4
         with:

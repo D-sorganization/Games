@@ -12,11 +12,16 @@ permissions:
   contents: write
   pull-requests: write
 
+concurrency:
+  group: jules-auto-rebase-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   # ── Dispatcher: route to self-hosted if available ──────────────────────────
   pick-runner:
     # Hosted for public repos so the dispatcher can still start during a
     # fleet outage -- otherwise the fallback below is unreachable.
+    if: (!github.event.pull_request || github.event.pull_request.head.repo.full_name == github.repository)
     runs-on:
       ${{ !github.event.repository.private && vars.CI_RUNNER_MODE != 'local' &&
       'ubuntu-latest' || 'd-sorg-fleet' }}
@@ -48,6 +53,7 @@ jobs:
   auto-rebase-prs:
     timeout-minutes: 30
     needs: pick-runner
+    if: (!github.event.pull_request || github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ${{ needs.pick-runner.outputs.runner }}
     steps:
       - name: Checkout
