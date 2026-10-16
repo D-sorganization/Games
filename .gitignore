@@ -72,3 +72,9 @@ dist/
 pnpm-lock.yaml
 src/games/QuatGolf/assets/enemies/
 nul
+
+# Scratch/trigger files that should not be committed
+.pr_details.json
+.actionable_comments.json
+CI_TRIGGER
+.ci_trigger.py
