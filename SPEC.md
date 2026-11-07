@@ -309,6 +309,14 @@ PR CI now prefers the local self-hosted runner fleet and falls back to
 GitHub-hosted runners when the fleet is unavailable. These CI checks remain
 merge-blocking without requiring PR review approval.
 
+#### Retired Supersession Automation
+
+The Jules Supersede Check is retired (#891): pushes and manual dispatch must
+not start its automatic PR-closure and branch-deletion behavior. No reusable
+workflow may call the retired entrypoint. Offline workflow-contract tests enforce
+these constraints and preserve the primary CI push/PR triggers. Other Jules
+workflows are outside this retirement slice; the cleanup hold remains in force.
+
 ## 9. Dependencies
 
 ### Runtime Dependencies
