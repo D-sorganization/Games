@@ -18,9 +18,9 @@ pytestmark = pytest.mark.unit
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 LIVE_ENTRY_POINTS = (
-    'CLAUDE.md',
-    'AGENTS.md',
-    'README.md',
+    "CLAUDE.md",
+    "AGENTS.md",
+    "README.md",
 )
 
 _GAAI = re.compile(r"gaai", re.IGNORECASE)
